@@ -26,4 +26,4 @@ class ELKWidget(DOMWidget):
     _view_module_version = Unicode(EXTENSION_SPEC_VERSION).tag(sync=True)
 
     value = Dict().tag(sync=True)
-    layout = Dict().tag(sync=True)
+    diagram = Dict().tag(sync=True)

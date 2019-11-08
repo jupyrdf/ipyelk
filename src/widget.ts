@@ -10,17 +10,22 @@ import {
 import {EXTENSION_SPEC_VERSION} from './version';
 
 import ELK from 'elkjs/lib/elk.bundled.js';
+import * as d3 from 'd3';
+
 (<any>window).ELK = ELK;
+(<any>window).d3 = d3;
+
 export class ELKModel extends DOMWidgetModel {
 
 
     async value_changed() {
-        let value = this.get('value');
+        let value = this.get('value'),
+            _elk = this.get('_elk');
         console.log('value:', value);
         (<any>window).value = value;
-        if (this._elk) {
-            let layout = await this._elk.layout(this.get('value'), {});
-            this.set('layout', layout);
+        if (_elk) {
+            let layout = await _elk.layout(value, {});
+            this.set('diagram', layout);
             (<any>window)._elk = this._elk;
         }
     }
@@ -31,10 +36,8 @@ export class ELKModel extends DOMWidgetModel {
     }
 
     defaults() {
-        this.setup();
         (<any>window).model = this;
-
-        return {
+        let defaults = {
             ...super.defaults(),
             _model_name: ELKModel.model_name,
             _model_module: ELKModel.model_module,
@@ -43,10 +46,12 @@ export class ELKModel extends DOMWidgetModel {
             _view_module: ELKModel.view_module,
             _view_module_version: ELKModel.view_module_version,
             value: {},
-            layout: {},
+            diagram: {},
             _elk: new ELK({}),
 
         };
+        this.setup();
+        return defaults
     }
 
     static serializers: ISerializers = {
@@ -65,11 +70,54 @@ export class ELKModel extends DOMWidgetModel {
 
 
 export class ELKView extends DOMWidgetView {
+    model: ELKModel;
+    svg: any;
+
     render() {
-        this.model.on('layout:value', this.layout_changed, this);
+        // var zoom = d3.behavior.zoom()
+        //     .on("zoom", redraw);
+        console.log('render ELKView', this);
+        (<any>window).view = this;
+        this.svg = d3.select(this.el)
+            .append("svg")
+            .attr("width", 100)
+            .attr("height", 100)
+            // .call(zoom)
+            .append("g");
+
+        this.model.on('change:diagram', this.diagramLayout, this);
+
     }
 
-    layout_changed() {
-        console.log(this.model.get('layout'));
+    async diagramLayout() {
+        let diagram = this.model.get('diagram'),
+            root = this.svg;
+
+        console.log(this.model.get('diagram'));
+        (<any>window).el = this.el;
+
+        d3.select(this.el).append('text').html('1');
+        var link = root.selectAll(".link")
+              .data(graph.links)
+              .enter()
+              .append("path")
+              .attr("class", "link")
+              .attr("d", "M0 0");
+          // we group nodes along with their ports
+          var node = root.selectAll(".node")
+              .data(graph.nodes)
+              .enter()
+              .append("g");
+
+          node.append("rect")
+              .attr("class", "node")
+              .attr("width", 10)
+              .attr("height", 10)
+              .attr("x", 0)
+              .attr("y", 0);
+          node.append("title")
+              .text(function(d) { return d.name; });
     }
+
+
 }
