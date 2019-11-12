@@ -4,120 +4,108 @@
 import {
     DOMWidgetModel,
     DOMWidgetView,
-    ISerializers
+    WidgetView,
+    // ISerializers
 } from '@jupyter-widgets/base';
 
-import {EXTENSION_SPEC_VERSION} from './version';
+import ELK from 'elkjs';
+import { TYPES, SelectAction,
+    // LocalModelSource, 
+    // ActionHandlerRegistry, IActionHandler, SelectAction, SelectCommand 
+} from 'sprotty';
+import createContainer from './di-config';
+import { ElkGraphJsonToSprotty } from './json/elkgraph-to-sprotty';
+import {JLModelSource} from './diagram-server';
 
-import ELK from 'elkjs/lib/elk.bundled.js';
-import * as d3 from 'd3';
-
+import _ from 'lodash';
 (<any>window).ELK = ELK;
-(<any>window).d3 = d3;
+
 
 export class ELKModel extends DOMWidgetModel {
-
-
-    async value_changed() {
-        let value = this.get('value'),
-            _elk = this.get('_elk');
-        console.log('value:', value);
-        (<any>window).value = value;
-        if (_elk) {
-            let layout = await _elk.layout(value, {});
-            this.set('diagram', layout);
-            (<any>window)._elk = this._elk;
-        }
-    }
-
-    setup() {
-        console.log('ELK3');
-        this.on('change:value', this.value_changed, this);
-    }
-
     defaults() {
         (<any>window).model = this;
         let defaults = {
             ...super.defaults(),
-            _model_name: ELKModel.model_name,
-            _model_module: ELKModel.model_module,
-            _model_module_version: ELKModel.model_module_version,
-            _view_name: ELKModel.view_name,
-            _view_module: ELKModel.view_module,
-            _view_module_version: ELKModel.view_module_version,
             value: {},
             diagram: {},
             _elk: new ELK({}),
-
         };
         this.setup();
         return defaults
     }
 
-    static serializers: ISerializers = {
-        ...DOMWidgetModel.serializers,
-        // Add any extra serializers here
+    setup() {
+        this.on('change:value', this.value_changed, this);
     }
 
-    static model_name = 'ELKModel';
-    static model_module = 'elk-widget';
-    static model_module_version = EXTENSION_SPEC_VERSION;
-    static view_name = 'ELKView';  // Set to null if no view
-    static view_module = 'elk-widget';   // Set to null if no view
-    static view_module_version = EXTENSION_SPEC_VERSION;
-    private _elk: ELK;
+    async value_changed() {
+        let value = this.get('value'),
+            _elk = this.get('_elk');
+        if (_elk) {
+            let layout = await _elk.layout(value);
+            this.set('diagram', layout);
+        }
+    }
+
+
 }
 
 
 export class ELKView extends DOMWidgetView {
     model: ELKModel;
-    svg: any;
+    source: JLModelSource;
+    container: any;
+    private div_id:string;
+
+    initialize(parameters: WidgetView.InitializeParameters){
+        super.initialize(parameters);
+        this.model.on('change:diagram', this.diagramLayout, this);
+        this.model.on('change:selected', this.updateSelected, this);
+        this.touch(); //to sync back the diagram state
+        this.div_id  = 'sprotty-'+Math.random();
+             
+        // Create Sprotty viewer
+        const sprottyContainer = createContainer(this.div_id, this);      
+        this.container = sprottyContainer;  
+        this.source = sprottyContainer.get<JLModelSource>(TYPES.ModelSource);
+
+        (<any>window).view = this;   
+    }
+
+    /**
+     * Dictionary of events and handlers
+     */
+    events(): {[e: string]: string} {
+        // TODO: return typing not needed in Typescript later than 1.8.x
+        // See http://stackoverflow.com/questions/22077023/why-cant-i-indirectly-return-an-object-literal-to-satisfy-an-index-signature-re and https://github.com/Microsoft/TypeScript/pull/7029
+        return {'click': '_handle_click'};
+    }
+
+    /**
+     * Handles when the button is clicked.
+     */
+    _handle_click(event: SelectAction) {
+        // event.preventDefault();
+        this.send({event: 'click', id:this.model.get('hovered')});
+    }
 
     render() {
-        // var zoom = d3.behavior.zoom()
-        //     .on("zoom", redraw);
-        console.log('render ELKView', this);
-        (<any>window).view = this;
-        this.svg = d3.select(this.el)
-            .append("svg")
-            .attr("width", 100)
-            .attr("height", 100)
-            // .call(zoom)
-            .append("g");
+        this.$el[0].id = this.div_id;
+        this.diagramLayout();
+    }
 
-        this.model.on('change:diagram', this.diagramLayout, this);
-
+    updateSelected(){
+        let selected: string[] = this.model.get('selected');
+        let old_selected:string[] = this.model.previous('selected');
+        let exiting: string[] = _.difference(old_selected, selected);
+        let entering: string[] = _.difference(selected, old_selected);
+        this.source.setSelected(entering, exiting);
     }
 
     async diagramLayout() {
-        let diagram = this.model.get('diagram'),
-            root = this.svg;
-
-        console.log(this.model.get('diagram'));
-        (<any>window).el = this.el;
-
-        d3.select(this.el).append('text').html('1');
-        var link = root.selectAll(".link")
-              .data(graph.links)
-              .enter()
-              .append("path")
-              .attr("class", "link")
-              .attr("d", "M0 0");
-          // we group nodes along with their ports
-          var node = root.selectAll(".node")
-              .data(graph.nodes)
-              .enter()
-              .append("g");
-
-          node.append("rect")
-              .attr("class", "node")
-              .attr("width", 10)
-              .attr("height", 10)
-              .attr("x", 0)
-              .attr("y", 0);
-          node.append("title")
-              .text(function(d) { return d.name; });
+        let layout = this.model.get('diagram');
+        this.touch();
+        let sGraph = new ElkGraphJsonToSprotty().transform(layout);
+        this.source.updateModel(sGraph);
     }
-
-
 }
