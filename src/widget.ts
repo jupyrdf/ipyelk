@@ -76,8 +76,6 @@ export class ELKView extends DOMWidgetView {
      * Dictionary of events and handlers
      */
     events(): {[e: string]: string} {
-        // TODO: return typing not needed in Typescript later than 1.8.x
-        // See http://stackoverflow.com/questions/22077023/why-cant-i-indirectly-return-an-object-literal-to-satisfy-an-index-signature-re and https://github.com/Microsoft/TypeScript/pull/7029
         return {'click': '_handle_click'};
     }
 
