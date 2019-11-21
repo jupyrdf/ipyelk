@@ -1,11 +1,9 @@
-import "reflect-metadata";
 import { Application, IPlugin } from '@phosphor/application';
 import { Widget } from '@phosphor/widgets';
 
 import { IJupyterWidgetRegistry } from '@jupyter-widgets/base';
 
 import { NAME, VERSION } from '.';
-import * as widgetExports from './widget';
 import '../style/index.css';
 
 const EXTENSION_ID = `${NAME}:plugin`;
@@ -18,7 +16,7 @@ const plugin: IPlugin<Application<Widget>, void> = {
     registry.registerWidget({
       name: NAME,
       version: VERSION,
-      exports: widgetExports
+      exports: async () => await import (/* webpackChunkName: "elk" */ './widget')
     });
   }
 };

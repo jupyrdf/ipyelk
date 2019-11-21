@@ -5,13 +5,13 @@ import {
 
 import { injectable } from "inversify";
 import {
-    ActionHandlerRegistry, SelectAction, HoverFeedbackAction,
+    ActionHandlerRegistry, SelectAction, HoverFeedbackAction, CenterAction, CenterCommand,
     // IActionHandler, IActionHandlerInitializer,
     Action, LocalModelSource, BringToFrontAction, SelectCommand, ICommandStack
     //  SModelElementSchema,
     //  FluentIterable
 } from "sprotty";
-// import {FluentIterable} from "sprotty/utils/iterable";
+import { ElkGraphJsonToSprotty } from './json/elkgraph-to-sprotty';
 
 
 @injectable()
@@ -27,7 +27,10 @@ export class JLModelSource extends LocalModelSource {
         registry.register(HoverFeedbackAction.KIND, this)
     }
 
-
+    updateLayout(layout){
+        let sGraph = new ElkGraphJsonToSprotty().transform(layout);
+        this.updateModel(sGraph);        
+    }
 
     handle(action: Action) {
         switch (action.kind) {
@@ -43,7 +46,6 @@ export class JLModelSource extends LocalModelSource {
             default:
                 super.handle(action);
                 break;
-
         }
     }
     
@@ -83,6 +85,31 @@ export class JLModelSource extends LocalModelSource {
             this.view.touch();
         });
 
+    }
+
+    center(elementIds:string[]=[]){
+        let action: CenterAction = new CenterAction(elementIds)
+        this.commandStack.execute(new CenterCommand(action))
+    }
+
+    handleMessage(content, buffers){
+        console.log('custom msg', content, buffers);
+        switch (content.action){
+            case "center": {
+                let elementIds:string[]
+                if (content.hasOwnProperty('model_id')){
+                    if (!Array.isArray(content.model_id)){
+                        elementIds = [content.model_id]
+                    } else {
+                        elementIds = content.model_id
+                    }
+                } else {
+                    elementIds = []
+                }
+                this.center(elementIds)
+                
+            }
+        }
     }
 
 }

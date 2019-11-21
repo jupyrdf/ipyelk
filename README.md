@@ -1,10 +1,6 @@
 
 # elk-widget
 
-[![Build Status](https://travis-ci.org/gtri/elk-widget.svg?branch=master)](https://travis-ci.org/gtri/elk)
-[![codecov](https://codecov.io/gh/gtri/elk-widget/branch/master/graph/badge.svg)](https://codecov.io/gh/gtri/elk-widget)
-
-
 ELK widget for Jupyter
 
 ## Install

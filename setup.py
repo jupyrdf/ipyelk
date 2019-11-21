@@ -27,10 +27,6 @@ ensure_python('>=3.3')
 # Get our version
 version = get_version(pjoin(name, '_version.py'))
 
-nb_path = pjoin(HERE, name, 'nbextension', 'static')
-lab_path = pjoin(HERE, name, 'labextension')
-
-
 setup_args = dict(
     name            = name,
     description     = 'ELK widget for Jupyter',

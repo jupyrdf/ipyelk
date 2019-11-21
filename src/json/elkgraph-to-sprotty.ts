@@ -11,6 +11,16 @@ import {
 import {
     ElkShape, ElkNode, ElkPort, ElkLabel, ElkEdge, ElkGraphElement, isPrimitive, isExtended
 } from './elkgraph-json';
+import {get} from 'lodash';
+
+
+function getClasses(element):string[]{
+    let classes:string[] = get(element, 'properties.cssClasses', '').split(" ")
+    return classes.filter((el:string)=>{
+        return el.trim().length > 0;
+    })
+
+}
 
 export class ElkGraphJsonToSprotty {
 
@@ -24,7 +34,8 @@ export class ElkGraphJsonToSprotty {
         const sGraph = <SGraphSchema> {
             type: 'graph',
             id: elkGraph.id || 'root',
-            children: []
+            children: [],
+            cssClasses: getClasses(elkGraph),
         };
 
         if (elkGraph.children) {
@@ -39,6 +50,7 @@ export class ElkGraphJsonToSprotty {
         return sGraph;
     }
 
+
     private transformElkNode(elkNode: ElkNode): SNodeSchema {
         this.checkAndRememberId(elkNode, this.nodeIds);
         
@@ -47,7 +59,8 @@ export class ElkGraphJsonToSprotty {
             id: elkNode.id,
             position: this.pos(elkNode),
             size: this.size(elkNode),
-            children: []
+            children: [],
+            cssClasses: getClasses(elkNode),
         };
         // children
         if (elkNode.children) {
@@ -74,13 +87,14 @@ export class ElkGraphJsonToSprotty {
 
     private transformElkPort(elkPort: ElkPort): SPortSchema {
         this.checkAndRememberId(elkPort, this.portIds);
-
+        console.log('transformElkPort', elkPort);
         const sPort = <SPortSchema> {
             type: 'port',
             id: elkPort.id,
             position: this.pos(elkPort),
             size: this.size(elkPort),
-            children: []
+            children: [],
+            cssClasses: getClasses(elkPort),
         };
         // labels
         if (elkPort.labels) {
@@ -98,7 +112,8 @@ export class ElkGraphJsonToSprotty {
             id: elkLabel.id,
             text: elkLabel.text,
             position: this.pos(elkLabel),
-            size: this.size(elkLabel)
+            size: this.size(elkLabel),
+            cssClasses: getClasses(elkLabel),
         };
     }
 
@@ -111,7 +126,8 @@ export class ElkGraphJsonToSprotty {
             sourceId: '',
             targetId: '',
             routingPoints: [],
-            children: []
+            children: [],
+            cssClasses: getClasses(elkEdge),
         };
         if (isPrimitive(elkEdge)) {
             sEdge.sourceId = elkEdge.source;

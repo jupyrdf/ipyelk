@@ -6,7 +6,7 @@
 
 import pytest
 
-from ..example import ELKWidget
+from .. import ELKWidget
 
 
 def test_example_creation_blank():

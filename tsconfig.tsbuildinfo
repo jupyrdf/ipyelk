@@ -1257,53 +1257,9 @@
         "version": "64fc4091292e0eeb973be40f22d6197637525b024025c9f7f20b3f4887016825",
         "signature": "64fc4091292e0eeb973be40f22d6197637525b024025c9f7f20b3f4887016825"
       },
-      "/home/dfreeman6/science_scout/packages/elk-widget/src/diagram-server.ts": {
-        "version": "d21aa07be8961cdd7e8ded88484627d863b2dd23605afc77970bfbfe13d55e22",
-        "signature": "18ff792d72c3fa263e340aa31079ec326f3d25b8651c1844efd751c890d24c2e"
-      },
-      "/home/dfreeman6/science_scout/packages/elk-widget/node_modules/snabbdom-jsx/jsx.d.ts": {
-        "version": "3f42c1634f46ebd03a2b9a0b0c2fb3c9bd85953c50f6d813a8af5b9fe2f15eed",
-        "signature": "3f42c1634f46ebd03a2b9a0b0c2fb3c9bd85953c50f6d813a8af5b9fe2f15eed"
-      },
-      "/home/dfreeman6/science_scout/packages/elk-widget/node_modules/snabbdom-jsx/snabbdom-jsx.d.ts": {
-        "version": "c173b847b528c76cd926bfac84b3e9b58ca829a4e010e47a22e856c9a9b2a46f",
-        "signature": "c173b847b528c76cd926bfac84b3e9b58ca829a4e010e47a22e856c9a9b2a46f"
-      },
-      "/home/dfreeman6/science_scout/packages/elk-widget/src/sprotty-model.ts": {
-        "version": "446dbf4062d33f8138492c4b895616090007113e3ee3b45e319befa8a5a7f5b9",
-        "signature": "29a0b9767e691b8dc87dfeb9ee787830b86c8a4aa7bab8eadf52e613c29ae98b"
-      },
-      "/home/dfreeman6/science_scout/packages/elk-widget/src/views.tsx": {
-        "version": "7ce92cab5c9b385612e3cd385b1627270eef3f229610a541a842b5d6df1b8397",
-        "signature": "7b850aa9c0aba7b7356e430ce2981b1590e6e16e4b36520e121c7c59f652b824"
-      },
-      "/home/dfreeman6/science_scout/packages/elk-widget/src/di-config.ts": {
-        "version": "5ca5a214c3bfd985fc8e8681152407d271ae72101e3e948bbcc20c64c8ec6951",
-        "signature": "6a6bd20088fe8292fd29dc6939f5eab2f67885253088f53b0ae4087c8241f239"
-      },
-      "/home/dfreeman6/science_scout/packages/elk-widget/node_modules/reflect-metadata/index.d.ts": {
-        "version": "8d6d51a5118d000ed3bfe6e1dd1335bebfff3fef23cd2af2f84a24d30f90cc90",
-        "signature": "8d6d51a5118d000ed3bfe6e1dd1335bebfff3fef23cd2af2f84a24d30f90cc90"
-      },
-      "/home/dfreeman6/science_scout/packages/elk-widget/src/index.ts": {
-        "version": "fce4b4876c9d71d50845dacb5daba8a99ce59a104ee608a196bda4dc045b369d",
-        "signature": "f9c7b6ccc74f97a70b6b045437b57c1f0abeeafc5bfa527d08bcabc7c6406579"
-      },
-      "/home/dfreeman6/science_scout/packages/elk-widget/node_modules/@phosphor/application/lib/index.d.ts": {
-        "version": "0a809746312d8ab9a126e96dd7b5760e6354efece3f4083fe4e89699303c7309",
-        "signature": "0a809746312d8ab9a126e96dd7b5760e6354efece3f4083fe4e89699303c7309"
-      },
-      "/home/dfreeman6/science_scout/packages/elk-widget/node_modules/elkjs/lib/main.d.ts": {
-        "version": "c44e497832dd87fcd8c9159407083caa467619242c82bf3ebe4d500cd86a18b0",
-        "signature": "c44e497832dd87fcd8c9159407083caa467619242c82bf3ebe4d500cd86a18b0"
-      },
       "/home/dfreeman6/science_scout/packages/elk-widget/src/json/elkgraph-json.ts": {
         "version": "295edeb778282f4bafd8044a8a15be017b9c8e0d24ac763d465f677fecc88292",
         "signature": "ad63a6f3b7d2fd335a7d9d0a9aac0e6ec4e6d64cef3566769cd4ea04977933ce"
-      },
-      "/home/dfreeman6/science_scout/packages/elk-widget/src/json/elkgraph-to-sprotty.ts": {
-        "version": "1e82e6653a8d62864259507451df045eb58024160f0ff24d1683bd9cdb9f05f9",
-        "signature": "a57ffe29b8175908469c167d7a05b3decf8d45fa0d96bd6c65e36ec4710f2187"
       },
       "/home/dfreeman6/science_scout/packages/elk-widget/node_modules/@types/lodash/ts3.1/common/common.d.ts": {
         "version": "4025cf62742c5bb3d383c8a62342481622c87e3397ea5e7b7baab18b9efd5798",
@@ -1357,13 +1313,57 @@
         "version": "bbf144d4354e2aaa6439f32761f3ee798cc68d1600adab6e2a596f25269f106d",
         "signature": "bbf144d4354e2aaa6439f32761f3ee798cc68d1600adab6e2a596f25269f106d"
       },
+      "/home/dfreeman6/science_scout/packages/elk-widget/src/json/elkgraph-to-sprotty.ts": {
+        "version": "c68dbb7a4674f2edd307b7dc3143a76cf2652fc278673fabd7792e33f99b7159",
+        "signature": "a57ffe29b8175908469c167d7a05b3decf8d45fa0d96bd6c65e36ec4710f2187"
+      },
+      "/home/dfreeman6/science_scout/packages/elk-widget/src/diagram-server.ts": {
+        "version": "9dfa8293db374db1c4618d98069f00869a054d113dcfb074e4048e5cc7716bd0",
+        "signature": "a9ce9b173734fc2dcf54c3d9f8b1867a2d3f3dfc8d1b8e5ce8635dcc57e52a03"
+      },
+      "/home/dfreeman6/science_scout/packages/elk-widget/node_modules/snabbdom-jsx/jsx.d.ts": {
+        "version": "3f42c1634f46ebd03a2b9a0b0c2fb3c9bd85953c50f6d813a8af5b9fe2f15eed",
+        "signature": "3f42c1634f46ebd03a2b9a0b0c2fb3c9bd85953c50f6d813a8af5b9fe2f15eed"
+      },
+      "/home/dfreeman6/science_scout/packages/elk-widget/node_modules/snabbdom-jsx/snabbdom-jsx.d.ts": {
+        "version": "c173b847b528c76cd926bfac84b3e9b58ca829a4e010e47a22e856c9a9b2a46f",
+        "signature": "c173b847b528c76cd926bfac84b3e9b58ca829a4e010e47a22e856c9a9b2a46f"
+      },
+      "/home/dfreeman6/science_scout/packages/elk-widget/src/sprotty-model.ts": {
+        "version": "446dbf4062d33f8138492c4b895616090007113e3ee3b45e319befa8a5a7f5b9",
+        "signature": "29a0b9767e691b8dc87dfeb9ee787830b86c8a4aa7bab8eadf52e613c29ae98b"
+      },
+      "/home/dfreeman6/science_scout/packages/elk-widget/src/views.tsx": {
+        "version": "f8fa4b17d47b5f028a420a47f785f377a1bfe75b3862e6330641af62c827b389",
+        "signature": "7b850aa9c0aba7b7356e430ce2981b1590e6e16e4b36520e121c7c59f652b824"
+      },
+      "/home/dfreeman6/science_scout/packages/elk-widget/src/di-config.ts": {
+        "version": "5ca5a214c3bfd985fc8e8681152407d271ae72101e3e948bbcc20c64c8ec6951",
+        "signature": "6a6bd20088fe8292fd29dc6939f5eab2f67885253088f53b0ae4087c8241f239"
+      },
+      "/home/dfreeman6/science_scout/packages/elk-widget/src/index.ts": {
+        "version": "a5a630222902a859fc4a000df66310418af866810ef3d0520e3c305134eaeb0c",
+        "signature": "21241751f1f602ac19031d590b241f42761c489ab17debdd91732e4a9ad89c43"
+      },
+      "/home/dfreeman6/science_scout/packages/elk-widget/node_modules/@phosphor/application/lib/index.d.ts": {
+        "version": "0a809746312d8ab9a126e96dd7b5760e6354efece3f4083fe4e89699303c7309",
+        "signature": "0a809746312d8ab9a126e96dd7b5760e6354efece3f4083fe4e89699303c7309"
+      },
+      "/home/dfreeman6/science_scout/packages/elk-widget/node_modules/reflect-metadata/index.d.ts": {
+        "version": "8d6d51a5118d000ed3bfe6e1dd1335bebfff3fef23cd2af2f84a24d30f90cc90",
+        "signature": "8d6d51a5118d000ed3bfe6e1dd1335bebfff3fef23cd2af2f84a24d30f90cc90"
+      },
+      "/home/dfreeman6/science_scout/packages/elk-widget/node_modules/elkjs/lib/main.d.ts": {
+        "version": "c44e497832dd87fcd8c9159407083caa467619242c82bf3ebe4d500cd86a18b0",
+        "signature": "c44e497832dd87fcd8c9159407083caa467619242c82bf3ebe4d500cd86a18b0"
+      },
       "/home/dfreeman6/science_scout/packages/elk-widget/src/widget.ts": {
-        "version": "5f3cd782f77815166249b874b2ffba3429dba75e2fbadb180a71df0ed8db1dda",
-        "signature": "414becf3cdc5138d705cd37b556914b594ce8bd05c2520273ec548f56543d348"
+        "version": "bdc00b9ab58a483cc8d7fe848ec46fa01d5759cc086e94c76e6d2b86e2f76aaa",
+        "signature": "571c5264285d7f153bb7c2e721b4deb2a4605195697f2b6650a8bc1464462679"
       },
       "/home/dfreeman6/science_scout/packages/elk-widget/src/plugin.ts": {
-        "version": "5dc4b88984d28c423b6e13bf49c9efffe1386baaa20eb437ab7f4ee51229dfbb",
-        "signature": "1c315da7b1d7ae25f250448e00d6f73f1f0666fc3697e0ede55519e224368415"
+        "version": "28b12dcfa5ed9eab9fd80cbe6c8bce8772a1af150ac11185b2338a09c7f32f97",
+        "signature": "b7a30ebf16b27b0367c8d3eae65fa477eaceeff12350e412cf1db68bc970ead8"
       },
       "/home/dfreeman6/science_scout/packages/elk-widget/src/popup.ts": {
         "version": "25a3cf754b4ff394eafad3aea7693c49708a116863df81de61a8a5392dc43e7a",
@@ -2903,51 +2903,6 @@
         "/home/dfreeman6/science_scout/packages/elk-widget/node_modules/sprotty/lib/utils/logging.d.ts",
         "/home/dfreeman6/science_scout/packages/elk-widget/node_modules/sprotty/lib/utils/registry.d.ts"
       ],
-      "/home/dfreeman6/science_scout/packages/elk-widget/src/diagram-server.ts": [
-        "/home/dfreeman6/science_scout/packages/elk-widget/node_modules/@jupyter-widgets/base/lib/index.d.ts",
-        "/home/dfreeman6/science_scout/packages/elk-widget/node_modules/inversify/dts/inversify.d.ts",
-        "/home/dfreeman6/science_scout/packages/elk-widget/node_modules/sprotty/lib/index.d.ts"
-      ],
-      "/home/dfreeman6/science_scout/packages/elk-widget/node_modules/snabbdom-jsx/jsx.d.ts": [
-        "/home/dfreeman6/science_scout/packages/elk-widget/node_modules/snabbdom/vnode.d.ts"
-      ],
-      "/home/dfreeman6/science_scout/packages/elk-widget/node_modules/snabbdom-jsx/snabbdom-jsx.d.ts": [
-        "/home/dfreeman6/science_scout/packages/elk-widget/node_modules/snabbdom/vnode.d.ts",
-        "/home/dfreeman6/science_scout/packages/elk-widget/node_modules/snabbdom-jsx/jsx.d.ts"
-      ],
-      "/home/dfreeman6/science_scout/packages/elk-widget/src/sprotty-model.ts": [
-        "/home/dfreeman6/science_scout/packages/elk-widget/node_modules/sprotty/lib/index.d.ts"
-      ],
-      "/home/dfreeman6/science_scout/packages/elk-widget/src/views.tsx": [
-        "/home/dfreeman6/science_scout/packages/elk-widget/node_modules/snabbdom-jsx/snabbdom-jsx.d.ts",
-        "/home/dfreeman6/science_scout/packages/elk-widget/node_modules/inversify/dts/inversify.d.ts",
-        "/home/dfreeman6/science_scout/packages/elk-widget/node_modules/snabbdom/vnode.d.ts",
-        "/home/dfreeman6/science_scout/packages/elk-widget/node_modules/sprotty/lib/index.d.ts",
-        "/home/dfreeman6/science_scout/packages/elk-widget/src/sprotty-model.ts"
-      ],
-      "/home/dfreeman6/science_scout/packages/elk-widget/src/di-config.ts": [
-        "/home/dfreeman6/science_scout/packages/elk-widget/node_modules/@jupyter-widgets/base/lib/index.d.ts",
-        "/home/dfreeman6/science_scout/packages/elk-widget/node_modules/inversify/dts/inversify.d.ts",
-        "/home/dfreeman6/science_scout/packages/elk-widget/node_modules/sprotty/lib/index.d.ts",
-        "/home/dfreeman6/science_scout/packages/elk-widget/src/diagram-server.ts",
-        "/home/dfreeman6/science_scout/packages/elk-widget/src/views.tsx",
-        "/home/dfreeman6/science_scout/packages/elk-widget/src/sprotty-model.ts"
-      ],
-      "/home/dfreeman6/science_scout/packages/elk-widget/src/index.ts": [
-        "/home/dfreeman6/science_scout/packages/elk-widget/node_modules/reflect-metadata/index.d.ts"
-      ],
-      "/home/dfreeman6/science_scout/packages/elk-widget/node_modules/@phosphor/application/lib/index.d.ts": [
-        "/home/dfreeman6/science_scout/packages/elk-widget/node_modules/@phosphor/commands/lib/index.d.ts",
-        "/home/dfreeman6/science_scout/packages/elk-widget/node_modules/@phosphor/coreutils/lib/index.d.ts",
-        "/home/dfreeman6/science_scout/packages/elk-widget/node_modules/@phosphor/widgets/lib/index.d.ts"
-      ],
-      "/home/dfreeman6/science_scout/packages/elk-widget/node_modules/elkjs/lib/main.d.ts": [
-        "/home/dfreeman6/science_scout/packages/elk-widget/node_modules/elkjs/lib/main.d.ts"
-      ],
-      "/home/dfreeman6/science_scout/packages/elk-widget/src/json/elkgraph-to-sprotty.ts": [
-        "/home/dfreeman6/science_scout/packages/elk-widget/node_modules/sprotty/lib/index.d.ts",
-        "/home/dfreeman6/science_scout/packages/elk-widget/src/json/elkgraph-json.ts"
-      ],
       "/home/dfreeman6/science_scout/packages/elk-widget/node_modules/@types/lodash/ts3.1/common/common.d.ts": [
         "/home/dfreeman6/science_scout/packages/elk-widget/node_modules/@types/lodash/ts3.1/index.d.ts",
         "/home/dfreeman6/science_scout/packages/elk-widget/node_modules/@types/lodash/ts3.1/common/array.d.ts",
@@ -3130,17 +3085,60 @@
         "/home/dfreeman6/science_scout/packages/elk-widget/node_modules/@types/lodash/ts3.1/common/string.d.ts",
         "/home/dfreeman6/science_scout/packages/elk-widget/node_modules/@types/lodash/ts3.1/common/util.d.ts"
       ],
+      "/home/dfreeman6/science_scout/packages/elk-widget/src/json/elkgraph-to-sprotty.ts": [
+        "/home/dfreeman6/science_scout/packages/elk-widget/node_modules/sprotty/lib/index.d.ts",
+        "/home/dfreeman6/science_scout/packages/elk-widget/src/json/elkgraph-json.ts",
+        "/home/dfreeman6/science_scout/packages/elk-widget/node_modules/@types/lodash/ts3.1/index.d.ts"
+      ],
+      "/home/dfreeman6/science_scout/packages/elk-widget/src/diagram-server.ts": [
+        "/home/dfreeman6/science_scout/packages/elk-widget/node_modules/@jupyter-widgets/base/lib/index.d.ts",
+        "/home/dfreeman6/science_scout/packages/elk-widget/node_modules/inversify/dts/inversify.d.ts",
+        "/home/dfreeman6/science_scout/packages/elk-widget/node_modules/sprotty/lib/index.d.ts",
+        "/home/dfreeman6/science_scout/packages/elk-widget/src/json/elkgraph-to-sprotty.ts"
+      ],
+      "/home/dfreeman6/science_scout/packages/elk-widget/node_modules/snabbdom-jsx/jsx.d.ts": [
+        "/home/dfreeman6/science_scout/packages/elk-widget/node_modules/snabbdom/vnode.d.ts"
+      ],
+      "/home/dfreeman6/science_scout/packages/elk-widget/node_modules/snabbdom-jsx/snabbdom-jsx.d.ts": [
+        "/home/dfreeman6/science_scout/packages/elk-widget/node_modules/snabbdom/vnode.d.ts",
+        "/home/dfreeman6/science_scout/packages/elk-widget/node_modules/snabbdom-jsx/jsx.d.ts"
+      ],
+      "/home/dfreeman6/science_scout/packages/elk-widget/src/sprotty-model.ts": [
+        "/home/dfreeman6/science_scout/packages/elk-widget/node_modules/sprotty/lib/index.d.ts"
+      ],
+      "/home/dfreeman6/science_scout/packages/elk-widget/src/views.tsx": [
+        "/home/dfreeman6/science_scout/packages/elk-widget/node_modules/snabbdom-jsx/snabbdom-jsx.d.ts",
+        "/home/dfreeman6/science_scout/packages/elk-widget/node_modules/inversify/dts/inversify.d.ts",
+        "/home/dfreeman6/science_scout/packages/elk-widget/node_modules/snabbdom/vnode.d.ts",
+        "/home/dfreeman6/science_scout/packages/elk-widget/node_modules/sprotty/lib/index.d.ts",
+        "/home/dfreeman6/science_scout/packages/elk-widget/src/sprotty-model.ts"
+      ],
+      "/home/dfreeman6/science_scout/packages/elk-widget/src/di-config.ts": [
+        "/home/dfreeman6/science_scout/packages/elk-widget/node_modules/@jupyter-widgets/base/lib/index.d.ts",
+        "/home/dfreeman6/science_scout/packages/elk-widget/node_modules/inversify/dts/inversify.d.ts",
+        "/home/dfreeman6/science_scout/packages/elk-widget/node_modules/sprotty/lib/index.d.ts",
+        "/home/dfreeman6/science_scout/packages/elk-widget/src/diagram-server.ts",
+        "/home/dfreeman6/science_scout/packages/elk-widget/src/views.tsx",
+        "/home/dfreeman6/science_scout/packages/elk-widget/src/sprotty-model.ts"
+      ],
+      "/home/dfreeman6/science_scout/packages/elk-widget/node_modules/@phosphor/application/lib/index.d.ts": [
+        "/home/dfreeman6/science_scout/packages/elk-widget/node_modules/@phosphor/commands/lib/index.d.ts",
+        "/home/dfreeman6/science_scout/packages/elk-widget/node_modules/@phosphor/coreutils/lib/index.d.ts",
+        "/home/dfreeman6/science_scout/packages/elk-widget/node_modules/@phosphor/widgets/lib/index.d.ts"
+      ],
+      "/home/dfreeman6/science_scout/packages/elk-widget/node_modules/elkjs/lib/main.d.ts": [
+        "/home/dfreeman6/science_scout/packages/elk-widget/node_modules/elkjs/lib/main.d.ts"
+      ],
       "/home/dfreeman6/science_scout/packages/elk-widget/src/widget.ts": [
+        "/home/dfreeman6/science_scout/packages/elk-widget/node_modules/reflect-metadata/index.d.ts",
         "/home/dfreeman6/science_scout/packages/elk-widget/node_modules/@jupyter-widgets/base/lib/index.d.ts",
         "/home/dfreeman6/science_scout/packages/elk-widget/node_modules/elkjs/lib/main.d.ts",
         "/home/dfreeman6/science_scout/packages/elk-widget/node_modules/sprotty/lib/index.d.ts",
         "/home/dfreeman6/science_scout/packages/elk-widget/src/di-config.ts",
-        "/home/dfreeman6/science_scout/packages/elk-widget/src/json/elkgraph-to-sprotty.ts",
         "/home/dfreeman6/science_scout/packages/elk-widget/src/diagram-server.ts",
         "/home/dfreeman6/science_scout/packages/elk-widget/node_modules/@types/lodash/ts3.1/index.d.ts"
       ],
       "/home/dfreeman6/science_scout/packages/elk-widget/src/plugin.ts": [
-        "/home/dfreeman6/science_scout/packages/elk-widget/node_modules/reflect-metadata/index.d.ts",
         "/home/dfreeman6/science_scout/packages/elk-widget/node_modules/@phosphor/application/lib/index.d.ts",
         "/home/dfreeman6/science_scout/packages/elk-widget/node_modules/@phosphor/widgets/lib/index.d.ts",
         "/home/dfreeman6/science_scout/packages/elk-widget/node_modules/@jupyter-widgets/base/lib/index.d.ts",
@@ -3167,7 +3165,6 @@
         "/home/dfreeman6/science_scout/packages/elk-widget/node_modules/@phosphor/widgets/lib/index.d.ts"
       ],
       "/home/dfreeman6/science_scout/packages/elk-widget/src/plugin.ts": [
-        "/home/dfreeman6/science_scout/packages/elk-widget/node_modules/reflect-metadata/index.d.ts",
         "/home/dfreeman6/science_scout/packages/elk-widget/node_modules/@phosphor/application/lib/index.d.ts",
         "/home/dfreeman6/science_scout/packages/elk-widget/node_modules/@phosphor/widgets/lib/index.d.ts"
       ],
@@ -3187,9 +3184,9 @@
         "/home/dfreeman6/science_scout/packages/elk-widget/node_modules/@jupyter-widgets/base/lib/registry.d.ts"
       ],
       "/home/dfreeman6/science_scout/packages/elk-widget/src/widget.ts": [
+        "/home/dfreeman6/science_scout/packages/elk-widget/node_modules/reflect-metadata/index.d.ts",
         "/home/dfreeman6/science_scout/packages/elk-widget/node_modules/@jupyter-widgets/base/lib/index.d.ts",
-        "/home/dfreeman6/science_scout/packages/elk-widget/src/diagram-server.ts",
-        "/home/dfreeman6/science_scout/packages/elk-widget/node_modules/sprotty/lib/index.d.ts"
+        "/home/dfreeman6/science_scout/packages/elk-widget/src/diagram-server.ts"
       ],
       "/home/dfreeman6/science_scout/packages/elk-widget/src/di-config.ts": [
         "/home/dfreeman6/science_scout/packages/elk-widget/node_modules/@jupyter-widgets/base/lib/index.d.ts",
@@ -3862,11 +3859,11 @@
         "/home/dfreeman6/science_scout/packages/elk-widget/node_modules/sprotty/lib/utils/logging.d.ts",
         "/home/dfreeman6/science_scout/packages/elk-widget/node_modules/sprotty/lib/utils/registry.d.ts"
       ],
-      "/home/dfreeman6/science_scout/packages/elk-widget/src/json/elkgraph-to-sprotty.ts": [
-        "/home/dfreeman6/science_scout/packages/elk-widget/src/json/elkgraph-json.ts",
+      "/home/dfreeman6/science_scout/packages/elk-widget/src/sprotty-model.ts": [
         "/home/dfreeman6/science_scout/packages/elk-widget/node_modules/sprotty/lib/index.d.ts"
       ],
-      "/home/dfreeman6/science_scout/packages/elk-widget/src/sprotty-model.ts": [
+      "/home/dfreeman6/science_scout/packages/elk-widget/src/json/elkgraph-to-sprotty.ts": [
+        "/home/dfreeman6/science_scout/packages/elk-widget/src/json/elkgraph-json.ts",
         "/home/dfreeman6/science_scout/packages/elk-widget/node_modules/sprotty/lib/index.d.ts"
       ],
       "/home/dfreeman6/science_scout/packages/elk-widget/node_modules/sprotty/lib/lib/modules.d.ts": [
@@ -4698,12 +4695,6 @@
       "/home/dfreeman6/science_scout/packages/elk-widget/node_modules/snabbdom/modules/style.d.ts": [
         "/home/dfreeman6/science_scout/packages/elk-widget/node_modules/snabbdom/modules/module.d.ts"
       ],
-      "/home/dfreeman6/science_scout/packages/elk-widget/src/index.ts": [
-        "/home/dfreeman6/science_scout/packages/elk-widget/node_modules/reflect-metadata/index.d.ts"
-      ],
-      "/home/dfreeman6/science_scout/packages/elk-widget/node_modules/elkjs/lib/main.d.ts": [
-        "/home/dfreeman6/science_scout/packages/elk-widget/node_modules/elkjs/lib/main.d.ts"
-      ],
       "/home/dfreeman6/science_scout/packages/elk-widget/node_modules/@types/lodash/ts3.1/common/common.d.ts": [
         "/home/dfreeman6/science_scout/packages/elk-widget/node_modules/@types/lodash/ts3.1/index.d.ts",
         "/home/dfreeman6/science_scout/packages/elk-widget/node_modules/@types/lodash/ts3.1/common/array.d.ts",
@@ -4885,6 +4876,9 @@
         "/home/dfreeman6/science_scout/packages/elk-widget/node_modules/@types/lodash/ts3.1/common/seq.d.ts",
         "/home/dfreeman6/science_scout/packages/elk-widget/node_modules/@types/lodash/ts3.1/common/string.d.ts",
         "/home/dfreeman6/science_scout/packages/elk-widget/node_modules/@types/lodash/ts3.1/common/util.d.ts"
+      ],
+      "/home/dfreeman6/science_scout/packages/elk-widget/node_modules/elkjs/lib/main.d.ts": [
+        "/home/dfreeman6/science_scout/packages/elk-widget/node_modules/elkjs/lib/main.d.ts"
       ]
     },
     "semanticDiagnosticsPerFile": [
@@ -5202,18 +5196,7 @@
       "/home/dfreeman6/science_scout/packages/elk-widget/node_modules/sprotty/lib/utils/color.d.ts",
       "/home/dfreeman6/science_scout/packages/elk-widget/node_modules/sprotty/lib/utils/inversify.d.ts",
       "/home/dfreeman6/science_scout/packages/elk-widget/node_modules/sprotty/lib/index.d.ts",
-      "/home/dfreeman6/science_scout/packages/elk-widget/src/diagram-server.ts",
-      "/home/dfreeman6/science_scout/packages/elk-widget/node_modules/snabbdom-jsx/jsx.d.ts",
-      "/home/dfreeman6/science_scout/packages/elk-widget/node_modules/snabbdom-jsx/snabbdom-jsx.d.ts",
-      "/home/dfreeman6/science_scout/packages/elk-widget/src/sprotty-model.ts",
-      "/home/dfreeman6/science_scout/packages/elk-widget/src/views.tsx",
-      "/home/dfreeman6/science_scout/packages/elk-widget/src/di-config.ts",
-      "/home/dfreeman6/science_scout/packages/elk-widget/node_modules/reflect-metadata/index.d.ts",
-      "/home/dfreeman6/science_scout/packages/elk-widget/src/index.ts",
-      "/home/dfreeman6/science_scout/packages/elk-widget/node_modules/@phosphor/application/lib/index.d.ts",
-      "/home/dfreeman6/science_scout/packages/elk-widget/node_modules/elkjs/lib/main.d.ts",
       "/home/dfreeman6/science_scout/packages/elk-widget/src/json/elkgraph-json.ts",
-      "/home/dfreeman6/science_scout/packages/elk-widget/src/json/elkgraph-to-sprotty.ts",
       "/home/dfreeman6/science_scout/packages/elk-widget/node_modules/@types/lodash/ts3.1/common/common.d.ts",
       "/home/dfreeman6/science_scout/packages/elk-widget/node_modules/@types/lodash/ts3.1/common/array.d.ts",
       "/home/dfreeman6/science_scout/packages/elk-widget/node_modules/@types/lodash/ts3.1/common/collection.d.ts",
@@ -5227,6 +5210,17 @@
       "/home/dfreeman6/science_scout/packages/elk-widget/node_modules/@types/lodash/ts3.1/common/string.d.ts",
       "/home/dfreeman6/science_scout/packages/elk-widget/node_modules/@types/lodash/ts3.1/common/util.d.ts",
       "/home/dfreeman6/science_scout/packages/elk-widget/node_modules/@types/lodash/ts3.1/index.d.ts",
+      "/home/dfreeman6/science_scout/packages/elk-widget/src/json/elkgraph-to-sprotty.ts",
+      "/home/dfreeman6/science_scout/packages/elk-widget/src/diagram-server.ts",
+      "/home/dfreeman6/science_scout/packages/elk-widget/node_modules/snabbdom-jsx/jsx.d.ts",
+      "/home/dfreeman6/science_scout/packages/elk-widget/node_modules/snabbdom-jsx/snabbdom-jsx.d.ts",
+      "/home/dfreeman6/science_scout/packages/elk-widget/src/sprotty-model.ts",
+      "/home/dfreeman6/science_scout/packages/elk-widget/src/views.tsx",
+      "/home/dfreeman6/science_scout/packages/elk-widget/src/di-config.ts",
+      "/home/dfreeman6/science_scout/packages/elk-widget/src/index.ts",
+      "/home/dfreeman6/science_scout/packages/elk-widget/node_modules/@phosphor/application/lib/index.d.ts",
+      "/home/dfreeman6/science_scout/packages/elk-widget/node_modules/reflect-metadata/index.d.ts",
+      "/home/dfreeman6/science_scout/packages/elk-widget/node_modules/elkjs/lib/main.d.ts",
       "/home/dfreeman6/science_scout/packages/elk-widget/src/widget.ts",
       "/home/dfreeman6/science_scout/packages/elk-widget/src/plugin.ts",
       "/home/dfreeman6/science_scout/packages/elk-widget/src/popup.ts",
