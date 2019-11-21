@@ -1,18 +1,30 @@
 import ipywidgets as W
 import traitlets as T
 
-from typing import Optional, Dict
+from typing import Optional, Dict, List, Hashable, Callable
 from .styled_widget import StyledVBox
-from .diagram import ElkDiagram
+from .diagram import ElkDiagram, ElkExtendedEdge, ElkNode
+from dataclasses import dataclass
 
 
 class ElkTransformer(W.Widget):
+    _nodes: Optional[Dict[Hashable, ElkNode]] = None
+    source = T.Dict()
     value = T.Dict(kw={})
+    _version: str = "v1"
+
+    @T.validate("value")
+    def _validate_elk_json_schema(self, proposal: T.Bunch):
+        value: Dict = proposal.value
+        # TODO load json schema for elk at this Transformer version and validate
+        return value
 
     def to_dict(self):
-        return {}
+        """Generate elk json"""
+        return self.source
 
-    def refresh(self) -> Dict:
+    @T.observe("source")
+    def refresh(self, change: T.Bunch = None) -> Dict:
         """Method to update this transform's value"""
         self.value = self.to_dict()
         return self.value

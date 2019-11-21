@@ -310,6 +310,7 @@ class ElkExtendedEdge(ElkEdge):
     junctionPoints: Optional[List[ElkPoint]] = None
     labels: Optional[List[ElkLabel]] = None
     layoutOptions: Optional[Dict[str, str]] = None
+    properties: Optional[Dict[str, str]] = None
 
     @staticmethod
     def from_dict(obj: Any) -> 'ElkExtendedEdge':
@@ -321,7 +322,8 @@ class ElkExtendedEdge(ElkEdge):
         junctionPoints = from_union([lambda x: from_list(ElkPoint.from_dict, x), from_none], obj.get("junctionPoints"))
         labels = from_union([lambda x: from_list(ElkLabel.from_dict, x), from_none], obj.get("labels"))
         layoutOptions = from_union([lambda x: from_dict(from_str, x), from_none], obj.get("layoutOptions"))
-        return ElkExtendedEdge(id, sections, sources, targets, junctionPoints, labels, layoutOptions)
+        properties = from_union([lambda x: from_dict(from_str, x), from_none], obj.get("properties"))
+        return ElkExtendedEdge(id, sections, sources, targets, junctionPoints, labels, layoutOptions, properties)
 
     def to_dict(self) -> dict:
         result: dict = {}
@@ -333,6 +335,7 @@ class ElkExtendedEdge(ElkEdge):
         result["junctionPoints"] = from_union([lambda x: from_list(lambda x: to_class(ElkPoint, x), x), from_none], self.junctionPoints)
         result["labels"] = from_union([lambda x: from_list(lambda x: to_class(ElkLabel, x), x), from_none], self.labels)
         result["layoutOptions"] = from_union([lambda x: from_dict(from_str, x), from_none], self.layoutOptions)
+        result["properties"] = from_union([lambda x: from_dict(from_str, x), from_none], self.properties)
         return strip_none(result)
 
 
