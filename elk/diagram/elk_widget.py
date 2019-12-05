@@ -7,6 +7,13 @@ from .._version import EXTENSION_SPEC_VERSION
 
 module_name = "elk-widget"
 
+import enum
+from traitlets import HasTraits, UseEnum
+
+class Interactions(enum.Enum):
+    select = 1         # -- IMPLICIT: default_value
+    toggle = 2
+
 
 class ElkDiagram(DOMWidget):
     """Jupyterlab widget for interacting with ELK diagrams
@@ -23,6 +30,7 @@ class ElkDiagram(DOMWidget):
     _mark_layout = T.Dict().tag(sync=True)
     selected = T.Tuple().tag(sync=True)
     hovered = T.Unicode(allow_none=True, default_value=None).tag(sync=True)
+    # interaction = T.UseEnum(Interactions).tag(sync=True)
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)

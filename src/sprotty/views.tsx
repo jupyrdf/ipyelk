@@ -30,7 +30,6 @@ export class ElkNodeView extends RectangularNodeView {
 @injectable()
 export class ElkPortView extends RectangularNodeView {
     render(port: ElkPort, context: RenderingContext): VNode {
-        console.log('render', port);
         return <g>
             <rect class-elkport={true} class-mouseover={port.hoverFeedback} class-selected={port.selected}
                     // className={port.properties.classes}

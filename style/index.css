@@ -43,10 +43,10 @@
     fill: #224;
 }
 
-.selected > rect {
+rect.selected {
     stroke-width: 3;
 }
 
-.mouseover {
+rect.mouseover {
     stroke: #88f;
 }

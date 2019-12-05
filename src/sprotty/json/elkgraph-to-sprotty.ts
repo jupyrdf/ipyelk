@@ -87,7 +87,6 @@ export class ElkGraphJsonToSprotty {
 
     private transformElkPort(elkPort: ElkPort): SPortSchema {
         this.checkAndRememberId(elkPort, this.portIds);
-        console.log('transformElkPort', elkPort);
         const sPort = <SPortSchema> {
             type: 'port',
             id: elkPort.id,

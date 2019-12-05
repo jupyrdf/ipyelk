@@ -30,24 +30,6 @@ class Edge:
     target: Hashable
     target_port: Hashable  # Optional?
 
-    # @property
-    # def edge_id(self):
-    #     return "{}.{} -> {}.{}".format(
-    #         self.source, self.source_port, self.target, self.target_port
-    #     )
-
-    # def port_id(self, port):
-    #     pass
-
-    # @property
-    # def sources(self):
-    #     return self.port_id(self.source, self.source_port)
-
-    # @property
-    # def targets(self):
-    #     return self.port_id(self.target, self.target_port)
-
-
 EdgeMap = Dict[Hashable, List[Edge]]
 
 
@@ -223,28 +205,15 @@ class XELK(ElkTransformer):
         layout.update(base_layout)
 
         properties = None
-        # custom_css_classes =
-        # if
-        #     properties['cssClasses'] = " ".join()
-
-        # edges = edge_dict.get(root)
 
         labels = self.make_labels(root)
         model_id = self.eid(root)
-
-        # new_ports = self.get_ports(root)
-        # ports[model_id] = new_ports
 
         self._nodes[root] = ElkNode(
             id=model_id,
             labels=labels,
             layoutOptions=layout,
             children=compact(self.get_children(root)),
-            # ports=compact(new_ports),
-            # ports=compact(self.make_ports(root, self._visible_edges)),
-            # width=width,
-            # height=height,
-            # edges=compact(self.make_edges(root, self._visible_edges)),
             properties=properties,
         )
 
@@ -338,13 +307,6 @@ class XELK(ElkTransformer):
         :return: Updated dictionary of elk nodes
         :rtype: Dict[str, ElkNode] 
         """
-        # return nodes
-
-        # ports: Dict = {}
-
-        # for node_id, node in nodes.items():
-        #     ports = self.make_ports(node, hidden_edges, ["slack-port"])
-        #     self.
         edge_properties = {"cssClasses": "slack-edge"}
         for owner, edges in hidden_edges.items():
             for edge in edges:
@@ -362,78 +324,6 @@ class XELK(ElkTransformer):
                 # if sources not in
 
         return nodes
-
-        for sources, targets in hidden_edges:
-            for source, (h_s, h_sp) in sources:
-                elk_nodes[source]
-                for target, h_target in targets:
-                    pass
-                    # owner =
-                    # elk_nodes[target]
-
-        grouped_edges: Dict[
-            Tuple[str, str], List[TunnelEdge]
-        ] = self.group_hidden_edges(hidden_edges)
-
-        for (source_id, target_id), edges in grouped_edges.items():
-            if source_id != target_id:
-                source_ports = {p.id: p for p in elk_nodes[source_id].ports}
-                target_ports = {p.id: p for p in elk_nodes[target_id].ports}
-
-                for edge in edges:
-                    source_port = self.port_id(edge.source, edge.sourcePort)
-                    target_port = self.port_id(edge.target, edge.targetPort)
-                    if source_port in source_ports:
-                        print("source in view redefine targetport")
-                        target_port = self.port_id(target_id, edge.targetPort)
-                    elif target_port in target_ports:
-                        print("target in view redefine sourceport")
-                        source_port = self.port_id(source_id, edge.sourcePort)
-                    else:
-                        print("bundle edges")
-
-        return elk_nodes
-
-    def make_ports(
-        self,
-        nodes: Dict[str, ElkNode],
-        edge_dict: EdgeMap,
-        styles: Optional[List[str]] = None,
-    ) -> List[ElkPort]:
-        #     properties={
-        # #                         "elk.port.side": self.SIDES[direction],
-        # #                         "cssClasses": "a p1",
-        # #                     },
-        properties = None
-        if styles:
-            properties = dict(cssClasses=" ".join(styles))
-
-        for owner, edges in edge_dict.items():
-            for edge in edges:
-                if edge.source == node:
-                    port_id = self.port_id(edge.source, edge.source_port)
-                elif edge.target == node:
-                    port_id = self.port_id(edge.target, edge.target)
-                else:
-                    continue
-                ports.append(
-                    ElkPort(
-                        id=port_id,
-                        height=0.5 * self.port_scale,
-                        width=0.5 * self.port_scale,
-                        properties=properties,
-                    )
-                )
-
-        return [
-            ElkPort(
-                id=self.port_id(edge.source, edge.source_port),
-                height=0.5 * self.port_scale,
-                width=0.5 * self.port_scale,
-                properties=properties,
-            )
-            for edge in edges
-        ]
 
     def make_edges(
         self, node, edge_dict: EdgeMap, styles: Optional[List[str]] = None
@@ -487,18 +377,11 @@ class XELK(ElkTransformer):
                 return None
             if tree is not None:
                 # Node is visible and in the hierarchy
-                return [self.transform(root=child) for child in tree.neighbors(node)]
+                if node in tree:
+                    return [self.transform(root=child) for child in tree.neighbors(node)]
         return None
 
     def get_node_size(self, node: ElkNode) -> Tuple[Optional[float], Optional[float]]:
-
-        # if node is None:
-        #     return None, None
-
-        # g, tree = self.source
-        # ins = g.in_edges(node)
-        # outs = g.out_edges(node)
-
         if node.ports:
             height = (
                 2 * self.port_scale * len(node.ports)
@@ -512,12 +395,6 @@ class XELK(ElkTransformer):
             )
         else:
             width = self.text_scale
-
-        # # data = g.nodes[node]
-        # # name = data.get("_id", f"{node}")
-
-        # width = self.text_scale * len(name)
-
         return width, height
 
     def make_labels(self, node) -> Optional[List[ElkLabel]]:
@@ -590,18 +467,11 @@ class XELK(ElkTransformer):
         try:
             while True:
                 sources, targets = next(factors)
-                # Issue specifying hyperedge so expanding the source and target combinations....
-                # for edge_dict in self.process_endpts(sources, targets):
-                #     for owner, edges in edge_dict.items():
-                #         visible[owner].extend(edges)
                 visible = merge(self.process_endpts(sources, targets), visible)
 
         except StopIteration as e:
             hidden_factors: List[Tuple[List, List]] = e.value
             for sources, targets in hidden_factors:
-                # for edge_dict in self.process_endpts(sources, targets):
-                #     for owner, edges in edge_dict.items():
-                #         hidden[owner].extend(edges)
                 hidden = merge(self.process_endpts(sources, targets), hidden)
 
         return visible, hidden
@@ -618,7 +488,7 @@ class XELK(ElkTransformer):
         self
     ) -> Generator[Tuple[List, List], None, List[Tuple[List, List]]]:
         g, tree = self.source
-        grouped: List[Tuple[List, List]] = []
+        hidden: List[Tuple[List, List]] = []
 
         for source_vars, target_vars in get_factors(g):
             shidden = [self.is_hidden(var[0]) for var in source_vars]
@@ -645,22 +515,19 @@ class XELK(ElkTransformer):
 
                 if all(shidden) or all(thidden):
                     if len(sources) == 0:
-                        # source can be bundled...
-                        #                     source_vars.sort()
                         sources = [(vis_source, v) for v in source_vars]
 
                     if len(targets) == 0:
-                        # targets can be bundled...
                         target_vars.sort()
                         targets = [(vis_target, v) for v in target_vars]
 
-                    grouped.append(
+                    hidden.append(
                         (sources, targets)
                     )  # [tuple(source_vars), tuple(target_vars)] = (vis_source, vis_target)
                     continue
 
             yield sources, targets
-        return grouped
+        return hidden
 
     def process_endpts(self, sources, targets) -> Dict[Hashable, List[Edge]]:
         g, tree = self.source

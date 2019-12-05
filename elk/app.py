@@ -31,8 +31,8 @@ class ElkTransformer(W.Widget):
 
 
 class Elk(StyledVBox):
-    transformer = T.Instance(ElkTransformer)
-    diagram = T.Instance(ElkDiagram)
+    transformer:ElkTransformer = T.Instance(ElkTransformer)
+    diagram:ElkDiagram = T.Instance(ElkDiagram)
 
     _link: T.dlink = None
 
