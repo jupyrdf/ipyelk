@@ -26,12 +26,10 @@ class ToggleCollapsedBtn(ToolButton):
         diagram:ElkDiagram = self.app.diagram
         transformer:XELK = self.app.transformer
         graph, tree = transformer.source
-        # tree = self.app.source
         for element_id in diagram.selected:
-            print(element_id)
             if element_id in tree:
                 for child in tree.neighbors(element_id):
                     state = tree.nodes[child].get('hidden', False)
                     tree.nodes[child]['hidden'] = not state
-                transformer.refresh()
+                self.app.refresh()
                 

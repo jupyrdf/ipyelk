@@ -43,8 +43,7 @@ class Elk(StyledVBox):
 
     @T.default("diagram")
     def _default_diagram(self):
-        self.d = ElkDiagram()
-        return self.d
+        return ElkDiagram()
 
     @T.default("transformer")
     def _default_transformer(self):
