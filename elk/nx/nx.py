@@ -1,7 +1,4 @@
-import json
-import ipywidgets as W
 import networkx as nx
-import traitlets as T
 
 from collections import defaultdict
 from dataclasses import dataclass
@@ -12,15 +9,8 @@ from typing import (
     Hashable,
     Optional,
     Tuple,
-    Set,
     Iterable,
-    Generator,
-    Iterator,
-    Callable,
 )
-
-from ..app import ElkTransformer
-from ..diagram.elk_model import ElkPort, ElkNode, ElkExtendedEdge, ElkLabel
 
 
 @dataclass(frozen=True)
@@ -33,7 +23,7 @@ class Edge:
 EdgeMap = Dict[Hashable, List[Edge]]
 
 
-def get_roots(tree: nx.DiGraph, g: nx.DiGraph) -> Iterator[Hashable]:
+def get_roots(tree: nx.DiGraph, g: nx.DiGraph) -> Iterable[Hashable]:
     """Iterate through the roots in the tree and any orphaned nodes in the graph
     
     :param tree: Hierarchical graph
@@ -147,9 +137,6 @@ def pairwise(iterable):
     a, b = tee(iterable)
     next(b, None)
     return zip(a, b)
-
-
-
 
 
 def get_ports(edge_data: Dict) -> Tuple[str, str]:

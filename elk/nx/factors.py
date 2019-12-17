@@ -1,26 +1,15 @@
-import json
-import ipywidgets as W
 import networkx as nx
 import traitlets as T
 
-from collections import defaultdict
-from dataclasses import dataclass
-from itertools import tee
 from typing import (
     List,
-    Dict,
-    Hashable,
     Optional,
     Tuple,
-    Set,
     Iterable,
     Generator,
-    Iterator,
-    Callable,
 )
 
 from ..app import ElkTransformer
-from ..diagram.elk_model import ElkPort, ElkNode, ElkExtendedEdge, ElkLabel
 
 from .nx import get_ports
 
