@@ -261,7 +261,7 @@ class XELK(ElkTransformer):
         name = data.get("label", data.get("_id", f"{node}"))
         width = self.text_scale * len(name)
 
-        return [ElkLabel(id=f"{name}_label", text=name, width=width)]
+        return [ElkLabel(id=f"{name}_label_{node}", text=name, width=width)]
 
     def collect_edges(self) -> Tuple[EdgeMap, EdgeMap]:
         """[summary]
