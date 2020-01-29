@@ -69,32 +69,6 @@ def get_edge_data(g: nx.DiGraph, source, target):
     return [g.get_edge_data(source, target)]
 
 
-@dataclass(frozen=True)
-class TunnelEdge:
-    """Object to hold references to edges that are hidden"""
-
-    source: Hashable
-    target: Hashable
-    sourcePort: Optional[Hashable] = None
-    targetPort: Optional[Hashable] = None
-
-    def closest(
-        self, tree: nx.DiGraph, attr: str = "hidden"
-    ) -> Tuple[Hashable, Hashable]:
-        """Map this edge to the closest visible source and target for the given ancestor tree        
-        :param tree: Ancestor Tree
-        :type tree: nx.DiGraph
-        :param attr: Attribute used to track if a node is hidden in the ancestor tree
-        :type tree: str
-        """
-        assert self.source in tree, f"Expect source:`{self.source}` to be in the tree"
-        assert self.target in tree, f"Expect target:`{self.target}` to be in the tree"
-        source = closest_visible(tree, self.source, attr)
-        target = closest_visible(tree, self.target, attr)
-        # TODO look at edgeset and determine if there is an equivalent one
-        return source, target
-
-
 def lowest_common_ancestor(tree, nodes):
     if tree is None:
         return None

@@ -2,8 +2,8 @@ import ipywidgets as W
 import traitlets as T
 
 from typing import Optional, Dict, List, Hashable, Callable
-from .styled_widget import StyledVBox
-from .diagram import ElkDiagram, ElkExtendedEdge, ElkNode
+from .styled_widget import StyledWidget
+from .diagram import ElkDiagram, ElkExtendedEdge, ElkNode, ElkLabel
 from dataclasses import dataclass
 
 
@@ -27,10 +27,16 @@ class ElkTransformer(W.Widget):
     def refresh(self, change: T.Bunch = None) -> Dict:
         """Method to update this transform's value"""
         self.value = self.to_dict()
+        labels = self.value.get("labels", [])
+
+        labels.append(ElkLabel(id=str(id(self.value))).to_dict())
+
+        self.value["labels"]=labels
+
         return self.value
 
 
-class Elk(StyledVBox):
+class Elk(W.VBox, StyledWidget):
     transformer:ElkTransformer = T.Instance(ElkTransformer)
     diagram:ElkDiagram = T.Instance(ElkDiagram)
 

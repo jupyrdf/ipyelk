@@ -34,8 +34,8 @@ class XELK(ElkTransformer):
         T.Instance(nx.DiGraph, allow_none=True),
     )
     base_layout = T.Dict(kw={"hierarchyHandling": "INCLUDE_CHILDREN"})
-    port_scale = T.Int(default_value=10)
-    text_scale = T.Int(default_value=10)
+    port_scale = T.Int(default_value=8)
+    text_scale = T.Float(default_value=7.5)
 
     def eid(self, node: Hashable) -> str:
         """Get the element id for a node in the main graph for use in elk
@@ -238,13 +238,12 @@ class XELK(ElkTransformer):
         return None
 
     def get_node_size(self, node: ElkNode) -> Tuple[Optional[float], Optional[float]]:
+        height = 0
         if node.ports:
             height = (
-                2 * self.port_scale * len(node.ports)
+                1.25 * self.port_scale * len(node.ports)
             )  # max(len(ins), len(outs))  # max number of ports
-        else:
-            height = 2 * self.port_scale
-
+        height = max(18, height)
         if node.labels:
             width = self.text_scale * max(
                 len(label.text or " ") for label in node.labels
@@ -316,10 +315,11 @@ class XELK(ElkTransformer):
 
             sources = source_vars
             targets = target_vars
-
-            vis_source = closest_common_visible(tree, [s for s, sp in source_vars], attr)
-            vis_target = closest_common_visible(tree, [t for t, tp in target_vars], attr)
-
+            try:
+                vis_source = closest_common_visible(tree, [s for s, sp in source_vars], attr)
+                vis_target = closest_common_visible(tree, [t for t, tp in target_vars], attr)
+            except ValueError:
+                continue  # bail if no possible target or source
             if any(shidden) or any(thidden):
                 if vis_source == vis_target:
                     # bail if factor is completely internal
