@@ -35,6 +35,9 @@ def get_roots(tree: nx.DiGraph, g: nx.DiGraph) -> Iterable[Hashable]:
     :yield: [description]
     :rtype: Hashable
     """
+    if len(tree) == 0:
+        #graph is empty
+        return []
     assert nx.is_forest(
         tree
     ), "The given hierarchy should be a NetworkX DiGraph that is also a Forest"
