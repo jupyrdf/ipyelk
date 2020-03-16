@@ -26,14 +26,21 @@ class StyledWidget(W.Box):
         """Build the custom css to attach to the dom"""
         style = []
         for _cls, attrs in self.style.items():
-            selector = f".{self._css_class}{_cls}"
-            css_attributes = (
-                "{"
-                + "".join([f"{key}: {value};" for key, value in attrs.items()])
-                + "}"
-            )
-            style.append(f"{selector}{css_attributes}")
-        self._css_widget.value = f"<style>{''.join(style)}</style>"
+            if not "@keyframes" in _cls:
+                selector = f".{self._css_class}{_cls}"
+                css_attributes = "".join([f"{key}: {value};" for key, value in attrs.items()])
+            else:
+                #process keyframe css
+                selector = _cls
+                attributes = []
+                for key, value in attrs.items():
+                    steps = []
+                    for stop, frame in value.items():
+                        steps.append(f"{stop}:{frame};")
+                    attributes.append(f"{key} {{{''.join(steps)}}}")
+                css_attributes = ''.join(attributes)
+            style.append(f"{selector}{{{css_attributes}}}")
+        self._css_widget.value = f"<style>{''.join(style)}</style>"      
 
     @property
     def _css_class(self) -> str:
