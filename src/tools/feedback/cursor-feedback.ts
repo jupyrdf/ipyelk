@@ -45,7 +45,7 @@ export class ApplyCursorCSSFeedbackActionCommand extends FeedbackCommand {
         super();
     }
     execute(context: CommandExecutionContext): SModelRoot {
-        console.log('css feedback command', this.action);
+        // console.log('css feedback command', this.action);
         removeCssClasses(this.action.target, Object.values(CursorCSS));
         if (this.action.cssClass) {
             addCssClasses(this.action.target, [this.action.cssClass]);

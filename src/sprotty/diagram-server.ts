@@ -1,7 +1,7 @@
 import { injectable } from "inversify";
 import {
        CenterAction, 
-        LocalModelSource,
+        LocalModelSource,Viewport, Bounds, GetViewportAction
 } from "sprotty";
 import { ElkGraphJsonToSprotty } from './json/elkgraph-to-sprotty';
 
@@ -24,8 +24,25 @@ export class JLModelSource extends LocalModelSource {
         return ids;
     }
 
+    element(): HTMLElement{
+        return document.getElementById(this.viewerOptions.baseDiv)
+    }
+
     center(elementIds:string[]=[]){
         let action: CenterAction = new CenterAction(elementIds);
         this.actionDispatcher.dispatch(action);
+    }
+
+    /**
+     * Get the current viewport from the model.
+     */
+    async getViewport(): Promise<Viewport & { canvasBounds: Bounds }> {
+        const res = await this.actionDispatcher.request(GetViewportAction.create());
+        // console.log("get viewpoint")
+        return {
+            scroll: res.viewport.scroll,
+            zoom: res.viewport.zoom,
+            canvasBounds: res.canvasBounds
+        };
     }
 }

@@ -82,7 +82,6 @@ class XELK(ElkTransformer):
         :return: [description]
         :rtype: [type]
         """
-        logger.debug(f"root {root}")
         try:
             g, tree = self.source
             if root is None:
@@ -407,7 +406,6 @@ class XELK(ElkTransformer):
         if tree is None:
             return None
         result = lowest_common_ancestor(tree, [self.closest_visible(n) for n in nodes])
-        logger.debug(f"closest_common_visile ({nodes})->{result}")
         return result
 
 def is_hidden(tree:nx.DiGraph, node: Hashable, attr: str) -> bool:

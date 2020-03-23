@@ -16,7 +16,8 @@ import { ElkNode, ElkPort, ElkJunction } from "./sprotty-model";
 
 const JSX = {createElement: snabbdom.svg};
 
-@injectable()
+@
+this.mouseUp(target,able()
 export class ElkNodeView extends RectangularNodeView {
     render(node: ElkNode, context: RenderingContext): VNode {
         return <g>

@@ -1,7 +1,7 @@
 //From https://github.com/OpenKieler/elkgraph-web
 import {
     SNode, RectangularNode, RectangularPort,
-    moveFeature, selectFeature, hoverFeedbackFeature, SEdge, editFeature
+    moveFeature, selectFeature, hoverFeedbackFeature, SEdge, editFeature,
 } from "sprotty";
 
 export class ElkNode extends RectangularNode {
