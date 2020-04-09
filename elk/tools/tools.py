@@ -1,9 +1,10 @@
 import ipywidgets as W
+import networkx as nx
 import traitlets as T
 
 from ..app import Elk, ElkTransformer, ElkDiagram
 from ..nx import XELK
-import networkx as nx
+
 
 class ToolButton(W.Button):
     app:Elk = T.Instance(Elk)

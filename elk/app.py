@@ -2,11 +2,11 @@ import ipywidgets as W
 import logging
 import traitlets as T
 
+from dataclasses import dataclass
 from typing import Optional, Dict, List, Hashable, Callable
+
 from .styled_widget import StyledWidget
 from .diagram import ElkDiagram, ElkExtendedEdge, ElkNode, ElkLabel
-from dataclasses import dataclass
-
 
 logger = logging.getLogger(__name__)
 
