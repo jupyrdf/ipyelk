@@ -1,14 +1,16 @@
 """Widget for interacting with ELK rendered using Sprotty
 """
-from typing import List
-from ipywidgets import DOMWidget, CallbackDispatcher
+import enum
 import traitlets as T
-from .._version import EXTENSION_SPEC_VERSION
 
+from ipywidgets import DOMWidget, CallbackDispatcher
+from traitlets import HasTraits, UseEnum
+from typing import List
+
+from .._version import EXTENSION_SPEC_VERSION
 module_name = "elk-widget"
 
-import enum
-from traitlets import HasTraits, UseEnum
+
 
 class Interactions(enum.Enum):
     select = 1         # -- IMPLICIT: default_value

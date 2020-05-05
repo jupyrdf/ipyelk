@@ -6,7 +6,7 @@ import {
     DOMWidgetView,
     WidgetView,
 } from '@jupyter-widgets/base';
-import ELK from 'elkjs';
+import ELK from 'elkjs/lib/elk-api';
 import { 
     Action,
     ActionDispatcher,
@@ -162,8 +162,8 @@ export class ELKView extends DOMWidgetView {
     }
 
     async interaction_mode_changed(){
-        let interaction = this.model.get('interaction');
-        console.log('interaction ', interaction);
+        // let interaction = this.model.get('interaction');
+        // console.log('interaction ', interaction);
     }
 
     async diagramLayout() {
@@ -173,7 +173,7 @@ export class ELKView extends DOMWidgetView {
     }
 
     handleMessage(content, buffers){
-        console.log('custom msg', content, buffers);
+        // console.log('custom msg', content, buffers);
         switch (content.action){
             case "center": {
                 let elementIds:string[]

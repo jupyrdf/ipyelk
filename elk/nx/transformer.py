@@ -1,7 +1,9 @@
+import logging
 import networkx as nx
 import traitlets as T
 
 from collections import defaultdict
+from functools import lru_cache
 from typing import (
     List,
     Dict,
@@ -19,6 +21,9 @@ from ..diagram.elk_model import ElkPort, ElkNode, ElkExtendedEdge, ElkLabel
 
 from .nx import EdgeMap, Edge, compact, get_edge_data, get_roots, lowest_common_ancestor
 from .factors import invert, keep, get_factors
+
+
+logger = logging.getLogger(__name__)
 
 
 class XELK(ElkTransformer):
@@ -61,6 +66,15 @@ class XELK(ElkTransformer):
             edge.source, edge.source_port, edge.target, edge.target_port
         )
 
+    def clear_cached(self):
+        # clear old cached info is starting at the top level transform
+        logger.debug("Clearing cached elk info")
+        self._nodes: Dict[Hashable, ElkNode] = {}
+        self._ports: Dict[Tuple[Hashable, Hashable], ElkPort] = {}
+        self._visible_edges, self._hidden_edges = self.collect_edges()
+        self.closest_common_visible.cache_clear()
+        self.closest_visible.cache_clear()
+
     def transform(self, root=None):
         """Generate ELK dictionary structure
         :param root: [description], defaults to None
@@ -68,64 +82,64 @@ class XELK(ElkTransformer):
         :return: [description]
         :rtype: [type]
         """
-        g, tree = self.source
-        if root is None:
-            # clear old cached info is starting at the top level transform
-            self._nodes: Dict[Hashable, ElkNode] = {}
-            self._ports: Dict[Tuple[Hashable, Hashable], ElkPort] = {}
-            self._visible_edges, self._hidden_edges = self.collect_edges()
-        elif is_hidden(tree, root, self.HIDDEN_ATTR):
-            # bail is the node is hidden
-            return None
-        nodes = self._nodes
-        ports = self._ports
+        try:
+            g, tree = self.source
+            if root is None:
+                self.clear_cached()
+            elif is_hidden(tree, root, self.HIDDEN_ATTR):
+                # bail is the node is hidden
+                return None
+            nodes = self._nodes
+            ports = self._ports
 
-        base_layout = self.base_layout
-        
+            base_layout = self.base_layout
 
-        if base_layout is None:
-            base_layout = {}
+            if base_layout is None:
+                base_layout = {}
 
-        layout = {
-            # 'algorithm': 'layered',
-            # 'elk.edgeRouting': 'POLYLINE',
-            # 'elk.portConstraints': 'FIXED_SIDE',
-            # 'layering.strategy': 'NETWORK_SIMPEX'
-        }
+            layout = {
+                # 'algorithm': 'layered',
+                # 'elk.edgeRouting': 'POLYLINE',
+                # 'elk.portConstraints': 'FIXED_SIDE',
+                # 'layering.strategy': 'NETWORK_SIMPEX'
+            }
 
-        layout.update(base_layout)
+            layout.update(base_layout)
 
-        properties = None
+            properties = None
 
-        labels = self.make_labels(root)
-        model_id = self.eid(root)
+            labels = self.make_labels(root)
+            model_id = self.eid(root)
 
-        self._nodes[root] = ElkNode(
-            id=model_id,
-            labels=labels,
-            layoutOptions=layout,
-            children=compact(self.get_children(root)),
-            properties=properties,
-        )
-
-        if root is None:
-            # the top level of the transform
-
-            port_style = ["slack-port"]
-            edge_style = ["slack-edge"]
-            nodes, ports = self.process_edges(nodes, ports, self._visible_edges)
-            nodes, ports = self.process_edges(
-                nodes, ports, self._hidden_edges, edge_style, port_style
+            self._nodes[root] = ElkNode(
+                id=model_id,
+                labels=labels,
+                layoutOptions=layout,
+                children=compact(self.get_children(root)),
+                properties=properties,
             )
 
-            for (owner, _), port in ports.items():
-                node = nodes[owner]
-                if node.ports is None:
-                    node.ports = []
-                node.ports += [port]
-            # nodes = self.post_transform(nodes, ports, self._hidden_edges)
+            if root is None:
+                # the top level of the transform
 
-            nodes = self.size_nodes(nodes)
+                port_style = ["slack-port"]
+                edge_style = ["slack-edge"]
+                nodes, ports = self.process_edges(nodes, ports, self._visible_edges)
+                nodes, ports = self.process_edges(
+                    nodes, ports, self._hidden_edges, edge_style, port_style
+                )
+
+                for (owner, _), port in ports.items():
+                    node = nodes[owner]
+                    if node.ports is None:
+                        node.ports = []
+                    node.ports += [port]
+                # nodes = self.post_transform(nodes, ports, self._hidden_edges)
+
+                nodes = self.size_nodes(nodes)
+        except Exception as E:
+            logger.error("Error transforming elk graph")
+            raise E
 
         return nodes[root]  # top level node
 
@@ -316,8 +330,8 @@ class XELK(ElkTransformer):
             sources = source_vars
             targets = target_vars
             try:
-                vis_source = closest_common_visible(tree, [s for s, sp in source_vars], attr)
-                vis_target = closest_common_visible(tree, [t for t, tp in target_vars], attr)
+                vis_source = self.closest_common_visible((s for s, sp in source_vars))
+                vis_target = self.closest_common_visible((t for t, tp in target_vars))
             except ValueError:
                 continue  # bail if no possible target or source
             if any(shidden) or any(thidden):
@@ -354,12 +368,45 @@ class XELK(ElkTransformer):
         for s, sp in sources:
 
             for t, tp in targets:
-                owner = closest_common_visible(tree, [s, t], attr)
+                owner = self.closest_common_visible((s, t))
                 edge_dict[owner].append(
                     Edge(source=s, source_port=sp, target=t, target_port=tp)
                 )
 
         return edge_dict
+
+    @lru_cache()
+    def closest_visible(self, node: Hashable):
+        """Crawl through the given NetworkX `tree` looking for an ancestor of `node` that is not hidden
+        
+        :param node: [description] Node to identify a visible ancestor
+        :type node: Hashable
+        :raises ValueError: [description]
+        :return: [description]
+        :rtype: [type]
+        """
+        attr = self.HIDDEN_ATTR
+        g, tree = self.source
+        if node not in tree:
+            return None
+        if not is_hidden(tree, node, attr):
+            return node
+        predecesors = list(tree.predecessors(node))
+        assert (
+            len(predecesors) <= 1
+        ), f"Expected only a single parent for `{node}` not {len(predecesors)}"
+        for pred in tree.predecessors(node):
+            return self.closest_visible(pred)
+        raise ValueError(f"Unable to find visible ancestor for `{node}`")
+
+    @lru_cache()
+    def closest_common_visible(self, nodes: Tuple[Hashable]) -> Hashable:
+        attr = self.HIDDEN_ATTR
+        g, tree = self.source
+        if tree is None:
+            return None
+        result = lowest_common_ancestor(tree, [self.closest_visible(n) for n in nodes])
+        return result
 
 def is_hidden(tree:nx.DiGraph, node: Hashable, attr: str) -> bool:
     """Iterate  on the node ancestors and determine if it is hidden along the chain"""
@@ -370,29 +417,3 @@ def is_hidden(tree:nx.DiGraph, node: Hashable, attr: str) -> bool:
             if tree.nodes[ancestor].get(attr, False):
                 return True
     return False
-
-def closest_visible(tree, node: Hashable, attr:str):
-    """Crawl through the given NetworkX `tree` looking for an ancestor of `node` that is not hidden
-    
-    :param node: [description] Node to identify a visible ancestor
-    :type node: Hashable
-    :raises ValueError: [description]
-    :return: [description]
-    :rtype: [type]
-    """
-    if node not in tree:
-        return None
-    if not is_hidden(tree, node, attr):
-        return node
-    predecesors = list(tree.predecessors(node))
-    assert (
-        len(predecesors) <= 1
-    ), f"Expected only a single parent for `{node}` not {len(predecesors)}"
-    for pred in tree.predecessors(node):
-        return closest_visible(tree, pred, attr)
-    raise ValueError(f"Unable to find visible ancestor for `{node}`")
-
-def closest_common_visible(tree: nx.DiGraph, nodes: Iterable[Hashable], attr:str) -> Hashable:
-    if tree is None:
-        return None
-    return lowest_common_ancestor(tree, [closest_visible(tree, n, attr) for n in nodes])

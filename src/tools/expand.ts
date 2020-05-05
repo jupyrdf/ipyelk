@@ -71,7 +71,7 @@ export class NodeExpandToolMouseListener extends DragAwareMouseListener {
     }
 
     wheel(target: SModelElement, event: MouseEvent): Action[] {
-        console.log('wheel', target, event);
+        // console.log('wheel', target, event);
         return []
         let entering: SModelElement[] = [];  // elements entering selection
         let exiting: SModelElement[] = [];  // element exiting selection

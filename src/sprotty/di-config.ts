@@ -13,7 +13,7 @@ import {
 import { Container, ContainerModule } from "inversify";
 import {
     TYPES, defaultModule, 
-    boundsModule, fadeModule, viewportModule,
+    boundsModule, fadeModule, 
     moveModule, 
     // hoverModule,
     // Tool,
@@ -31,11 +31,13 @@ import {
     // LocalModelSource,
 } from "sprotty";
 
+
 import { JLModelSource } from "./diagram-server";
 import { ElkNodeView, ElkPortView, ElkEdgeView, ElkLabelView, JunctionView } from "./views";
 import { ElkNode, ElkPort, ElkEdge, ElkJunction } from "./sprotty-model";
 import { NodeSelectTool } from "../tools/select";
 import { toolFeedbackModule } from "../tools/feedback";
+import viewportModule from "./viewportModule"
 
 import _ from 'lodash';
 

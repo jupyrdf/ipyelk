@@ -22,7 +22,8 @@
     "strict": true,
     "strictNullChecks": false,
     "target": "es2017",
-    "types": ["reflect-metadata"]
+    "types": ["reflect-metadata"],
+    "tsBuildInfoFile": "lib/.tsbuildinfo"
   },
   "include": ["src/**/*"]
 }
