@@ -6,7 +6,7 @@ import {
     DOMWidgetView,
     WidgetView,
 } from '@jupyter-widgets/base';
-import ELK from 'elkjs';
+import ELK from 'elkjs/lib/elk-api';
 import { 
     Action,
     ActionDispatcher,
