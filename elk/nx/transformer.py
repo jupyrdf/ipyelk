@@ -396,7 +396,7 @@ class XELK(ElkTransformer):
             len(predecesors) <= 1
         ), f"Expected only a single parent for `{node}` not {len(predecesors)}"
         for pred in tree.predecessors(node):
-            return self.closest_visible(pred, attr)
+            return self.closest_visible(pred)
         raise ValueError(f"Unable to find visible ancestor for `{node}`")
 
     @lru_cache()
