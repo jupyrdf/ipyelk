@@ -6,6 +6,9 @@ variables:
     .
 
 commands:
+  setup:
+    unix: python -m pip install -e . && jlpm bootstrap
+    windows: python -m pip install -e . && jlpm bootstrap
   lab:
     unix: jupyter lab --no-browser --debug
     windows: jupyter lab --no-browser --debug
@@ -25,5 +28,7 @@ env_specs:
     channels:
       - conda-forge
     packages:
+      - ipywidgets
       - jupyterlab =1
       - nodejs >=10,<14.0.0a0
+      - networkx
