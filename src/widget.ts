@@ -7,21 +7,24 @@ import {
     WidgetView,
 } from '@jupyter-widgets/base';
 import ELK from 'elkjs/lib/elk-api';
-import { 
+import {
     Action,
     ActionDispatcher,
     ActionHandlerRegistry,
     HoverFeedbackAction,
     SelectAction,
     SelectionResult,
-    SModelRegistry,    
+    SModelRegistry,
     ToolManager,
-    TYPES, 
+    TYPES,
 } from 'sprotty';
+
+
+import Worker from '!!worker-loader!elkjs/lib/elk-worker.min.js';
 
 import createContainer from './sprotty/di-config';
 import { JLModelSource } from './sprotty/diagram-server';
-import {NodeExpandTool, NodeSelectTool} from './tools';
+import { NodeExpandTool, NodeSelectTool } from './tools';
 
 import { IFeedbackActionDispatcher, FeedbackActionDispatcher } from "./tools/feedback/feedback-action-dispatcher";
 import { ToolTYPES } from "./tools/types";
@@ -29,11 +32,13 @@ import { ToolTYPES } from "./tools/types";
 export class ELKModel extends DOMWidgetModel {
     defaults() {
         (<any>window).model = this;
+        const _elk = new ELK({ workerFactory: () => new (Worker as any)() });
+
         let defaults = {
             ...super.defaults(),
             value: {},
             _mark_layout: {},
-            _elk: new ELK({}),
+            _elk
         };
         this.setup();
         return defaults
@@ -58,20 +63,20 @@ export class ELKView extends DOMWidgetView {
     model: ELKModel;
     source: JLModelSource;
     container: any;
-    private div_id:string;
+    private div_id: string;
     toolManager: ToolManager;
     registry: ActionHandlerRegistry;
     actionDispatcher: ActionDispatcher;
     feedbackDispatcher: IFeedbackActionDispatcher;
     elementRegistry: SModelRegistry;
-    
-    initialize(parameters: WidgetView.InitializeParameters){
+
+    initialize(parameters: WidgetView.InitializeParameters) {
         super.initialize(parameters);
-        this.div_id  = 'sprotty-'+Math.random();
-             
+        this.div_id = 'sprotty-' + Math.random();
+
         // Create Sprotty viewer
-        const container = createContainer(this.div_id, this);      
-        this.container = container;  
+        const container = createContainer(this.div_id, this);
+        this.container = container;
         this.source = container.get<JLModelSource>(TYPES.ModelSource);
         this.elementRegistry = container.get(TYPES.SModelRegistry);
         this.toolManager = container.get<ToolManager>(TYPES.IToolManager);
@@ -84,7 +89,7 @@ export class ELKView extends DOMWidgetView {
         this.model.on('change:interaction', this.interaction_mode_changed, this);
         this.model.on('msg:custom', this.handleMessage, this);
         this.touch(); //to sync back the diagram state
-        
+
         // Register Action Handlers
         this.registry.register(SelectAction.KIND, this);
         this.registry.register(SelectionResult.KIND, this);  //sprotty complains if doesn't have a SelectionResult handler
@@ -93,17 +98,17 @@ export class ELKView extends DOMWidgetView {
         // Register Tools
         this.toolManager.registerDefaultTools(
             container.resolve(NodeSelectTool),
-            container.resolve(NodeExpandTool),            
+            container.resolve(NodeExpandTool),
         )
         this.toolManager.enableDefaultTools();
 
-        (<any>window).view = this;   
+        (<any>window).view = this;
     }
 
-    handle(action: Action){
+    handle(action: Action) {
         switch (action.kind) {
             case SelectAction.KIND:
-                this.source.getSelected().then(ids =>{
+                this.source.getSelected().then(ids => {
                     this.model.set("selected", ids);
                     this.touch();
                 })
@@ -111,21 +116,21 @@ export class ELKView extends DOMWidgetView {
                 break;
             case HoverFeedbackAction.KIND:
                 let hoverFeedback: HoverFeedbackAction = action as HoverFeedbackAction;
-                if (hoverFeedback.mouseIsOver){
+                if (hoverFeedback.mouseIsOver) {
                     this.model.set("hovered", hoverFeedback.mouseoverElement);
                     this.touch();
                 }
                 break;
             default:
-                break;                
-            }
+                break;
+        }
     }
 
     /**
      * Dictionary of events and handlers
      */
-    events(): {[e: string]: string} {
-        return {'click': '_handle_click'};
+    events(): { [e: string]: string } {
+        return { 'click': '_handle_click' };
     }
 
     /**
@@ -133,35 +138,35 @@ export class ELKView extends DOMWidgetView {
      */
     _handle_click(event) {
         // event.preventDefault();
-        this.send({event: 'click', id:this.model.get('hovered')});
+        this.send({ event: 'click', id: this.model.get('hovered') });
     }
 
     render() {
         this.$el[0].id = this.div_id;
-        this.diagramLayout().then(()=>{
+        this.diagramLayout().then(() => {
             //TODO center diagram in view after ModelViewer is done rendering
             // this.source.center()
         });
     }
 
-    updateSelected(){
+    updateSelected() {
         let selected: string[] = this.model.get('selected');
-        let old_selected:string[] = this.model.previous('selected');
+        let old_selected: string[] = this.model.previous('selected');
         let exiting: string[] = _.difference(old_selected, selected);
         let entering: string[] = _.difference(selected, old_selected);
         this.actionDispatcher.dispatch(new SelectAction(entering, exiting))
     }
 
-    updateHover(){
+    updateHover() {
         let hovered: string = this.model.get('hovered');
-        let old_hovered:string = this.model.previous('hovered');
+        let old_hovered: string = this.model.previous('hovered');
         this.actionDispatcher.dispatchAll([
             new HoverFeedbackAction(hovered, true),
             new HoverFeedbackAction(old_hovered, false),
         ])
     }
 
-    async interaction_mode_changed(){
+    async interaction_mode_changed() {
         // let interaction = this.model.get('interaction');
         // console.log('interaction ', interaction);
     }
@@ -172,13 +177,13 @@ export class ELKView extends DOMWidgetView {
         await this.source.updateLayout(layout);
     }
 
-    handleMessage(content, buffers){
+    handleMessage(content, buffers) {
         // console.log('custom msg', content, buffers);
-        switch (content.action){
+        switch (content.action) {
             case "center": {
-                let elementIds:string[]
-                if (content.hasOwnProperty('model_id')){
-                    if (!Array.isArray(content.model_id)){
+                let elementIds: string[]
+                if (content.hasOwnProperty('model_id')) {
+                    if (!Array.isArray(content.model_id)) {
                         elementIds = [content.model_id]
                     } else {
                         elementIds = content.model_id

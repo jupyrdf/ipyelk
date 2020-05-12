@@ -33,5 +33,6 @@ env_specs:
     packages:
       - ipywidgets
       - jupyterlab =1
-      - nodejs >=10,<14.0.0a0
       - networkx
+      - nodejs >=10,<14.0.0a0
+      - pandas

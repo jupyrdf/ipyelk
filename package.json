@@ -34,15 +34,16 @@
   },
   "dependencies": {
     "@jupyterlab/application": "^1.2.7",
+    "reflect-metadata": "^0.1.13",
     "sprotty-elk": "0.8.0",
-    "reflect-metadata": "^0.1.13"
+    "worker-loader": "^2.0.0"
   },
   "devDependencies": {
     "@jupyter-widgets/base": "^2.0.1",
     "@jupyter-widgets/controls": "^1.5.1",
     "@jupyter-widgets/jupyterlab-manager": "^1.0.1",
-    "react": "*",
     "@types/d3": "^5.0.0",
+    "react": "*",
     "rimraf": "^2.6.1",
     "snabbdom": "~0.6.6",
     "ts-json-schema-generator": "^0.56.0",
