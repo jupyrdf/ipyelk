@@ -13,11 +13,11 @@ commands:
     unix: |-
       set -eux \
       && jupyter labextension install --no-build --debug $LAB_EXTENSIONS \
-      && jupyter lab build --debug=True --dev-build=False --minimize=True \
+      && jupyter lab build --debug --dev-build=False --minimize=True \
       && jupyter labextension list
     windows: >-
       jupyter labextension install --no-build --debug %LAB_EXTENSIONS%
-      && jupyter lab build --debug=True --dev-build=False --minimize=True
+      && jupyter lab build --debug --dev-build=False --minimize=True
       && jupyter labextension list
 
 env_specs:

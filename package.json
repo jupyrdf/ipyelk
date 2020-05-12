@@ -33,19 +33,26 @@
     "schema": "ts-json-schema-generator --path ./node_modules/elkjs/lib/main.d.ts -o elkschema.json"
   },
   "dependencies": {
-    "@jupyter-widgets/base": "^2.0.2",
-    "@jupyter-widgets/controls": "^2.0.0",
     "@jupyterlab/application": "^1.2.7",
-    "react": "~16.8.4",
     "sprotty-elk": "0.8.0",
     "reflect-metadata": "^0.1.13"
   },
   "devDependencies": {
+    "@jupyter-widgets/base": "^2.0.1",
+    "@jupyter-widgets/controls": "^1.5.1",
+    "@jupyter-widgets/jupyterlab-manager": "^1.0.1",
+    "react": "*",
     "@types/d3": "^5.0.0",
     "rimraf": "^2.6.1",
     "snabbdom": "~0.6.6",
     "ts-json-schema-generator": "^0.56.0",
     "typescript": "~3.5.2"
+  },
+  "peerDependencies": {
+    "@jupyter-widgets/base": "^2.0.1",
+    "@jupyter-widgets/controls": "^1.5.1",
+    "@jupyter-widgets/jupyterlab-manager": "^1.0.1",
+    "react": "*"
   },
   "sideEffects": [
     "style/*.css"
