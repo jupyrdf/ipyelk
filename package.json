@@ -26,10 +26,9 @@
     "url": "https://github.gatech.edu/dfreeman6/elk-widget.git"
   },
   "scripts": {
-    "build": "tsc",
-    "clean": "rimraf lib && rimraf tsconfig.tsbuildinfo",
-    "prepare": "npm run clean && npm run build",
-    "watch": "tsc -w",
+    "build": "tsc -b",
+    "clean": "rimraf lib",
+    "watch": "jlpm build -w",
     "schema": "ts-json-schema-generator --path ./node_modules/elkjs/lib/main.d.ts -o elkschema.json"
   },
   "dependencies": {
