@@ -34,7 +34,7 @@ import { ToolTYPES } from './tools/types';
 export class ELKModel extends DOMWidgetModel {
   defaults() {
     (<any>window).model = this;
-    const _elk = new ELK({ workerFactory: () => new (Worker as any)() });
+    const _elk = new ELK({ workerFactory: () => new (Worker as any)() } as any);
 
     let defaults = {
       ...super.defaults(),

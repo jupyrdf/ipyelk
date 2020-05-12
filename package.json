@@ -30,7 +30,7 @@
     "build": "tsc -b",
     "clean": "rimraf lib",
     "watch": "jlpm build -w",
-    "schema": "ts-json-schema-generator --path ./node_modules/elkjs/lib/main.d.ts -o ./elk/schema/elkschema.json",
+    "schema": "ts-json-schema-generator --path ./src/elkschema.ts -o ./elk/schema/elkschema.json",
     "lint": "jlpm prettier",
     "prettier": "prettier --write \"*.{json,yml}\" \"{src,style}/**/*.{ts,tsx,js,jsx,css,json,md,yml}\" \"elk/*.{json,md}\""
   },
