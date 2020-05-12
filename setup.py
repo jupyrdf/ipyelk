@@ -6,18 +6,16 @@ from pathlib import Path
 
 import setuptools
 
-name = "elk"
-
 HERE = Path(__file__).parent
 
 
 setup_args = dict(
-    name=name,
+    name="elk",
     description="ELK widget for Jupyter",
     version=re.findall(
-        '''^__version__ = "([^"]+)"'''(HERE / name / "_version.py").read_text()
+        r'''__version__ = "([^"]+)"''', (HERE / "elk" / "_version.py").read_text()
     )[0],
-    packages=find_packages(),
+    packages=setuptools.find_packages(),
     author="Dane Freeman",
     author_email="dane.freeman@gtri.gatech.edu",
     url="https://github.gatech.edu/dfreeman6/elk-widget",

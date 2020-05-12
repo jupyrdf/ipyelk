@@ -30,7 +30,7 @@
     "build": "tsc -b",
     "clean": "rimraf lib",
     "watch": "jlpm build -w",
-    "schema": "ts-json-schema-generator --path ./node_modules/elkjs/lib/main.d.ts -o elkschema.json"
+    "schema": "ts-json-schema-generator --path ./node_modules/elkjs/lib/main.d.ts -o ./elk/schema/elkschema.json"
   },
   "dependencies": {
     "@jupyterlab/application": "^1.2.7",

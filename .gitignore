@@ -155,5 +155,5 @@ elk/labextension/*.tgz
 
 # Packed lab extensions
 elk/labextension
-
+elk/schema/*.json
 .idea/
