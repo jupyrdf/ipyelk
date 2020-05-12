@@ -51,7 +51,7 @@ export class ELKModel extends DOMWidgetModel {
     async value_changed() {
         let value = this.get('value'),
             _elk = this.get('_elk');
-        if (_elk) {
+        if (_elk && value != null && Object.keys(value).length) {
             let layout = await _elk.layout(value);
             this.set('_mark_layout', layout);
         }
