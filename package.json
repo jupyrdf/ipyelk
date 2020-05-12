@@ -26,6 +26,7 @@
     "url": "https://github.gatech.edu/dfreeman6/elk-widget.git"
   },
   "scripts": {
+    "bootstrap": "jlpm --ignore-optional --ignore-scripts && jlpm build",
     "build": "tsc -b",
     "clean": "rimraf lib",
     "watch": "jlpm build -w",
@@ -37,8 +38,7 @@
     "@jupyterlab/application": "^1.2.7",
     "react": "~16.8.4",
     "sprotty-elk": "0.8.0",
-    "reflect-metadata": "^0.1.13",
-    "webworker-threads": "^0.7.17"
+    "reflect-metadata": "^0.1.13"
   },
   "devDependencies": {
     "@types/d3": "^5.0.0",

@@ -19,9 +19,6 @@ commands:
       jupyter labextension install --no-build --debug %LAB_EXTENSIONS%
       && jupyter lab build --debug=True --dev-build=False --minimize=True
       && jupyter labextension list
-  bootstrap:
-    unix: jlpm && jlpm build
-    windows: jlpm && jlpm build
 
 env_specs:
   default:
@@ -29,4 +26,4 @@ env_specs:
       - conda-forge
     packages:
       - jupyterlab =1
-      - nodejs >=10
+      - nodejs >=10,<14.0.0a0
