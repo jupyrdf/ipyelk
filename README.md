@@ -1,12 +1,11 @@
-
 # elk-widget
 
-ELK widget for Jupyter
+[ELK](https://github.com/kieler/elkjs) widget for Jupyter
 
 ## Install
 
 ```bash
-jupyter labextension install elk-widget
+jupyter labextension install @jupyter-widgets/jupyterlab-manager elk-widget
 ```
 
 ### Uninstall
@@ -14,7 +13,6 @@ jupyter labextension install elk-widget
 ```bash
 jupyter labextension uninstall elk-widget
 ```
-
 
 ## Contributing
 
@@ -29,9 +27,8 @@ anaconda-project run setup
 anaconda-project run lab:ext
 ```
 
-You can watch the source directory and run JupyterLab in watch mode to watch
-for changes in the extension's source and automatically rebuild the extension
-and application.
+You can watch the source directory and run JupyterLab in watch mode to watch for changes
+in the extension's source and automatically rebuild the extension and application.
 
 ```bash
 # Watch the source directory in another terminal tab
