@@ -25,6 +25,9 @@ commands:
 
 env_specs:
   default:
+    platforms:
+      - linux-64
+      - win-64
     channels:
       - conda-forge
     packages:
