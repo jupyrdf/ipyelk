@@ -33,9 +33,9 @@ setup_args = dict(
         "Programming Language :: Python :: 3.6",
         "Framework :: Jupyter",
     ],
+    python_requires=">=3.7",
     include_package_data=True,
     install_requires=["ipywidgets>=7.5.0", "networkx",],
-    extras_require={"test": ["pytest", "pytest-cov", "nbval",],},
 )
 
 if __name__ == "__main__":

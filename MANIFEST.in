@@ -1,1 +1,9 @@
 include LICENSE.txt README.md elk/schema/elkschema.json
+
+exclude src lib docs examples package.json
+
+global-exclude *~
+global-exclude *.pyc
+global-exclude *.pyo
+global-exclude .git
+global-exclude .ipynb_checkpoints/*

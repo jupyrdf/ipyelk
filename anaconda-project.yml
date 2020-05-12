@@ -10,12 +10,15 @@ variables:
 
 commands:
   setup:
-    unix: python -m pip install -e . && jlpm bootstrap
-    windows: python -m pip install -e . && jlpm bootstrap
+    description: do basic setup of js/py
+    unix: jlpm bootstrap && python -m pip install -e .
+    windows: jlpm bootstrap && python -m pip install -e .
   lab:
+    description: launch lab
     unix: jupyter lab --no-browser --debug
     windows: jupyter lab --no-browser --debug
   lab:ext:
+    description: rebuild lab with extensions
     unix: |-
       set -eux \
       && jupyter labextension install --no-build --debug $LAB_EXTENSIONS \
@@ -26,8 +29,13 @@ commands:
       && jupyter lab build --debug --dev-build=False --minimize=True
       && jupyter labextension list
   lint:
+    description: apply source formatting
     unix: isort -rc $ELK_SRC && black $ELK_SRC && jlpm lint
     windows: isort -rc %ELK_SRC% && black %ELK_SRC% && jlpm lint
+  build:
+    description: build distributions
+    unix: python setup.py bdist_wheel sdist && cd dist && npm pack ..
+    windows: python setup.py bdist_wheel sdist && cd dist && npm pack ..
 
 env_specs:
   default:
@@ -44,3 +52,4 @@ env_specs:
       - networkx
       - nodejs >=10,<14.0.0a0
       - pandas
+      - python >=3.7
