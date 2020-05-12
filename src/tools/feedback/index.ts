@@ -1,3 +1,3 @@
-import toolFeedbackModule from "./di.config";
+import toolFeedbackModule from './di.config';
 
-export {toolFeedbackModule};
+export { toolFeedbackModule };

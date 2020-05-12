@@ -13,43 +13,49 @@
  *
  * SPDX-License-Identifier: EPL-2.0 OR GPL-2.0 WITH Classpath-exception-2.0
  ********************************************************************************/
-import { inject, injectable } from "inversify";
-import { Action, CommandExecutionContext, SModelRoot, TYPES, SModelElement } from "sprotty/lib";
+import { inject, injectable } from 'inversify';
+import {
+  Action,
+  CommandExecutionContext,
+  SModelRoot,
+  TYPES,
+  SModelElement
+} from 'sprotty/lib';
 
-import { addCssClasses, removeCssClasses } from "./utils";
-import { FeedbackCommand } from "./model";
+import { addCssClasses, removeCssClasses } from './utils';
+import { FeedbackCommand } from './model';
 
 export enum CursorCSS {
-    DEFAULT = 'default-mode',
-    OVERLAP_FORBIDDEN = 'overlap-forbidden-mode',
-    NODE_CREATION = 'node-creation-mode',
-    EDGE_CREATION_SOURCE = 'edge-creation-select-source-mode',
-    EDGE_CREATION_TARGET = 'edge-creation-select-target-mode',
-    EDGE_RECONNECT = 'edge-reconnect-select-target-mode',
-    OPERATION_NOT_ALLOWED = 'edge-modification-not-allowed-mode',
-    ELEMENT_DELETION = "element-deletion-mode",
-    MOUSEOVER = "mouseover",
-    SELECTED = "selected",
+  DEFAULT = 'default-mode',
+  OVERLAP_FORBIDDEN = 'overlap-forbidden-mode',
+  NODE_CREATION = 'node-creation-mode',
+  EDGE_CREATION_SOURCE = 'edge-creation-select-source-mode',
+  EDGE_CREATION_TARGET = 'edge-creation-select-target-mode',
+  EDGE_RECONNECT = 'edge-reconnect-select-target-mode',
+  OPERATION_NOT_ALLOWED = 'edge-modification-not-allowed-mode',
+  ELEMENT_DELETION = 'element-deletion-mode',
+  MOUSEOVER = 'mouseover',
+  SELECTED = 'selected'
 }
 
 export class ApplyCSSFeedbackAction implements Action {
-    kind = ApplyCursorCSSFeedbackActionCommand.KIND;
-    constructor(readonly target?:SModelElement,  readonly cssClass?: CursorCSS) { }
+  kind = ApplyCursorCSSFeedbackActionCommand.KIND;
+  constructor(readonly target?: SModelElement, readonly cssClass?: CursorCSS) {}
 }
 
 @injectable()
 export class ApplyCursorCSSFeedbackActionCommand extends FeedbackCommand {
-    static readonly KIND = 'applyCursorCssFeedback';
+  static readonly KIND = 'applyCursorCssFeedback';
 
-    constructor(@inject(TYPES.Action) readonly action: ApplyCSSFeedbackAction) {
-        super();
+  constructor(@inject(TYPES.Action) readonly action: ApplyCSSFeedbackAction) {
+    super();
+  }
+  execute(context: CommandExecutionContext): SModelRoot {
+    // console.log('css feedback command', this.action);
+    removeCssClasses(this.action.target, Object.values(CursorCSS));
+    if (this.action.cssClass) {
+      addCssClasses(this.action.target, [this.action.cssClass]);
     }
-    execute(context: CommandExecutionContext): SModelRoot {
-        // console.log('css feedback command', this.action);
-        removeCssClasses(this.action.target, Object.values(CursorCSS));
-        if (this.action.cssClass) {
-            addCssClasses(this.action.target, [this.action.cssClass]);
-        }
-        return context.root;
-    }
+    return context.root;
+  }
 }

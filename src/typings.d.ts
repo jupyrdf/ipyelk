@@ -1,3 +1,1 @@
-declare module '!!worker-loader!*.js' {
-
-}
+declare module '!!worker-loader!*.js' {}

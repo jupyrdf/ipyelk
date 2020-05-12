@@ -1,7 +1,10 @@
-import { Action, MouseListener, SModelElement,
-     HoverFeedbackAction 
-    } from "sprotty/lib";
-import { DiagramTool } from "./tool";
+import {
+  Action,
+  MouseListener,
+  SModelElement,
+  HoverFeedbackAction
+} from 'sprotty/lib';
+import { DiagramTool } from './tool';
 
 /**
  * A mouse listener that is aware of prior mouse dragging.
@@ -12,53 +15,53 @@ import { DiagramTool } from "./tool";
  * of mouse up events.
  */
 export class DragAwareMouseListener extends MouseListener {
+  private isMouseDown: boolean = false;
+  private isMouseDrag: boolean = false;
 
-    private isMouseDown: boolean = false;
-    private isMouseDrag: boolean = false;
+  mouseDown(target: SModelElement, event: MouseEvent): Action[] {
+    this.isMouseDown = true;
+    return [];
+  }
 
-    mouseDown(target: SModelElement, event: MouseEvent): Action[] {
-        this.isMouseDown = true;
-        return [];
+  mouseMove(target: SModelElement, event: MouseEvent): Action[] {
+    if (this.isMouseDown) {
+      this.isMouseDrag = true;
+    }
+    return [];
+  }
+
+  mouseUp(element: SModelElement, event: MouseEvent): Action[] {
+    this.isMouseDown = false;
+    if (this.isMouseDrag) {
+      this.isMouseDrag = false;
+      return this.draggingMouseUp(element, event);
     }
 
-    mouseMove(target: SModelElement, event: MouseEvent): Action[] {
-        if (this.isMouseDown) {
-            this.isMouseDrag = true;
-        }
-        return [];
-    }
+    return this.nonDraggingMouseUp(element, event);
+  }
 
-    mouseUp(element: SModelElement, event: MouseEvent): Action[] {
-        this.isMouseDown = false;
-        if (this.isMouseDrag) {
-            this.isMouseDrag = false;
-            return this.draggingMouseUp(element, event);
-        }
+  nonDraggingMouseUp(element: SModelElement, event: MouseEvent): Action[] {
+    return [];
+  }
 
-        return this.nonDraggingMouseUp(element, event);
-    }
-
-    nonDraggingMouseUp(element: SModelElement, event: MouseEvent): Action[] {
-        return [];
-    }
-
-    draggingMouseUp(element: SModelElement, event: MouseEvent): Action[] {
-        return [];
-    }
+  draggingMouseUp(element: SModelElement, event: MouseEvent): Action[] {
+    return [];
+  }
 }
 
-
 export class DragAwareHoverMouseListener extends DragAwareMouseListener {
+  constructor(protected elementTypeId: string, protected tool: DiagramTool) {
+    super();
+  }
 
-    constructor(protected elementTypeId: string, protected tool: DiagramTool) {
-        super();
-    }
+  mouseOver(target: SModelElement, event: MouseEvent): Action[] {
+    return [new HoverFeedbackAction(target.id, true)];
+  }
 
-    mouseOver(target: SModelElement, event: MouseEvent): Action[] {
-        return [new HoverFeedbackAction(target.id, true)];
-    }
-
-    mouseOut(target: SModelElement, event: MouseEvent): (Action | Promise<Action>)[] {
-        return [new HoverFeedbackAction(target.id, false)];
-    }
+  mouseOut(
+    target: SModelElement,
+    event: MouseEvent
+  ): (Action | Promise<Action>)[] {
+    return [new HoverFeedbackAction(target.id, false)];
+  }
 }

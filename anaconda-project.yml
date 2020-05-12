@@ -26,8 +26,8 @@ commands:
       && jupyter lab build --debug --dev-build=False --minimize=True
       && jupyter labextension list
   lint:
-    unix: isort -rc $ELK_SRC && black $ELK_SRC
-    windows: isort -rc %ELK_SRC% && black %ELK_SRC%
+    unix: isort -rc $ELK_SRC && black $ELK_SRC && jlpm lint
+    windows: isort -rc %ELK_SRC% && black %ELK_SRC% && jlpm lint
 
 env_specs:
   default:

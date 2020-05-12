@@ -13,18 +13,18 @@
  *
  * SPDX-License-Identifier: EPL-2.0 OR GPL-2.0 WITH Classpath-exception-2.0
  ********************************************************************************/
-import { Command, CommandExecutionContext, CommandReturn } from "sprotty/lib";
+import { Command, CommandExecutionContext, CommandReturn } from 'sprotty/lib';
 
 export abstract class FeedbackCommand extends Command {
-    // used by the `FeedbackAwareUpdateModelCommand`
-    readonly priority: number = 0;
+  // used by the `FeedbackAwareUpdateModelCommand`
+  readonly priority: number = 0;
 
-    abstract execute(context: CommandExecutionContext): CommandReturn;
-    undo(context: CommandExecutionContext): CommandReturn {
-        return context.root;
-    }
+  abstract execute(context: CommandExecutionContext): CommandReturn;
+  undo(context: CommandExecutionContext): CommandReturn {
+    return context.root;
+  }
 
-    redo(context: CommandExecutionContext): CommandReturn {
-        return context.root;
-    }
+  redo(context: CommandExecutionContext): CommandReturn {
+    return context.root;
+  }
 }

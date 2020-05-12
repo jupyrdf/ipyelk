@@ -26,11 +26,13 @@
     "url": "https://github.gatech.edu/dfreeman6/elk-widget.git"
   },
   "scripts": {
-    "bootstrap": "jlpm --ignore-optional --ignore-scripts && jlpm schema && jlpm build",
+    "bootstrap": "jlpm --ignore-optional --ignore-scripts && jlpm schema && jlpm lint && jlpm build",
     "build": "tsc -b",
     "clean": "rimraf lib",
     "watch": "jlpm build -w",
-    "schema": "ts-json-schema-generator --path ./node_modules/elkjs/lib/main.d.ts -o ./elk/schema/elkschema.json"
+    "schema": "ts-json-schema-generator --path ./node_modules/elkjs/lib/main.d.ts -o ./elk/schema/elkschema.json",
+    "lint": "jlpm prettier",
+    "prettier": "prettier --write '*.{json,yml}' '{src,style}/**/*.{ts,tsx,js,jsx,css,json,md,yml}' 'elk/*.{json,md}'"
   },
   "dependencies": {
     "@jupyterlab/application": "^1.2.7",
@@ -47,7 +49,8 @@
     "rimraf": "^2.6.1",
     "snabbdom": "~0.6.6",
     "ts-json-schema-generator": "^0.56.0",
-    "typescript": "~3.5.2"
+    "typescript": "~3.5.2",
+    "prettier": "^1.9.1"
   },
   "peerDependencies": {
     "@jupyter-widgets/base": "^2.0.1",
