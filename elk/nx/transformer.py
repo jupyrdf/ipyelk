@@ -1,27 +1,25 @@
 import logging
-import networkx as nx
-import traitlets as T
-
 from collections import defaultdict
 from functools import lru_cache
 from typing import (
-    List,
+    Callable,
     Dict,
+    Generator,
     Hashable,
+    Iterable,
+    Iterator,
+    List,
     Optional,
     Tuple,
-    Iterable,
-    Generator,
-    Iterator,
-    Callable,
 )
 
+import networkx as nx
+import traitlets as T
+
 from ..app import ElkTransformer
-from ..diagram.elk_model import ElkPort, ElkNode, ElkExtendedEdge, ElkLabel
-
-from .nx import EdgeMap, Edge, compact, get_edge_data, get_roots, lowest_common_ancestor
-from .factors import invert, keep, get_factors
-
+from ..diagram.elk_model import ElkExtendedEdge, ElkLabel, ElkNode, ElkPort
+from .factors import get_factors, invert, keep
+from .nx import Edge, EdgeMap, compact, get_edge_data, get_roots, lowest_common_ancestor
 
 logger = logging.getLogger(__name__)
 
@@ -248,7 +246,9 @@ class XELK(ElkTransformer):
             if tree is not None:
                 # Node is visible and in the hierarchy
                 if node in tree:
-                    return [self.transform(root=child) for child in tree.neighbors(node)]
+                    return [
+                        self.transform(root=child) for child in tree.neighbors(node)
+                    ]
         return None
 
     def get_node_size(self, node: ElkNode) -> Tuple[Optional[float], Optional[float]]:
@@ -317,7 +317,7 @@ class XELK(ElkTransformer):
         return self.transform().to_dict()
 
     def extract_factors(
-        self
+        self,
     ) -> Generator[Tuple[List, List], None, List[Tuple[List, List]]]:
         g, tree = self.source
         attr = self.HIDDEN_ATTR
@@ -408,7 +408,8 @@ class XELK(ElkTransformer):
         result = lowest_common_ancestor(tree, [self.closest_visible(n) for n in nodes])
         return result
 
-def is_hidden(tree:nx.DiGraph, node: Hashable, attr: str) -> bool:
+
+def is_hidden(tree: nx.DiGraph, node: Hashable, attr: str) -> bool:
     """Iterate  on the node ancestors and determine if it is hidden along the chain"""
     if tree is not None and node in tree:
         if tree.nodes[node].get(attr, False):

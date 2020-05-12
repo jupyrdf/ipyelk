@@ -1,12 +1,12 @@
-import ipywidgets as W
 import logging
+from dataclasses import dataclass
+from typing import Callable, Dict, Hashable, List, Optional
+
+import ipywidgets as W
 import traitlets as T
 
-from dataclasses import dataclass
-from typing import Optional, Dict, List, Hashable, Callable
-
+from .diagram import ElkDiagram, ElkExtendedEdge, ElkLabel, ElkNode
 from .styled_widget import StyledWidget
-from .diagram import ElkDiagram, ElkExtendedEdge, ElkNode, ElkLabel
 
 logger = logging.getLogger(__name__)
 
@@ -36,14 +36,14 @@ class ElkTransformer(W.Widget):
 
         labels.append(ElkLabel(id=str(id(self.value))).to_dict())
 
-        self.value["labels"]=labels
+        self.value["labels"] = labels
 
         return self.value
 
 
 class Elk(W.VBox, StyledWidget):
-    transformer:ElkTransformer = T.Instance(ElkTransformer)
-    diagram:ElkDiagram = T.Instance(ElkDiagram)
+    transformer: ElkTransformer = T.Instance(ElkTransformer)
+    diagram: ElkDiagram = T.Instance(ElkDiagram)
 
     _link: T.dlink = None
 

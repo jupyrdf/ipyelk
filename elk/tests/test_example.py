@@ -11,4 +11,4 @@ from .. import ELKWidget
 
 def test_example_creation_blank():
     w = ELKWidget()
-    assert w.value == 'Hello World'
+    assert w.value == "Hello World"

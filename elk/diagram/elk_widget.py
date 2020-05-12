@@ -1,19 +1,19 @@
 """Widget for interacting with ELK rendered using Sprotty
 """
 import enum
-import traitlets as T
-
-from ipywidgets import DOMWidget, CallbackDispatcher
-from traitlets import HasTraits, UseEnum
 from typing import List
 
+import traitlets as T
+from ipywidgets import CallbackDispatcher, DOMWidget
+from traitlets import HasTraits, UseEnum
+
 from .._version import EXTENSION_SPEC_VERSION
+
 module_name = "elk-widget"
 
 
-
 class Interactions(enum.Enum):
-    select = 1         # -- IMPLICIT: default_value
+    select = 1  # -- IMPLICIT: default_value
     toggle = 2
 
 
@@ -74,4 +74,3 @@ class ElkDiagram(DOMWidget):
         :type model_ids: List[str], optional
         """
         self.send({"action": "center", "model_id": model_ids})
-

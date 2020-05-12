@@ -1,16 +1,9 @@
+from typing import Generator, Iterable, List, Optional, Tuple
+
 import networkx as nx
 import traitlets as T
 
-from typing import (
-    List,
-    Optional,
-    Tuple,
-    Iterable,
-    Generator,
-)
-
 from ..app import ElkTransformer
-
 from .nx import get_ports
 
 
@@ -56,6 +49,7 @@ def split(variable_graph: nx.DiGraph) -> Generator[Tuple[List, List], None, None
 
 def invert(mask):
     return map(lambda m: not m, mask)
+
 
 def keep(items: Iterable[object], mask: Iterable[bool]) -> Iterable[object]:
     """Filter the items iterable based on the given mask

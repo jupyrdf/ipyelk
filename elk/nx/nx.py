@@ -1,16 +1,9 @@
-import networkx as nx
-
 from collections import defaultdict
 from dataclasses import dataclass
 from itertools import tee
-from typing import (
-    List,
-    Dict,
-    Hashable,
-    Optional,
-    Tuple,
-    Iterable,
-)
+from typing import Dict, Hashable, Iterable, List, Optional, Tuple
+
+import networkx as nx
 
 
 @dataclass(frozen=True)
@@ -19,6 +12,7 @@ class Edge:
     source_port: Hashable  # Optional?
     target: Hashable
     target_port: Hashable  # Optional?
+
 
 EdgeMap = Dict[Hashable, List[Edge]]
 
@@ -36,7 +30,7 @@ def get_roots(tree: nx.DiGraph, g: nx.DiGraph) -> Iterable[Hashable]:
     :rtype: Hashable
     """
     if len(tree) == 0:
-        #graph is empty
+        # graph is empty
         return []
     assert nx.is_forest(
         tree

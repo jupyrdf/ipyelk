@@ -4,6 +4,9 @@ variables:
   LAB_EXTENSIONS: >-
     @jupyter-widgets/jupyterlab-manager
     .
+  ELK_SRC: >-
+    setup.py
+    elk
 
 commands:
   setup:
@@ -22,6 +25,9 @@ commands:
       jupyter labextension install --no-build --debug %LAB_EXTENSIONS%
       && jupyter lab build --debug --dev-build=False --minimize=True
       && jupyter labextension list
+  lint:
+    unix: isort -rc $ELK_SRC && black $ELK_SRC
+    windows: isort -rc %ELK_SRC% && black %ELK_SRC%
 
 env_specs:
   default:
@@ -31,6 +37,8 @@ env_specs:
     channels:
       - conda-forge
     packages:
+      - black
+      - isort
       - ipywidgets
       - jupyterlab =1
       - networkx
