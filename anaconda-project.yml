@@ -2,11 +2,9 @@ name: elk-widget
 
 variables:
   LAB_EXTENSIONS: >-
-    @jupyter-widgets/jupyterlab-manager
-    .
+    @jupyter-widgets/jupyterlab-manager .
   ELK_SRC: >-
-    setup.py
-    elk
+    setup.py elk
 
 commands:
   setup:
@@ -25,9 +23,8 @@ commands:
       && jupyter lab build --debug --dev-build=False --minimize=True \
       && jupyter labextension list
     windows: >-
-      jupyter labextension install --no-build --debug %LAB_EXTENSIONS%
-      && jupyter lab build --debug --dev-build=False --minimize=True
-      && jupyter labextension list
+      jupyter labextension install --no-build --debug %LAB_EXTENSIONS% && jupyter lab
+      build --debug --dev-build=False --minimize=True && jupyter labextension list
   lint:
     description: apply source formatting
     unix: isort -rc $ELK_SRC && black $ELK_SRC && jlpm lint

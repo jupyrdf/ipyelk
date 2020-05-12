@@ -54,10 +54,7 @@ export interface IFeedbackActionDispatcher {
    * to reset the normal state of the diagram without the feedback (e.g., reset a
    * CSS class that was set by a feedbackEmitter).
    */
-  deregisterFeedback(
-    feedbackEmitter: IFeedbackEmitter,
-    actions: Action[]
-  ): void;
+  deregisterFeedback(feedbackEmitter: IFeedbackEmitter, actions: Action[]): void;
 
   /**
    * Retrieve all `actions` sent out by currently registered `feedbackEmitter`.
@@ -80,10 +77,7 @@ export class FeedbackActionDispatcher implements IFeedbackActionDispatcher {
     this.dispatch(actions, feedbackEmitter);
   }
 
-  deregisterFeedback(
-    feedbackEmitter: IFeedbackEmitter,
-    actions: Action[]
-  ): void {
+  deregisterFeedback(feedbackEmitter: IFeedbackEmitter, actions: Action[]): void {
     this.feedbackEmitters.delete(feedbackEmitter);
     this.dispatch(actions, feedbackEmitter);
   }
@@ -92,10 +86,7 @@ export class FeedbackActionDispatcher implements IFeedbackActionDispatcher {
     this.actionDispatcher()
       .then(dispatcher => dispatcher.dispatchAll(actions))
       .then(() =>
-        this.logger.info(
-          this,
-          `Dispatched feedback actions for ${feedbackEmitter}`
-        )
+        this.logger.info(this, `Dispatched feedback actions for ${feedbackEmitter}`)
       )
       .catch(reason =>
         this.logger.error(this, 'Failed to dispatch feedback actions', reason)

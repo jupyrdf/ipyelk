@@ -1,9 +1,4 @@
-import {
-  Action,
-  MouseListener,
-  SModelElement,
-  HoverFeedbackAction
-} from 'sprotty/lib';
+import { Action, MouseListener, SModelElement, HoverFeedbackAction } from 'sprotty/lib';
 import { DiagramTool } from './tool';
 
 /**
@@ -58,10 +53,7 @@ export class DragAwareHoverMouseListener extends DragAwareMouseListener {
     return [new HoverFeedbackAction(target.id, true)];
   }
 
-  mouseOut(
-    target: SModelElement,
-    event: MouseEvent
-  ): (Action | Promise<Action>)[] {
+  mouseOut(target: SModelElement, event: MouseEvent): (Action | Promise<Action>)[] {
     return [new HoverFeedbackAction(target.id, false)];
   }
 }

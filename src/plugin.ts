@@ -16,8 +16,7 @@ const plugin: IPlugin<Application<Widget>, void> = {
     registry.registerWidget({
       name: NAME,
       version: VERSION,
-      exports: async () =>
-        await import(/* webpackChunkName: "elk" */ './widget')
+      exports: async () => await import(/* webpackChunkName: "elk" */ './widget')
     });
   }
 };

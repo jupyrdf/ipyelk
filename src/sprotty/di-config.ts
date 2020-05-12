@@ -71,43 +71,41 @@ class FilteringSvgExporter extends SvgExporter {
 }
 
 export default (containerId: string, view: DOMWidgetView) => {
-  const elkGraphModule = new ContainerModule(
-    (bind, unbind, isBound, rebind) => {
-      bind(TYPES.ModelSource)
-        .to(JLModelSource)
-        .inSingletonScope();
+  const elkGraphModule = new ContainerModule((bind, unbind, isBound, rebind) => {
+    bind(TYPES.ModelSource)
+      .to(JLModelSource)
+      .inSingletonScope();
 
-      rebind(TYPES.ILogger)
-        .to(ConsoleLogger)
-        .inSingletonScope();
-      rebind(TYPES.LogLevel).toConstantValue(LogLevel.warn);
-      rebind(TYPES.IModelFactory)
-        .to(SGraphFactory)
-        .inSingletonScope();
-      rebind(TYPES.SvgExporter)
-        .to(FilteringSvgExporter)
-        .inSingletonScope();
+    rebind(TYPES.ILogger)
+      .to(ConsoleLogger)
+      .inSingletonScope();
+    rebind(TYPES.LogLevel).toConstantValue(LogLevel.warn);
+    rebind(TYPES.IModelFactory)
+      .to(SGraphFactory)
+      .inSingletonScope();
+    rebind(TYPES.SvgExporter)
+      .to(FilteringSvgExporter)
+      .inSingletonScope();
 
-      const context = { bind, unbind, isBound, rebind };
+    const context = { bind, unbind, isBound, rebind };
 
-      // Initialize model element views
-      configureModelElement(context, 'graph', SGraph, SGraphView);
-      configureModelElement(context, 'node', ElkNode, ElkNodeView);
-      configureModelElement(context, 'port', ElkPort, ElkPortView);
-      configureModelElement(context, 'edge', ElkEdge, ElkEdgeView);
-      configureModelElement(context, 'label', SLabel, ElkLabelView);
-      configureModelElement(context, 'junction', ElkJunction, JunctionView);
-      configureViewerOptions(context, {
-        needsClientLayout: false,
-        baseDiv: containerId
-      });
+    // Initialize model element views
+    configureModelElement(context, 'graph', SGraph, SGraphView);
+    configureModelElement(context, 'node', ElkNode, ElkNodeView);
+    configureModelElement(context, 'port', ElkPort, ElkPortView);
+    configureModelElement(context, 'edge', ElkEdge, ElkEdgeView);
+    configureModelElement(context, 'label', SLabel, ElkLabelView);
+    configureModelElement(context, 'junction', ElkJunction, JunctionView);
+    configureViewerOptions(context, {
+      needsClientLayout: false,
+      baseDiv: containerId
+    });
 
-      // Hover
-      configureCommand(context, HoverFeedbackCommand);
+    // Hover
+    configureCommand(context, HoverFeedbackCommand);
 
-      // bind(TYPES.IActionHandlerInitializer).to(MyActionHandlerInitializer)
-    }
-  );
+    // bind(TYPES.IActionHandlerInitializer).to(MyActionHandlerInitializer)
+  });
   const container = new Container();
 
   container.load(

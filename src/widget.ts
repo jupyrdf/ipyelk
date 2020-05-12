@@ -1,11 +1,7 @@
 import 'reflect-metadata';
 import _ from 'lodash';
 
-import {
-  DOMWidgetModel,
-  DOMWidgetView,
-  WidgetView
-} from '@jupyter-widgets/base';
+import { DOMWidgetModel, DOMWidgetView, WidgetView } from '@jupyter-widgets/base';
 import ELK from 'elkjs/lib/elk-api';
 import {
   Action,
@@ -82,9 +78,7 @@ export class ELKView extends DOMWidgetView {
     this.elementRegistry = container.get(TYPES.SModelRegistry);
     this.toolManager = container.get<ToolManager>(TYPES.IToolManager);
     this.registry = container.get<ActionHandlerRegistry>(ActionHandlerRegistry);
-    this.actionDispatcher = container.get<ActionDispatcher>(
-      TYPES.IActionDispatcher
-    );
+    this.actionDispatcher = container.get<ActionDispatcher>(TYPES.IActionDispatcher);
     this.feedbackDispatcher = container.get<FeedbackActionDispatcher>(
       ToolTYPES.IFeedbackActionDispatcher
     );

@@ -28,9 +28,7 @@ class ModScrollMouseListener extends ScrollMouseListener {
     Made this modified class for the scoll mouse listener to help with the inital skip on a scroll event but unable to pin down the error
     */
 
-  constructor(
-    @inject(TYPES.ModelSource) protected model_source: JLModelSource
-  ) {
+  constructor(@inject(TYPES.ModelSource) protected model_source: JLModelSource) {
     super();
   }
 
@@ -77,9 +75,7 @@ class ModScrollMouseListener extends ScrollMouseListener {
 class ModZoomMouseListener extends ZoomMouseListener {
   /* Modified Zoom Muse Listener to use the base element bounding rectangle for referencing zoom events
    */
-  constructor(
-    @inject(TYPES.ModelSource) protected model_source: JLModelSource
-  ) {
+  constructor(@inject(TYPES.ModelSource) protected model_source: JLModelSource) {
     super();
   }
 
