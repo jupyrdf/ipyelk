@@ -1,5 +1,8 @@
+import json
 import jsonschema
 import traitlets
+
+from typing import List
 
 
 class Schema(traitlets.Any):
@@ -13,11 +16,12 @@ class Schema(traitlets.Any):
         self._validator = validator
 
     def validate(self, obj, value):
-        errors = list(self._validator.iter_errors(value))
+        errors: List[jsonschema.ValidationError] = list(self._validator.iter_errors(value))
         if errors:
-            raise traitlets.TraitError(
-                ("""schema errors:\n""" """\t{}\n""" """for:\n""" """{}""").format(
-                    "\n\t".join([error.message for error in errors]), value
-                )
-            )
+            msg = ""
+            for error in errors:
+                path = "/".join(map(str, error.path))
+                msg += f"\n#/{path}\n\t{error.message}"
+                msg += f"\n\t\t{json.dumps(error.instance)[:70]}"
+            raise traitlets.TraitError(msg)
         return value
