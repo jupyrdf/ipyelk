@@ -1,30 +1,18 @@
 name: elk-widget
 
 variables:
-  LAB_EXTENSIONS: >-
-    @jupyter-widgets/jupyterlab-manager .
   ELK_SRC: >-
-    setup.py elk
+    setup.py elk postBuild
 
 commands:
   setup:
     description: do basic setup of js/py
-    unix: jlpm bootstrap && python -m pip install -e .
-    windows: jlpm bootstrap && python -m pip install -e .
+    unix: python3 postBuild
+    windows: python3 postBuild
   lab:
     description: launch lab
     unix: jupyter lab --no-browser --debug
     windows: jupyter lab --no-browser --debug
-  lab:ext:
-    description: rebuild lab with extensions
-    unix: |-
-      set -eux \
-      && jupyter labextension install --no-build --debug $LAB_EXTENSIONS \
-      && jupyter lab build --debug --dev-build=False --minimize=True \
-      && jupyter labextension list
-    windows: >-
-      jupyter labextension install --no-build --debug %LAB_EXTENSIONS% && jupyter lab
-      build --debug --dev-build=False --minimize=True && jupyter labextension list
   lint:
     description: apply source formatting
     unix: isort -rc $ELK_SRC && black $ELK_SRC && jlpm lint

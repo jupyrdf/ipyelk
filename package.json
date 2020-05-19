@@ -26,9 +26,9 @@
     "url": "https://github.gatech.edu/dfreeman6/elk-widget.git"
   },
   "scripts": {
-    "bootstrap": "jlpm --ignore-optional --ignore-scripts && jlpm schema && jlpm lint && jlpm build",
+    "bootstrap": "jlpm --ignore-optional --ignore-scripts && jlpm clean && jlpm schema && jlpm lint && jlpm build",
     "build": "tsc -b",
-    "clean": "rimraf lib",
+    "clean": "rimraf lib ./elk/schema/elkschema.json",
     "watch": "jlpm build -w",
     "schema": "ts-json-schema-generator --path ./src/elkschema.ts -o ./elk/schema/elkschema.json",
     "lint": "jlpm prettier",
