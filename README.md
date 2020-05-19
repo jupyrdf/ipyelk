@@ -2,6 +2,8 @@
 
 [ELK](https://github.com/kieler/elkjs) widget for Jupyter
 
+See the [example notebooks](./examples/00_Introduction.ipynb)
+
 ## Install
 
 ```bash

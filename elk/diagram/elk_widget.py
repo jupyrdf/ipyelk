@@ -36,7 +36,9 @@ class ElkDiagram(DOMWidget):
     hovered = T.Unicode(allow_none=True, default_value=None).tag(sync=True)
     # interaction = T.UseEnum(Interactions).tag(sync=True)
 
-    def __init__(self, **kwargs):
+    def __init__(self, *value, **kwargs):
+        if value:
+            kwargs["value"] = value[0]
         super().__init__(**kwargs)
         self._click_handlers = CallbackDispatcher()
         self.on_msg(self._handle_click_msg)
@@ -75,7 +77,7 @@ class ElkDiagram(DOMWidget):
 
     def center(self, model_ids: List[str] = None):
         """Center Diagram View on specified model ids
-        
+
         :param model_ids: [description], defaults to None
         :type model_ids: List[str], optional
         """
