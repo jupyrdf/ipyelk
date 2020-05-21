@@ -2,7 +2,7 @@ import 'reflect-metadata';
 import difference from 'lodash/difference';
 
 import { DOMWidgetModel, DOMWidgetView, WidgetView } from '@jupyter-widgets/base';
-import ELK from 'elkjs/lib/elk-api';
+import * as ELK from 'elkjs/lib/elk-api';
 import {
   Action,
   ActionDispatcher,
@@ -28,29 +28,27 @@ import {
 import { ToolTYPES } from './tools/types';
 
 export class ELKModel extends DOMWidgetModel {
+  protected _elk: ELK.ELK;
   defaults() {
-    (<any>window).model = this;
-    const _elk = new ELK({ workerFactory: () => new (Worker as any)() } as any);
-
     let defaults = {
       ...super.defaults(),
-      value: {},
-      _mark_layout: {},
-      _elk
+      value: { id: 'root' },
+      _mark_layout: {}
     };
-    this.setup();
     return defaults;
   }
 
-  setup() {
+  initialize(attributes: any, options: any) {
+    super.initialize(attributes, options);
+    this._elk = new ELK.default({ workerFactory: () => new (Worker as any)() } as any);
     this.on('change:value', this.value_changed, this);
+    this.value_changed().catch(err => console.error(err));
   }
 
   async value_changed() {
-    let value = this.get('value'),
-      _elk = this.get('_elk');
-    if (_elk && value != null && Object.keys(value).length) {
-      let layout = await _elk.layout(value);
+    let value = this.get('value');
+    if (this._elk && value != null && Object.keys(value).length) {
+      let layout = await this._elk.layout(value);
       this.set('_mark_layout', layout);
     }
   }
@@ -100,8 +98,6 @@ export class ELKView extends DOMWidgetView {
       container.resolve(NodeExpandTool)
     );
     this.toolManager.enableDefaultTools();
-
-    (<any>window).view = this;
   }
 
   handle(action: Action) {

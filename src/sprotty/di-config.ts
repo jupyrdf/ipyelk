@@ -34,9 +34,9 @@ import {
   routingModule,
   modelSourceModule,
   labelEditModule,
-  ICommandStack,
+  // ICommandStack,
   // ToolManager, DefaultToolsEnablingKeyListener, ToolManagerActionHandler,
-  EnableToolsAction,
+  // EnableToolsAction,
   // EnableDefaultToolsAction,
   // configureActionHandler,
   HoverFeedbackCommand,
@@ -54,11 +54,9 @@ import {
   JunctionView
 } from './views';
 import { ElkNode, ElkPort, ElkEdge, ElkJunction } from './sprotty-model';
-import { NodeSelectTool } from '../tools/select';
+// import { NodeSelectTool } from '../tools/select';
 import { toolFeedbackModule } from '../tools/feedback';
 import viewportModule from './viewportModule';
-
-import _ from 'lodash';
 
 class FilteringSvgExporter extends SvgExporter {
   protected isExported(styleSheet: CSSStyleSheet): boolean {
@@ -125,20 +123,5 @@ export default (containerId: string, view: DOMWidgetView) => {
     toolFeedbackModule,
     elkGraphModule
   );
-
-  let jlSource: JLModelSource = container.get(TYPES.ModelSource);
-  const commandStack = container.get<ICommandStack>(TYPES.ICommandStack);
-  const dispatcher = container.get(TYPES.IActionDispatcher);
-  (<any>window).sp = {
-    TYPES,
-    container,
-    defaultModule,
-    EnableToolsAction,
-    dispatcher,
-    NodeSelectTool,
-    commandStack,
-    jlSource
-  };
-  (<any>window)._ = _;
   return container;
 };
