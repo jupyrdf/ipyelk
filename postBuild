@@ -2,20 +2,17 @@
 """ a windows-friendly, binder-compatible script to get a development environment
 """
 
-from subprocess import check_call
-from pathlib import Path
 import platform
-import sys
 import shutil
+import sys
+from pathlib import Path
+from subprocess import check_call
 
 PLATFORM = platform.system()
 WIN = PLATFORM == "Windows"
 
 
-LABEXTENSIONS = [
-    ".",
-    "@jupyter-widgets/jupyterlab-manager"
-]
+LABEXTENSIONS = [".", "@jupyter-widgets/jupyterlab-manager"]
 
 HERE = Path.cwd()
 DIST = HERE / "dist"
