@@ -9,15 +9,18 @@ commands:
     description: do basic setup of js/py
     unix: python3 postBuild
     windows: python postBuild
+
   lab:
     description: launch lab
     unix: jupyter lab --no-browser --debug
     windows: jupyter lab --no-browser --debug
+
   lint:
     description: apply source formatting
     unix: isort -rc $ELK_SRC && black $ELK_SRC && jlpm lint
     windows: isort -rc %ELK_SRC% && black %ELK_SRC% && jlpm lint
-  build:
+
+  dist:
     description: build distributions
     unix: python setup.py bdist_wheel sdist && cd dist && npm pack ..
     windows: python setup.py bdist_wheel sdist && cd dist && npm pack ..

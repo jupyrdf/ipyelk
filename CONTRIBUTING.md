@@ -18,6 +18,8 @@ anaconda-project run lab
 You can watch the source directory and run JupyterLab in watch mode to watch for changes
 in the extension's source and automatically rebuild the extension and application.
 
+- Run:
+
 ```bash
 # Watch the source directory in another terminal tab
 anaconda-project run jlpm watch
@@ -25,9 +27,11 @@ anaconda-project run jlpm watch
 anaconda-project run lab --watch
 ```
 
+- Open a tab with the provided URL in your standards-compliant browser of choice
+
 ## Quality Assurance
 
-- keep the linters/formatters happy
+- Run:
 
 ```bash
 anaconda-project run lint
@@ -37,6 +41,18 @@ anaconda-project run lint
 - If you add new features:
   - Add a new, minimal demonstration notebook to the examples.
   - Add appropriate links to your new example.
+
+## Releasing
+
+- Run:
+
+```bash
+anaconda-project run dist
+```
+
+- See the files in `./dist`.
+
+> - TBD: Do something with the files.
 
 ## Updating Dependencies
 
