@@ -1,8 +1,8 @@
 import json
+from typing import List
+
 import jsonschema
 import traitlets
-
-from typing import List
 
 
 class Schema(traitlets.Any):
@@ -16,7 +16,9 @@ class Schema(traitlets.Any):
         self._validator = validator
 
     def validate(self, obj, value):
-        errors: List[jsonschema.ValidationError] = list(self._validator.iter_errors(value))
+        errors: List[jsonschema.ValidationError] = list(
+            self._validator.iter_errors(value)
+        )
         if errors:
             msg = ""
             for error in errors:
