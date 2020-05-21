@@ -8,7 +8,7 @@ commands:
   setup:
     description: do basic setup of js/py
     unix: python3 postBuild
-    windows: python3 postBuild
+    windows: python postBuild
   lab:
     description: launch lab
     unix: jupyter lab --no-browser --debug
