@@ -2,39 +2,21 @@
 
 [ELK](https://github.com/kieler/elkjs) widget for Jupyter
 
-See the [example notebooks](./examples/00_Introduction.ipynb)
+> See the [example notebooks](./examples/00_Introduction.ipynb)
 
 ## Install
 
+> This extension is not currently published. See [CONTRIBUTING](./CONTRIBUTING.md)
+> for a development install.
+
 ```bash
+pip install elk
 jupyter labextension install @jupyter-widgets/jupyterlab-manager elk-widget
 ```
 
-### Uninstall
+## Uninstall
 
 ```bash
+pip uninstall elk
 jupyter labextension uninstall elk-widget
-```
-
-## Contributing
-
-### Install
-
-- Get [Miniconda](https://docs.conda.io/en/latest/miniconda.html)
-- Get [anaconda-project](https://anaconda-project.readthedocs.io)
-
-```bash
-# Clone the repo to your local environment
-anaconda-project run setup
-anaconda-project run lab
-```
-
-You can watch the source directory and run JupyterLab in watch mode to watch for changes
-in the extension's source and automatically rebuild the extension and application.
-
-```bash
-# Watch the source directory in another terminal tab
-anaconda-project run jlpm watch
-# Run jupyterlab in watch mode in one terminal tab
-anaconda-project run lab --watch
 ```
