@@ -24,10 +24,10 @@ import {
   isPrimitive,
   isExtended
 } from './elkgraph-json';
-import { get } from 'lodash';
 
-function getClasses(element): string[] {
-  let classes: string[] = get(element, 'properties.cssClasses', '').split(' ');
+function getClasses(element: ElkGraphElement): string[] {
+  let classes: string[] = element.properties?.cssClasses.split(' ') || [];
+  console.warn(element, classes);
   return classes.filter((el: string) => {
     return el.trim().length > 0;
   });

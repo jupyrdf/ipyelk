@@ -63,7 +63,7 @@ export class NodeSelectToolMouseListener extends DragAwareHoverMouseListener {
 
     if (event.button === 0) {
       const selectableTarget = findParentByFeature(target, isSelectable);
-      if (selectableTarget !== undefined || target instanceof SModelRoot) {
+      if (selectableTarget != null || target instanceof SModelRoot) {
         // multi-selection?
         if (!isCtrlOrCmd(event)) {
           exiting = toArray(
@@ -80,7 +80,7 @@ export class NodeSelectToolMouseListener extends DragAwareHoverMouseListener {
               )
           );
         }
-        if (selectableTarget !== undefined) {
+        if (selectableTarget != null) {
           if (!selectableTarget.selected) {
             entering = [selectableTarget];
           } else if (isCtrlOrCmd(event)) {
@@ -105,7 +105,7 @@ export class NodeSelectToolMouseListener extends DragAwareHoverMouseListener {
    */
   decorate(vnode: VNode, element: SModelElement): VNode {
     const selectableTarget = findParentByFeature(element, isSelectable);
-    if (selectableTarget !== undefined)
+    if (selectableTarget != null)
       setClass(vnode, 'selected', selectableTarget.selected);
     return vnode;
   }

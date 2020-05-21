@@ -63,7 +63,7 @@ import _ from 'lodash';
 class FilteringSvgExporter extends SvgExporter {
   protected isExported(styleSheet: CSSStyleSheet): boolean {
     return (
-      styleSheet.href !== null &&
+      styleSheet.href != null &&
       (styleSheet.href.endsWith('diagram.css') ||
         styleSheet.href.endsWith('sprotty.css'))
     );

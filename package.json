@@ -49,7 +49,7 @@
     "rimraf": "^2.6.1",
     "snabbdom": "~0.6.6",
     "ts-json-schema-generator": "^0.56.0",
-    "typescript": "~3.5.2",
+    "typescript": "~3.7.2",
     "prettier": "^1.9.1"
   },
   "peerDependencies": {

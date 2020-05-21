@@ -9,12 +9,12 @@
   dependencies:
     regenerator-runtime "^0.13.4"
 
-"@blueprintjs/core@^3.26.1", "@blueprintjs/core@^3.9.0":
-  version "3.26.1"
-  resolved "https://registry.yarnpkg.com/@blueprintjs/core/-/core-3.26.1.tgz#371b6c83a937efb6d9a6947c3c5b55dba09bb838"
-  integrity sha512-f5U9RBvSMV/eLEXlBeaYbx+LRAcrsSrnK8gScM4Jwnuto6d9m6CeVxNe6YkQxvKOs4lhiC+UdPN2A9yJcXrGHA==
+"@blueprintjs/core@^3.27.0", "@blueprintjs/core@^3.9.0":
+  version "3.27.0"
+  resolved "https://registry.yarnpkg.com/@blueprintjs/core/-/core-3.27.0.tgz#de3aab22519e86244fd7f1167f6325e36f1cf058"
+  integrity sha512-ZzwXENczeC9FnzTJ2XiDR+6YNzb68u1fj2HstKarvfrepW/C+0g4Eojo5vi2KWlNw5+RUu/MG7sZc8i7698pQw==
   dependencies:
-    "@blueprintjs/icons" "^3.16.0"
+    "@blueprintjs/icons" "^3.17.0"
     "@types/dom4" "^2.0.1"
     classnames "^2.2"
     dom4 "^2.1.5"
@@ -26,20 +26,20 @@
     resize-observer-polyfill "^1.5.1"
     tslib "~1.10.0"
 
-"@blueprintjs/icons@^3.16.0":
-  version "3.16.0"
-  resolved "https://registry.yarnpkg.com/@blueprintjs/icons/-/icons-3.16.0.tgz#902c74a36ff24ad76fa309cca25b6877c2a9c027"
-  integrity sha512-VVBvgnpz8eQFhnX5OQGLdRqka9DU/CTtF3w9vnwKK2r9N/xRF0BPe9Ev1RzuUzP4GJG4GUIRaqiAX9+l/FviDg==
+"@blueprintjs/icons@^3.17.0":
+  version "3.17.0"
+  resolved "https://registry.yarnpkg.com/@blueprintjs/icons/-/icons-3.17.0.tgz#999fa458252914e111c537b5ed05fb2e12b52ce2"
+  integrity sha512-DRUIxVe0V7eeKYxKFl9bEmQvdpqmMbSUsJjKl9ACgXUQ1wksd2oaFTNLBQEToui/RAWpybWLCl39AG3rlJQeYQ==
   dependencies:
     classnames "^2.2"
     tslib "~1.10.0"
 
 "@blueprintjs/select@^3.3.0":
-  version "3.12.3"
-  resolved "https://registry.yarnpkg.com/@blueprintjs/select/-/select-3.12.3.tgz#27a660d794b2464da2453991dedd115186766a92"
-  integrity sha512-WU6RGk2NSlPS4VjcpljmGQY+w4ezMCazoQfh37JMDNq5Xa/wzrKaleXifMmZUUWJNvjtsZ0sNDNLzI+DGuX0dQ==
+  version "3.13.0"
+  resolved "https://registry.yarnpkg.com/@blueprintjs/select/-/select-3.13.0.tgz#c42e535525441f2b7149a94de07c5665e49cdba1"
+  integrity sha512-DwLEpZee95xeO1tyCs8SLgP6yb9mp2l/B34N2MOsRL7eXZb+EiILR8fxnCzwx6/D7JL+WKsPP9UHhCOLaTbYug==
   dependencies:
-    "@blueprintjs/core" "^3.26.1"
+    "@blueprintjs/core" "^3.27.0"
     classnames "^2.2"
     tslib "~1.10.0"
 
@@ -823,9 +823,9 @@
   integrity sha512-8+KAKzEvSUdeo+kmqnKrqgeE+LcA0tjYWFY7RPProVYwnqDjukzO+3b6dLD56rYX5TdWejnEOLJYOIeh4CXKuA==
 
 "@types/lodash@^4.14.134":
-  version "4.14.150"
-  resolved "https://registry.yarnpkg.com/@types/lodash/-/lodash-4.14.150.tgz#649fe44684c3f1fcb6164d943c5a61977e8cf0bd"
-  integrity sha512-kMNLM5JBcasgYscD9x/Gvr6lTAv2NVgsKtet/hm93qMyf/D1pt+7jeEZklKJKxMVmXjxbRVQQGfqDSfipYCO6w==
+  version "4.14.152"
+  resolved "https://registry.yarnpkg.com/@types/lodash/-/lodash-4.14.152.tgz#7e7679250adce14e749304cdb570969f77ec997c"
+  integrity sha512-Vwf9YF2x1GE3WNeUMjT5bTHa2DqgUo87ocdgTScupY2JclZ5Nn7W2RLM/N0+oreexUk8uaVugR81NnTY/jNNXg==
 
 "@types/prop-types@*":
   version "15.7.3"
@@ -1341,9 +1341,9 @@ minimist@^1.2.0, minimist@^1.2.5, minimist@~1.2.0:
   integrity sha512-FM9nNUYrRBAELZQT3xeZQ7fmMOBg6nWNmJKTcgsJeaLstP/UODVpGsr5OhXhhXg6f+qtJ8uiZ+PUxkDWcgIXLw==
 
 moment@^2.24.0:
-  version "2.25.3"
-  resolved "https://registry.yarnpkg.com/moment/-/moment-2.25.3.tgz#252ff41319cf41e47761a1a88cab30edfe9808c0"
-  integrity sha512-PuYv0PHxZvzc15Sp8ybUCoQ+xpyPWvjOuK72a5ovzp2LI32rJXOiIfyoFoYvG3s6EwwrdkMyWuRiEHSZRLJNdg==
+  version "2.26.0"
+  resolved "https://registry.yarnpkg.com/moment/-/moment-2.26.0.tgz#5e1f82c6bafca6e83e808b30c8705eed0dcbd39a"
+  integrity sha512-oIixUO+OamkUkwjhAVE18rAMfRJNsNe/Stid/gwHSOfHrOtw9EhAY2AHvdKZ/k/MggcYELFCJz/Sn2pL8b8JMw==
 
 node-fetch@^2.6.0:
   version "2.6.0"
@@ -1733,11 +1733,6 @@ typed-styles@^0.0.7:
   version "0.0.7"
   resolved "https://registry.yarnpkg.com/typed-styles/-/typed-styles-0.0.7.tgz#93392a008794c4595119ff62dde6809dbc40a3d9"
   integrity sha512-pzP0PWoZUhsECYjABgCGQlRGL1n7tOHsgwYv3oIiEpJwGhFTuty/YNeduxQYzXXa3Ge5BdT6sHYIQYpl4uJ+5Q==
-
-typescript@~3.5.2:
-  version "3.5.3"
-  resolved "https://registry.yarnpkg.com/typescript/-/typescript-3.5.3.tgz#c830f657f93f1ea846819e929092f5fe5983e977"
-  integrity sha512-ACzBtm/PhXBDId6a6sDJfroT2pOWt/oOnk4/dElG5G33ZL776N3Y6/6bKZJBFpd+b05F3Ct9qDjMeJmRWtE2/g==
 
 typescript@~3.7.2:
   version "3.7.5"

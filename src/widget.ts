@@ -69,7 +69,7 @@ export class ELKView extends DOMWidgetView {
 
   initialize(parameters: WidgetView.InitializeParameters) {
     super.initialize(parameters);
-    this.div_id = 'sprotty-' + Math.random();
+    this.div_id = Private.next_id();
 
     // Create Sprotty viewer
     const container = createContainer(this.div_id, this);
@@ -193,5 +193,12 @@ export class ELKView extends DOMWidgetView {
         this.source.center(elementIds);
       }
     }
+  }
+}
+
+namespace Private {
+  let _next_id = 0;
+  export function next_id() {
+    return `sprotty_${_next_id++}`;
   }
 }
