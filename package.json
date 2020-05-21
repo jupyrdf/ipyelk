@@ -45,12 +45,13 @@
     "@jupyter-widgets/controls": "^1.5.1",
     "@jupyter-widgets/jupyterlab-manager": "^1.0.1",
     "@types/d3": "^5.0.0",
+    "@types/lodash": "^4.14.152",
+    "prettier": "^1.9.1",
     "react": "*",
     "rimraf": "^2.6.1",
     "snabbdom": "~0.6.6",
     "ts-json-schema-generator": "^0.56.0",
-    "typescript": "~3.7.2",
-    "prettier": "^1.9.1"
+    "typescript": "~3.7.2"
   },
   "peerDependencies": {
     "@jupyter-widgets/base": "^2.0.1",

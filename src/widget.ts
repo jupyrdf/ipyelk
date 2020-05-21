@@ -1,5 +1,5 @@
 import 'reflect-metadata';
-import _ from 'lodash';
+import difference from 'lodash/difference';
 
 import { DOMWidgetModel, DOMWidgetView, WidgetView } from '@jupyter-widgets/base';
 import ELK from 'elkjs/lib/elk-api';
@@ -151,8 +151,8 @@ export class ELKView extends DOMWidgetView {
   updateSelected() {
     let selected: string[] = this.model.get('selected');
     let old_selected: string[] = this.model.previous('selected');
-    let exiting: string[] = _.difference(old_selected, selected);
-    let entering: string[] = _.difference(selected, old_selected);
+    let exiting: string[] = difference(old_selected, selected);
+    let entering: string[] = difference(selected, old_selected);
     this.actionDispatcher.dispatch(new SelectAction(entering, exiting));
   }
 
