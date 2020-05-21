@@ -1,13 +1,14 @@
-# elk-widget
+# `elk-widget`
 
-[ELK](https://github.com/kieler/elkjs) widget for Jupyter
+[ELK](https://github.com/kieler/elkjs) widget for
+[JupyterLab](https://github.com/jupyterlab/jupyterlab)
 
-> See the [example notebooks](./examples/00_Introduction.ipynb)
+> For more, see the [example notebooks](./examples/00_Introduction.ipynb)
 
 ## Install
 
-> This extension is not currently published. See [CONTRIBUTING](./CONTRIBUTING.md)
-> for a development install.
+> This extension is not currently published. See [CONTRIBUTING](./CONTRIBUTING.md) for a
+> development install.
 
 ```bash
 pip install elk
