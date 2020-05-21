@@ -20,11 +20,7 @@ HERE = Path.cwd()
 DIST = HERE / "dist"
 
 NPM = which("npm")
-JLPM = which("jplm")
-
-if not (NPM and JLPM):
-    print("it appears npm and jlpm are not installed and on the path")
-    sys.exit(1)
+JLPM = which("jlpm")
 
 DIST.exists() and shutil.rmtree(DIST)
 DIST.mkdir()
