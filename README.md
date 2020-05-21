@@ -26,7 +26,7 @@ jupyter labextension uninstall elk-widget
 ```bash
 # Clone the repo to your local environment
 anaconda-project run setup
-anaconda-project run lab:ext
+anaconda-project run lab
 ```
 
 You can watch the source directory and run JupyterLab in watch mode to watch for changes
