@@ -4,8 +4,13 @@
 
 from subprocess import check_call
 from pathlib import Path
+import platform
 import sys
 import shutil
+
+PLATFORM = platform.system()
+WIN = PLATFORM == "Windows"
+
 
 LABEXTENSIONS = [
     ".",
@@ -15,8 +20,11 @@ LABEXTENSIONS = [
 HERE = Path.cwd()
 DIST = HERE / "dist"
 
+NPM = "npm.cmd" if WIN else "npm"
+
 shutil.rmtree(DIST)
 DIST.mkdir()
+
 
 def _(*args, **kwargs):
     if "cwd" in kwargs:
@@ -25,12 +33,13 @@ def _(*args, **kwargs):
     print(f"\n>>>\t{' '.join(str_args)}\n")
     check_call(str_args, **kwargs)
 
+
 # avoid weird caching issues
 _("jlpm", "cache", "clean")
 # perform all the node stuff
 _("jlpm", "bootstrap")
 # build labextension package
-_("npm", "pack", "..", cwd=HERE / "dist")
+_(NPM, "pack", "..", cwd=HERE / "dist")
 # build python packages
 _(sys.executable, "setup.py", "bdist_wheel", "sdist")
 # install local python dev
