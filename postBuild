@@ -17,11 +17,11 @@ LABEXTENSIONS = [".", "@jupyter-widgets/jupyterlab-manager"]
 HERE = Path.cwd()
 DIST = HERE / "dist"
 
-NPM = shutil.which("npm")
+NPM = shutil.which("npm") or shutil.which("npm.cmd")
 JLPM = shutil.which("jplm")
 
 if not (NPM and JLPM):
-    "it appears npm and jlpm are not installed and on the path"
+    print("it appears npm and jlpm are not installed and on the path")
     sys.exit(1)
 
 DIST.exists() and shutil.rmtree(DIST)
