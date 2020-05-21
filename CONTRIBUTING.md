@@ -37,10 +37,10 @@ anaconda-project run lint
     - Add a new, minimal demonstration notebook to the examples.
     - Add appropriate links to your new example.
 
-## Updating dependencies
+## Updating Dependencies
 
 
-### Python dependencies
+### Python Dependencies
 
 - Edit the `env_specs` section of [project file](./anaconda-project.yml).
 - Run:
@@ -53,7 +53,7 @@ anaconda-project update
 [project lock file](./anaconda-project-lock.yml).
 
 
-### Browser dependencies
+### Browser Dependencies
 
 - Edit the appropriate section of the [package file](./package.json).
 - Run:
