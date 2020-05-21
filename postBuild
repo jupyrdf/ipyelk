@@ -8,6 +8,8 @@ import sys
 from pathlib import Path
 from subprocess import check_call
 
+from jupyterlab_server.process import which
+
 PLATFORM = platform.system()
 WIN = PLATFORM == "Windows"
 
@@ -17,8 +19,8 @@ LABEXTENSIONS = [".", "@jupyter-widgets/jupyterlab-manager"]
 HERE = Path.cwd()
 DIST = HERE / "dist"
 
-NPM = shutil.which("npm") or shutil.which("npm.cmd")
-JLPM = shutil.which("jplm")
+NPM = which("npm")
+JLPM = which("jplm")
 
 if not (NPM and JLPM):
     print("it appears npm and jlpm are not installed and on the path")
