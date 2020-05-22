@@ -2,12 +2,9 @@ import logging
 from collections import defaultdict
 from functools import lru_cache
 from typing import (
-    Callable,
     Dict,
     Generator,
     Hashable,
-    Iterable,
-    Iterator,
     List,
     Optional,
     Tuple,
@@ -19,7 +16,7 @@ import traitlets as T
 from ..app import ElkTransformer
 from ..diagram.elk_model import ElkExtendedEdge, ElkLabel, ElkNode, ElkPort
 from .factors import get_factors, invert, keep
-from .nx import Edge, EdgeMap, compact, get_edge_data, get_roots, lowest_common_ancestor
+from .nx import Edge, EdgeMap, compact, get_roots, lowest_common_ancestor
 
 logger = logging.getLogger(__name__)
 
@@ -42,7 +39,7 @@ class XELK(ElkTransformer):
 
     def eid(self, node: Hashable) -> str:
         """Get the element id for a node in the main graph for use in elk
-        
+
         :param node: Node in main  graph
         :type node: Hashable
         :return: Element ID
@@ -201,14 +198,15 @@ class XELK(ElkTransformer):
         ports: Dict[Hashable, Dict[Hashable, ElkPort]],
         hidden_edges: EdgeMap,
     ) -> Dict[Hashable, ElkNode]:
-        """Transform the given elk nodes by adding information from the hidden_edges. (extra ports / edges and a different level of abstraction then shown)
-        
+        """Transform the given elk nodes by adding information from the hidden_edges.
+        (extra ports / edges and a different level of abstraction then shown)
+
         :param elk_nodes: Given dictionary of elk nodes
         :type elk_nodes: Dict[str, ElkNode]
         :param hidden_edges: List of hidden edges
         :type hidden_edges: List[TunnelEdge]
         :return: Updated dictionary of elk nodes
-        :rtype: Dict[str, ElkNode] 
+        :rtype: Dict[str, ElkNode]
         """
         edge_properties = {"cssClasses": "slack-edge"}
         for owner, edges in hidden_edges.items():
@@ -236,7 +234,8 @@ class XELK(ElkTransformer):
                 # Nonhierarchical graph. Iterate over only the main graph
                 return [self.transform(root=node) for node in g.nodes()]
             else:
-                # Hierarchical graph but no specified root... start transforming from each root in the forest
+                # Hierarchical graph but no specified root...
+                # start transforming from each root in the forest
                 return [self.transform(root=node) for node in get_roots(tree, g)]
 
         else:
@@ -278,9 +277,12 @@ class XELK(ElkTransformer):
 
     def collect_edges(self) -> Tuple[EdgeMap, EdgeMap]:
         """[summary]
-        
+
         :return: [description]
-        :rtype: Tuple[Dict[Hashable, List[ElkExtendedEdge]], Dict[Hashable, List[ElkExtendedEdge]]]
+        :rtype: Tuple[
+            Dict[Hashable, List[ElkExtendedEdge]],
+            Dict[Hashable, List[ElkExtendedEdge]]
+        ]
         """
         visible: EdgeMap = defaultdict(
             list
@@ -351,9 +353,11 @@ class XELK(ElkTransformer):
                         target_vars.sort()
                         targets = [(vis_target, v) for v in target_vars]
 
-                    hidden.append(
-                        (sources, targets)
-                    )  # [tuple(source_vars), tuple(target_vars)] = (vis_source, vis_target)
+                    # [tuple(source_vars), tuple(target_vars)] = (
+                    #   vis_source,
+                    #   vis_target
+                    # )
+                    hidden.append((sources, targets))
                     continue
 
             yield sources, targets
@@ -361,7 +365,6 @@ class XELK(ElkTransformer):
 
     def process_endpts(self, sources, targets) -> Dict[Hashable, List[Edge]]:
         g, tree = self.source
-        attr = self.HIDDEN_ATTR
 
         edge_dict: Dict[Hashable, List[Edge]] = defaultdict(list)
 
@@ -377,8 +380,9 @@ class XELK(ElkTransformer):
 
     @lru_cache()
     def closest_visible(self, node: Hashable):
-        """Crawl through the given NetworkX `tree` looking for an ancestor of `node` that is not hidden
-        
+        """Crawl through the given NetworkX `tree` looking for an ancestor of
+        `node` that is not hidden
+
         :param node: [description] Node to identify a visible ancestor
         :type node: Hashable
         :raises ValueError: [description]
@@ -401,7 +405,6 @@ class XELK(ElkTransformer):
 
     @lru_cache()
     def closest_common_visible(self, nodes: Tuple[Hashable]) -> Hashable:
-        attr = self.HIDDEN_ATTR
         g, tree = self.source
         if tree is None:
             return None

@@ -2,7 +2,6 @@
 """ a windows-friendly, binder-compatible script to get a development environment
 """
 
-import platform
 import shutil
 import sys
 from pathlib import Path

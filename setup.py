@@ -28,14 +28,12 @@ setup_args = dict(
         "License :: OSI Approved :: BSD License",
         "Programming Language :: Python",
         "Programming Language :: Python :: 3",
-        "Programming Language :: Python :: 3.4",
-        "Programming Language :: Python :: 3.5",
-        "Programming Language :: Python :: 3.6",
+        "Programming Language :: Python :: 3.7",
         "Framework :: Jupyter",
     ],
     python_requires=">=3.7",
     include_package_data=True,
-    install_requires=["ipywidgets>=7.5.0", "networkx",],
+    install_requires=["ipywidgets>=7.5.0", "networkx"],
 )
 
 if __name__ == "__main__":
