@@ -34,7 +34,7 @@ class ModScrollMouseListener extends ScrollMouseListener {
 
   mouseDown(target: SModelElement, event: MouseEvent): Action[] {
     const moveable = findParentByFeature(target, isMoveable);
-    if (moveable === undefined && !(target instanceof SRoutingHandle)) {
+    if (moveable == null && !(target instanceof SRoutingHandle)) {
       const viewport = findParentByFeature(target, isViewport);
       if (viewport) {
         this.lastScrollPosition = {

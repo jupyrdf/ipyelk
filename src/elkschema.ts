@@ -8,15 +8,21 @@ export interface LazyElkEdge extends ELK.ElkEdge {
   targets: string[];
 }
 
-export type TAnyElkEdge =
+export interface AnyElkPort extends ELK.ElkPort {
+  properties?: object;
+}
+
+export type AnyElkEdge =
   | ELK.ElkEdge
   | ELK.ElkExtendedEdge
   | ELK.ElkPrimitiveEdge
   | LazyElkEdge;
 
+export type AnyElkEdgeWithProperties = AnyElkEdge & { properties?: object };
+
 export interface AnyElkNode extends ELK.ElkNode {
   children?: AnyElkNode[];
-  ports?: ELK.ElkPort[];
-  edges?: TAnyElkEdge[];
+  ports?: AnyElkPort[];
+  edges?: AnyElkEdgeWithProperties[];
   properties?: object;
 }

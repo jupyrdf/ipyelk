@@ -1,0 +1,60 @@
+{
+  "directed": true,
+  "multigraph": true,
+  "graph": {},
+  "nodes": [
+    {
+      "id": "n0"
+    },
+    {
+      "id": "n1"
+    },
+    {
+      "id": "n2"
+    },
+    {
+      "id": "n3"
+    }
+  ],
+  "links": [
+    {
+      "sourcePort": "x",
+      "targetPort": "x",
+      "source": "n1",
+      "target": "n2",
+      "key": 0
+    },
+    {
+      "port": "y",
+      "source": "n1",
+      "target": "n2",
+      "key": 1
+    },
+    {
+      "port": "y",
+      "source": "n1",
+      "target": "n3",
+      "key": 0
+    },
+    {
+      "port": "z",
+      "source": "n1",
+      "target": "n3",
+      "key": 1
+    },
+    {
+      "sourcePort": "z",
+      "targetPort": "x",
+      "source": "n2",
+      "target": "n3",
+      "key": 0
+    },
+    {
+      "port": "x",
+      "targetPort": "w",
+      "source": "n2",
+      "target": "n3",
+      "key": 1
+    }
+  ]
+}

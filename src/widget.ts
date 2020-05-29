@@ -1,8 +1,8 @@
 import 'reflect-metadata';
-import _ from 'lodash';
+import difference from 'lodash/difference';
 
 import { DOMWidgetModel, DOMWidgetView, WidgetView } from '@jupyter-widgets/base';
-import ELK from 'elkjs/lib/elk-api';
+import * as ELK from 'elkjs/lib/elk-api';
 import {
   Action,
   ActionDispatcher,
@@ -28,29 +28,27 @@ import {
 import { ToolTYPES } from './tools/types';
 
 export class ELKModel extends DOMWidgetModel {
+  protected _elk: ELK.ELK;
   defaults() {
-    (<any>window).model = this;
-    const _elk = new ELK({ workerFactory: () => new (Worker as any)() } as any);
-
     let defaults = {
       ...super.defaults(),
-      value: {},
-      _mark_layout: {},
-      _elk
+      value: { id: 'root' },
+      _mark_layout: {}
     };
-    this.setup();
     return defaults;
   }
 
-  setup() {
+  initialize(attributes: any, options: any) {
+    super.initialize(attributes, options);
+    this._elk = new ELK.default({ workerFactory: () => new (Worker as any)() } as any);
     this.on('change:value', this.value_changed, this);
+    this.value_changed().catch(err => console.error(err));
   }
 
   async value_changed() {
-    let value = this.get('value'),
-      _elk = this.get('_elk');
-    if (_elk && value != null && Object.keys(value).length) {
-      let layout = await _elk.layout(value);
+    let value = this.get('value');
+    if (this._elk && value != null && Object.keys(value).length) {
+      let layout = await this._elk.layout(value);
       this.set('_mark_layout', layout);
     }
   }
@@ -69,7 +67,7 @@ export class ELKView extends DOMWidgetView {
 
   initialize(parameters: WidgetView.InitializeParameters) {
     super.initialize(parameters);
-    this.div_id = 'sprotty-' + Math.random();
+    this.div_id = Private.next_id();
 
     // Create Sprotty viewer
     const container = createContainer(this.div_id, this);
@@ -100,8 +98,6 @@ export class ELKView extends DOMWidgetView {
       container.resolve(NodeExpandTool)
     );
     this.toolManager.enableDefaultTools();
-
-    (<any>window).view = this;
   }
 
   handle(action: Action) {
@@ -151,8 +147,8 @@ export class ELKView extends DOMWidgetView {
   updateSelected() {
     let selected: string[] = this.model.get('selected');
     let old_selected: string[] = this.model.previous('selected');
-    let exiting: string[] = _.difference(old_selected, selected);
-    let entering: string[] = _.difference(selected, old_selected);
+    let exiting: string[] = difference(old_selected, selected);
+    let entering: string[] = difference(selected, old_selected);
     this.actionDispatcher.dispatch(new SelectAction(entering, exiting));
   }
 
@@ -193,5 +189,12 @@ export class ELKView extends DOMWidgetView {
         this.source.center(elementIds);
       }
     }
+  }
+}
+
+namespace Private {
+  let _next_id = 0;
+  export function next_id() {
+    return `sprotty_${_next_id++}`;
   }
 }

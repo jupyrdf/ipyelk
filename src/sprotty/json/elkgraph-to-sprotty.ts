@@ -24,13 +24,10 @@ import {
   isPrimitive,
   isExtended
 } from './elkgraph-json';
-import { get } from 'lodash';
 
-function getClasses(element): string[] {
-  let classes: string[] = get(element, 'properties.cssClasses', '').split(' ');
-  return classes.filter((el: string) => {
-    return el.trim().length > 0;
-  });
+function getClasses(element: ElkGraphElement) {
+  let classes = (element.properties?.cssClasses || '').trim();
+  return classes ? classes.split(' ') : [];
 }
 
 export class ElkGraphJsonToSprotty {

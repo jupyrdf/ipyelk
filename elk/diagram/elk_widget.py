@@ -8,6 +8,8 @@ from ipywidgets import CallbackDispatcher, DOMWidget
 from traitlets import HasTraits, UseEnum
 
 from .._version import EXTENSION_SPEC_VERSION
+from ..schema import ElkSchemaValidator
+from ..trait_types import Schema
 
 module_name = "elk-widget"
 
@@ -28,16 +30,22 @@ class ElkDiagram(DOMWidget):
     _view_module = T.Unicode(module_name).tag(sync=True)
     _view_module_version = T.Unicode(EXTENSION_SPEC_VERSION).tag(sync=True)
 
-    value = T.Dict().tag(sync=True)
+    value = Schema(ElkSchemaValidator).tag(sync=True)
     _mark_layout = T.Dict().tag(sync=True)
     selected = T.Tuple().tag(sync=True)
     hovered = T.Unicode(allow_none=True, default_value=None).tag(sync=True)
     # interaction = T.UseEnum(Interactions).tag(sync=True)
 
-    def __init__(self, **kwargs):
+    def __init__(self, *value, **kwargs):
+        if value:
+            kwargs["value"] = value[0]
         super().__init__(**kwargs)
         self._click_handlers = CallbackDispatcher()
         self.on_msg(self._handle_click_msg)
+
+    @T.default("value")
+    def _default_value(self):
+        return {"id": "root"}
 
     def on_click(self, callback, remove=False):
         """Register a callback to execute when the button is clicked.
@@ -69,7 +77,7 @@ class ElkDiagram(DOMWidget):
 
     def center(self, model_ids: List[str] = None):
         """Center Diagram View on specified model ids
-        
+
         :param model_ids: [description], defaults to None
         :type model_ids: List[str], optional
         """

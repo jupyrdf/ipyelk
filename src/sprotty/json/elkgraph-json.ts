@@ -10,9 +10,14 @@ export interface ElkPoint {
   y: number;
 }
 
+export interface ElkProperties {
+  cssClasses?: string;
+}
+
 export interface ElkGraphElement {
   id: string;
   labels?: ElkLabel[];
+  properties?: ElkProperties;
 }
 
 export interface ElkShape extends ElkGraphElement {
@@ -50,8 +55,8 @@ export interface ElkPrimitiveEdge extends ElkEdge {
 
 export function isPrimitive(edge: ElkEdge): edge is ElkPrimitiveEdge {
   return (
-    (edge as ElkPrimitiveEdge).source !== undefined &&
-    (edge as ElkPrimitiveEdge).target !== undefined
+    (edge as ElkPrimitiveEdge).source != null &&
+    (edge as ElkPrimitiveEdge).target != null
   );
 }
 
@@ -63,8 +68,8 @@ export interface ElkExtendedEdge extends ElkEdge {
 
 export function isExtended(edge: ElkEdge): edge is ElkExtendedEdge {
   return (
-    (edge as ElkExtendedEdge).sources !== undefined &&
-    (edge as ElkExtendedEdge).targets !== undefined
+    (edge as ElkExtendedEdge).sources != null &&
+    (edge as ElkExtendedEdge).targets != null
   );
 }
 
