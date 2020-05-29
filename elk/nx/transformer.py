@@ -2,12 +2,9 @@ import logging
 from collections import defaultdict
 from functools import lru_cache
 from typing import (
-    Callable,
     Dict,
     Generator,
     Hashable,
-    Iterable,
-    Iterator,
     List,
     Optional,
     Tuple,
@@ -19,30 +16,41 @@ import traitlets as T
 from ..app import ElkTransformer
 from ..diagram.elk_model import ElkExtendedEdge, ElkLabel, ElkNode, ElkPort
 from .factors import get_factors, invert, keep
-from .nx import Edge, EdgeMap, compact, get_edge_data, get_roots, lowest_common_ancestor
+from .nx import Edge, EdgeMap, compact, get_roots, lowest_common_ancestor
 
 logger = logging.getLogger(__name__)
+
+
+BASE_LAYOUT_DEFAULTS = {
+    "hierarchyHandling": "INCLUDE_CHILDREN",
+    # "algorithm": "layered",
+    # 'elk.edgeRouting': 'POLYLINE',
+    # 'elk.portConstraints': 'FIXED_SIDE',
+    # 'layering.strategy': 'NETWORK_SIMPEX'
+}
 
 
 class XELK(ElkTransformer):
     """NetworkX DiGraphs to ELK dictionary structure"""
 
     HIDDEN_ATTR = "hidden"
+
     SIDES = {"input": "EAST", "output": "WEST"}
+
     _visible_edges: Optional[EdgeMap] = None
     _hidden_edges: Optional[EdgeMap] = None
 
     source = T.Tuple(
-        T.Union([T.Instance(nx.DiGraph), T.Instance(nx.MultiDiGraph)]),
+        T.Instance(nx.Graph),
         T.Instance(nx.DiGraph, allow_none=True),
     )
-    base_layout = T.Dict(kw={"hierarchyHandling": "INCLUDE_CHILDREN"})
+    base_layout = T.Dict(kw=BASE_LAYOUT_DEFAULTS)
     port_scale = T.Int(default_value=8)
     text_scale = T.Float(default_value=7.5)
 
     def eid(self, node: Hashable) -> str:
         """Get the element id for a node in the main graph for use in elk
-        
+
         :param node: Node in main  graph
         :type node: Hashable
         :return: Element ID
@@ -66,6 +74,9 @@ class XELK(ElkTransformer):
 
     def clear_cached(self):
         # clear old cached info is starting at the top level transform
+
+        # TODO: look into ways to remove the need to have a cache like this
+        # NOTE: this is caused by a series of side effects
         logger.debug("Clearing cached elk info")
         self._nodes: Dict[Hashable, ElkNode] = {}
         self._ports: Dict[Tuple[Hashable, Hashable], ElkPort] = {}
@@ -95,13 +106,10 @@ class XELK(ElkTransformer):
             if base_layout is None:
                 base_layout = {}
 
-            layout = {
-                # 'algorithm': 'layered',
-                # 'elk.edgeRouting': 'POLYLINE',
-                # 'elk.portConstraints': 'FIXED_SIDE',
-                # 'layering.strategy': 'NETWORK_SIMPEX'
-            }
+            layout = {}
 
+            # TODO: refactor this so you can specify node-specific layouts
+            # NOTE: add traitlet for it, and get based on node passed
             layout.update(base_layout)
 
             properties = None
@@ -202,13 +210,13 @@ class XELK(ElkTransformer):
         hidden_edges: EdgeMap,
     ) -> Dict[Hashable, ElkNode]:
         """Transform the given elk nodes by adding information from the hidden_edges. (extra ports / edges and a different level of abstraction then shown)
-        
+
         :param elk_nodes: Given dictionary of elk nodes
         :type elk_nodes: Dict[str, ElkNode]
         :param hidden_edges: List of hidden edges
         :type hidden_edges: List[TunnelEdge]
         :return: Updated dictionary of elk nodes
-        :rtype: Dict[str, ElkNode] 
+        :rtype: Dict[str, ElkNode]
         """
         edge_properties = {"cssClasses": "slack-edge"}
         for owner, edges in hidden_edges.items():
