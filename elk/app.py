@@ -1,11 +1,10 @@
 import logging
-from dataclasses import dataclass
-from typing import Callable, Dict, Hashable, List, Optional
+from typing import Dict, Hashable, Optional
 
 import ipywidgets as W
 import traitlets as T
 
-from .diagram import ElkDiagram, ElkExtendedEdge, ElkLabel, ElkNode
+from .diagram import ElkDiagram, ElkLabel, ElkNode
 from .schema import ElkSchemaValidator
 from .styled_widget import StyledWidget
 from .trait_types import Schema
@@ -51,6 +50,19 @@ class Elk(W.VBox, StyledWidget):
         super().__init__(*args, **kwargs)
         self._update_link()
         self._update_children()
+
+    def _set_arrows_opacity(self, value):
+        css_selector = " path.edge.arrow"
+
+        arrow_style = self.style.get(css_selector, {})
+        arrow_style["opacity"] = str(value)
+        self.style[css_selector] = arrow_style
+
+    def hide_arrows(self):
+        self._set_arrows_opacity(0)
+
+    def show_arrows(self):
+        self._set_arrows_opacity(1)
 
     @T.default("diagram")
     def _default_diagram(self):
