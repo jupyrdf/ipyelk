@@ -39,10 +39,7 @@ class XELK(ElkTransformer):
     _hidden_edges: Optional[EdgeMap] = None
     _visible_edges: Optional[EdgeMap] = None
 
-    source = T.Tuple(
-        T.Instance(nx.Graph),
-        T.Instance(nx.DiGraph, allow_none=True),
-    )
+    source = T.Tuple(T.Instance(nx.Graph), T.Instance(nx.DiGraph, allow_none=True))
     base_layout = T.Dict(kw=BASE_LAYOUT_DEFAULTS)
     port_scale = T.Int(default_value=8)
     text_scale = T.Float(default_value=7.5)

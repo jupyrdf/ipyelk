@@ -13,6 +13,8 @@ logger = logging.getLogger(__name__)
 
 
 class ElkTransformer(W.Widget):
+    """ Transform data into the form required by the ElkDiagram. """
+
     _nodes: Optional[Dict[Hashable, ElkNode]] = None
     source = T.Dict()
     value = Schema(ElkSchemaValidator)
@@ -41,22 +43,27 @@ class ElkTransformer(W.Widget):
 
 
 class Elk(W.VBox, StyledWidget):
+    """ An Elk diagramming widget """
+
     transformer: ElkTransformer = T.Instance(ElkTransformer)
     diagram: ElkDiagram = T.Instance(ElkDiagram)
 
-    _link: T.dlink = None
+    _data_link: T.dlink = None
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self._update_link()
+        self._update_data_link()
         self._update_children()
 
     def _set_arrows_opacity(self, value):
+        style = self.style
         css_selector = " path.edge.arrow"
 
-        arrow_style = self.style.get(css_selector, {})
+        arrow_style = style.get(css_selector, {})
         arrow_style["opacity"] = str(value)
-        self.style[css_selector] = arrow_style
+
+        style[css_selector] = arrow_style
+        self.style = style.copy()
 
     def hide_arrows(self):
         self._set_arrows_opacity(0)
@@ -73,15 +80,17 @@ class Elk(W.VBox, StyledWidget):
         return ElkTransformer()
 
     @T.observe("diagram", "transformer")
-    def _update_link(self, change: T.Bunch = None):
-        if isinstance(self._link, T.link):
-            self._link.unlink()
-            self._link = None
+    def _update_data_link(self, *_):
+        if isinstance(self._data_link, T.link):
+            self._data_link.unlink()
+            self._data_link = None
         if self.transformer and self.diagram:
-            self._link = T.dlink((self.transformer, "value"), (self.diagram, "value"))
+            self._data_link = T.dlink(
+                (self.transformer, "value"), (self.diagram, "value"),
+            )
 
     @T.observe("diagram")
-    def _update_children(self, change: T.Bunch = None):
+    def _update_children(self, *_):
         self.children = [self.diagram]
 
     def refresh(self):
