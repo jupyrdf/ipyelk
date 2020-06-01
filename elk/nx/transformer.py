@@ -18,15 +18,16 @@ from ..diagram.elk_model import ElkExtendedEdge, ElkLabel, ElkNode, ElkPort
 from .factors import get_factors, invert, keep
 from .nx import Edge, EdgeMap, compact, get_roots, lowest_common_ancestor
 
+
 logger = logging.getLogger(__name__)
 
 
 BASE_LAYOUT_DEFAULTS = {
     "hierarchyHandling": "INCLUDE_CHILDREN",
     # "algorithm": "layered",
-    # 'elk.edgeRouting': 'POLYLINE',
-    # 'elk.portConstraints': 'FIXED_SIDE',
-    # 'layering.strategy': 'NETWORK_SIMPEX'
+    # "elk.edgeRouting": "POLYLINE",
+    # "elk.portConstraints": "FIXED_SIDE",
+    # "layering.strategy": "NETWORK_SIMPEX",
 }
 
 
@@ -35,8 +36,8 @@ class XELK(ElkTransformer):
 
     HIDDEN_ATTR = "hidden"
 
-    _visible_edges: Optional[EdgeMap] = None
     _hidden_edges: Optional[EdgeMap] = None
+    _visible_edges: Optional[EdgeMap] = None
 
     source = T.Tuple(
         T.Instance(nx.Graph),
