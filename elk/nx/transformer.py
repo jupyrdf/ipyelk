@@ -1,14 +1,7 @@
 import logging
 from collections import defaultdict
 from functools import lru_cache
-from typing import (
-    Dict,
-    Generator,
-    Hashable,
-    List,
-    Optional,
-    Tuple,
-)
+from typing import Dict, Generator, Hashable, List, Optional, Tuple
 
 import networkx as nx
 import traitlets as T

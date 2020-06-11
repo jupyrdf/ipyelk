@@ -1,6 +1,7 @@
 :root {
-  --jp-elk-node-fill: var(--jp-layout-color1);
+  --jp-elk-stroke-width: 1;
 
+  --jp-elk-node-fill: var(--jp-layout-color1);
   --jp-elk-node-stroke: var(--jp-border-color0);
 
   --jp-elk-edge-stroke: var(--jp-border-color0);
@@ -9,11 +10,11 @@
   --jp-elk-port-stroke: var(--jp-border-color0);
 
   --jp-elk-label-color: var(--jp-ui-font-color0);
-
-  --jp-elk-stroke-width: 1;
+  --jp-elk-label-font: var(--jp-content-font-family);
+  --jp-elk-label-font-size: var(--jp-ui-font-size0);
 
   /* stable states */
-  --jp-elk-stroke-selected: var(--jp-brand-color2);
+  --jp-elk-color-selected: var(--jp-brand-color2);
   --jp-elk-stroke-width-selected: 3;
 
   /* interactive states */
@@ -29,11 +30,15 @@
 .jp-ElkView,
 .jp-ElkView .sprotty {
   height: 100%;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
 }
 
 .jp-ElkView .sprotty > svg.sprotty-graph {
   width: 100%;
   height: 100%;
+  flex: 1;
 }
 
 .jp-ElkView .sprotty .elknode {
@@ -62,8 +67,8 @@
   stroke-width: 0;
   stroke: var(--jp-elk-label-color);
   fill: var(--jp-elk-label-color);
-  font-family: sans-serif;
-  font-size: 10pt;
+  font-family: var(--jp-elk-label-font);
+  font-size: var(--jp-elk-label-font-size);
   dominant-baseline: hanging;
 }
 
@@ -75,17 +80,22 @@
 /* stable states */
 .jp-ElkView .sprotty rect.selected,
 .jp-ElkView .sprotty .sprotty-edge.selected .elkedge {
-  stroke: var(--jp-elk-stroke-selected);
+  stroke: var(--jp-elk-color-selected);
   stroke-width: var(--jp-elk-stroke-width-selected);
   transition: stroke stroke-width var(--jp-elk-transition);
 }
 
 .jp-ElkView .sprotty .sprotty-edge.selected .arrow {
-  fill: var(--jp-elk-stroke-selected);
+  fill: var(--jp-elk-color-selected);
   transition: fill stroke var(--jp-elk-transition);
 }
 
-/* interactive states */
+.jp-ElkView .sprotty .elklabel.selected {
+  fill: var(--jp-elk-color-selected);
+  transition: fill var(--jp-elk-transition);
+}
+
+/* interactive states: elklabel does not have a mouseover selector/ancestor */
 .jp-ElkView .sprotty rect.mouseover,
 .jp-ElkView .sprotty .sprotty-edge.mouseover .elkedge {
   stroke: var(--jp-elk-stroke-hover);
@@ -95,7 +105,7 @@
 
 .jp-ElkView .sprotty .sprotty-edge.mouseover .arrow {
   fill: var(--jp-elk-stroke-hover);
-  transition: fill stroke var(--jp-elk-transition);
+  transition: fill var(--jp-elk-transition);
 }
 
 .jp-ElkView .sprotty rect.selected.mouseover,

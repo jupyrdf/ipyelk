@@ -75,10 +75,43 @@ class ElkDiagram(DOMWidget):
         if content.get("event", "") == "click":
             self.click(content.get("id", ""))
 
-    def center(self, model_ids: List[str] = None):
+    def center(
+        self,
+        model_ids: List[str] = None,
+        animate: bool = None,
+        retain_zoom: bool = None,
+    ):
         """Center Diagram View on specified model ids
 
         :param model_ids: [description], defaults to None
         :type model_ids: List[str], optional
+        :type animate: bool, optional
+        :type retain_zoom: bool, optional
         """
-        self.send({"action": "center", "model_id": model_ids})
+        self.send(
+            {
+                "action": "center",
+                "model_id": model_ids,
+                "animate": True if animate is None else animate,
+                "retain_zoom": False if retain_zoom is None else retain_zoom,
+            }
+        )
+
+    def fit(
+        self,
+        model_ids: List[str] = None,
+        animate: bool = None,
+        max_zoom: float = None,
+        padding: float = None,
+    ):
+        """Pan/Zoom the Diagram View to focus on particular model ids
+        """
+        self.send(
+            {
+                "action": "fit",
+                "model_id": model_ids,
+                "animate": True if animate is None else animate,
+                "max_zoom": max_zoom,
+                "padding": padding,
+            }
+        )

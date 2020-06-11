@@ -16,7 +16,7 @@ import {
 } from 'sprotty';
 
 import Worker from '!!worker-loader!elkjs/lib/elk-worker.min.js';
-import { NAME, VERSION, ELK_DEBUG } from '.';
+import { NAME, VERSION, ELK_DEBUG, TAnyELKMessage } from '.';
 
 import createContainer from './sprotty/di-config';
 import { JLModelSource } from './sprotty/diagram-server';
@@ -63,7 +63,7 @@ export class ELKModel extends DOMWidgetModel {
 
   async view_count_changed() {
     const viewCount: number = this.get('_view_count') || 0;
-    ELK_DEBUG && console.warn('viewCount', viewCount);
+    ELK_DEBUG && console.warn('ELK model', this.cid, 'has', viewCount, 'views');
     const elk: any = this._elk;
     if (viewCount && elk == null) {
       await this.value_changed();
@@ -75,10 +75,10 @@ export class ELKModel extends DOMWidgetModel {
   protected cullElk() {
     const elk: any = this._elk;
     if (elk != null) {
-      ELK_DEBUG && console.warn('culling ELK worker');
+      ELK_DEBUG && console.warn('ELK worker culling for', this.cid);
       elk.worker?.terminate();
     } else {
-      ELK_DEBUG && console.warn('ELK was already culled');
+      ELK_DEBUG && console.warn('ELK was already culled for', this.cid);
     }
     this._elk = null;
   }
@@ -95,7 +95,7 @@ export class ELKModel extends DOMWidgetModel {
   }
 
   async value_changed() {
-    if ((this.get('_view_count') || 0) == 0) {
+    if ((this.get('_view_count') || 0) <= 0) {
       this.cullElk();
       return;
     }
@@ -124,7 +124,12 @@ export class ELKView extends DOMWidgetView {
     this.pWidget.addClass(WIDGET_CLASS);
   }
 
-  render() {
+  async render() {
+    // don't bother initializing sprotty until actually on the page
+    this.once('displayed', this.initSprotty, this);
+  }
+
+  initSprotty() {
     const root = this.el as HTMLDivElement;
     const sprottyDiv = document.createElement('div');
     this.div_id = sprottyDiv.id = Private.next_id();
@@ -229,21 +234,38 @@ export class ELKView extends DOMWidgetView {
     await this.source.updateLayout(layout);
   }
 
-  handleMessage(content, buffers) {
-    switch (content.action) {
-      case 'center': {
-        let elementIds: string[];
-        if (content.hasOwnProperty('model_id')) {
-          if (!Array.isArray(content.model_id)) {
-            elementIds = [content.model_id];
-          } else {
-            elementIds = content.model_id;
-          }
-        } else {
-          elementIds = [];
-        }
-        this.source.center(elementIds);
+  normalizeElementIds(model_id: string | string[] | null) {
+    let elementIds: string[] = [];
+    if (model_id != null) {
+      if (!Array.isArray(model_id)) {
+        elementIds = [model_id];
+      } else {
+        elementIds = model_id;
       }
+    }
+    return elementIds;
+  }
+
+  handleMessage(content: TAnyELKMessage) {
+    switch (content.action) {
+      case 'center':
+        this.source.center(
+          this.normalizeElementIds(content.model_id),
+          content.animate,
+          content.retain_zoom
+        );
+        break;
+      case 'fit':
+        this.source.fit(
+          this.normalizeElementIds(content.model_id),
+          content.padding == null ? 0 : content.padding,
+          content.max_zoom == null ? Infinity : content.max_zoom,
+          content.animate == null ? true : content.animate
+        );
+        break;
+      default:
+        console.warn('ELK unhandled message', content);
+        break;
     }
   }
 }

@@ -1,6 +1,7 @@
 import { injectable } from 'inversify';
 import {
   CenterAction,
+  FitToScreenAction,
   LocalModelSource,
   Viewport,
   Bounds,
@@ -29,8 +30,18 @@ export class JLModelSource extends LocalModelSource {
     return document.getElementById(this.viewerOptions.baseDiv);
   }
 
-  center(elementIds: string[] = []) {
-    let action: CenterAction = new CenterAction(elementIds);
+  center(elementIds: string[] = [], animate = true, retainZoom = false) {
+    let action = new CenterAction(elementIds, animate, retainZoom);
+    this.actionDispatcher.dispatch(action);
+  }
+
+  fit(
+    elementIds: string[] = [],
+    padding?: number,
+    maxZoom?: number,
+    animate?: boolean
+  ) {
+    let action = new FitToScreenAction(elementIds, padding, maxZoom, animate);
     this.actionDispatcher.dispatch(action);
   }
 
