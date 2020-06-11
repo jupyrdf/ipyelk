@@ -1,7 +1,7 @@
 import 'reflect-metadata';
 import difference from 'lodash/difference';
 
-import { DOMWidgetModel, DOMWidgetView, WidgetView } from '@jupyter-widgets/base';
+import { DOMWidgetModel, DOMWidgetView } from '@jupyter-widgets/base';
 import * as ELK from 'elkjs/lib/elk-api';
 import {
   Action,
@@ -16,6 +16,7 @@ import {
 } from 'sprotty';
 
 import Worker from '!!worker-loader!elkjs/lib/elk-worker.min.js';
+import { NAME, VERSION } from '.';
 
 import createContainer from './sprotty/di-config';
 import { JLModelSource } from './sprotty/diagram-server';
@@ -27,12 +28,23 @@ import {
 } from './tools/feedback/feedback-action-dispatcher';
 import { ToolTYPES } from './tools/types';
 
+const WIDGET_CLASS = 'jp-ElkView';
+
 export class ELKModel extends DOMWidgetModel {
+  static model_name = 'ELKModel';
+
   protected _elk: ELK.ELK;
+
   defaults() {
     let defaults = {
       ...super.defaults(),
-      value: { id: 'root' },
+
+      _model_name: ELKModel.model_name,
+      _model_module_version: VERSION,
+      _view_module: NAME,
+      _view_name: ELKView.view_name,
+      _view_module_version: VERSION,
+      value: null,
       _mark_layout: {}
     };
     return defaults;
@@ -55,6 +67,8 @@ export class ELKModel extends DOMWidgetModel {
 }
 
 export class ELKView extends DOMWidgetView {
+  static view_name = 'ELKView';
+
   model: ELKModel;
   source: JLModelSource;
   container: any;
@@ -65,9 +79,17 @@ export class ELKView extends DOMWidgetView {
   feedbackDispatcher: IFeedbackActionDispatcher;
   elementRegistry: SModelRegistry;
 
-  initialize(parameters: WidgetView.InitializeParameters) {
+  initialize(parameters: any) {
     super.initialize(parameters);
-    this.div_id = Private.next_id();
+    this.pWidget.addClass(WIDGET_CLASS);
+  }
+
+  render() {
+    const root = this.el as HTMLDivElement;
+    const sprottyDiv = document.createElement('div');
+    this.div_id = sprottyDiv.id = Private.next_id();
+
+    root.appendChild(sprottyDiv);
 
     // Create Sprotty viewer
     const container = createContainer(this.div_id, this);
@@ -98,6 +120,10 @@ export class ELKView extends DOMWidgetView {
       container.resolve(NodeExpandTool)
     );
     this.toolManager.enableDefaultTools();
+
+    this.diagramLayout().catch(err =>
+      console.warn('Failed initial ELK view render', err)
+    );
   }
 
   handle(action: Action) {
@@ -136,14 +162,6 @@ export class ELKView extends DOMWidgetView {
     this.send({ event: 'click', id: this.model.get('hovered') });
   }
 
-  render() {
-    this.$el[0].id = this.div_id;
-    this.diagramLayout().then(() => {
-      //TODO center diagram in view after ModelViewer is done rendering
-      // this.source.center()
-    });
-  }
-
   updateSelected() {
     let selected: string[] = this.model.get('selected');
     let old_selected: string[] = this.model.previous('selected');
@@ -168,7 +186,6 @@ export class ELKView extends DOMWidgetView {
 
   async diagramLayout() {
     let layout = this.model.get('_mark_layout');
-    this.touch();
     await this.source.updateLayout(layout);
   }
 

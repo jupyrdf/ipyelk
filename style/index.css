@@ -1,52 +1,111 @@
-.p-Widget.sprotty {
+:root {
+  --jp-elk-node-fill: var(--jp-layout-color1);
+
+  --jp-elk-node-stroke: var(--jp-border-color0);
+
+  --jp-elk-edge-stroke: var(--jp-border-color0);
+
+  --jp-elk-port-fill: var(--jp-layout-color1);
+  --jp-elk-port-stroke: var(--jp-border-color0);
+
+  --jp-elk-label-color: var(--jp-ui-font-color0);
+
+  --jp-elk-stroke-width: 1;
+
+  /* stable states */
+  --jp-elk-stroke-selected: var(--jp-brand-color2);
+  --jp-elk-stroke-width-selected: 3;
+
+  /* interactive states */
+  --jp-elk-stroke-hover: var(--jp-brand-color3);
+  --jp-elk-stroke-width-hover: 2;
+
+  --jp-elk-stroke-hover-selected: var(--jp-warn-color3);
+
+  /* sugar */
+  --jp-elk-transition: 0.1s ease-in;
+}
+
+.jp-ElkView,
+.jp-ElkView .sprotty {
   height: 100%;
 }
 
-.p-Widget.sprotty > svg.sprotty-graph {
+.jp-ElkView .sprotty > svg.sprotty-graph {
   width: 100%;
   height: 100%;
 }
 
-.elknode {
-  stroke: #448;
-  stroke-width: 1;
-  fill: #ddf;
+.jp-ElkView .sprotty .elknode {
+  stroke: var(--jp-elk-node-stroke);
+  stroke-width: var(--jp-elk-stroke-width);
+  fill: var(--jp-elk-node-fill);
 }
 
-.elkport {
-  stroke: #448;
-  stroke-width: 1;
-  fill: #66c;
+.jp-ElkView .sprotty .elkport {
+  stroke: var(--jp-elk-port-stroke);
+  stroke-width: var(--jp-elk-stroke-width);
+  fill: var(--jp-elk-port-fill);
 }
 
-.elkedge {
+.jp-ElkView .sprotty .elkedge {
   fill: none;
-  stroke: #224;
-  stroke-width: 1;
+  stroke: var(--jp-elk-edge-stroke);
+  stroke-width: var(--jp-elk-stroke-width);
 }
 
-.elkedge.arrow {
-  fill: #336;
+.jp-ElkView .sprotty .edge.arrow {
+  fill: var(--jp-elk-edge-stroke);
 }
 
-.elklabel {
+.jp-ElkView .sprotty .elklabel {
   stroke-width: 0;
-  stroke: #000;
-  fill: #000;
+  stroke: var(--jp-elk-label-color);
+  fill: var(--jp-elk-label-color);
   font-family: sans-serif;
   font-size: 10pt;
   dominant-baseline: hanging;
 }
 
-.elkjunction {
+.jp-ElkView .sprotty .elkjunction {
   stroke: none;
-  fill: #224;
+  fill: var(--jp-elk-edge-stroke);
 }
 
-rect.selected {
-  stroke-width: 3;
+/* stable states */
+.jp-ElkView .sprotty rect.selected,
+.jp-ElkView .sprotty .sprotty-edge.selected .elkedge {
+  stroke: var(--jp-elk-stroke-selected);
+  stroke-width: var(--jp-elk-stroke-width-selected);
+  transition: stroke stroke-width var(--jp-elk-transition);
 }
 
-rect.mouseover {
-  stroke: #88f;
+.jp-ElkView .sprotty .sprotty-edge.selected .arrow {
+  fill: var(--jp-elk-stroke-selected);
+  transition: fill stroke var(--jp-elk-transition);
+}
+
+/* interactive states */
+.jp-ElkView .sprotty rect.mouseover,
+.jp-ElkView .sprotty .sprotty-edge.mouseover .elkedge {
+  stroke: var(--jp-elk-stroke-hover);
+  stroke-width: var(--jp-elk-stroke-width-hover);
+  transition: stroke stroke-width var(--jp-elk-transition);
+}
+
+.jp-ElkView .sprotty .sprotty-edge.mouseover .arrow {
+  fill: var(--jp-elk-stroke-hover);
+  transition: fill stroke var(--jp-elk-transition);
+}
+
+.jp-ElkView .sprotty rect.selected.mouseover,
+.jp-ElkView .sprotty .sprotty-edge.selected.mouseover .elkedge {
+  stroke-width: var(--jp-elk-stroke-width-hover);
+  stroke: var(--jp-elk-stroke-hover-selected);
+  transition: fill stroke var(--jp-elk-transition);
+}
+
+.jp-ElkView .sprotty .sprotty-edge.mouseover.selected .arrow {
+  fill: var(--jp-elk-stroke-hover-selected);
+  transition: fill stroke var(--jp-elk-transition);
 }
