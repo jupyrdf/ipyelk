@@ -35,6 +35,10 @@
   flex: 1;
 }
 
+.jp-ElkView .sprotty text {
+  user-select: none;
+}
+
 .jp-ElkView .sprotty > svg.sprotty-graph {
   width: 100%;
   height: 100%;
