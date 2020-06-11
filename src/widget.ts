@@ -16,7 +16,7 @@ import {
 } from 'sprotty';
 
 import Worker from '!!worker-loader!elkjs/lib/elk-worker.min.js';
-import { NAME, VERSION } from '.';
+import { NAME, VERSION, ELK_DEBUG } from '.';
 
 import createContainer from './sprotty/di-config';
 import { JLModelSource } from './sprotty/diagram-server';
@@ -29,6 +29,7 @@ import {
 import { ToolTYPES } from './tools/types';
 
 const WIDGET_CLASS = 'jp-ElkView';
+const DEFAULT_VALUE = { id: 'root' };
 
 export class ELKModel extends DOMWidgetModel {
   static model_name = 'ELKModel';
@@ -44,7 +45,7 @@ export class ELKModel extends DOMWidgetModel {
       _view_module: NAME,
       _view_name: ELKView.view_name,
       _view_module_version: VERSION,
-      value: null,
+      value: DEFAULT_VALUE,
       _mark_layout: {}
     };
     return defaults;
@@ -52,17 +53,56 @@ export class ELKModel extends DOMWidgetModel {
 
   initialize(attributes: any, options: any) {
     super.initialize(attributes, options);
-    this._elk = new ELK.default({ workerFactory: () => new (Worker as any)() } as any);
     this.on('change:value', this.value_changed, this);
+    this.on('change:_view_count', this.view_count_changed, this);
+    if (this.get('_view_count') == null) {
+      this.set('_view_count', 0);
+    }
     this.value_changed().catch(err => console.error(err));
   }
 
-  async value_changed() {
-    let value = this.get('value');
-    if (this._elk && value != null && Object.keys(value).length) {
-      let layout = await this._elk.layout(value);
-      this.set('_mark_layout', layout);
+  async view_count_changed() {
+    const viewCount: number = this.get('_view_count') || 0;
+    ELK_DEBUG && console.warn('viewCount', viewCount);
+    const elk: any = this._elk;
+    if (viewCount && elk == null) {
+      await this.value_changed();
+    } else if (viewCount <= 0 && elk) {
+      this.cullElk();
     }
+  }
+
+  protected cullElk() {
+    const elk: any = this._elk;
+    if (elk != null) {
+      ELK_DEBUG && console.warn('culling ELK worker');
+      elk.worker?.terminate();
+    } else {
+      ELK_DEBUG && console.warn('ELK was already culled');
+    }
+    this._elk = null;
+  }
+
+  protected ensureElk() {
+    if (this._elk == null) {
+      this._elk = new ELK.default({
+        workerFactory: () => {
+          ELK_DEBUG && console.warn('ELK Worker created');
+          return new (Worker as any)();
+        }
+      } as any);
+    }
+  }
+
+  async value_changed() {
+    if ((this.get('_view_count') || 0) == 0) {
+      this.cullElk();
+      return;
+    }
+
+    const value = this.get('value');
+    this.ensureElk();
+    this.set('_mark_layout', await this._elk.layout(value));
   }
 }
 
@@ -122,7 +162,7 @@ export class ELKView extends DOMWidgetView {
     this.toolManager.enableDefaultTools();
 
     this.diagramLayout().catch(err =>
-      console.warn('Failed initial ELK view render', err)
+      console.warn('ELK Failed initial view render', err)
     );
   }
 
@@ -190,7 +230,6 @@ export class ELKView extends DOMWidgetView {
   }
 
   handleMessage(content, buffers) {
-    // console.log('custom msg', content, buffers);
     switch (content.action) {
       case 'center': {
         let elementIds: string[];

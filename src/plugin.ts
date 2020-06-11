@@ -13,10 +13,14 @@ const plugin: IPlugin<Application<Widget>, void> = {
   requires: [IJupyterWidgetRegistry],
   autoStart: true,
   activate: (app: Application<Widget>, registry: IJupyterWidgetRegistry) => {
+    console.log();
     registry.registerWidget({
       name: NAME,
       version: VERSION,
-      exports: async () => await import(/* webpackChunkName: "elk" */ './widget')
+      exports: async () => {
+        const widgetExports = await import(/* webpackChunkName: "elk" */ './widget');
+        return widgetExports;
+      }
     });
   }
 };
