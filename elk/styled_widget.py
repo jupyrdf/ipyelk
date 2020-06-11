@@ -17,7 +17,7 @@ class StyledWidget(W.Box):
     def _valid_children(self, proposal):
         """Ensure incoming children include the css widget for the custom styling"""
         value = proposal["value"]
-        if value and not self._css_widget in value:
+        if value and self._css_widget not in value:
             value = [self._css_widget] + list(value)
         return value
 
@@ -26,7 +26,7 @@ class StyledWidget(W.Box):
         """Build the custom css to attach to the dom"""
         style = []
         for _cls, attrs in self.style.items():
-            if not "@keyframes" in _cls:
+            if "@keyframes" not in _cls:
                 selector = f".{self._css_class}{_cls}"
                 css_attributes = "".join(
                     [f"{key}: {value};" for key, value in attrs.items()]
