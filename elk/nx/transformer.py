@@ -33,9 +33,10 @@ class XELK(ElkTransformer):
 
     source = T.Tuple(T.Instance(nx.Graph), T.Instance(nx.DiGraph, allow_none=True))
     base_layout = T.Dict(kw=BASE_LAYOUT_DEFAULTS)
-    port_scale = T.Int(default_value=8)
-    text_scale = T.Float(default_value=7.5)
+    port_scale = T.Int(default_value=10)
+    text_scale = T.Float(default_value=10)
     label_key = T.Unicode(default_value="label")
+    label_offset = T.Float(default_value=5)
 
     def eid(self, node: Hashable) -> str:
         """Get the element id for a node in the main graph for use in elk
@@ -223,8 +224,9 @@ class XELK(ElkTransformer):
             )  # max(len(ins), len(outs))  # max number of ports
         height = max(18, height)
         if node.labels:
-            width = self.text_scale * max(
-                len(label.text or " ") for label in node.labels
+            width = (
+                self.text_scale * max(len(label.text or " ") for label in node.labels)
+                + self.label_offset
             )
         else:
             width = self.text_scale
@@ -238,7 +240,15 @@ class XELK(ElkTransformer):
         name = data.get(self.label_key, data.get("_id", f"{node}"))
         width = self.text_scale * len(name)
 
-        return [ElkLabel(id=f"{name}_label_{node}", text=name, width=width)]
+        return [
+            ElkLabel(
+                id=f"{name}_label_{node}",
+                text=name,
+                width=width,
+                x=self.label_offset,
+                y=self.label_offset,
+            )
+        ]
 
     def collect_edges(self) -> Tuple[EdgeMap, EdgeMap]:
         """[summary]
