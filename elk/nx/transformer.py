@@ -11,7 +11,6 @@ from ..diagram.elk_model import ElkExtendedEdge, ElkLabel, ElkNode, ElkPort
 from .factors import get_factors, invert, keep
 from .nx import Edge, EdgeMap, compact, get_roots, lowest_common_ancestor
 
-
 logger = logging.getLogger(__name__)
 
 
