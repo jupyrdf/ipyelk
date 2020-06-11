@@ -5,7 +5,8 @@ import {
   LocalModelSource,
   Viewport,
   Bounds,
-  GetViewportAction
+  GetViewportAction,
+  InitializeCanvasBoundsAction
 } from 'sprotty';
 import { ElkGraphJsonToSprotty } from './json/elkgraph-to-sprotty';
 
@@ -42,6 +43,11 @@ export class JLModelSource extends LocalModelSource {
     animate?: boolean
   ) {
     let action = new FitToScreenAction(elementIds, padding, maxZoom, animate);
+    this.actionDispatcher.dispatch(action);
+  }
+
+  resize(bounds: Bounds) {
+    let action = new InitializeCanvasBoundsAction(bounds);
     this.actionDispatcher.dispatch(action);
   }
 

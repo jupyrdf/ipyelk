@@ -1,8 +1,14 @@
 import 'reflect-metadata';
 import difference from 'lodash/difference';
 
+import { Message } from '@phosphor/messaging';
+import { Widget } from '@phosphor/widgets';
+
 import { DOMWidgetModel, DOMWidgetView } from '@jupyter-widgets/base';
+
+import Worker from '!!worker-loader!elkjs/lib/elk-worker.min.js';
 import * as ELK from 'elkjs/lib/elk-api';
+
 import {
   Action,
   ActionDispatcher,
@@ -15,11 +21,11 @@ import {
   TYPES
 } from 'sprotty';
 
-import Worker from '!!worker-loader!elkjs/lib/elk-worker.min.js';
 import { NAME, VERSION, ELK_DEBUG, TAnyELKMessage } from '.';
 
 import createContainer from './sprotty/di-config';
 import { JLModelSource } from './sprotty/diagram-server';
+
 import { NodeExpandTool, NodeSelectTool } from './tools';
 
 import {
@@ -169,6 +175,22 @@ export class ELKView extends DOMWidgetView {
     this.diagramLayout().catch(err =>
       console.warn('ELK Failed initial view render', err)
     );
+  }
+
+  processPhosphorMessage(msg: Message): void {
+    super.processPhosphorMessage(msg);
+    switch (msg.type) {
+      case 'resize':
+        const resizeMessage = msg as Widget.ResizeMessage;
+        let { width, height } = resizeMessage;
+        if (width === -1 || height === -1) {
+          const rect = (this.el as HTMLDivElement).getBoundingClientRect();
+          width = rect.width;
+          height = rect.height;
+        }
+        this.source.resize({ width, height, x: 0, y: 0 });
+        break;
+    }
   }
 
   handle(action: Action) {
