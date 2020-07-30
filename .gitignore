@@ -146,14 +146,14 @@ $RECYCLE.BIN/
 # ----
 
 **/node_modules/
-elk/nbextension/static/index.*
-elk/labextension/*.tgz
+ipyelk/nbextension/static/index.*
+ipyelk/labextension/*.tgz
 
 # Coverage data
 # -------------
 **/coverage/
 
 # Packed lab extensions
-elk/labextension
-elk/schema/*.json
+ipyelk/labextension
+ipyelk/schema/*.json
 .idea/
