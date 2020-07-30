@@ -1,4 +1,4 @@
-# `elk-widget`
+# `ipyelk`
 
 [ELK](https://github.com/kieler/elkjs) widget for
 [JupyterLab](https://github.com/jupyterlab/jupyterlab)
@@ -12,12 +12,12 @@
 
 ```bash
 pip install elk
-jupyter labextension install @jupyter-widgets/jupyterlab-manager elk-widget
+jupyter labextension install @jupyter-widgets/jupyterlab-manager ipyelk
 ```
 
 ## Uninstall
 
 ```bash
 pip uninstall elk
-jupyter labextension uninstall elk-widget
+jupyter labextension uninstall ipyelk
 ```

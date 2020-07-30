@@ -1,16 +1,16 @@
 {
-  "name": "elk-widget",
+  "name": "ipyelk",
   "version": "0.1.1",
-  "description": "ELK widget for Jupyter",
+  "description": "ElkJS widget for Jupyter",
   "keywords": [
     "jupyter",
     "jupyterlab",
     "jupyterlab-extension",
     "widgets"
   ],
-  "homepage": "https://github.gatech.edu/dfreeman6/elk-widget",
+  "homepage": "https://github.edu/dfreeman06/ipyelk",
   "bugs": {
-    "url": "https://github.gatech.edu/dfreeman6/elk-widget/issues"
+    "url": "https://github.edu/dfreeman06/ipyelk/issues"
   },
   "license": "BSD-3-Clause",
   "author": "Dane Freeman",
@@ -23,7 +23,7 @@
   "style": "style/index.css",
   "repository": {
     "type": "git",
-    "url": "https://github.gatech.edu/dfreeman6/elk-widget.git"
+    "url": "https://github.edu/dfreeman06/ipyelk.git"
   },
   "scripts": {
     "bootstrap": "jlpm --ignore-optional --ignore-scripts && jlpm clean && jlpm schema && jlpm lint && jlpm build",

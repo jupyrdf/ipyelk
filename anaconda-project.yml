@@ -1,4 +1,4 @@
-name: elk-widget
+name: ipyelk
 
 variables:
   ELK_SRC: >-

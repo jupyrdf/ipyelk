@@ -7,21 +7,21 @@ from pathlib import Path
 import setuptools
 
 HERE = Path(__file__).parent
-
+name = "ipyelk"
 
 setup_args = dict(
-    name="elk",
+    name=name,
     description="ELK widget for Jupyter",
     version=re.findall(
-        r'''__version__ = "([^"]+)"''', (HERE / "elk" / "_version.py").read_text()
+        r'''__version__ = "([^"]+)"''', (HERE / name / "_version.py").read_text()
     )[0],
     packages=setuptools.find_packages(),
     author="Dane Freeman",
     author_email="dane.freeman@gtri.gatech.edu",
-    url="https://github.gatech.edu/dfreeman6/elk-widget",
+    url="https://github.edu/dfreeman06/ipyelk",
     license="BSD-3-Clause",
     platforms="Linux, Mac OS X, Windows",
-    keywords=["Jupyter", "Widgets", "IPython"],
+    keywords=["Jupyter", "Widgets", "IPython", "ElkJS"],
     classifiers=[
         "Intended Audience :: Developers",
         "Intended Audience :: Science/Research",

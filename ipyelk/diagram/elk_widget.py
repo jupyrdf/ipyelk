@@ -11,7 +11,7 @@ from .._version import EXTENSION_SPEC_VERSION
 from ..schema import ElkSchemaValidator
 from ..trait_types import Schema
 
-module_name = "elk-widget"
+module_name = "ipyelk"
 
 
 class Interactions(enum.Enum):

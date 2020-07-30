@@ -1,4 +1,4 @@
-# Contributing to `elk-widget`
+# Contributing to `ipyelk`
 
 ## Install
 
