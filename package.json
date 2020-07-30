@@ -28,9 +28,9 @@
   "scripts": {
     "bootstrap": "jlpm --ignore-optional --ignore-scripts && jlpm clean && jlpm schema && jlpm lint && jlpm build",
     "build": "tsc -b",
-    "clean": "rimraf lib ./elk/schema/elkschema.json",
+    "clean": "rimraf lib ./ipyelk/schema/elkschema.json",
     "watch": "jlpm build -w",
-    "schema": "ts-json-schema-generator --path ./src/elkschema.ts -o ./elk/schema/elkschema.json",
+    "schema": "ts-json-schema-generator --path ./src/elkschema.ts -o ./ipyelk/schema/elkschema.json",
     "lint": "jlpm prettier",
     "prettier": "prettier --write \"*.{json,yml,md}\" \"{src,style,elk}/**/*.{ts,tsx,js,jsx,css,json,md,yml}\""
   },
