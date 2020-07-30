@@ -44,7 +44,9 @@
               "type": "object"
             }
           },
-          "required": ["id"],
+          "required": [
+            "id"
+          ],
           "type": "object"
         },
         {
@@ -90,7 +92,12 @@
               "type": "array"
             }
           },
-          "required": ["id", "sections", "sources", "targets"],
+          "required": [
+            "id",
+            "sections",
+            "sources",
+            "targets"
+          ],
           "type": "object"
         },
         {
@@ -142,7 +149,11 @@
               "type": "string"
             }
           },
-          "required": ["id", "source", "target"],
+          "required": [
+            "id",
+            "source",
+            "target"
+          ],
           "type": "object"
         },
         {
@@ -182,7 +193,11 @@
               "type": "array"
             }
           },
-          "required": ["id", "sources", "targets"],
+          "required": [
+            "id",
+            "sources",
+            "targets"
+          ],
           "type": "object"
         }
       ]
@@ -236,7 +251,9 @@
           "type": "number"
         }
       },
-      "required": ["id"],
+      "required": [
+        "id"
+      ],
       "type": "object"
     },
     "AnyElkPort": {
@@ -270,7 +287,9 @@
           "type": "number"
         }
       },
-      "required": ["id"],
+      "required": [
+        "id"
+      ],
       "type": "object"
     },
     "ElkEdge": {
@@ -295,7 +314,9 @@
           "$ref": "#/definitions/LayoutOptions"
         }
       },
-      "required": ["id"],
+      "required": [
+        "id"
+      ],
       "type": "object"
     },
     "ElkEdgeSection": {
@@ -344,7 +365,11 @@
           "$ref": "#/definitions/ElkPoint"
         }
       },
-      "required": ["endPoint", "id", "startPoint"],
+      "required": [
+        "endPoint",
+        "id",
+        "startPoint"
+      ],
       "type": "object"
     },
     "ElkExtendedEdge": {
@@ -387,7 +412,12 @@
           "type": "array"
         }
       },
-      "required": ["id", "sections", "sources", "targets"],
+      "required": [
+        "id",
+        "sections",
+        "sources",
+        "targets"
+      ],
       "type": "object"
     },
     "ElkLabel": {
@@ -421,7 +451,10 @@
           "type": "number"
         }
       },
-      "required": ["id", "text"],
+      "required": [
+        "id",
+        "text"
+      ],
       "type": "object"
     },
     "ElkPoint": {
@@ -434,7 +467,10 @@
           "type": "number"
         }
       },
-      "required": ["x", "y"],
+      "required": [
+        "x",
+        "y"
+      ],
       "type": "object"
     },
     "ElkPort": {
@@ -465,7 +501,9 @@
           "type": "number"
         }
       },
-      "required": ["id"],
+      "required": [
+        "id"
+      ],
       "type": "object"
     },
     "ElkPrimitiveEdge": {
@@ -514,7 +552,11 @@
           "type": "string"
         }
       },
-      "required": ["id", "source", "target"],
+      "required": [
+        "id",
+        "source",
+        "target"
+      ],
       "type": "object"
     },
     "LayoutOptions": {
@@ -557,7 +599,11 @@
           "type": "array"
         }
       },
-      "required": ["id", "sources", "targets"],
+      "required": [
+        "id",
+        "sources",
+        "targets"
+      ],
       "type": "object"
     }
   }
