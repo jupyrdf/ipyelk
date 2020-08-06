@@ -42,7 +42,7 @@ anaconda-project run watch
 ```
 
 - Open a tab with the provided URL in your standards-compliant browser of choice
-- After making changes, reload your browser
+- After making changes, wait for `webpack` terminal output, then reload your browser
 
 ## Quality Assurance
 

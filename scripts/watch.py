@@ -6,6 +6,9 @@ import subprocess
 import sys
 import time
 from pathlib import Path
+from logging import getLogger
+
+log = getLogger(__name__)
 
 from jupyterlab.commands import get_app_dir
 
@@ -21,18 +24,25 @@ INDEX = STATIC / "index.html"
 INTERVAL = 10
 
 
+
 def prep():
     """ do a normal build of lab, then clean out static
     """
+    log.warning("building extension...")
     subprocess.check_call([JLPM, "build"])
+    log.warning("installing extension...")
     subprocess.check_call(
         ["jupyter", "labextension", "install", ".", "--no-build", "--debug"],
         cwd=str(ROOT),
     )
+    log.warning("pre-building lab...")
     subprocess.check_call(["jupyter", "lab", "build"], cwd=str(ROOT))
+    log.warning("adding missing deps...")
     subprocess.check_call(
-        [JLPM, "add", "--dev", "chokidar", "watchpack-chokidar2"], cwd=str(STAGING)
+        [JLPM, "add", "--dev", "chokidar", "watchpack-chokidar2", "--ignore-optional"],
+        cwd=str(STAGING),
     )
+    log.warning("cleaning lab...")
     shutil.rmtree(STATIC)
 
 
@@ -40,24 +50,31 @@ def watch():
     """ after preparing, install missing dependencies, and start watchers
     """
     prep()
+    log.warning("watching src...")
     ts = subprocess.Popen([JLPM, "watch"], cwd=str(ROOT))
+    log.warning("watching webpack...")
     webpack = subprocess.Popen([JLPM, "watch"], cwd=str(STAGING))
 
-    timeout = 120
-    while timeout > 0 and not INDEX.exists():
-        print(INDEX, f"not ready yet, will wait {timeout}s...")
-        time.sleep(INTERVAL)
-        timeout -= INTERVAL
-
-    if timeout <= 0:
-        print(INDEX, "not created, giving up!")
+    def stop():
+        log.warning("stopping watchers...")
         ts.terminate()
         webpack.terminate()
         ts.wait()
         webpack.wait()
+        log.warning("...watchers stopped!")
+
+    timeout = 120
+    while timeout > 0 and not INDEX.exists():
+        log.warning(f"Lab not ready yet, will wait {timeout}s...")
+        time.sleep(INTERVAL)
+        timeout -= INTERVAL
+
+    if timeout <= 0:
+        log.warning(INDEX, "not created, giving up!")
+        stop()
         return 1
 
-    print("Built, starting lab...")
+    log.warning("Built, starting lab...")
 
     lab = subprocess.Popen(
         ["jupyter", "lab", "--no-browser", "--debug"],
@@ -68,7 +85,10 @@ def watch():
     try:
         lab.wait()
     except KeyboardInterrupt:
-        print("attempting to stop lab, you may want to check your process monitor")
+        log.warning(
+            "attempting to stop lab, you may want to check your process monitor",
+            flush=True,
+        )
         lab.terminate()
         lab.communicate(b"y\n")
     finally:
@@ -76,8 +96,7 @@ def watch():
         ts.terminate()
 
     lab.wait()
-    ts.wait()
-    webpack.wait()
+    stop()
     return 0
 
 
