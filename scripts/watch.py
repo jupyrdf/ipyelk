@@ -74,7 +74,7 @@ def watch():
         stop()
         return 1
 
-    log.warning("Built, starting lab...")
+    log.warning("Initial build complete, starting lab...")
 
     lab = subprocess.Popen(
         ["jupyter", "lab", "--no-browser", "--debug"],
