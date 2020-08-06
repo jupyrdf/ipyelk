@@ -9,4 +9,5 @@ __version__ = "0.1.0"
 #
 # Update this value when attributes are added/removed from
 # your models, or serialized format changes.
-EXTENSION_SPEC_VERSION = "1.0.0"
+EXTENSION_NAME = "@jupyrdf/jupyter-elk"
+EXTENSION_SPEC_VERSION = "0.1.0"

@@ -1,5 +1,5 @@
 {
-  "name": "ipyelk",
+  "name": "@jupyrdf/jupyter-elk",
   "version": "0.1.1",
   "description": "ElkJS widget for Jupyter",
   "keywords": [
@@ -8,22 +8,22 @@
     "jupyterlab-extension",
     "widgets"
   ],
-  "homepage": "https://github.edu/dfreeman06/ipyelk",
+  "homepage": "https://github.com/jupyrdf/ipyelk",
   "bugs": {
-    "url": "https://github.edu/dfreeman06/ipyelk/issues"
+    "url": "https://github.com/jupyrdf/ipyelk/issues"
   },
   "license": "BSD-3-Clause",
   "author": "Dane Freeman",
   "files": [
-    "lib/**/*.{d.ts,eot,gif,html,jpg,js,js.map,json,png,svg,woff2,ttf}",
-    "style/**/*.{css,eot,gif,html,jpg,json,png,svg,woff2,ttf}"
+    "{lib,style,src}/**/*.{.ts,eot,gif,html,jpg,js,js.map,json,png,svg,woff2,ttf,css}",
+    "LICENSE.txt"
   ],
   "main": "lib/index.js",
   "types": "lib/index.d.ts",
   "style": "style/index.css",
   "repository": {
     "type": "git",
-    "url": "https://github.edu/dfreeman06/ipyelk.git"
+    "url": "https://github.com/jupyrdf/ipyelk"
   },
   "scripts": {
     "bootstrap": "jlpm --ignore-optional --ignore-scripts && jlpm clean && jlpm schema && jlpm lint && jlpm build",
