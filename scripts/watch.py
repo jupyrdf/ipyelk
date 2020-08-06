@@ -85,14 +85,9 @@ def watch():
     try:
         lab.wait()
     except KeyboardInterrupt:
-        log.warning(
-            "attempting to stop lab, you may want to check your process monitor",
-        )
+        log.warning("Stopping lab, you may want to check your process monitor...")
         lab.terminate()
         lab.communicate(b"y\n")
-    finally:
-        webpack.terminate()
-        ts.terminate()
 
     lab.wait()
     stop()
