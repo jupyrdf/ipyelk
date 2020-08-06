@@ -11,7 +11,6 @@
 git clone https://github.com/jupyrdf/ipyelk
 cd ipyelk
 anaconda-project run setup    # this is what happens on binder
-anaconda-project run dev      # setup the local labextension
 anaconda-project run lab      # start lab
 ```
 
@@ -21,9 +20,11 @@ anaconda-project run lab      # start lab
 | ------------------------------ | ------------------------------------------------------------------------------- |
 | `anaconda-project.yml`         | the current environment and task automation tool, may be replaced in the future |
 | `anaconda-project-lock.yml`    | the frozen environments                                                         |
+| `setup.py` / `setup.cfg`       | the package description for `ipyelk`                                            |
+| `package.json/`                | the `npm` package description for `@jupyrdf/jupyter-elk`                        |
+| `src/`                         | the TypeScript source for `@jupyrdf/jupyter-elk`                                |
 | `ipyelk/`                      | the Python source for `ipyelk`                                                  |
 | `ipyelk/schema/elkschema.json` | the JSON schema derived from the TypeScript source                              |
-| `src/`                         | the TypeScript source for `@jupyrdf/jupyter-elk`                                |
 
 - Most python-related commands are run with `anaconda-project run`
 - Most typescript-related commands are run with
