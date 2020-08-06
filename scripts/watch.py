@@ -36,7 +36,9 @@ def prep():
         cwd=str(ROOT),
     )
     log.warning("pre-building lab...")
-    subprocess.check_call(["jupyter", "lab", "build"], cwd=str(ROOT))
+    subprocess.check_call(
+        ["jupyter", "lab", "build", "--minimize=False"], cwd=str(ROOT)
+    )
     log.warning("adding missing deps...")
     subprocess.check_call(
         [JLPM, "add", "--dev", "chokidar", "watchpack-chokidar2", "--ignore-optional"],

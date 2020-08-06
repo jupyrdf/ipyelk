@@ -41,8 +41,9 @@ in the extension's source and automatically rebuild the extension and applicatio
 anaconda-project run watch
 ```
 
-- Open a tab with the provided URL in your standards-compliant browser of choice
-- After making changes, wait for `webpack` terminal output, then reload your browser
+- Open a tab with the provided URL in a standards-compliant browser of choice
+- After making changes, wait for `webpack` terminal output, then reload the browser
+- If you add a new file, probably will have to restart the whole thing
 
 ## Quality Assurance
 
