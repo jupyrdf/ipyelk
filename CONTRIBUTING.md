@@ -15,6 +15,20 @@ anaconda-project run dev      # setup the local labextension
 anaconda-project run lab      # start lab
 ```
 
+## Important Paths
+
+| Path                           | Purpose                                                                         |
+| ------------------------------ | ------------------------------------------------------------------------------- |
+| `anaconda-project.yml`         | the current environment and task automation tool, may be replaced in the future |
+| `anaconda-project-lock.yml`    | the frozen environments                                                         |
+| `ipyelk/`                      | the Python source for `ipyelk`                                                  |
+| `ipyelk/schema/elkschema.json` | the JSON schema derived from the TypeScript source                              |
+| `src/`                         | the TypeScript source for `@jupyrdf/jupyter-elk`                                |
+
+- most python-related commands are run with `anaconda-project run`
+- most typescript-related commands are run with
+  `anaconda-project run jlpm <script in package.json>`
+
 ## Live Development
 
 You can watch the source directory and run JupyterLab in watch mode to watch for changes
@@ -63,6 +77,7 @@ anaconda-project run dist
 
 ```bash
 anaconda-project update
+anaconda-project run lint
 ```
 
 - Commit the changes to the project file and the
