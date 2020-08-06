@@ -5,12 +5,13 @@ import shutil
 import subprocess
 import sys
 import time
-from pathlib import Path
 from logging import getLogger
+from pathlib import Path
+
+from jupyterlab.commands import get_app_dir
 
 log = getLogger(__name__)
 
-from jupyterlab.commands import get_app_dir
 
 HERE = Path(__file__).parent
 ROOT = HERE.parent
@@ -22,7 +23,6 @@ STATIC = APP_DIR / "static"
 INDEX = STATIC / "index.html"
 
 INTERVAL = 10
-
 
 
 def prep():
@@ -87,7 +87,6 @@ def watch():
     except KeyboardInterrupt:
         log.warning(
             "attempting to stop lab, you may want to check your process monitor",
-            flush=True,
         )
         lab.terminate()
         lab.communicate(b"y\n")
