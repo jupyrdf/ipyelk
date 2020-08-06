@@ -86,12 +86,12 @@ def watch():
             flush=True,
         )
     finally:
+        stop()
         lab.terminate()
         lab.communicate(b"y\n")
-        stop()
 
-    lab.wait()
     stop()
+    lab.wait()
     return 0
 
 
