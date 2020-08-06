@@ -1,6 +1,7 @@
 """ handle lingering issues with jupyterlab 1.x build
 """
 
+import atexit
 import shutil
 import subprocess
 import sys
@@ -57,7 +58,19 @@ def watch():
     log.warning("watching webpack...")
     webpack = subprocess.Popen([JLPM, "watch"], cwd=str(STAGING))
 
+    lab = None
+
     def stop():
+        if lab is not None and lab.returncode is not None:
+            try:
+                log.warning(
+                    "Stopping lab, you may want to check your process monitor..."
+                )
+                lab.terminate()
+                lab.communicate(b"y\n")
+                lab.wait()
+            except:
+                pass
         log.warning("stopping watchers...")
         ts.terminate()
         webpack.terminate()
@@ -65,13 +78,15 @@ def watch():
         webpack.wait()
         log.warning("...watchers stopped!")
 
-    timeout = 120
-    while timeout > 0 and not INDEX.exists():
+    atext.register(stop)
+
+    timeout = 300
+    while wepack.returncode is None and timeout > 0 and not INDEX.exists():
         log.warning(f"Lab not ready yet, will wait {timeout}s...")
         time.sleep(INTERVAL)
         timeout -= INTERVAL
 
-    if timeout <= 0:
+    if wepack.returncode is not None or timeout <= 0:
         log.warning(INDEX, "not created, giving up!")
         stop()
         return 1
@@ -86,13 +101,9 @@ def watch():
 
     try:
         lab.wait()
-    except KeyboardInterrupt:
-        log.warning("Stopping lab, you may want to check your process monitor...")
-        lab.terminate()
-        lab.communicate(b"y\n")
+    except (Exception, KeyboardInterrupt):
+        stop()
 
-    lab.wait()
-    stop()
     return 0
 
 
