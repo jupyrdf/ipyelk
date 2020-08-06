@@ -1,18 +1,13 @@
 """ handle lingering issues with jupyterlab 1.x build
 """
 
-import atexit
 import shutil
 import subprocess
 import sys
 import time
-from logging import getLogger
 from pathlib import Path
 
 from jupyterlab.commands import get_app_dir
-
-log = getLogger(__name__)
-
 
 HERE = Path(__file__).parent
 ROOT = HERE.parent
@@ -29,23 +24,21 @@ INTERVAL = 10
 def prep():
     """ do a normal build of lab, then clean out static
     """
-    log.warning("building extension...")
+    print("building extension...", flush=True)
     subprocess.check_call([JLPM, "build"])
-    log.warning("installing extension...")
+    print("installing extension...", flush=True)
     subprocess.check_call(
         ["jupyter", "labextension", "install", ".", "--no-build", "--debug"],
         cwd=str(ROOT),
     )
-    log.warning("pre-building lab...")
-    subprocess.check_call(
-        ["jupyter", "lab", "build", "--minimize=False"], cwd=str(ROOT)
-    )
-    log.warning("adding missing deps...")
+    print("pre-building lab...", flush=True)
+    subprocess.check_call(["jupyter", "lab", "build"], cwd=str(ROOT))
+    print("adding missing deps...", flush=True)
     subprocess.check_call(
         [JLPM, "add", "--dev", "chokidar", "watchpack-chokidar2", "--ignore-optional"],
         cwd=str(STAGING),
     )
-    log.warning("cleaning lab...")
+    print("cleaning lab...", flush=True)
     shutil.rmtree(STATIC)
 
 
@@ -53,45 +46,31 @@ def watch():
     """ after preparing, install missing dependencies, and start watchers
     """
     prep()
-    log.warning("watching src...")
+    print("watching src...", flush=True)
     ts = subprocess.Popen([JLPM, "watch"], cwd=str(ROOT))
-    log.warning("watching webpack...")
+    print("watching webpack...", flush=True)
     webpack = subprocess.Popen([JLPM, "watch"], cwd=str(STAGING))
 
-    lab = None
-
     def stop():
-        if lab is not None and lab.returncode is not None:
-            try:
-                log.warning(
-                    "Stopping lab, you may want to check your process monitor..."
-                )
-                lab.terminate()
-                lab.communicate(b"y\n")
-                lab.wait()
-            except:
-                pass
-        log.warning("stopping watchers...")
+        print("stopping watchers...", flush=True)
         ts.terminate()
         webpack.terminate()
         ts.wait()
         webpack.wait()
-        log.warning("...watchers stopped!")
+        print("...watchers stopped!", flush=True)
 
-    atext.register(stop)
-
-    timeout = 300
-    while wepack.returncode is None and timeout > 0 and not INDEX.exists():
-        log.warning(f"Lab not ready yet, will wait {timeout}s...")
+    timeout = 120
+    while timeout > 0 and not INDEX.exists():
+        print(f"Lab not ready yet, will wait {timeout}s...", flush=True)
         time.sleep(INTERVAL)
         timeout -= INTERVAL
 
-    if wepack.returncode is not None or timeout <= 0:
-        log.warning(INDEX, "not created, giving up!")
+    if timeout <= 0:
+        print(INDEX, "not created, giving up!", flush=True)
         stop()
         return 1
 
-    log.warning("Initial build complete, starting lab...")
+    print("Built, starting lab...", flush=True)
 
     lab = subprocess.Popen(
         ["jupyter", "lab", "--no-browser", "--debug"],
@@ -101,9 +80,18 @@ def watch():
 
     try:
         lab.wait()
-    except (Exception, KeyboardInterrupt):
+    except KeyboardInterrupt:
+        print(
+            "attempting to stop lab, you may want to check your process monitor",
+            flush=True,
+        )
+    finally:
+        lab.terminate()
+        lab.communicate(b"y\n")
         stop()
 
+    lab.wait()
+    stop()
     return 0
 
 
