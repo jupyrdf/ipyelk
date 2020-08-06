@@ -2,7 +2,7 @@ name: ipyelk
 
 variables:
   ELK_SRC: >-
-    setup.py ipyelk postBuild
+    setup.py ipyelk postBuild scripts
 
 commands:
   setup:
@@ -10,10 +10,10 @@ commands:
     unix: &setup python postBuild
     windows: *setup
 
-  dev:
-    description: set up lab for local development
-    unix: &dev jupyter labextension install . --debug
-    windows: *dev
+  watch:
+    description: set up processes for live development
+    unix: &watch python scripts/watch.py
+    windows: *watch
 
   lab:
     description: launch lab

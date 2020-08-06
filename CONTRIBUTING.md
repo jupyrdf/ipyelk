@@ -25,8 +25,8 @@ anaconda-project run lab      # start lab
 | `ipyelk/schema/elkschema.json` | the JSON schema derived from the TypeScript source                              |
 | `src/`                         | the TypeScript source for `@jupyrdf/jupyter-elk`                                |
 
-- most python-related commands are run with `anaconda-project run`
-- most typescript-related commands are run with
+- Most python-related commands are run with `anaconda-project run`
+- Most typescript-related commands are run with
   `anaconda-project run jlpm <script in package.json>`
 
 ## Live Development
@@ -37,11 +37,11 @@ in the extension's source and automatically rebuild the extension and applicatio
 - Run:
 
 ```bash
-anaconda-project run jlpm watch  # Watch the source directory in one terminal tab
-anaconda-project run lab --watch  # Watch lab in another terminal tab
+anaconda-project run watch
 ```
 
 - Open a tab with the provided URL in your standards-compliant browser of choice
+- After making changes, reload your browser
 
 ## Quality Assurance
 
