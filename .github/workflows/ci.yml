@@ -25,10 +25,7 @@ jobs:
 
       - uses: goanpeca/setup-miniconda@v1.6.0
         with:
-          activate-environment: _ipyelk_ci_
-          auto-activate-base: false
           environment-file: .ci/environment.yml
-          show-channel-urls: true
 
       - if: ${{ !contains(matrix.os, 'windows') }}
         shell: bash -l {0}
