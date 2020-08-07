@@ -1,9 +1,7 @@
-from typing import Generator, Iterable, List, Optional, Tuple
+from typing import Generator, Iterable, List, Tuple
 
 import networkx as nx
-import traitlets as T
 
-from ..app import ElkTransformer
 from .nx import get_ports
 
 
@@ -53,7 +51,7 @@ def invert(mask):
 
 def keep(items: Iterable[object], mask: Iterable[bool]) -> Iterable[object]:
     """Filter the items iterable based on the given mask
-    
+
     :param items: Original iterable of objects
     :type items: Iterable[object]
     :param mask: Mask iterable to use as a filter

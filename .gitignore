@@ -159,3 +159,6 @@ ipyelk/schema/*.json
 # editors
 .idea/
 .vscode/
+
+# task stuff
+.doit*

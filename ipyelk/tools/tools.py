@@ -1,8 +1,7 @@
 import ipywidgets as W
-import networkx as nx
 import traitlets as T
 
-from ..app import Elk, ElkDiagram, ElkTransformer
+from ..app import Elk, ElkDiagram
 from ..nx import XELK
 
 

@@ -19,7 +19,7 @@ env_specs:
     locked: false
   default:
     locked: true
-    env_spec_hash: 6f83f125798a1cec7fdd9f18a76456dbc6c42e83
+    env_spec_hash: fc8c3ed9ffaa5c30ee316fbeb2f833f147d5c1cc
     platforms:
       - linux-64
       - osx-64
@@ -38,6 +38,7 @@ env_specs:
         - decorator=4.4.2=py_0
         - defusedxml=0.6.0=py_0
         - entrypoints=0.3=py37_0
+        - flake8=3.8.3=py_0
         - idna=2.10=py_0
         - importlib-metadata=1.7.0=py37_0
         - importlib_metadata=1.7.0=0
@@ -52,6 +53,7 @@ env_specs:
         - jupyter_core=4.6.3=py37_0
         - jupyterlab=1.2.16=py_0
         - jupyterlab_server=1.2.0=py_0
+        - mccabe=0.6.1=py37_1
         - mypy_extensions=0.4.3=py37_0
         - nbformat=5.0.7=py_0
         - networkx=2.4=py_1
@@ -64,7 +66,9 @@ env_specs:
         - pip=20.1.1=py37_1
         - prometheus_client=0.8.0=py_0
         - prompt-toolkit=3.0.5=py_0
+        - pycodestyle=2.6.0=py_0
         - pycparser=2.20=py_2
+        - pyflakes=2.2.0=py_0
         - pygments=2.6.1=py_0
         - pyopenssl=19.1.0=py_1
         - pyparsing=2.4.7=py_0

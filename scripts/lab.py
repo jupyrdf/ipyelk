@@ -21,6 +21,14 @@ INDEX = STATIC / "index.html"
 INTERVAL = 10
 
 
+def build(args=None):
+    args = (
+        args if args is not None else ["--debug", "--minimize=True", "--devBuild=False"]
+    )
+    subprocess.check_call(["jupyter", "lab", "build"], cwd=str(ROOT))
+    return 0
+
+
 def prep():
     """ do a normal build of lab, then clean out static
     """
@@ -28,11 +36,11 @@ def prep():
     subprocess.check_call([JLPM, "build"])
     print("installing extension...", flush=True)
     subprocess.check_call(
-        ["jupyter", "labextension", "install", ".", "--no-build", "--debug"],
+        ["jupyter", "labextension", "link", ".", "--no-build", "--debug"],
         cwd=str(ROOT),
     )
     print("pre-building lab...", flush=True)
-    subprocess.check_call(["jupyter", "lab", "build"], cwd=str(ROOT))
+    build(["--debug"])
     print("adding missing deps...", flush=True)
     subprocess.check_call(
         [JLPM, "add", "--dev", "chokidar", "watchpack-chokidar2", "--ignore-optional"],
@@ -96,4 +104,7 @@ def watch():
 
 
 if __name__ == "__main__":
-    sys.exit(watch())
+    if "build" in sys.argv:
+        sys.exit(build())
+    if "watch" in sys.argv:
+        sys.exit(watch())
