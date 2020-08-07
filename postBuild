@@ -5,14 +5,15 @@
 import shutil
 import sys
 from pathlib import Path
-from subprocess import check_call
+from subprocess import check_call, check_output
 
 from jupyterlab_server.process import which
 
-NPM = which("npm")
+NPM = which("npm") or which("npm.cmd") or which("npm.bat")
 JLPM = which("jlpm")
 
-LABEXTENSIONS = [".", "@jupyter-widgets/jupyterlab-manager"]
+# third-party extensions for demo/testing
+LABEXTENSIONS = ["@jupyter-widgets/jupyterlab-manager", "@jupyterlab/toc"]
 
 HERE = Path.cwd()
 DIST = HERE / "dist"
@@ -30,23 +31,42 @@ def _(*args, **kwargs):
 
 # preflight existing extensions
 _("jupyter", "labextension", "list")
+
 # avoid weird caching issues
 _(JLPM, "cache", "clean")
+
 # perform all the node stuff
 _(JLPM, "bootstrap")
+
 # build python packages
 _(sys.executable, "setup.py", "bdist_wheel", "sdist")
+
 # build labextension package
-_(NPM, "pack", "..", cwd=DIST)
+TARBALL = (
+    DIST / check_output([str(NPM), "pack", ".."], cwd=DIST).decode("utf-8").strip()
+)
+
 # install local python dev
 _(sys.executable, "-m", "pip", "install", "-e", ".", "--no-deps")
+
+# list the extensions
+_("jupyter", "labextension", "list")
+
 # install labextensions
-# NOTE: on binder, this seems to be breaking right now, but installing
-#       the tgz works fine
-_("jupyter", "labextension", "install", "--no-build", "--debug", *LABEXTENSIONS)
+_(
+    "jupyter",
+    "labextension",
+    "install",
+    "--no-build",
+    "--debug",
+    TARBALL,
+    *LABEXTENSIONS,
+)
+
 # do a production build of lab
 _("jupyter", "lab", "build", "--debug", "--dev-build=False", "--minimize=True")
-# list the extensions
+
+# list the extensions again
 _("jupyter", "labextension", "list")
 
 print(">>> OK")

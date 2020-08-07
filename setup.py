@@ -13,7 +13,8 @@ setup_args = dict(
     name=name,
     description="ELK widget for Jupyter",
     version=re.findall(
-        r'''__version__ = "([^"]+)"''', (HERE / name / "_version.py").read_text()
+        r'''__version__ = "([^"]+)"''',
+        (HERE / name / "_version.py").read_text(encoding="utf-8"),
     )[0],
     packages=setuptools.find_packages(),
     author="Dane Freeman",

@@ -2,16 +2,33 @@
 
 ## Install
 
-- Get [Miniconda](https://docs.conda.io/en/latest/miniconda.html)
+- Get [Miniconda3](https://docs.conda.io/en/latest/miniconda.html)
 - Get [anaconda-project](https://anaconda-project.readthedocs.io)
 
 ## Get Started
 
 ```bash
-# Clone the repo to your local environment
-anaconda-project run setup
-anaconda-project run lab
+git clone https://github.com/jupyrdf/ipyelk
+cd ipyelk
+anaconda-project run setup    # this is what happens on binder
+anaconda-project run lab      # start lab
 ```
+
+## Important Paths
+
+| Path                           | Purpose                                                                         |
+| ------------------------------ | ------------------------------------------------------------------------------- |
+| `anaconda-project.yml`         | the current environment and task automation tool, may be replaced in the future |
+| `anaconda-project-lock.yml`    | the frozen environments                                                         |
+| `setup.py` / `setup.cfg`       | the package description for `ipyelk`                                            |
+| `package.json/`                | the `npm` package description for `@jupyrdf/jupyter-elk`                        |
+| `src/`                         | the TypeScript source for `@jupyrdf/jupyter-elk`                                |
+| `ipyelk/`                      | the Python source for `ipyelk`                                                  |
+| `ipyelk/schema/elkschema.json` | the JSON schema derived from the TypeScript source                              |
+
+- Most python-related commands are run with `anaconda-project run`
+- Most typescript-related commands are run with
+  `anaconda-project run jlpm <script in package.json>`
 
 ## Live Development
 
@@ -21,13 +38,12 @@ in the extension's source and automatically rebuild the extension and applicatio
 - Run:
 
 ```bash
-# Watch the source directory in another terminal tab
-anaconda-project run jlpm watch
-# Run jupyterlab in watch mode in one terminal tab
-anaconda-project run lab --watch
+anaconda-project run watch
 ```
 
-- Open a tab with the provided URL in your standards-compliant browser of choice
+- Open a tab with the provided URL in a standards-compliant browser of choice
+- After making changes, wait for `webpack` terminal output, then reload the browser
+- If you add a new file, probably will have to restart the whole thing
 
 ## Quality Assurance
 
@@ -63,6 +79,7 @@ anaconda-project run dist
 
 ```bash
 anaconda-project update
+anaconda-project run lint
 ```
 
 - Commit the changes to the project file and the
@@ -77,4 +94,4 @@ anaconda-project update
 anaconda-project run jlpm
 ```
 
-- Commit the changes to the package file and the [browser lock file](./yarn.lock).
+- Commit the changes to the package file and the [yarn lock file](./yarn.lock).
