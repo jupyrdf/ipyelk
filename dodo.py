@@ -131,10 +131,17 @@ def task_build():
     """
 
     yield dict(
+        name="ts:pre",
+        file_dep=[P.YARN_INTEGRITY, P.TS_SCHEMA, P.OK_ENV["default"]],
+        actions=[[*P.APR_DEFAULT, *P.JLPM, "schema"]],
+        targets=[P.PY_SCHEMA],
+    )
+
+    yield dict(
         name="ts",
-        file_dep=[P.YARN_INTEGRITY, *P.ALL_TS, P.OK_ENV["default"]],
+        file_dep=[P.YARN_INTEGRITY, *P.ALL_TS, P.OK_ENV["default"], P.PY_SCHEMA],
         actions=[[*P.APR_DEFAULT, *P.JLPM, "build"]],
-        targets=[P.TSBUILDINFO, P.PY_SCHEMA],
+        targets=[P.TSBUILDINFO],
     )
 
     yield dict(
