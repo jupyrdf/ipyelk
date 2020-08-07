@@ -33,18 +33,18 @@ jobs:
         run: |
           source /usr/share/miniconda/bin/deactivate
           source /usr/share/miniconda/bin/activate /usr/share/miniconda/envs/_ipyelk_ci_
-          doit all || doit all || exit 1
+          doit -n4 all || doit all || exit 1
 
       - if: ${{ contains(matrix.os, 'macos') }}
         shell: bash -l {0}
         run: |
           source /usr/local/miniconda/bin/deactivate
           source /usr/local/miniconda/bin/activate /usr/local/miniconda/envs/_ipyelk_ci_
-          doit all || doit all || exit 1
+          doit -n4 all || doit all || exit 1
 
       - if: ${{ contains(matrix.os, 'windows') }}
         shell: cmd /C CALL {0}
         run: |
           call C:\Miniconda\Scripts\deactivate
           call C:\Miniconda\Scripts\activate C:\Miniconda\envs\_ipyelk_ci_
-          doit all || doit all || exit 1
+          doit -n4 all || doit all || exit 1
