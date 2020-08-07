@@ -192,12 +192,13 @@ def task_test():
         return dict(
             name=f"nb:{nb.name}".replace(" ", "_").replace(".ipynb", ""),
             file_dep=[
+                *P.ALL_PY_SRC,
                 *P.EXAMPLE_IPYNB,
-                P.OK_NBLINT,
                 P.OK_ENV["default"],
+                P.OK_NBLINT,
                 P.OK_PIP_INSTALL_E,
                 P.OK_PREFLIGHT_KERNEL,
-                *P.ALL_PY_SRC,
+                P.PY_SCHEMA,
             ],
             actions=[_test()],
             targets=[P.DIST_NBHTML / nb.name.replace(".ipynb", ".html")],
