@@ -10,6 +10,7 @@ on:
 
 env:
   PYTHONUNBUFFERED: 1
+  SKIP_CONDA_PREFLIGHT: 1
 
 jobs:
   ci:
