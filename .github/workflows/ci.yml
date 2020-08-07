@@ -30,7 +30,7 @@ jobs:
       - if: ${{ !contains(matrix.os, 'windows') }}
         shell: bash -l {0}
         run: |
-          source activate /usr/share/miniconda/envs/_ipyelk_ci_
+          source /usr/share/miniconda/bin/activate /usr/share/miniconda/envs/_ipyelk_ci_
           anaconda-project run setup
           anaconda-project run build
           anaconda-project run lint
@@ -38,7 +38,7 @@ jobs:
       - if: ${{ contains(matrix.os, 'windows') }}
         shell: cmd /C CALL {0}
         run: |
-          activate C:\Miniconda\envs\_ipyelk_ci_
+          call C:\Miniconda\Scripts\activate C:\Miniconda\envs\_ipyelk_ci_
           anaconda-project run setup
           anaconda-project run build
           anaconda-project run lint
