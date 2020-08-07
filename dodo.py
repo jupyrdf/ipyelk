@@ -255,8 +255,8 @@ def task_lint():
     for nb in P.EXAMPLE_IPYNB:
         yield _ok(
             dict(
-                name=f"nblint:{nb.name}",
-                file_dep=[P.YARN_INTEGRITY, nb, P.OK_ENV["default"]],
+                name=f"nblint:{nb.name}".replace(" ", "_").replace(".ipynb", ""),
+                file_dep=[P.YARN_INTEGRITY, nb, P.OK_ENV["default"], P.OK_BLACK],
                 actions=[[*P.APR_DEFAULT, *P.PYM, "scripts.nblint", nb]],
             ),
             P.OK_NBLINT[nb.name],
