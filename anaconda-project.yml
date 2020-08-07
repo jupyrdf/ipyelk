@@ -1,8 +1,7 @@
 name: ipyelk
 
 variables:
-  ELK_SRC: >-
-    setup.py ipyelk postBuild scripts
+  PYTHONIOENCODING: utf-8
 
 commands:
   postBuild:
