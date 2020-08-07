@@ -119,7 +119,9 @@ def nblint(nb_paths):
         nb_hashes[hash_key] = post_hash
 
     P.NBLINT_HASHES.parent.mkdir(exist_ok=True, parents=True)
-    P.NBLINT_HASHES.write_text(json.dumps(nb_hashes, indent=2, sort_keys=True))
+    P.NBLINT_HASHES.write_text(
+        json.dumps(nb_hashes, indent=2, sort_keys=True), encoding="utf-8"
+    )
 
     return 0
 

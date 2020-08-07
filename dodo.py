@@ -383,7 +383,11 @@ def _ok(task, ok):
     task["actions"] = [
         lambda: [ok.exists() and ok.unlink(), True][-1],
         *task["actions"],
-        lambda: [ok.parent.mkdir(exist_ok=True), ok.write_text("ok"), True][-1],
+        lambda: [
+            ok.parent.mkdir(exist_ok=True),
+            ok.write_text("ok", encoding="utf-8"),
+            True,
+        ][-1],
     ]
     return task
 
