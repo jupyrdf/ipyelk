@@ -195,7 +195,7 @@ def task_test():
                 *P.ALL_PY_SRC,
                 *P.EXAMPLE_IPYNB,
                 P.OK_ENV["default"],
-                P.OK_NBLINT,
+                P.OK_NBLINT[nb.name],
                 P.OK_PIP_INSTALL_E,
                 P.OK_PREFLIGHT_KERNEL,
                 P.PY_SCHEMA,
@@ -252,15 +252,15 @@ def task_lint():
         ),
         P.OK_PRETTIER,
     )
-    yield _ok(
-        dict(
-            name="nblint",
-            file_dep=[P.YARN_INTEGRITY, *P.EXAMPLE_IPYNB, P.OK_ENV["default"]],
-            actions=[[*P.APR_DEFAULT, *P.PYM, "scripts.nblint", *P.EXAMPLE_IPYNB]],
-            targets=[P.NBLINT_HASHES],
-        ),
-        P.OK_NBLINT,
-    )
+    for nb in P.EXAMPLE_IPYNB:
+        yield _ok(
+            dict(
+                name=f"nblint:{nb.name}",
+                file_dep=[P.YARN_INTEGRITY, nb, P.OK_ENV["default"]],
+                actions=[[*P.APR_DEFAULT, *P.PYM, "scripts.nblint", nb]],
+            ),
+            P.OK_NBLINT[nb.name],
+        )
     yield _ok(
         dict(
             name="all",
@@ -271,7 +271,7 @@ def task_lint():
                 P.OK_ISORT,
                 P.OK_PRETTIER,
                 P.OK_PYFLAKES,
-                P.OK_NBLINT,
+                *P.OK_NBLINT.values(),
             ],
         ),
         P.OK_LINT,

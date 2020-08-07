@@ -114,7 +114,7 @@ OK_FLAKE8 = BUILD / "flake8.ok"
 OK_ISORT = BUILD / "isort.ok"
 OK_LINT = BUILD / "lint.ok"
 OK_PYFLAKES = BUILD / "pyflakes.ok"
-OK_NBLINT = BUILD / "nblint.ok"
+OK_NBLINT = {nb.name: BUILD / f"nblint.{nb.name}.ok" for nb in EXAMPLE_IPYNB}
 OK_PIP_INSTALL_E = BUILD / "pip_install_e.ok"
 OK_PRETTIER = BUILD / "prettier.ok"
 
