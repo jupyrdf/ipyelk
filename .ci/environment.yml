@@ -1,0 +1,8 @@
+name: _ipyelk_ci_
+
+channels:
+  - conda-forge
+
+dependencies:
+  - anaconda-project =0.8.4
+  - conda =4.8.3

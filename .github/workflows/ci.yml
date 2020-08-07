@@ -25,21 +25,24 @@ jobs:
 
       - uses: goanpeca/setup-miniconda@v1.6.0
         with:
-          activate-environment: ipyelk
+          activate-environment: _ipyelk_ci_
           auto-activate-base: false
-          environment-file: environment.yml
+          environment-file: .ci/environment.yml
           show-channel-urls: true
-          use-only-tar-bz2: true
 
       - if: ${{ !contains(matrix.os, 'windows') }}
         shell: bash -l {0}
         run: |
+          source activate _ipyelk_ci_
           anaconda-project run setup
+          anaconda-project run build
           anaconda-project run lint
 
       - if: ${{ contains(matrix.os, 'windows') }}
         shell: cmd /C CALL {0}
         run: |
+          activate _ipyelk_ci_
           anaconda-project run setup
+          anaconda-project run build
           anaconda-project run lint
 
