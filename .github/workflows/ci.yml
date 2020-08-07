@@ -27,10 +27,18 @@ jobs:
         with:
           environment-file: .ci/environment.yml
 
-      - if: ${{ !contains(matrix.os, 'windows') }}
+      - if: ${{ !contains(matrix.os, 'ubuntu') }}
         shell: bash -l {0}
         run: |
           source /usr/share/miniconda/bin/activate /usr/share/miniconda/envs/_ipyelk_ci_
+          anaconda-project run setup
+          anaconda-project run build
+          anaconda-project run lint
+
+      - if: ${{ !contains(matrix.os, 'macos') }}
+        shell: bash -l {0}
+        run: |
+          source /usr/local/miniconda/miniconda/bin/activate /usr/local/miniconda/miniconda/envs/_ipyelk_ci_
           anaconda-project run setup
           anaconda-project run build
           anaconda-project run lint
