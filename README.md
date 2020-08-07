@@ -1,7 +1,11 @@
 # `ipyelk`
 
 [Jupyter Widgets][widgets] for interactive graphs powered by the [Eclipse Layout Kernel
-(ELK)][elk]
+(ELK)][elk].
+
+|            Demo             |
+| :-------------------------: |
+| [![binder-badge][]][binder] |
 
 > For more, see the [example notebooks](./examples/00_Introduction.ipynb)
 
@@ -35,10 +39,13 @@ pip uninstall ipyelk
 jupyter labextension uninstall @jupyrdf/jupyter-elk
 ```
 
-[widgets]: https://jupyter.org/widgets
-[elk]: https://github.com/kieler/elkjs
-[jupyterlab]: https://github.com/jupyterlab/jupyterlab
+[binder-badge]: https://mybinder.org/badge_logo.svg
+[binder]:
+  https://mybinder.org/v2/gh/jupyrdf/ipyelk/master?urlpath=lab%2Ftree%2Fexamples%2F00_Introduction.ipynb
 [elk-json]:
   https://www.eclipse.org/elk/documentation/tooldevelopers/graphdatastructure/jsonformat.html
-[sprotty]: https://github.com/eclipse/sprotty
+[elk]: https://github.com/kieler/elkjs
+[jupyterlab]: https://github.com/jupyterlab/jupyterlab
 [networkx]: https://networkx.github.io
+[sprotty]: https://github.com/eclipse/sprotty
+[widgets]: https://jupyter.org/widgets
