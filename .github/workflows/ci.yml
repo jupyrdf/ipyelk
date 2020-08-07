@@ -39,8 +39,8 @@ jobs:
       - if: ${{ !contains(matrix.os, 'macos') }}
         shell: bash -l {0}
         run: |
-          source /usr/local/miniconda/miniconda/bin/deactivate
-          source /usr/local/miniconda/miniconda/bin/activate /usr/local/miniconda/miniconda/envs/_ipyelk_ci_
+          source /usr/local/miniconda/bin/deactivate
+          source /usr/local/miniconda/bin/activate /usr/local/miniconda/envs/_ipyelk_ci_
           anaconda-project run setup
           anaconda-project run build
           anaconda-project run lint
