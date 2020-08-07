@@ -100,13 +100,14 @@ def nblint(nb_paths):
         nb_text = nb_path.read_text(encoding="utf-8")
         pre_hash = nb_hash(nb_text)
 
-        print(f"[{i + 1} of {len_paths}] {nb_path}")
+        if len_paths > 1:
+            print(f"[{i + 1} of {len_paths}] {nb_path}", flush=True)
         if log_hash == pre_hash:
             continue
 
         nb_node = nblint_one(nbformat.reads(nb_text, 4))
 
-        with nb_path.open("w") as fpt:
+        with nb_path.open("w", encoding="utf-8") as fpt:
             nbformat.write(nb_node, fpt)
 
         post_hash = nb_hash(nb_path.read_text(encoding="utf-8"))
