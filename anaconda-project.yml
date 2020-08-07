@@ -28,7 +28,7 @@ commands:
   ext:pack:
     description: ensure built tarballs, a little finicky
     unix: mkdir -p dist && cd dist && npm pack ..
-    windows: md dist && cd dist && npm pack ..
+    windows: md dist || echo "ok" && cd dist && npm pack ..
 
 env_specs:
   default:

@@ -32,7 +32,7 @@
     "watch": "jlpm build -w",
     "schema": "ts-json-schema-generator --path ./src/elkschema.ts -o ./ipyelk/schema/elkschema.json",
     "lint": "jlpm lint:prettier",
-    "lint:prettier": "prettier --write \"*.{json,yml,md}\"  \"{src,style,ipyelk,.ci,.github}/**/*.{ts,tsx,js,jsx,css,json,md,yml}\""
+    "lint:prettier": "prettier --write --list-different \"*.{json,yml,md}\"  \"{src,style,ipyelk,.ci,.github}/**/*.{ts,tsx,js,jsx,css,json,md,yml}\""
   },
   "dependencies": {
     "@jupyterlab/application": "^1.2.7",
