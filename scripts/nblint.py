@@ -90,14 +90,14 @@ def nblint(nb_paths):
     nb_hashes = {}
 
     if P.NBLINT_HASHES.exists():
-        nb_hashes = json.loads(P.NBLINT_HASHES.read_text())
+        nb_hashes = json.loads(P.NBLINT_HASHES.read_text(encoding="utf-8"))
 
     len_paths = len(nb_paths)
 
     for i, nb_path in enumerate(nb_paths):
         hash_key = f"{nb_path}"
         log_hash = nb_hashes.get(hash_key)
-        nb_text = nb_path.read_text()
+        nb_text = nb_path.read_text(encoding="utf-8")
         pre_hash = nb_hash(nb_text)
 
         print(f"[{i + 1} of {len_paths}] {nb_path}")
@@ -109,7 +109,7 @@ def nblint(nb_paths):
         with nb_path.open("w") as fpt:
             nbformat.write(nb_node, fpt)
 
-        post_hash = nb_hash(nb_path.read_text())
+        post_hash = nb_hash(nb_path.read_text(encoding="utf-8"))
 
         if post_hash != pre_hash:
             print("\tformatted")

@@ -197,6 +197,7 @@ def task_test():
                 P.OK_ENV["default"],
                 P.OK_PIP_INSTALL_E,
                 P.OK_PREFLIGHT_KERNEL,
+                *P.ALL_PY_SRC,
             ],
             actions=[_test()],
             targets=[P.DIST_NBHTML / nb.name.replace(".ipynb", ".html")],
@@ -281,7 +282,7 @@ def task_lab_build():
     """
     exts = [
         line.strip()
-        for line in P.EXTENSIONS.read_text().strip().splitlines()
+        for line in P.EXTENSIONS.read_text(encoding="utf-8").strip().splitlines()
         if line and not line.startswith("#")
     ]
 

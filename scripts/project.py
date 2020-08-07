@@ -119,7 +119,9 @@ OK_PIP_INSTALL_E = BUILD / "pip_install_e.ok"
 OK_PRETTIER = BUILD / "prettier.ok"
 
 # derived info
-PY_VERSION = re.findall(r'''__version__ = "(.*)"''', VERSION_PY.read_text())[0]
+PY_VERSION = re.findall(
+    r'''__version__ = "(.*)"''', VERSION_PY.read_text(encoding="utf-8")
+)[0]
 
 
 # built artifacts
