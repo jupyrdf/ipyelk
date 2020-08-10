@@ -7,11 +7,9 @@ import traitlets as T
 from ipywidgets import CallbackDispatcher, DOMWidget
 from traitlets import HasTraits, UseEnum
 
-from .._version import EXTENSION_SPEC_VERSION
+from .._version import EXTENSION_NAME, EXTENSION_SPEC_VERSION
 from ..schema import ElkSchemaValidator
 from ..trait_types import Schema
-
-module_name = "ipyelk"
 
 
 class Interactions(enum.Enum):
@@ -24,10 +22,10 @@ class ElkDiagram(DOMWidget):
     """
 
     _model_name = T.Unicode("ELKModel").tag(sync=True)
-    _model_module = T.Unicode(module_name).tag(sync=True)
+    _model_module = T.Unicode(EXTENSION_NAME).tag(sync=True)
     _model_module_version = T.Unicode(EXTENSION_SPEC_VERSION).tag(sync=True)
     _view_name = T.Unicode("ELKView").tag(sync=True)
-    _view_module = T.Unicode(module_name).tag(sync=True)
+    _view_module = T.Unicode(EXTENSION_NAME).tag(sync=True)
     _view_module_version = T.Unicode(EXTENSION_SPEC_VERSION).tag(sync=True)
 
     value = Schema(ElkSchemaValidator).tag(sync=True)
