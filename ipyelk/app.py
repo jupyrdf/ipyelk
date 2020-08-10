@@ -74,6 +74,8 @@ class Elk(W.VBox, StyledWidget):
 
         style[css_selector] = arrow_style
         self.style = style.copy()
+        # TODO should not need to trigger update this way but the observer isn't firing
+        self._update_style()
 
     def hide_arrows(self):
         self._set_arrows_opacity(0)
