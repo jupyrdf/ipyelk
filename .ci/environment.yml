@@ -1,0 +1,11 @@
+name: _ipyelk_ci_
+
+channels:
+  - anaconda
+  - conda-forge
+  - msys2
+
+dependencies:
+  - anaconda-project =0.8.4
+  - conda =4.8.3
+  - python >=3.7,<3.8
