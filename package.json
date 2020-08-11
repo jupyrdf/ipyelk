@@ -31,8 +31,8 @@
     "clean": "rimraf lib ./ipyelk/schema/elkschema.json",
     "watch": "jlpm build -w",
     "schema": "ts-json-schema-generator --path ./src/elkschema.ts -o ./ipyelk/schema/elkschema.json",
-    "lint": "jlpm prettier",
-    "prettier": "prettier --write \"*.{json,yml,md}\" \"{src,style,elk}/**/*.{ts,tsx,js,jsx,css,json,md,yml}\""
+    "lint": "jlpm lint:prettier",
+    "lint:prettier": "prettier --write \"*.{json,yml,md}\" \"{.ci,.github/workflows}/*.{yml}\" \"{src,style,elk}/**/*.{ts,tsx,js,jsx,css,json,md,yml}\""
   },
   "dependencies": {
     "@jupyterlab/application": "^1.2.7",
