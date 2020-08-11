@@ -8,6 +8,7 @@ from .diagram import ElkDiagram, ElkLabel, ElkNode
 from .schema import ElkSchemaValidator
 from .styled_widget import StyledWidget
 from .trait_types import Schema
+from .tools import Toolbar
 
 logger = logging.getLogger(__name__)
 
@@ -57,6 +58,7 @@ class Elk(W.VBox, StyledWidget):
     diagram: ElkDiagram = T.Instance(ElkDiagram)
     selected = T.Tuple()
     hovered = T.Unicode(allow_none=True, default_value=None)
+    toolbar: Toolbar = T.Instance(Toolbar, kw={})
 
     _data_link: T.dlink = None
 
@@ -64,6 +66,7 @@ class Elk(W.VBox, StyledWidget):
         super().__init__(*args, **kwargs)
         self._update_data_link()
         self._update_children()
+        self.add_class("jp-ElkApp")
 
     def _set_arrows_opacity(self, value):
         style = self.style
@@ -103,7 +106,7 @@ class Elk(W.VBox, StyledWidget):
 
     @T.observe("diagram")
     def _update_children(self, change:T.Bunch=None):
-        self.children = [self.diagram]
+        self.children = [self.toolbar, self.diagram]
         
         if change:
             # uninstall old observers

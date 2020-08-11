@@ -4,7 +4,7 @@ import traitlets as T
 
 @W.register
 class StyledWidget(W.Box):
-    style = T.Dict()
+    style = T.Dict(kw={})
     _css_widget = T.Instance(W.HTML, kw={"layout": {"display": "None"}})
 
     def __init__(self, *args, **kwargs):

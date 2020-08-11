@@ -1,1 +1,2 @@
-from .tools import ToggleCollapsedBtn, ToolButton
+from .tool import Tool, Toolbar
+# from .tools import ToggleCollapsedBtn, ToolButton

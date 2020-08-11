@@ -123,3 +123,23 @@
   fill: var(--jp-elk-stroke-hover-selected);
   transition: fill stroke var(--jp-elk-transition);
 }
+
+/* Toolbar Styling */
+.jp-ElkApp .toolbar {
+  width: 100%;
+  visibility: hidden;
+  position: absolute;
+  opacity: 0;
+  transition: all var(--jp-elk-transition);
+  transform: translateY(calc(0px - var(--jp-widgets-inline-height)));
+}
+
+.jp-ElkApp:hover .toolbar {
+  visibility: visible;
+  opacity: 0.25;
+  transform: translateY(0);
+}
+
+.toolbar:hover {
+  opacity: 1;
+}
