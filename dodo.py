@@ -1,4 +1,4 @@
-""" doit tasks for ipyradiant
+""" doit tasks for ipyelk
 
     Generally, you'll just want to `doit`.
 
@@ -176,7 +176,7 @@ def task_test():
     def _nb_test(nb):
         def _test():
             env = dict(os.environ)
-            env.update(IPYRADIANT_TESTING="true")
+            env.update(IPYELK_TESTING="true")
             args = [
                 *P.APR_DEFAULT,
                 "jupyter",
