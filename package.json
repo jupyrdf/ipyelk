@@ -30,9 +30,9 @@
   "scripts": {
     "bootstrap": "jlpm --ignore-optional --ignore-scripts && jlpm clean && jlpm schema && jlpm lint && jlpm build",
     "build": "tsc -b",
-    "clean": "rimraf lib ./ipyelk/schema/elkschema.json",
+    "clean": "rimraf lib ./py_src/ipyelk/schema/elkschema.json",
     "watch": "jlpm build -w",
-    "schema": "ts-json-schema-generator --path ./src/elkschema.ts -o ./ipyelk/schema/elkschema.json",
+    "schema": "ts-json-schema-generator --path ./src/elkschema.ts -o ./py_src/ipyelk/schema/elkschema.json",
     "lint": "jlpm lint:prettier",
     "lint:prettier": "prettier --write --list-different \"*.{json,yml,md}\"  \"{src,style,ipyelk,.ci,.github}/**/*.{ts,tsx,js,jsx,css,json,md,yml}\""
   },
