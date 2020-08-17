@@ -12,11 +12,16 @@ from jupyterlab_server.process import which
 NPM = which("npm") or which("npm.cmd") or which("npm.bat")
 JLPM = which("jlpm")
 
-# third-party extensions for demo/testing
-LABEXTENSIONS = ["@jupyter-widgets/jupyterlab-manager", "@jupyterlab/toc"]
 
 HERE = Path.cwd()
 DIST = HERE / "dist"
+
+# third-party extensions for demo/testing
+LABEXTENSIONS = [
+    line.strip()
+    for line in (HERE / "labextensions.txt").read_text(encoding="utf-8").strip().splitlines()
+    if line.strip() and not line.startswith("#")
+]
 
 DIST.exists() and shutil.rmtree(DIST)
 

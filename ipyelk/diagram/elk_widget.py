@@ -5,7 +5,6 @@ from typing import List
 
 import traitlets as T
 from ipywidgets import CallbackDispatcher, DOMWidget
-from traitlets import HasTraits, UseEnum
 
 from .._version import EXTENSION_NAME, EXTENSION_SPEC_VERSION
 from ..schema import ElkSchemaValidator
