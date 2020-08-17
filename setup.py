@@ -8,15 +8,17 @@ import setuptools
 
 HERE = Path(__file__).parent
 name = "ipyelk"
+src = "py_src"
 
 setup_args = dict(
     name=name,
     description="ELK widget for Jupyter",
     version=re.findall(
         r'''__version__ = "([^"]+)"''',
-        (HERE / "py_src" / name / "_version.py").read_text(encoding="utf-8"),
+        (HERE / src / name / "_version.py").read_text(encoding="utf-8"),
     )[0],
-    packages=setuptools.find_packages("py_src"),
+    packages=setuptools.find_packages(src),
+    package_dir={name: f'{src}/{name}'},
     author="Dane Freeman",
     author_email="dane.freeman@gtri.gatech.edu",
     url="https://github.edu/dfreeman06/ipyelk",
