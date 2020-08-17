@@ -44,6 +44,7 @@ BUILD = ROOT / "build"
 DIST = ROOT / "dist"
 ENVS = ROOT / "envs"
 PROJ_LOCK = ROOT / "anaconda-project-lock.yml"
+CHANGELOG = ROOT / "CHANGELOG.md"
 
 # tools
 PY = ["python"]
@@ -108,6 +109,7 @@ OK_RELEASE = BUILD / "release.ok"
 OK_PREFLIGHT_CONDA = BUILD / "preflight.conda.ok"
 OK_PREFLIGHT_KERNEL = BUILD / "preflight.kernel.ok"
 OK_PREFLIGHT_LAB = BUILD / "preflight.lab.ok"
+OK_PREFLIGHT_RELEASE = BUILD / "preflight.release.ok"
 OK_BLACK = BUILD / "black.ok"
 OK_FLAKE8 = BUILD / "flake8.ok"
 OK_ISORT = BUILD / "isort.ok"

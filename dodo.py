@@ -62,6 +62,22 @@ def task_preflight():
         P.OK_PREFLIGHT_LAB,
     )
 
+    yield _ok(
+        dict(
+            name="release",
+            file_dep=[
+                P.CHANGELOG,
+                P.VERSION_PY,
+                P.PACKAGE_JSON,
+                P.SDIST,
+                P.WHEEL,
+                P.NPM_TGZ,
+            ],
+            actions=[[*P.APR_DEFAULT, *P.PREFLIGHT, "release"]],
+        ),
+        P.OK_PREFLIGHT_RELEASE,
+    )
+
 
 def task_binder():
     """ get to a minimal interactive environment
@@ -96,7 +112,13 @@ def task_release():
     """
     return _ok(
         dict(
-            file_dep=[P.OK_PIP_INSTALL_E, P.OK_LINT, P.WHEEL, *P.EXAMPLE_HTML],
+            file_dep=[
+                P.OK_PIP_INSTALL_E,
+                P.OK_LINT,
+                P.WHEEL,
+                *P.EXAMPLE_HTML,
+                P.OK_PREFLIGHT_RELEASE,
+            ],
             actions=[_echo_ok("ready to release")],
         ),
         P.OK_RELEASE,

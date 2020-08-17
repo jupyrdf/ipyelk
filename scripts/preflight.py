@@ -138,6 +138,41 @@ def preflight_lab():
     return 0
 
 
+def preflight_release():
+    problems = []
+    changelog = P.CHANGELOG.read_text(encoding="utf-8")
+
+    print("Checking CHANGELOG...", flush=True)
+    changelog_versions = [
+        f"## {P.PY_PKG} {P.PY_VERSION}",
+        "## {name} {version}".format(**P.JS_PACKAGE_DATA),
+    ]
+
+    for version in changelog_versions:
+        if version not in changelog:
+            problems += [f"- Not found in CHANGELOG.md: {version}"]
+
+    print("Checking widget spec versions...", flush=True)
+    index_ts = P.TS_SRC / "index.ts"
+    ts_version = re.findall(r"""VERSION = '(.*?)'""", index_ts.read_text())[0]
+    py_version = re.findall(
+        r"""EXTENSION_SPEC_VERSION = "([^"]+)""", P.VERSION_PY.read_text()
+    )[0]
+
+    if ts_version != py_version:
+        problems += [
+            "python EXTENSION_SPEC_VERSION do not match typescript VERSION"
+            f"\n> {py_version} vs {ts_version}"
+        ]
+
+    print(len(problems), "problem(s) found")
+
+    if problems:
+        [print(problem) for problem in problems]
+
+    return len(problems)
+
+
 def preflight(stage):
     if stage == "conda":
         return preflight_conda()
@@ -145,6 +180,8 @@ def preflight(stage):
         return preflight_kernel()
     elif stage == "lab":
         return preflight_lab()
+    elif stage == "release":
+        return preflight_release()
 
     print(f"Don't know how to preflight: {stage}")
     return 1
