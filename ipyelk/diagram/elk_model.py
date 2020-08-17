@@ -2,6 +2,8 @@
 
     https://app.quicktype.io/?share=v69WIlc7rT81xJjmW3XY
 """
+# Copyright (c) 2020 Dane Freeman.
+# Distributed under the terms of the Modified BSD License.
 
 # flake8: noqa
 

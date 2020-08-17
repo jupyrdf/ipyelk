@@ -16,7 +16,8 @@
   "author": "Dane Freeman",
   "files": [
     "{lib,style,src}/**/*.{.ts,eot,gif,html,jpg,js,js.map,json,png,svg,woff2,ttf,css}",
-    "LICENSE.txt"
+    "LICENSE.txt",
+    "third-party/**/*"
   ],
   "main": "lib/index.js",
   "types": "lib/index.d.ts",

@@ -2,6 +2,10 @@
 
     this should not import anything not in py36+ stdlib, or any local paths
 """
+
+# Copyright (c) 2020 Dane Freeman.
+# Distributed under the terms of the Modified BSD License.
+
 import json
 import os
 import platform

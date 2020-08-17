@@ -1,5 +1,9 @@
 """Widget for interacting with ELK rendered using Sprotty
 """
+# Copyright (c) 2020 Dane Freeman.
+# Distributed under the terms of the Modified BSD License.
+
+
 import enum
 from typing import List
 

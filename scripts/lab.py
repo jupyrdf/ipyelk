@@ -1,5 +1,7 @@
 """ handle lingering issues with jupyterlab 1.x build
 """
+# Copyright (c) 2020 Dane Freeman.
+# Distributed under the terms of the Modified BSD License.
 
 import shutil
 import subprocess

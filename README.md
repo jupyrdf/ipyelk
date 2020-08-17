@@ -45,6 +45,13 @@ pip uninstall ipyelk
 jupyter labextension uninstall @jupyrdf/jupyter-elk
 ```
 
+## Open Source
+
+This work is licensed under the [BSD-3-Clause License][license]. It contains pieces
+derived from [other works][copyright].
+
+[copyright]: https://github.com/jupyrdf/ipyelk/tree/master/COPYRIGHT.md
+[license]: https://github.com/jupyrdf/ipyelk/tree/master/LICENSE.md
 [examples]: https://github.com/jupyrdf/ipyelk/tree/master/examples/00_Introduction.ipynb
 [contributing]: https://github.com/jupyrdf/ipyelk/tree/master/CONTRIBUTING.md
 [changelog]: https://github.com/jupyrdf/ipyelk/tree/master/CHANGELOG.md

@@ -1,3 +1,7 @@
+/**
+ * Copyright (c) 2020 Dane Freeman.
+ * Distributed under the terms of the Modified BSD License.
+ */
 import { Application, IPlugin } from '@phosphor/application';
 import { Widget } from '@phosphor/widgets';
 

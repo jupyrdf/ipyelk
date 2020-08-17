@@ -2,11 +2,16 @@
 
     be careful about imports here:
 """
+
+# Copyright (c) 2020 Dane Freeman.
+# Distributed under the terms of the Modified BSD License.
+
 import json
 import os
 import re
 import subprocess
 import sys
+from datetime import datetime
 from pathlib import Path
 from pprint import pprint
 
@@ -20,6 +25,9 @@ MC3_RECOMMEND = "c:\\mc3" if P.WIN else os.path.expanduser("~/mc3")
 ARBITRARY_PATH_LENGTH = 32 if P.WIN else 64
 NOT_DEFINED = "!NOT DEFINED!"
 DEFAULT_KERNEL_NAME = "python3"
+
+COPYRIGHT = f"Copyright (c) {datetime.now().year} Dane Freeman."
+LICENSE = "Distributed under the terms of the Modified BSD License."
 
 
 def check_path(path, name=None, message=None, check_len=False):
@@ -164,6 +172,14 @@ def preflight_release():
             "python EXTENSION_SPEC_VERSION do not match typescript VERSION"
             f"\n> {py_version} vs {ts_version}"
         ]
+
+    print("Checking copyright/license headers...")
+    for any_src in [*P.ALL_PY, *P.ALL_CSS, *P.ALL_TS]:
+        any_text = any_src.read_text()
+        if COPYRIGHT not in any_text:
+            problems += [f"{any_src.relative_to(P.ROOT)} missing copyright info"]
+        if LICENSE not in any_text:
+            problems += [f"{any_src.relative_to(P.ROOT)} missing license info"]
 
     print(len(problems), "problem(s) found")
 

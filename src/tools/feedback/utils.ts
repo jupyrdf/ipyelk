@@ -1,3 +1,7 @@
+/**
+ * Copyright (c) 2020 Dane Freeman.
+ * Distributed under the terms of the Modified BSD License.
+ */
 import { SModelElement } from 'sprotty';
 
 export function addCssClasses(root: SModelElement, cssClasses: string[]) {

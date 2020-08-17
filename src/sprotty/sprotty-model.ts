@@ -1,4 +1,8 @@
-//From https://github.com/OpenKieler/elkgraph-web
+/**
+ * Copyright (c) 2020 Dane Freeman.
+ * Distributed under the terms of the Modified BSD License.
+ */
+// From https://github.com/OpenKieler/elkgraph-web
 import {
   SNode,
   RectangularNode,
