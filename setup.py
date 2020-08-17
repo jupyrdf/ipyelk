@@ -14,9 +14,9 @@ setup_args = dict(
     description="ELK widget for Jupyter",
     version=re.findall(
         r'''__version__ = "([^"]+)"''',
-        (HERE / name / "_version.py").read_text(encoding="utf-8"),
+        (HERE / "py_src" / name / "_version.py").read_text(encoding="utf-8"),
     )[0],
-    packages=setuptools.find_packages(),
+    packages=setuptools.find_packages("py_src"),
     author="Dane Freeman",
     author_email="dane.freeman@gtri.gatech.edu",
     url="https://github.edu/dfreeman06/ipyelk",

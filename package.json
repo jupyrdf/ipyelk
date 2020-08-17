@@ -17,6 +17,7 @@
   "files": [
     "{lib,style,src}/**/*.{.ts,eot,gif,html,jpg,js,js.map,json,png,svg,woff2,ttf,css}",
     "LICENSE.txt",
+    "COPYRIGHT.md",
     "third-party/**/*"
   ],
   "main": "lib/index.js",

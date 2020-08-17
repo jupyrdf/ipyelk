@@ -72,7 +72,7 @@ PRETTIER = [*JLPM, "--silent", "prettier"]
 OK_ENV = {env: BUILD / f"prep_{env}.ok" for env in ["default"]}
 
 # python stuff
-PY_SRC = ROOT / PY_PKG
+PY_SRC = ROOT / "py_src" / PY_PKG
 PY_SCHEMA = PY_SRC / "schema/elkschema.json"
 VERSION_PY = PY_SRC / "_version.py"
 

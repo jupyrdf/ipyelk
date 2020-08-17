@@ -1,7 +1,8 @@
-include LICENSE.txt README.md COPYRIGHT ipyelk/schema/elkschema.json
-recursive-include third-party *.*
+include LICENSE.txt README.md COPYRIGHT.md py_src/ipyelk/schema/elkschema.json
+recursive-include third-party *.html
+recursive-exclude scripts *.*
 
-exclude src lib docs examples package.json
+exclude src lib docs examples package.json scripts
 
 global-exclude *~
 global-exclude *.pyc
