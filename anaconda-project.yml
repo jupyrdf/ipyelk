@@ -41,8 +41,11 @@ env_specs:
       - black
       - flake8
       - isort <5
+      - pip
       - pyflakes
-      - python =3.7
+      - python >=3.7,<3.8.0a0
+      - twine
+      - wheel
 
   ipyelk:
     description: binder environment

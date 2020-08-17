@@ -73,8 +73,14 @@ doit release
 ```
 
 - See the files in `./dist`.
+- Ensure you have credentials for `pypi` and `npmjs`
 
-> - TBD: Do something with the files.
+```bash
+anaconda-project run twine upload dist/ipyelk-*
+anaconda-project run jlpm publish
+```
+
+- Tag appropriately
 
 ## Updating Dependencies
 
