@@ -165,7 +165,13 @@ def task_build():
 
     yield dict(
         name="ts",
-        file_dep=[P.YARN_INTEGRITY, *P.ALL_TS, P.OK_ENV["default"], P.PY_SCHEMA],
+        file_dep=[
+            P.YARN_INTEGRITY,
+            *P.ALL_TS,
+            P.OK_ENV["default"],
+            P.PY_SCHEMA,
+            P.OK_LINT,
+        ],
         actions=[[*P.APR_DEFAULT, *P.JLPM, "build"]],
         targets=[P.TSBUILDINFO],
     )
