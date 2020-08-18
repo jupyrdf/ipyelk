@@ -31,10 +31,30 @@ jobs:
       - name: git checkout
         uses: actions/checkout@v2
 
+      - name: cache (conda)
+        uses: actions/cache@v1
+        with:
+          path: ~/conda_pkgs_dir
+          key:
+            ${{ runner.os }}-conda-${{ hashFiles('.ci/environment.yml',
+            'anaconda-project-lock.yml') }}
+          restore-keys: |
+            ${{ runner.os }}-conda-
+
+      - name: cache (yarn)
+        uses: actions/cache@v1
+        with:
+          path: .yarn-packages
+          key: yarn-${{ runner.os }}-${{ hashFiles('yarn.lock', '.yarnrc') }}
+          restore-keys: |
+            yarn-${{ runner.os }}-
+            yarn-
+
       - name: env (conda)
         uses: goanpeca/setup-miniconda@v1.6.0
         with:
           environment-file: .ci/environment.yml
+          use-only-tar-bz2: true
 
       - name: build (linux)
         if: ${{ contains(matrix.os, 'ubuntu') }}
