@@ -13,5 +13,6 @@ if __name__ == "__main__":
         version=re.findall(
             r'''__version__ = "([^"]+)"''',
             (HERE / "py_src/ipyelk/_version.py").read_text(encoding="utf-8"),
-        )[0]
+        )[0],
+        data_files = [("", ["third-party/epl-v10.html", "COPYRIGHT.md"])]
     )
