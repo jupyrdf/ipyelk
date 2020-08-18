@@ -8,6 +8,7 @@
     "experimentalDecorators": true,
     "incremental": true,
     "jsx": "react",
+    "lib": ["ES2017", "DOM"],
     "module": "esnext",
     "moduleResolution": "node",
     "noEmitOnError": true,

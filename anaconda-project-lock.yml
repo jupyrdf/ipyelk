@@ -67,7 +67,7 @@ env_specs:
         - notebook=6.1.3=py37hc8dfbb8_0
         - packaging=20.4=pyh9f0ad1d_0
         - pandocfilters=1.4.2=py_1
-        - parso=0.8.0=pyh9f0ad1d_0
+        - parso=0.5.2=py_0
         - pathspec=0.8.0=pyh9f0ad1d_0
         - pickleshare=0.7.5=py37hc8dfbb8_1001
         - pip=20.2.2=py_0
@@ -128,7 +128,7 @@ env_specs:
         - libgcc-ng=9.3.0=h24d8f2e_15
         - libgfortran-ng=7.5.0=hdf63c60_15
         - libgomp=9.3.0=h24d8f2e_15
-        - libiconv=1.15=h516909a_1006
+        - libiconv=1.16=h516909a_0
         - libopenblas=0.3.10=pthreads_hb3c22a3_4
         - libsodium=1.0.18=h516909a_0
         - libstdcxx-ng=9.3.0=hdf63c60_15

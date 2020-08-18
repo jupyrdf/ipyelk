@@ -32,7 +32,7 @@
     "build": "tsc -b",
     "clean": "rimraf lib ./py_src/ipyelk/schema/elkschema.json",
     "watch": "jlpm build -w",
-    "schema": "ts-json-schema-generator --path ./src/elkschema.ts -o ./py_src/ipyelk/schema/elkschema.json",
+    "schema": "ts-json-schema-generator --tsconfig tsconfig.json --path ./src/elkschema.ts -o ./py_src/ipyelk/schema/elkschema.json",
     "lint": "jlpm lint:prettier",
     "lint:prettier": "prettier --write --list-different \"*.{json,yml,md}\"  \"{src,style,py_src,.ci,.github}/**/*.{ts,tsx,js,jsx,css,json,md,yml}\""
   },
@@ -52,8 +52,8 @@
     "react": "*",
     "rimraf": "^2.6.1",
     "snabbdom": "~0.6.6",
-    "ts-json-schema-generator": "^0.56.0",
-    "typescript": "~3.7.2"
+    "ts-json-schema-generator": "^0.71.1",
+    "typescript": "~3.9.2"
   },
   "peerDependencies": {
     "@jupyter-widgets/base": "^2.0.1",
