@@ -1,4 +1,8 @@
 /**
+ * Copyright (c) 2020 Dane Freeman.
+ * Distributed under the terms of the Modified BSD License.
+ */
+/**
  * this exists for generating a complete JSON schema
  */
 import * as ELK from 'elkjs';

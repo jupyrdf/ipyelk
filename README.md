@@ -3,30 +3,38 @@
 [Jupyter Widgets][widgets] for interactive graphs powered by the [Eclipse Layout Kernel
 (ELK)][elk].
 
-|            Demo             |
-| :-------------------------: |
-| [![binder-badge][]][binder] |
+|            Demo             |        Build        |                          Docs                           |
+| :-------------------------: | :-----------------: | :-----------------------------------------------------: |
+| [![binder-badge][]][binder] | [![ci-badge][]][ci] | [CHANGELOG][] <br/> [CONTRIBUTING][] <br/> [examples][] |
 
-> For more, see the [example notebooks](./examples/00_Introduction.ipynb)
+![Interactive diagrams with elk.js, sprotty in JupyterLab][screenshot]
+
+## Prerequisites
+
+- `python >=3.7`
+- `jupyterlab >=1,<2` _JupyterLab 2+ compatibility coming soon!_
+- `nodejs >=10,<14`
 
 ## Install
 
-> This extension is not currently published. See [CONTRIBUTING](./CONTRIBUTING.md) for a
-> development install.
+`ipyelk` is distributed on [PyPI](https://pypi.org). `@jupyrdf/jupyter-elk` is
+distributed on [npm](https://www.npmjs.com). Install them with:
 
 ```bash
 pip install ipyelk
 jupyter labextension install @jupyter-widgets/jupyterlab-manager @jupyrdf/jupyter-elk
 ```
 
+> See [CONTRIBUTING][] for a development install.
+
 ## How it works
 
-In your kernel:
+In your kernel, `ipyelk`:
 
 - build [ELK JSON][elk-json]
   - optionally, use [networkx][]
 
-In the browser:
+In the browser, `@jupyrdf/jupyter-elk`:
 
 - [ELK][] lays out the diagram in a WebWorker
 - [sprotty][] draws the diagram as SVG
@@ -39,6 +47,18 @@ pip uninstall ipyelk
 jupyter labextension uninstall @jupyrdf/jupyter-elk
 ```
 
+## Open Source
+
+This work is licensed under the [BSD-3-Clause License][license]. It contains pieces
+derived from [other works][copyright].
+
+[copyright]: https://github.com/jupyrdf/ipyelk/tree/master/COPYRIGHT.md
+[license]: https://github.com/jupyrdf/ipyelk/tree/master/LICENSE.md
+[examples]: https://github.com/jupyrdf/ipyelk/tree/master/examples/00_Introduction.ipynb
+[contributing]: https://github.com/jupyrdf/ipyelk/tree/master/CONTRIBUTING.md
+[changelog]: https://github.com/jupyrdf/ipyelk/tree/master/CHANGELOG.md
+[ci-badge]: https://github.com/jupyrdf/ipyelk/workflows/CI/badge.svg
+[ci]: https://github.com/jupyrdf/ipyelk/actions?query=workflow%3ACI+branch%3Amaster
 [binder-badge]: https://mybinder.org/badge_logo.svg
 [binder]:
   https://mybinder.org/v2/gh/jupyrdf/ipyelk/master?urlpath=lab%2Ftree%2Fexamples%2F00_Introduction.ipynb
@@ -49,3 +69,5 @@ jupyter labextension uninstall @jupyrdf/jupyter-elk
 [networkx]: https://networkx.github.io
 [sprotty]: https://github.com/eclipse/sprotty
 [widgets]: https://jupyter.org/widgets
+[screenshot]:
+  https://user-images.githubusercontent.com/7581399/90518838-40820300-e135-11ea-8e68-b19356794c78.png

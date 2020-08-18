@@ -6,6 +6,10 @@
 
     See `doit list` for more options.
 """
+
+# Copyright (c) 2020 Dane Freeman.
+# Distributed under the terms of the Modified BSD License.
+
 import os
 import subprocess
 
@@ -62,6 +66,22 @@ def task_preflight():
         P.OK_PREFLIGHT_LAB,
     )
 
+    yield _ok(
+        dict(
+            name="release",
+            file_dep=[
+                P.CHANGELOG,
+                P.VERSION_PY,
+                P.PACKAGE_JSON,
+                P.SDIST,
+                P.WHEEL,
+                P.NPM_TGZ,
+            ],
+            actions=[[*P.APR_DEFAULT, *P.PREFLIGHT, "release"]],
+        ),
+        P.OK_PREFLIGHT_RELEASE,
+    )
+
 
 def task_binder():
     """ get to a minimal interactive environment
@@ -69,7 +89,7 @@ def task_binder():
     return dict(
         file_dep=[
             P.LAB_INDEX,
-            P.OK_PIP_INSTALL_E,
+            P.OK_PIP_INSTALL,
             P.OK_PREFLIGHT_KERNEL,
             P.OK_PREFLIGHT_LAB,
         ],
@@ -96,7 +116,13 @@ def task_release():
     """
     return _ok(
         dict(
-            file_dep=[P.OK_PIP_INSTALL_E, P.OK_LINT, P.WHEEL, *P.EXAMPLE_HTML],
+            file_dep=[
+                P.OK_PIP_INSTALL,
+                P.OK_LINT,
+                P.WHEEL,
+                *P.EXAMPLE_HTML,
+                P.OK_PREFLIGHT_RELEASE,
+            ],
             actions=[_echo_ok("ready to release")],
         ),
         P.OK_RELEASE,
@@ -106,16 +132,34 @@ def task_release():
 def task_setup():
     """ perform all setup activities
     """
+
+    _install = ["--no-deps", "--ignore-installed", "-vv"]
+
+    if P.INSTALL_ARTIFACT == "wheel":
+        _install += [P.WHEEL]
+    elif P.INSTALL_ARTIFACT == "sdist":
+        _install += [P.SDIST]
+    else:
+        _install += ["-e", "."]
+
     yield _ok(
         dict(
             name="py",
-            file_dep=[P.SETUP_PY, P.SETUP_CFG, P.OK_ENV["default"], P.PY_SCHEMA],
+            uptodate=[config_changed({"artifact": P.INSTALL_ARTIFACT})],
+            file_dep=[
+                P.SETUP_PY,
+                P.SETUP_CFG,
+                P.OK_ENV["default"],
+                P.PY_SCHEMA,
+                P.WHEEL,
+                P.SDIST,
+            ],
             actions=[
-                [*P.APR_DEFAULT, *P.PIP, "install", "-e", ".", "--no-deps"],
+                [*P.APR_DEFAULT, *P.PIP, "install", *_install],
                 [*P.APR_DEFAULT, *P.PIP, "check"],
             ],
         ),
-        P.OK_PIP_INSTALL_E,
+        P.OK_PIP_INSTALL,
     )
 
     yield dict(
@@ -139,7 +183,13 @@ def task_build():
 
     yield dict(
         name="ts",
-        file_dep=[P.YARN_INTEGRITY, *P.ALL_TS, P.OK_ENV["default"], P.PY_SCHEMA],
+        file_dep=[
+            P.YARN_INTEGRITY,
+            *P.ALL_TS,
+            P.OK_ENV["default"],
+            P.PY_SCHEMA,
+            P.OK_LINT,
+        ],
         actions=[[*P.APR_DEFAULT, *P.JLPM, "build"]],
         targets=[P.TSBUILDINFO],
     )
@@ -196,7 +246,7 @@ def task_test():
                 *P.EXAMPLE_IPYNB,
                 P.OK_ENV["default"],
                 P.OK_NBLINT[nb.name],
-                P.OK_PIP_INSTALL_E,
+                P.OK_PIP_INSTALL,
                 P.OK_PREFLIGHT_KERNEL,
                 P.PY_SCHEMA,
             ],
@@ -333,7 +383,7 @@ def task_lab():
 
     return dict(
         uptodate=[lambda: False],
-        file_dep=[P.LAB_INDEX, P.OK_PIP_INSTALL_E, P.OK_PREFLIGHT_LAB],
+        file_dep=[P.LAB_INDEX, P.OK_PIP_INSTALL, P.OK_PREFLIGHT_LAB],
         actions=[PythonInteractiveAction(lab)],
     )
 
@@ -357,7 +407,7 @@ def task_watch():
 
     return dict(
         uptodate=[lambda: False],
-        file_dep=[P.OK_PIP_INSTALL_E],
+        file_dep=[P.OK_PIP_INSTALL],
         actions=[PythonInteractiveAction(_watch)],
     )
 

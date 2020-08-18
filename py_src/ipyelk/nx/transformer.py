@@ -1,3 +1,6 @@
+# Copyright (c) 2020 Dane Freeman.
+# Distributed under the terms of the Modified BSD License.
+
 import logging
 from collections import defaultdict
 from functools import lru_cache

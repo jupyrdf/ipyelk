@@ -2,6 +2,10 @@
 
     this should not import anything not in py36+ stdlib, or any local paths
 """
+
+# Copyright (c) 2020 Dane Freeman.
+# Distributed under the terms of the Modified BSD License.
+
 import json
 import os
 import platform
@@ -22,6 +26,8 @@ SKIP_CONDA_PREFLIGHT = bool(json.loads(os.environ.get("SKIP_CONDA_PREFLIGHT", "f
 FORCE_SERIAL_ENV_PREP = bool(
     json.loads(os.environ.get("FORCE_SERIAL_ENV_PREP", "true"))
 )
+# one of: None, wheel or sdist
+INSTALL_ARTIFACT = os.environ.get("INSTALL_ARTIFACT")
 
 # find root
 SCRIPTS = Path(__file__).parent.resolve()
@@ -44,6 +50,7 @@ BUILD = ROOT / "build"
 DIST = ROOT / "dist"
 ENVS = ROOT / "envs"
 PROJ_LOCK = ROOT / "anaconda-project-lock.yml"
+CHANGELOG = ROOT / "CHANGELOG.md"
 
 # tools
 PY = ["python"]
@@ -67,7 +74,7 @@ PRETTIER = [*JLPM, "--silent", "prettier"]
 OK_ENV = {env: BUILD / f"prep_{env}.ok" for env in ["default"]}
 
 # python stuff
-PY_SRC = ROOT / PY_PKG
+PY_SRC = ROOT / "py_src" / PY_PKG
 PY_SCHEMA = PY_SRC / "schema/elkschema.json"
 VERSION_PY = PY_SRC / "_version.py"
 
@@ -108,13 +115,14 @@ OK_RELEASE = BUILD / "release.ok"
 OK_PREFLIGHT_CONDA = BUILD / "preflight.conda.ok"
 OK_PREFLIGHT_KERNEL = BUILD / "preflight.kernel.ok"
 OK_PREFLIGHT_LAB = BUILD / "preflight.lab.ok"
+OK_PREFLIGHT_RELEASE = BUILD / "preflight.release.ok"
 OK_BLACK = BUILD / "black.ok"
 OK_FLAKE8 = BUILD / "flake8.ok"
 OK_ISORT = BUILD / "isort.ok"
 OK_LINT = BUILD / "lint.ok"
 OK_PYFLAKES = BUILD / "pyflakes.ok"
 OK_NBLINT = {nb.name: BUILD / f"nblint.{nb.name}.ok" for nb in EXAMPLE_IPYNB}
-OK_PIP_INSTALL_E = BUILD / "pip_install_e.ok"
+OK_PIP_INSTALL = BUILD / "pip_install.ok"
 OK_PRETTIER = BUILD / "prettier.ok"
 
 # derived info

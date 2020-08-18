@@ -1,3 +1,6 @@
+# Copyright (c) 2020 Dane Freeman.
+# Distributed under the terms of the Modified BSD License.
+
 from dataclasses import dataclass
 from itertools import tee
 from typing import Dict, Hashable, Iterable, List, Optional, Tuple

@@ -1,9 +1,9 @@
 name: ipyelk
 
 channels:
-  - anaconda
-  - conda-forge
-  - msys2
+  - https://conda.anaconda.org/conda-forge
+  - https://conda.anaconda.org/anaconda
+  - https://conda.anaconda.org/msys2
 
 dependencies:
   - ipywidgets >=7.5.1

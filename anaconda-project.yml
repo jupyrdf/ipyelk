@@ -41,15 +41,18 @@ env_specs:
       - black
       - flake8
       - isort <5
+      - pip
       - pyflakes
-      - python =3.7
+      - python >=3.7,<3.8.0a0
+      - twine
+      - wheel
 
   ipyelk:
     description: binder environment
     channels:
-      - anaconda
-      - conda-forge
-      - msys2
+      - https://conda.anaconda.org/conda-forge
+      - https://conda.anaconda.org/anaconda
+      - https://conda.anaconda.org/msys2
     packages:
       - ipywidgets >=7.5.1
       - jupyterlab >=1.2,<1.3.0a0

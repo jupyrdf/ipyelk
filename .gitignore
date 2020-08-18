@@ -146,15 +146,16 @@ $RECYCLE.BIN/
 # ----
 
 **/node_modules/
-ipyelk/nbextension/static/index.*
-ipyelk/labextension/*.tgz
+py_src/ipyelk/nbextension/static/index.*
+py_src/ipyelk/labextension/*.tgz
+**/.yarn-packages/
 
 # Coverage data
 # -------------
 **/coverage/
 
 # generated files
-ipyelk/schema/*.json
+py_src/ipyelk/schema/*.json
 
 # editors
 .idea/

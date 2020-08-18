@@ -2,11 +2,16 @@
 
     be careful about imports here:
 """
+
+# Copyright (c) 2020 Dane Freeman.
+# Distributed under the terms of the Modified BSD License.
+
 import json
 import os
 import re
 import subprocess
 import sys
+from datetime import datetime
 from pathlib import Path
 from pprint import pprint
 
@@ -20,6 +25,9 @@ MC3_RECOMMEND = "c:\\mc3" if P.WIN else os.path.expanduser("~/mc3")
 ARBITRARY_PATH_LENGTH = 32 if P.WIN else 64
 NOT_DEFINED = "!NOT DEFINED!"
 DEFAULT_KERNEL_NAME = "python3"
+
+COPYRIGHT = f"Copyright (c) {datetime.now().year} Dane Freeman."
+LICENSE = "Distributed under the terms of the Modified BSD License."
 
 
 def check_path(path, name=None, message=None, check_len=False):
@@ -138,6 +146,49 @@ def preflight_lab():
     return 0
 
 
+def preflight_release():
+    problems = []
+    changelog = P.CHANGELOG.read_text(encoding="utf-8")
+
+    print("Checking CHANGELOG...", flush=True)
+    changelog_versions = [
+        f"## {P.PY_PKG} {P.PY_VERSION}",
+        "## {name} {version}".format(**P.JS_PACKAGE_DATA),
+    ]
+
+    for version in changelog_versions:
+        if version not in changelog:
+            problems += [f"- Not found in CHANGELOG.md: {version}"]
+
+    print("Checking widget spec versions...", flush=True)
+    index_ts = P.TS_SRC / "index.ts"
+    ts_version = re.findall(r"""VERSION = '(.*?)'""", index_ts.read_text())[0]
+    py_version = re.findall(
+        r"""EXTENSION_SPEC_VERSION = "([^"]+)""", P.VERSION_PY.read_text()
+    )[0]
+
+    if ts_version != py_version:
+        problems += [
+            "python EXTENSION_SPEC_VERSION do not match typescript VERSION"
+            f"\n> {py_version} vs {ts_version}"
+        ]
+
+    print("Checking copyright/license headers...")
+    for any_src in [*P.ALL_PY, *P.ALL_CSS, *P.ALL_TS]:
+        any_text = any_src.read_text()
+        if COPYRIGHT not in any_text:
+            problems += [f"{any_src.relative_to(P.ROOT)} missing copyright info"]
+        if LICENSE not in any_text:
+            problems += [f"{any_src.relative_to(P.ROOT)} missing license info"]
+
+    print(len(problems), "problem(s) found")
+
+    if problems:
+        [print(problem) for problem in problems]
+
+    return len(problems)
+
+
 def preflight(stage):
     if stage == "conda":
         return preflight_conda()
@@ -145,6 +196,8 @@ def preflight(stage):
         return preflight_kernel()
     elif stage == "lab":
         return preflight_lab()
+    elif stage == "release":
+        return preflight_release()
 
     print(f"Don't know how to preflight: {stage}")
     return 1

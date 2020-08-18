@@ -1,3 +1,7 @@
+/**
+ * Copyright (c) 2020 Dane Freeman.
+ * Distributed under the terms of the Modified BSD License.
+ */
 //inspired from :
 // https://github.com/eclipsesource/graphical-lsp/blob/abc742641f6fc993f708f0c8cef937eb7a0b028a/client/packages/sprotty-client/src/features/tools/creation-tool.ts
 

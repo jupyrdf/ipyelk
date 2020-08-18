@@ -12,6 +12,7 @@ env:
   PYTHONUNBUFFERED: 1
   PYTHONIOENCODING: utf-8
   SKIP_CONDA_PREFLIGHT: 1
+  INSTALL_ARTIFACT: wheel
 
 jobs:
   ci:
@@ -23,29 +24,65 @@ jobs:
           - macos-latest
           - windows-latest
     steps:
-      - uses: actions/checkout@v2
+      - name: configure line endings
+        run: |
+          git config --global core.autocrlf false
 
-      - uses: goanpeca/setup-miniconda@v1.6.0
+      - name: git checkout
+        uses: actions/checkout@v2
+
+      - name: cache (conda)
+        uses: actions/cache@v1
+        with:
+          path: ~/conda_pkgs_dir
+          key:
+            ${{ runner.os }}-conda-${{ hashFiles('.ci/environment.yml',
+            'anaconda-project-lock.yml') }}
+          restore-keys: |
+            ${{ runner.os }}-conda-
+
+      - name: cache (yarn)
+        uses: actions/cache@v1
+        with:
+          path: .yarn-packages
+          key: yarn-${{ runner.os }}-${{ hashFiles('yarn.lock', '.yarnrc') }}
+          restore-keys: |
+            yarn-${{ runner.os }}-
+            yarn-
+
+      - name: env (conda)
+        uses: goanpeca/setup-miniconda@v1.6.0
         with:
           environment-file: .ci/environment.yml
+          use-only-tar-bz2: true
 
-      - if: ${{ contains(matrix.os, 'ubuntu') }}
+      - name: build (linux)
+        if: ${{ contains(matrix.os, 'ubuntu') }}
         shell: bash -l {0}
         run: |
           source /usr/share/miniconda/bin/deactivate
           source /usr/share/miniconda/bin/activate /usr/share/miniconda/envs/_ipyelk_ci_
-          doit -n4 all || doit all || exit 1
+          INSTALL_ARTIFACT=sdist doit -n4 all || doit all || exit 1
 
-      - if: ${{ contains(matrix.os, 'macos') }}
+      - name: build (macos)
+        if: ${{ contains(matrix.os, 'macos') }}
         shell: bash -l {0}
         run: |
           source /usr/local/miniconda/bin/deactivate
           source /usr/local/miniconda/bin/activate /usr/local/miniconda/envs/_ipyelk_ci_
           doit -n4 all || doit all || exit 1
 
-      - if: ${{ contains(matrix.os, 'windows') }}
+      - name: build (windows)
+        if: ${{ contains(matrix.os, 'windows') }}
         shell: cmd /C CALL {0}
         run: |
           call C:\Miniconda\Scripts\deactivate
           call C:\Miniconda\Scripts\activate C:\Miniconda\envs\_ipyelk_ci_
           doit -n4 all || doit all || exit 1
+
+      - name: publish (linux)
+        if: ${{ contains(matrix.os, 'ubuntu') }}
+        uses: actions/upload-artifact@v2
+        with:
+          name: ipyelk dist ${{ github.run_number }}
+          path: ./dist

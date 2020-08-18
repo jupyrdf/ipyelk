@@ -1,3 +1,7 @@
+# Copyright (c) 2020 Dane Freeman.
+# Distributed under the terms of the Modified BSD License.
+
+
 from typing import Generator, Iterable, List, Tuple
 
 import networkx as nx

@@ -21,16 +21,17 @@ doit lab   # start lab
 
 ## Important Paths
 
-| Path                           | Purpose                                              |
-| ------------------------------ | ---------------------------------------------------- |
-| `dodo.py`                      | task automation tool                                 |
-| `anaconda-project.yml`         | environment templates and some task definitions      |
-| `anaconda-project-lock.yml`    | frozen environments                                  |
-| `setup.py` / `setup.cfg`       | package description for `ipyelk`                     |
-| `package.json/`                | `npm` package description for `@jupyrdf/jupyter-elk` |
-| `src/`                         | TypeScript source for `@jupyrdf/jupyter-elk`         |
-| `ipyelk/`                      | Python source for `ipyelk`                           |
-| `ipyelk/schema/elkschema.json` | JSON schema derived from the TypeScript source       |
+| Path                                  | Purpose                                              |
+| ------------------------------------- | ---------------------------------------------------- |
+| `dodo.py`                             | task automation tool                                 |
+| `anaconda-project.yml`                | environment templates and some task definitions      |
+| `anaconda-project-lock.yml`           | frozen environments                                  |
+| `setup.py` / `setup.cfg`              | package description for `ipyelk`                     |
+| `py_src/`                             | Python source for `ipyelk`                           |
+| `py_src/ipyelk/schema/elkschema.json` | JSON schema derived from the TypeScript source       |
+| `package.json/`                       | `npm` package description for `@jupyrdf/jupyter-elk` |
+| `yarn.lock`                           | frozen `npm` dependencies                            |
+| `src/`                                | TypeScript source for `@jupyrdf/jupyter-elk`         |
 
 - Most commands are run with `doit`
 - Most typescript-related commands are run with
@@ -66,15 +67,22 @@ doit lint
 
 ## Releasing
 
-- Run:
+- After merging to `master`, download the ipyelk dist artifacts
+- Inspect the files in `./dist`.
+- Check out master
+- Tag appropriately
 
 ```bash
-doit release
+git push upstream --tags
 ```
 
-- See the files in `./dist`.
+- Ensure you have credentials for `pypi` and `npmjs`
 
-> - TBD: Do something with the files.
+```bash
+cd where-you-expanded-the-archive
+anaconda-project run twine upload ipyelk-*
+anaconda-project run jlpm publish jupyrdf-jupyter-elk-*.tgz
+```
 
 ## Updating Dependencies
 
