@@ -53,3 +53,9 @@ jobs:
           call C:\Miniconda\Scripts\deactivate
           call C:\Miniconda\Scripts\activate C:\Miniconda\envs\_ipyelk_ci_
           doit -n4 all || doit all || exit 1
+
+      - if: ${{ contains(matrix.os, 'ubuntu') }}
+        uses: actions/upload-artifact@v2
+        with:
+          name: ipyelk dist ${{ github.run_number }}
+          path: ./dist

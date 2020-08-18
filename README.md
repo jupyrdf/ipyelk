@@ -7,6 +7,8 @@
 | :-------------------------: | :-----------------: | :-----------------------------------------------------: |
 | [![binder-badge][]][binder] | [![ci-badge][]][ci] | [CHANGELOG][] <br/> [CONTRIBUTING][] <br/> [examples][] |
 
+![Interactive diagrams with elk.js, sprotty in JupyterLab][screenshot]
+
 ## Prerequisites
 
 - `python >=3.7`
@@ -67,3 +69,5 @@ derived from [other works][copyright].
 [networkx]: https://networkx.github.io
 [sprotty]: https://github.com/eclipse/sprotty
 [widgets]: https://jupyter.org/widgets
+[screenshot]:
+  https://user-images.githubusercontent.com/7581399/90518838-40820300-e135-11ea-8e68-b19356794c78.png
