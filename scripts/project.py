@@ -26,6 +26,8 @@ SKIP_CONDA_PREFLIGHT = bool(json.loads(os.environ.get("SKIP_CONDA_PREFLIGHT", "f
 FORCE_SERIAL_ENV_PREP = bool(
     json.loads(os.environ.get("FORCE_SERIAL_ENV_PREP", "true"))
 )
+# one of: None, wheel or sdist
+INSTALL_ARTIFACT = os.environ.get("INSTALL_ARTIFACT")
 
 # find root
 SCRIPTS = Path(__file__).parent.resolve()
@@ -120,7 +122,7 @@ OK_ISORT = BUILD / "isort.ok"
 OK_LINT = BUILD / "lint.ok"
 OK_PYFLAKES = BUILD / "pyflakes.ok"
 OK_NBLINT = {nb.name: BUILD / f"nblint.{nb.name}.ok" for nb in EXAMPLE_IPYNB}
-OK_PIP_INSTALL_E = BUILD / "pip_install_e.ok"
+OK_PIP_INSTALL = BUILD / "pip_install.ok"
 OK_PRETTIER = BUILD / "prettier.ok"
 
 # derived info

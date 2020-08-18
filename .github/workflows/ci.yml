@@ -12,6 +12,7 @@ env:
   PYTHONUNBUFFERED: 1
   PYTHONIOENCODING: utf-8
   SKIP_CONDA_PREFLIGHT: 1
+  INSTALL_ARTIFACT: wheel
 
 jobs:
   ci:
@@ -38,7 +39,7 @@ jobs:
         run: |
           source /usr/share/miniconda/bin/deactivate
           source /usr/share/miniconda/bin/activate /usr/share/miniconda/envs/_ipyelk_ci_
-          doit -n4 all || doit all || exit 1
+          INSTALL_ARTIFACT=sdist doit -n4 all || doit all || exit 1
 
       - if: ${{ contains(matrix.os, 'macos') }}
         shell: bash -l {0}

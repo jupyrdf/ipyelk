@@ -89,7 +89,7 @@ def task_binder():
     return dict(
         file_dep=[
             P.LAB_INDEX,
-            P.OK_PIP_INSTALL_E,
+            P.OK_PIP_INSTALL,
             P.OK_PREFLIGHT_KERNEL,
             P.OK_PREFLIGHT_LAB,
         ],
@@ -117,7 +117,7 @@ def task_release():
     return _ok(
         dict(
             file_dep=[
-                P.OK_PIP_INSTALL_E,
+                P.OK_PIP_INSTALL,
                 P.OK_LINT,
                 P.WHEEL,
                 *P.EXAMPLE_HTML,
@@ -132,16 +132,34 @@ def task_release():
 def task_setup():
     """ perform all setup activities
     """
+
+    _install = ["--no-deps", "--ignore-installed"]
+
+    if P.INSTALL_ARTIFACT == "wheel":
+        _install += [P.WHEEL]
+    elif P.INSTALL_ARTIFACT == "sdist":
+        _install += [P.SDIST]
+    else:
+        _install += ["-e", "."]
+
     yield _ok(
         dict(
             name="py",
-            file_dep=[P.SETUP_PY, P.SETUP_CFG, P.OK_ENV["default"], P.PY_SCHEMA],
+            uptodate=[config_changed({"artifact": P.INSTALL_ARTIFACT})],
+            file_dep=[
+                P.SETUP_PY,
+                P.SETUP_CFG,
+                P.OK_ENV["default"],
+                P.PY_SCHEMA,
+                P.WHEEL,
+                P.SDIST,
+            ],
             actions=[
-                [*P.APR_DEFAULT, *P.PIP, "install", "-e", ".", "--no-deps"],
+                [*P.APR_DEFAULT, *P.PIP, "install", *_install],
                 [*P.APR_DEFAULT, *P.PIP, "check"],
             ],
         ),
-        P.OK_PIP_INSTALL_E,
+        P.OK_PIP_INSTALL,
     )
 
     yield dict(
@@ -228,7 +246,7 @@ def task_test():
                 *P.EXAMPLE_IPYNB,
                 P.OK_ENV["default"],
                 P.OK_NBLINT[nb.name],
-                P.OK_PIP_INSTALL_E,
+                P.OK_PIP_INSTALL,
                 P.OK_PREFLIGHT_KERNEL,
                 P.PY_SCHEMA,
             ],
@@ -365,7 +383,7 @@ def task_lab():
 
     return dict(
         uptodate=[lambda: False],
-        file_dep=[P.LAB_INDEX, P.OK_PIP_INSTALL_E, P.OK_PREFLIGHT_LAB],
+        file_dep=[P.LAB_INDEX, P.OK_PIP_INSTALL, P.OK_PREFLIGHT_LAB],
         actions=[PythonInteractiveAction(lab)],
     )
 
@@ -389,7 +407,7 @@ def task_watch():
 
     return dict(
         uptodate=[lambda: False],
-        file_dep=[P.OK_PIP_INSTALL_E],
+        file_dep=[P.OK_PIP_INSTALL],
         actions=[PythonInteractiveAction(_watch)],
     )
 
