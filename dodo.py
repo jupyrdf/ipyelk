@@ -133,7 +133,7 @@ def task_setup():
     """ perform all setup activities
     """
 
-    _install = ["--no-deps", "--ignore-installed"]
+    _install = ["--no-deps", "--ignore-installed", "-vv"]
 
     if P.INSTALL_ARTIFACT == "wheel":
         _install += [P.WHEEL]
