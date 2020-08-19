@@ -3,9 +3,9 @@
 [Jupyter Widgets][widgets] for interactive graphs powered by the [Eclipse Layout Kernel
 (ELK)][elk].
 
-|            Demo             |        Build        |                          Docs                           |
-| :-------------------------: | :-----------------: | :-----------------------------------------------------: |
-| [![binder-badge][]][binder] | [![ci-badge][]][ci] | [CHANGELOG][] <br/> [CONTRIBUTING][] <br/> [examples][] |
+|                                        Install                                        |            Demo             |        Build        |                          Docs                           |
+| :-----------------------------------------------------------------------------------: | :-------------------------: | :-----------------: | :-----------------------------------------------------: |
+| [![npm-badge]][npm] <br/> [![pypi-badge][]][pypi] <br/> [![conda-badge]][conda-forge] | [![binder-badge][]][binder] | [![ci-badge][]][ci] | [CHANGELOG][] <br/> [CONTRIBUTING][] <br/> [examples][] |
 
 ![Interactive diagrams with elk.js, sprotty in JupyterLab][screenshot]
 
@@ -17,15 +17,36 @@
 
 ## Install
 
-`ipyelk` is distributed on [PyPI](https://pypi.org). `@jupyrdf/jupyter-elk` is
-distributed on [npm](https://www.npmjs.com). Install them with:
+`ipyelk` is distributed on [conda-forge][] and [PyPI][].
+
+### `ipyelk` with `conda` (recommended)
+
+`conda` can also install `nodejs`.
 
 ```bash
-pip install ipyelk
+conda install -c conda-forge ipyelk jupyterlab=1 nodejs
+```
+
+### `ipyelk` with `pip`
+
+install `nodejs` with a [package manager][package-manager]
+
+```bash
+pip install ipyelk jupyterlab=1
+```
+
+### `@jupyrdf/jupyter-elk` with `jupyter labextension install`
+
+`@jupyrdf/jupyter-elk` is distributed on [npm][], and relies on
+`@jupyter-widgets/jupyterlab-manager`.
+
+```bash
 jupyter labextension install @jupyter-widgets/jupyterlab-manager @jupyrdf/jupyter-elk
 ```
 
-> See [CONTRIBUTING][] for a development install.
+### Developing
+
+See [CONTRIBUTING][] for a development install.
 
 ## How it works
 
@@ -71,3 +92,10 @@ derived from [other works][copyright].
 [widgets]: https://jupyter.org/widgets
 [screenshot]:
   https://user-images.githubusercontent.com/7581399/90518838-40820300-e135-11ea-8e68-b19356794c78.png
+[npm-badge]: https://img.shields.io/npm/v/@jupyrdf/jupyter-elk
+[npm]: https://www.npmjs.com/package/@jupyrdf/jupyter-elk
+[pypi]: https://pypi.org/project/ipyelk
+[pypi-badge]: https://img.shields.io/pypi/v/ipyelk
+[conda-badge]: https://img.shields.io/conda/vn/conda-forge/ipyelk
+[conda-forge]: https://anaconda.org/conda-forge/ipyelk/
+[package-manager]: https://nodejs.org/en/download/package-manager
