@@ -1,6 +1,6 @@
 {
   "name": "@jupyrdf/jupyter-elk",
-  "version": "0.1.2",
+  "version": "0.1.3a0",
   "description": "ElkJS widget for Jupyter",
   "keywords": [
     "jupyter",
