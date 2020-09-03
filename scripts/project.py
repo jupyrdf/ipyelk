@@ -41,6 +41,7 @@ PACKAGE_JSON = ROOT / "package.json"
 JS_PACKAGE_DATA = json.loads(PACKAGE_JSON.read_text(encoding="utf-8"))
 JS_PKG = JS_PACKAGE_DATA["name"]
 JS_VERSION = JS_PACKAGE_DATA["version"]
+JS_VERSION_MANGLED = re.sub(r"([ab])(\d+)", "-\\1\\2", JS_VERSION)
 YARN_INTEGRITY = NODE_MODULES / ".yarn-integrity"
 YARN_LOCK = ROOT / "yarn.lock"
 EXTENSIONS = ROOT / "labextensions.txt"
@@ -135,5 +136,5 @@ PY_VERSION = re.findall(
 SDIST = DIST / f"{PY_PKG}-{PY_VERSION}.tar.gz"
 WHEEL = DIST / f"{PY_PKG}-{PY_VERSION}-py3-none-any.whl"
 NPM_TGZ_STEM = JS_PKG.replace("@", "").replace("/", "-")
-NPM_TGZ = DIST / f"{NPM_TGZ_STEM}-{JS_VERSION}.tgz"
+NPM_TGZ = DIST / f"{NPM_TGZ_STEM}-{JS_VERSION_MANGLED}.tgz"
 EXAMPLE_HTML = [DIST_NBHTML / p.name.replace(".ipynb", ".html") for p in EXAMPLE_IPYNB]

@@ -3,7 +3,7 @@
  * Distributed under the terms of the Modified BSD License.
  */
 export const NAME = '@jupyrdf/jupyter-elk';
-export const VERSION = '0.1.2';
+export const VERSION = '0.1.3';
 
 export const ELK_DEBUG = window.location.hash.indexOf('ELK_DEBUG') > -1;
 

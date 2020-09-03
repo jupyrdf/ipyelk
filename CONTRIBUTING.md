@@ -77,11 +77,16 @@ git push upstream --tags
 ```
 
 - Ensure you have credentials for `pypi` and `npmjs`
+  - `npmjs` requires you have set up two-factor authentication (2FA)... this is
+    _strongly recommended_ for `pypi`
+  - do _not_ use `jlpm publish` or `yarn publish`, as this appears to drop files from
+    the distribution
 
 ```bash
-cd where-you-expanded-the-archive
-anaconda-project run twine upload ipyelk-*
-anaconda-project run jlpm publish jupyrdf-jupyter-elk-*.tgz
+anaconda-project run npm login
+anaconda-project run npm publish
+anaconda-project run npm logout
+anaconda-project run twine upload where-you-expanded-the-archive/ipyelk-*
 ```
 
 ## Updating Dependencies
