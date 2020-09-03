@@ -10,7 +10,7 @@
 
 - fix npm release process
 
-## @jupyrdf/jupyter-elk 0.1.2  (broken)
+## @jupyrdf/jupyter-elk 0.1.2 (broken)
 
 - fix npm release process
 
