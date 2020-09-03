@@ -1,8 +1,8 @@
 # Changelog
 
-## @jupyrdf/jupyter-elk 0.1.3a (unreleased)
+## @jupyrdf/jupyter-elk 0.1.3a0 (unreleased)
 
-## ipyelk 0.1.3a (unreleased)
+## ipyelk 0.1.3a0 (unreleased)
 
 ---
 
