@@ -1,18 +1,20 @@
 # Changelog
 
-## @jupyrdf/jupyter-elk 0.1.3a0 (unreleased)
+## @jupyrdf/jupyter-elk 0.1.3
 
-## ipyelk 0.1.3a0 (unreleased)
+- includes all files using `npm publish`
+
+## ipyelk 0.1.3
+
+- updates some metadata for pypi
 
 ---
 
 ## ipyelk 0.1.2
 
-- fix npm release process
-
 ## @jupyrdf/jupyter-elk 0.1.2 (broken)
 
-- fix npm release process
+- (failed) fix npm release process
 
 ---
 
