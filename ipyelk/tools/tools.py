@@ -32,3 +32,13 @@ class ToggleCollapsedBtn(ToolButton):
                     state = tree.nodes[child].get("hidden", False)
                     tree.nodes[child]["hidden"] = not state
                 self.app.refresh()
+
+
+class FitBtn(ToolButton):
+    @T.default("description")
+    def _default_description(self):
+        return "Fit"
+
+    def handler(self, *args):
+        diagram: ElkDiagram = self.app.diagram
+        diagram.fit()

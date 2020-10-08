@@ -288,15 +288,15 @@ class XELK(ElkTransformer):
         name = data.get(self.label_key, data.get("_id", f"{node}"))
         width = self.text_scale * len(name)
 
-        return [
-            ElkLabel(
-                id=f"{name}_label_{node}",
-                text=name,
-                width=width,
-                x=self.label_offset,
-                y=self.label_offset,
-            )
-        ]
+        label = ElkLabel(
+            id=f"{name}_label_{node}",
+            text=name,
+            width=width,
+            x=self.label_offset,
+            y=self.label_offset,
+        )
+        self.register(label, node)
+        return [label]
 
     def collect_edges(self) -> Tuple[EdgeMap, EdgeMap]:
         """[summary]

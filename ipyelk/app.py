@@ -57,7 +57,7 @@ class Elk(W.VBox, StyledWidget):
     transformer: ElkTransformer = T.Instance(ElkTransformer)
     diagram: ElkDiagram = T.Instance(ElkDiagram)
     selected = T.Tuple()
-    hovered = T.Unicode(allow_none=True, default_value=None)
+    hovered = T.Any(allow_none=True, default_value=None)
     toolbar: Toolbar = T.Instance(Toolbar, kw={})
 
     _data_link: T.dlink = None
@@ -106,7 +106,7 @@ class Elk(W.VBox, StyledWidget):
 
     @T.observe("diagram")
     def _update_children(self, change:T.Bunch=None):
-        self.children = [self.toolbar, self.diagram]
+        self.children = [self.diagram, self.toolbar]
         
         if change:
             # uninstall old observers
@@ -147,7 +147,6 @@ class Elk(W.VBox, StyledWidget):
 
         # transform hovered nodes into elk id
         self.diagram.hover = self.transformer.to_id(self.hovered)
-
 
     def refresh(self):
         self.transformer.refresh()
