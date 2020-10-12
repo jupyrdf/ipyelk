@@ -1,18 +1,17 @@
 name: ipyelk
 
 variables:
-  ELK_SRC: >-
-    setup.py ipyelk postBuild scripts
+  PYTHONIOENCODING: utf-8
 
 commands:
-  setup:
+  postBuild:
     description: do what binder does
     unix: &setup python postBuild
     windows: *setup
 
   watch:
     description: set up processes for live development
-    unix: &watch python scripts/watch.py
+    unix: &watch python -m scripts.lab watch
     windows: *watch
 
   lab:
@@ -20,15 +19,15 @@ commands:
     unix: &lab jupyter lab --no-browser --debug
     windows: *lab
 
-  lint:
-    description: apply source formatting
-    unix: isort -rc $ELK_SRC && black $ELK_SRC && jlpm lint
-    windows: isort -rc %ELK_SRC% && black %ELK_SRC% && jlpm lint
+  lab:build:
+    description: do a regular lab build
+    unix: &labBuild python -m scripts.lab build
+    windows: *labBuild
 
-  dist:
-    description: build distributions
-    unix: &dist python setup.py bdist_wheel sdist && cd dist && npm pack ..
-    windows: *dist
+  ext:pack:
+    description: ensure built tarballs, a little finicky
+    unix: mkdir -p dist && cd dist && npm pack ..
+    windows: md dist || echo "ok" && cd dist && npm pack ..
 
 env_specs:
   default:
@@ -40,15 +39,20 @@ env_specs:
       - ipyelk
     packages:
       - black
+      - flake8
       - isort <5
-      - python =3.7
+      - pip
+      - pyflakes
+      - python >=3.7,<3.8.0a0
+      - twine
+      - wheel
 
   ipyelk:
     description: binder environment
     channels:
-      - anaconda
-      - conda-forge
-      - msys2
+      - https://conda.anaconda.org/conda-forge
+      - https://conda.anaconda.org/anaconda
+      - https://conda.anaconda.org/msys2
     packages:
       - ipywidgets >=7.5.1
       - jupyterlab >=1.2,<1.3.0a0

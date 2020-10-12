@@ -1,3 +1,7 @@
+/**
+ * Copyright (c) 2020 Dane Freeman.
+ * Distributed under the terms of the Modified BSD License.
+ */
 import { Action, MouseListener, SModelElement, HoverFeedbackAction } from 'sprotty/lib';
 import { DiagramTool } from './tool';
 

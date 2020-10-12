@@ -1,4 +1,6 @@
-from collections import defaultdict
+# Copyright (c) 2020 Dane Freeman.
+# Distributed under the terms of the Modified BSD License.
+
 from dataclasses import dataclass
 from itertools import tee
 from typing import Dict, Hashable, Iterable, List, Optional, Tuple
@@ -19,7 +21,7 @@ EdgeMap = Dict[Hashable, List[Edge]]
 
 def get_roots(tree: nx.DiGraph, g: nx.DiGraph) -> Iterable[Hashable]:
     """Iterate through the roots in the tree and any orphaned nodes in the graph
-    
+
     :param tree: Hierarchical graph
     :type tree: nx.DiGraph
     :param g: [description]
@@ -44,8 +46,9 @@ def get_roots(tree: nx.DiGraph, g: nx.DiGraph) -> Iterable[Hashable]:
 
 
 def compact(array: Optional[List]) -> Optional[List]:
-    """Compact an list by removing `None` elements. If the result is an empty list, return `None`
-    
+    """ Compact an list by removing `None` elements. If the result is an empty
+        list, return `None`
+
     :param array: Inital list to compact
     :type array: List
     :return: Final compacted list or None
@@ -78,7 +81,8 @@ def lowest_common_ancestor(tree, nodes):
 
 
 def lca(tree: nx.DiGraph, a: Hashable, b: Hashable) -> Optional[Hashable]:
-    """Wrapper around the NetworkX `lowest_common_ancestor` but allows either source or target node to not be in the tree
+    """ Wrapper around the NetworkX `lowest_common_ancestor` but allows either
+        source or target node to not be in the tree
 
     :param tree: Node hierarchy
     :type tree: nx.DiaGraph

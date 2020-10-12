@@ -1,6 +1,6 @@
 {
   "name": "@jupyrdf/jupyter-elk",
-  "version": "0.1.1",
+  "version": "0.1.3",
   "description": "ElkJS widget for Jupyter",
   "keywords": [
     "jupyter",
@@ -16,7 +16,9 @@
   "author": "Dane Freeman",
   "files": [
     "{lib,style,src}/**/*.{.ts,eot,gif,html,jpg,js,js.map,json,png,svg,woff2,ttf,css}",
-    "LICENSE.txt"
+    "LICENSE.txt",
+    "COPYRIGHT.md",
+    "third-party/**/*"
   ],
   "main": "lib/index.js",
   "types": "lib/index.d.ts",
@@ -28,19 +30,19 @@
   "scripts": {
     "bootstrap": "jlpm --ignore-optional --ignore-scripts && jlpm clean && jlpm schema && jlpm lint && jlpm build",
     "build": "tsc -b",
-    "clean": "rimraf lib ./ipyelk/schema/elkschema.json",
+    "clean": "rimraf lib ./py_src/ipyelk/schema/elkschema.json",
     "watch": "jlpm build -w",
-    "schema": "ts-json-schema-generator --path ./src/elkschema.ts -o ./ipyelk/schema/elkschema.json",
+    "schema": "ts-json-schema-generator --tsconfig tsconfig.json --path ./src/elkschema.ts -o ./py_src/ipyelk/schema/elkschema.json",
     "lint": "jlpm lint:prettier",
-    "lint:prettier": "prettier --write \"*.{json,yml,md}\" \"{.ci,.github/workflows}/*.{yml}\" \"{src,style,elk}/**/*.{ts,tsx,js,jsx,css,json,md,yml}\""
+    "lint:prettier": "prettier --write --list-different \"*.{json,yml,md}\"  \"{src,style,py_src,.ci,.github}/**/*.{ts,tsx,js,jsx,css,json,md,yml}\""
   },
   "dependencies": {
-    "@jupyterlab/application": "^1.2.7",
     "reflect-metadata": "^0.1.13",
     "sprotty-elk": "0.8.0",
     "worker-loader": "^2.0.0"
   },
   "devDependencies": {
+    "@jupyterlab/application": "^1.2.7",
     "@jupyter-widgets/base": "^2.0.1",
     "@jupyter-widgets/controls": "^1.5.1",
     "@jupyter-widgets/jupyterlab-manager": "^1.0.1",
@@ -50,10 +52,11 @@
     "react": "*",
     "rimraf": "^2.6.1",
     "snabbdom": "~0.6.6",
-    "ts-json-schema-generator": "^0.56.0",
-    "typescript": "~3.7.2"
+    "ts-json-schema-generator": "^0.71.1",
+    "typescript": "~3.9.2"
   },
   "peerDependencies": {
+    "@jupyterlab/application": "^1.2.7",
     "@jupyter-widgets/base": "^2.0.1",
     "@jupyter-widgets/controls": "^1.5.1",
     "@jupyter-widgets/jupyterlab-manager": "^1.0.1",

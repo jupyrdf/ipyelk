@@ -1,9 +1,14 @@
-"""Python Quick Types from Josn Schema 
-https://app.quicktype.io/?share=v69WIlc7rT81xJjmW3XY
+""" Python Quick Types from JSON Schema
+
+    https://app.quicktype.io/?share=v69WIlc7rT81xJjmW3XY
 """
+# Copyright (c) 2020 Dane Freeman.
+# Distributed under the terms of the Modified BSD License.
+
+# flake8: noqa
 
 from dataclasses import dataclass
-from typing import Any, Callable, Dict, List, Optional, Type, TypeVar, Union, cast
+from typing import Any, Callable, Dict, List, Optional, Type, TypeVar, cast
 
 T = TypeVar("T")
 

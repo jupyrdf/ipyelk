@@ -1,3 +1,7 @@
+/**
+ * Copyright (c) 2020 Dane Freeman.
+ * Distributed under the terms of the Modified BSD License.
+ */
 export const ToolTYPES = {
   IFeedbackActionDispatcher: Symbol.for('IFeedbackActionDispatcher'),
   IToolFactory: Symbol.for('Factory<Tool>'),

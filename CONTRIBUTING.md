@@ -4,29 +4,36 @@
 
 - Get [Miniconda3](https://docs.conda.io/en/latest/miniconda.html)
 - Get [anaconda-project](https://anaconda-project.readthedocs.io)
+- Get [doit](https://pydoit.org)
+
+```bash
+conda install anaconda-project=0.8.4 doit=0.32
+```
 
 ## Get Started
 
 ```bash
 git clone https://github.com/jupyrdf/ipyelk
 cd ipyelk
-anaconda-project run setup    # this is what happens on binder
-anaconda-project run lab      # start lab
+doit       # this is _basically_ what happens on binder
+doit lab   # start lab
 ```
 
 ## Important Paths
 
-| Path                           | Purpose                                                                         |
-| ------------------------------ | ------------------------------------------------------------------------------- |
-| `anaconda-project.yml`         | the current environment and task automation tool, may be replaced in the future |
-| `anaconda-project-lock.yml`    | the frozen environments                                                         |
-| `setup.py` / `setup.cfg`       | the package description for `ipyelk`                                            |
-| `package.json/`                | the `npm` package description for `@jupyrdf/jupyter-elk`                        |
-| `src/`                         | the TypeScript source for `@jupyrdf/jupyter-elk`                                |
-| `ipyelk/`                      | the Python source for `ipyelk`                                                  |
-| `ipyelk/schema/elkschema.json` | the JSON schema derived from the TypeScript source                              |
+| Path                                  | Purpose                                              |
+| ------------------------------------- | ---------------------------------------------------- |
+| `dodo.py`                             | task automation tool                                 |
+| `anaconda-project.yml`                | environment templates and some task definitions      |
+| `anaconda-project-lock.yml`           | frozen environments                                  |
+| `setup.py` / `setup.cfg`              | package description for `ipyelk`                     |
+| `py_src/`                             | Python source for `ipyelk`                           |
+| `py_src/ipyelk/schema/elkschema.json` | JSON schema derived from the TypeScript source       |
+| `package.json/`                       | `npm` package description for `@jupyrdf/jupyter-elk` |
+| `yarn.lock`                           | frozen `npm` dependencies                            |
+| `src/`                                | TypeScript source for `@jupyrdf/jupyter-elk`         |
 
-- Most python-related commands are run with `anaconda-project run`
+- Most commands are run with `doit`
 - Most typescript-related commands are run with
   `anaconda-project run jlpm <script in package.json>`
 
@@ -38,7 +45,7 @@ in the extension's source and automatically rebuild the extension and applicatio
 - Run:
 
 ```bash
-anaconda-project run watch
+doit watch
 ```
 
 - Open a tab with the provided URL in a standards-compliant browser of choice
@@ -50,7 +57,7 @@ anaconda-project run watch
 - Run:
 
 ```bash
-anaconda-project run lint
+doit lint
 ```
 
 - Ensure the [examples](./examples) work.
@@ -60,15 +67,27 @@ anaconda-project run lint
 
 ## Releasing
 
-- Run:
+- After merging to `master`, download the ipyelk dist artifacts
+- Inspect the files in `./dist`.
+- Check out master
+- Tag appropriately
 
 ```bash
-anaconda-project run dist
+git push upstream --tags
 ```
 
-- See the files in `./dist`.
+- Ensure you have credentials for `pypi` and `npmjs`
+  - `npmjs` requires you have set up two-factor authentication (2FA)... this is
+    _strongly recommended_ for `pypi`
+  - do _not_ use `jlpm publish` or `yarn publish`, as this appears to drop files from
+    the distribution
 
-> - TBD: Do something with the files.
+```bash
+anaconda-project run npm login
+anaconda-project run npm publish
+anaconda-project run npm logout
+anaconda-project run twine upload where-you-expanded-the-archive/ipyelk-*
+```
 
 ## Updating Dependencies
 
@@ -79,7 +98,7 @@ anaconda-project run dist
 
 ```bash
 anaconda-project update
-anaconda-project run lint
+doit lint
 ```
 
 - Commit the changes to the project file and the
@@ -91,7 +110,8 @@ anaconda-project run lint
 - Run:
 
 ```bash
-anaconda-project run jlpm
+doit setup:js
+doit lint
 ```
 
 - Commit the changes to the package file and the [yarn lock file](./yarn.lock).
