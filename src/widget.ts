@@ -37,6 +37,8 @@ import {
   FeedbackActionDispatcher
 } from './tools/feedback/feedback-action-dispatcher';
 import { ToolTYPES } from './tools/types';
+import { ELKTextSizerModel, ELKTextSizerView } from './measure_text';
+export { ELKTextSizerModel, ELKTextSizerView };
 
 const WIDGET_CLASS = 'jp-ElkView';
 const DEFAULT_VALUE = { id: 'root' };

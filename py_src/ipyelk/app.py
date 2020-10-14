@@ -1,17 +1,17 @@
 # Copyright (c) 2020 Dane Freeman.
 # Distributed under the terms of the Modified BSD License.
 
-import ipywidgets as W
 import logging
-import traitlets as T
+from typing import Dict, Hashable, Optional
 
-from typing import List, Dict, Hashable, Optional
+import ipywidgets as W
+import traitlets as T
 
 from .diagram import ElkDiagram, ElkLabel, ElkNode
 from .schema import ElkSchemaValidator
 from .styled_widget import StyledWidget
+from .toolbar import Toolbar
 from .trait_types import Schema
-from .tools import Toolbar
 
 logger = logging.getLogger(__name__)
 
@@ -45,11 +45,11 @@ class ElkTransformer(W.Widget):
 
         return self.value
 
-    def from_id(self, element_id:str)->Hashable:
+    def from_id(self, element_id: str) -> Hashable:
         """Use the elk identifiers to find original objects"""
         return element_id
 
-    def to_id(self, item:Hashable)->str:
+    def to_id(self, item: Hashable) -> str:
         """Use original objects to find elk id"""
         return item
 
@@ -108,9 +108,9 @@ class Elk(W.VBox, StyledWidget):
             )
 
     @T.observe("diagram")
-    def _update_children(self, change:T.Bunch=None):
+    def _update_children(self, change: T.Bunch = None):
         self.children = [self.diagram, self.toolbar]
-        
+
         if change:
             # uninstall old observers
             safely_unobserve(change.old, "selected")
@@ -131,14 +131,13 @@ class Elk(W.VBox, StyledWidget):
         _id = self.transformer.from_id(change.new)
         if _id != self.hovered:
             self.hovered = _id
-        
 
     @T.observe("selected")
     def _update_selected(self, change: T.Bunch):
         if not self.diagram:
             return
 
-        # transform selected nodes into ids and test if resulting list of element ids is new
+        # transform selected nodes into ids and test if new ids
         ids = [self.transformer.to_id(s) for s in self.selected]
         if self.diagram.selected != ids:
             self.diagram.selected = ids

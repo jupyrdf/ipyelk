@@ -3,6 +3,14 @@
 
 
 from .elk_model import ElkExtendedEdge, ElkLabel, ElkNode, ElkPort
+from .elk_text_sizer import ElkTextSizer
 from .elk_widget import ElkDiagram
 
-__all__ = ["ElkExtendedEdge", "ElkLabel", "ElkNode", "ElkPort", "ElkDiagram"]
+__all__ = [
+    "ElkExtendedEdge",
+    "ElkLabel",
+    "ElkNode",
+    "ElkPort",
+    "ElkDiagram",
+    "ElkTextSizer",
+]
