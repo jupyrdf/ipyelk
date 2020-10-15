@@ -25,7 +25,7 @@ import {
   TYPES
 } from 'sprotty';
 
-import { NAME, VERSION, ELK_DEBUG, TAnyELKMessage } from '.';
+import { NAME, VERSION, ELK_DEBUG, TAnyELKMessage, ELK_CSS } from '.';
 
 import createContainer from './sprotty/di-config';
 import { JLModelSource } from './sprotty/diagram-server';
@@ -40,7 +40,6 @@ import { ToolTYPES } from './tools/types';
 import { ELKTextSizerModel, ELKTextSizerView } from './measure_text';
 export { ELKTextSizerModel, ELKTextSizerView };
 
-const WIDGET_CLASS = 'jp-ElkView';
 const DEFAULT_VALUE = { id: 'root' };
 
 export class ELKModel extends DOMWidgetModel {
@@ -133,7 +132,7 @@ export class ELKView extends DOMWidgetView {
 
   initialize(parameters: any) {
     super.initialize(parameters);
-    this.pWidget.addClass(WIDGET_CLASS);
+    this.pWidget.addClass(ELK_CSS.widget_class);
   }
 
   async render() {

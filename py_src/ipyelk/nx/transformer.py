@@ -316,7 +316,7 @@ class XELK(ElkTransformer):
         data = g.nodes[node]
         name = data.get(self.label_key, data.get("_id", f"{node}"))
         width = self.text_scale * len(name)
-
+        # width = self.sizer.measure(name)
         label = ElkLabel(
             id=f"{name}_label_{node}",
             text=name,

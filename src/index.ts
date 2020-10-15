@@ -22,4 +22,10 @@ export interface IELKFitMessage {
   padding?: number;
 }
 
+export const ELK_CSS = {
+  label: 'elklabel',
+  widget_class: 'jp-ElkView',
+  sizer_class: 'jp-ElkSizer'
+};
+
 export type TAnyELKMessage = IELKCenterMessage | IELKFitMessage;
