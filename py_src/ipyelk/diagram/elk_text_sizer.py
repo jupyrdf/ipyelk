@@ -4,6 +4,7 @@
 # Distributed under the terms of the Modified BSD License.
 import asyncio
 from dataclasses import dataclass
+from typing import List
 
 import traitlets as T
 from ipywidgets import DOMWidget
@@ -15,6 +16,12 @@ from .._version import EXTENSION_NAME, EXTENSION_SPEC_VERSION
 class TextSize:
     width: float
     height: float
+
+
+@dataclass
+class Text:
+    value: str
+    css_classes: List[str] = None
 
 
 class ElkTextSizer(DOMWidget):
@@ -30,8 +37,11 @@ class ElkTextSizer(DOMWidget):
     _request_queue: asyncio.Queue = None
     _response_queue: asyncio.Queue = None
 
+    custom_css = T.List()
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+
         self.futures = {}
         self.on_msg(self._handle_response)
         self._response_queue = asyncio.Queue()
@@ -40,14 +50,19 @@ class ElkTextSizer(DOMWidget):
         asyncio.create_task(self._process_requests())
         asyncio.create_task(self._process_responses())
 
+    @T.observe("custom_css")
+    def _bust_futures_cache(self, change=None):
+        pass
+
     def _handle_response(self, _, content, buffers):
         """Method to process messages back from the browser and resolve measurements"""
         self.log.error(f"_resolve_measurement handler {content}")
 
         if content.get("event", "") == "measurement":
-            asyncio.create_task(self._response_queue.put(content))
+            for test_size in content.get("measurements"):
+                asyncio.create_task(self._response_queue.put(test_size))
 
-    async def measure(self, text: str) -> TextSize:
+    async def measure(self, text: Text) -> TextSize:
         """Measure the given text and return `TextSize` object containing the width and height
 
         :param text: Text to pass to the browser for sizing
@@ -55,6 +70,8 @@ class ElkTextSizer(DOMWidget):
         :return: Text size object for the measured text
         :rtype: TextSize
         """
+        # if instance(test, list):
+        #     await asyncio.gather(self.measure(t) for t in texts)
 
         if text not in self.futures:
             self.futures[text] = asyncio.Future()
@@ -65,10 +82,30 @@ class ElkTextSizer(DOMWidget):
         """Asyncio task loop to process the input request queue"""
         while True:
             self.log.error("About to wait for request")
-            value = await self._request_queue.get()
-            self.log.error(f"Got a request {value}")
-            self.send({"text": value})
-            self._request_queue.task_done()
+            texts = await self.get_requests()
+            self.log.error(f"Got {len(texts)} request(s) {texts}")
+            if texts:
+                message = {
+                    "texts": [
+                        {"value": t.value, "cssClasses": " ".join(t.css_classes)}
+                        for t in texts
+                    ]
+                }
+                self.send(message)
+
+    async def get_requests(self, timeout=None, max_size=1) -> List[Text]:
+        requests = []
+
+        try:
+            while len(requests) < max_size:
+                value = await asyncio.wait_for(self._request_queue.get(), timeout)
+                if isinstance(value, str):
+                    value = Text(value=value, css_classes=[])
+                requests.append(value)
+                self._request_queue.task_done()
+        except asyncio.TimeoutError:
+            pass
+        return requests
 
     async def _process_responses(self):
         """Asyncio task loop to process the output response queue"""
