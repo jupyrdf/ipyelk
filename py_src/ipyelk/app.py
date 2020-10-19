@@ -1,19 +1,16 @@
 # Copyright (c) 2020 Dane Freeman.
 # Distributed under the terms of the Modified BSD License.
-
-import logging
-from typing import Dict, Hashable, Optional
-
+import asyncio
 import ipywidgets as W
 import traitlets as T
+
+from typing import Dict, Hashable, Optional
 
 from .diagram import ElkDiagram, ElkLabel, ElkNode
 from .schema import ElkSchemaValidator
 from .styled_widget import StyledWidget
 from .toolbar import Toolbar
 from .trait_types import Schema
-
-logger = logging.getLogger(__name__)
 
 
 class ElkTransformer(W.Widget):
@@ -23,27 +20,42 @@ class ElkTransformer(W.Widget):
     source = T.Dict()
     value = Schema(ElkSchemaValidator)
     _version: str = "v1"
+    _task: asyncio.Task = None
 
-    def to_dict(self):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        
+        self.refresh()
+
+    async def transform(self)->ElkNode:
         """Generate elk json"""
-        return self.source
+        return ElkNode(**self.source)
 
     @T.default("value")
     def _default_value(self):
         return {"id": "root"}
 
+    async def _refresh(self):
+        root_node = await self.transform()
+        value = root_node.to_dict()
+        
+        # forces redraw on the frontend by creating to new label
+        labels = value.get("labels", [])
+        labels.append(ElkLabel(id=str(id(value))).to_dict())
+
+        value["labels"] = labels
+        self.value = value
+
     @T.observe("source")
-    def refresh(self, change: T.Bunch = None) -> Dict:
-        """Method to update this transform's value"""
-        logger.debug("Refreshing elk transformer")
-        self.value = self.to_dict()
-        labels = self.value.get("labels", [])
-
-        labels.append(ElkLabel(id=str(id(self.value))).to_dict())
-
-        self.value["labels"] = labels
-
-        return self.value
+    def refresh(self, change: T.Bunch = None):
+        """Method to update this transform's value by scheduling the
+        transformation task on event loop
+        """
+        self.log.debug("Refreshing elk transformer")
+        #remove previous refresh task if still pending
+        if self._task and not self._task.done():
+            self._task.cancel()
+        self._task = asyncio.create_task(self._refresh())
 
     def from_id(self, element_id: str) -> Hashable:
         """Use the elk identifiers to find original objects"""
@@ -52,6 +64,10 @@ class ElkTransformer(W.Widget):
     def to_id(self, item: Hashable) -> str:
         """Use original objects to find elk id"""
         return item
+
+    def connect(self, view: ElkDiagram)-> T.link:
+        """Connect the output value of this transformer to a diagram"""
+        return T.dlink((self, "value"), (view, "value"))
 
 
 class Elk(W.VBox, StyledWidget):

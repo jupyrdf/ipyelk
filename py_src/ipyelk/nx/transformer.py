@@ -57,6 +57,10 @@ class XELK(ElkTransformer):
     label_key = T.Unicode(default_value="label")
     label_offset = T.Float(default_value=5)
 
+    @T.default("source")
+    def _default_source(self):
+        return (nx.Graph(), None)
+
     def node_id(self, node: Hashable) -> str:
         """Get the element id for a node in the main graph for use in elk
 
@@ -95,7 +99,7 @@ class XELK(ElkTransformer):
         self.closest_common_visible.cache_clear()
         self.closest_visible.cache_clear()
 
-    def transform(self, root: Hashable = None) -> ElkNode:
+    async def transform(self, root: Hashable = None) -> ElkNode:
         """Generate ELK dictionary structure
         :param root: Node in the networkx graph, defaults to None
         :type root: Hashable, optional
@@ -131,7 +135,7 @@ class XELK(ElkTransformer):
                     id=self.node_id(root),
                     labels=labels,
                     layoutOptions=layout,
-                    children=compact(self.get_children(root)),
+                    children=compact(await self.get_children(root)),
                     properties=overrides.get("properties", None),
                 ),
             )
@@ -269,17 +273,17 @@ class XELK(ElkTransformer):
         self._item_to_elk[item] = element.id
         return element
 
-    def get_children(self, node: Hashable) -> Optional[List[ElkNode]]:
+    async def get_children(self, node: Hashable) -> Optional[List[ElkNode]]:
         g, tree = self.source
         attr = self.HIDDEN_ATTR
         if node is None:
             if tree is None:
                 # Nonhierarchical graph. Iterate over only the main graph
-                return [self.transform(root=node) for node in g.nodes()]
+                return [await self.transform(root=node) for node in g.nodes()]
             else:
                 # Hierarchical graph but no specified root...
                 # start transforming from each root in the forest
-                return [self.transform(root=node) for node in get_roots(tree, g)]
+                return [await self.transform(root=node) for node in get_roots(tree, g)]
 
         else:
             if is_hidden(tree, node, attr):
@@ -289,7 +293,7 @@ class XELK(ElkTransformer):
                 # Node is visible and in the hierarchy
                 if node in tree:
                     return [
-                        self.transform(root=child) for child in tree.neighbors(node)
+                        await self.transform(root=child) for child in tree.neighbors(node)
                     ]
         return None
 
@@ -365,10 +369,6 @@ class XELK(ElkTransformer):
                 hidden = merge(self.process_endpts(sources, targets), hidden)
 
         return visible, hidden
-
-    def to_dict(self) -> Dict:
-        """Transform the NetworkX graphs into Elk json"""
-        return self.transform().to_dict()
 
     def extract_factors(
         self,
