@@ -73,7 +73,11 @@ APR_ATEST = [*APR, "atest"]
 PRETTIER = [*JLPM, "--silent", "prettier"]
 
 JUPYTERLAB_EXE = [
-    (ROOT / "envs/default" / ("python.exe" if WIN else "bin/python")),
+    os.environ["CONDA_EXE"],
+    "run",
+    "-p",
+    (ROOT / "envs/default"),
+    "python",
     "-m",
     "jupyter",
     "lab",

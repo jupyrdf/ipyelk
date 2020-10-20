@@ -13,6 +13,7 @@ env:
   PYTHONIOENCODING: utf-8
   SKIP_CONDA_PREFLIGHT: 1
   INSTALL_ARTIFACT: wheel
+  ATEST_RETRIES: 3
 
 jobs:
   ci:
