@@ -76,7 +76,6 @@ def task_preflight():
                 P.SDIST,
                 P.WHEEL,
                 P.NPM_TGZ,
-                P.OK_ATEST,
             ],
             actions=[[*P.APR_DEFAULT, *P.PREFLIGHT, "release"]],
         ),
@@ -447,7 +446,8 @@ def task_all():
     """ do everything except start lab
     """
     return dict(
-        file_dep=[P.OK_RELEASE, P.OK_PREFLIGHT_LAB], actions=([_echo_ok("ALL GOOD")]),
+        file_dep=[P.OK_RELEASE, P.OK_PREFLIGHT_LAB, P.OK_ATEST],
+        actions=([_echo_ok("ALL GOOD")]),
     )
 
 
