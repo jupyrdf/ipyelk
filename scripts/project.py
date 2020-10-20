@@ -71,7 +71,13 @@ APR = [*AP, "run", "--env-spec"]
 APR_DEFAULT = [*APR, "default"]
 APR_ATEST = [*APR, "atest"]
 PRETTIER = [*JLPM, "--silent", "prettier"]
-JUPYTERLAB_EXE = [*APR_DEFAULT, "jupyter-lab"]
+
+JUPYTERLAB_EXE = [
+    (ROOT / "envs/default" / ("python.exe" if WIN else "bin/python")),
+    "-m",
+    "jupyter",
+    "lab",
+]
 
 # env stuff
 OK_ENV = {env: BUILD / f"prep_{env}.ok" for env in ["default"]}

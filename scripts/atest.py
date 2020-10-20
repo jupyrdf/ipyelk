@@ -1,5 +1,8 @@
 """ Run acceptance tests with robot framework
 """
+# Copyright (c) 2020 Dane Freeman.
+# Distributed under the terms of the Modified BSD License.
+
 # pylint: disable=broad-except
 import os
 import shutil
@@ -69,13 +72,12 @@ def atest(attempt, extra_args):
         "--variable",
         f"IPYELK_EXAMPLES:{P.EXAMPLES}",
         "--variable",
-        f"""JUPYTERLAB_EXE:{"".join(P.JUPYTERLAB_EXE)}""",
+        f"""JUPYTERLAB_EXE:{" ".join(map(str, P.JUPYTERLAB_EXE))}""",
         "--randomize",
         "all",
         *(extra_args or []),
     ]
 
-    os.environ["JUPYTERLAB_DIR"] = str(P.LAB)
     os.chdir(P.ATEST)
 
     if out_dir.exists():

@@ -65,14 +65,14 @@ Open With JupyterLab Menu
     END
 
 Ensure File Browser is Open
-    ${sel} =    Set Variable    css:.lm-TabBar-tab[data-id="filebrowser"]:not(.lm-mod-current)
+    ${sel} =    Set Variable    css:.p-TabBar-tab[data-id="filebrowser"]:not(.p-mod-current)
     ${els} =    Get WebElements    ${sel}
     Run Keyword If    ${els.__len__()}    Click Element    ${sel}
 
 Ensure Sidebar Is Closed
     [Arguments]    ${side}=left
     ${els} =    Get WebElements    css:#jp-${side}-stack
-    Run Keyword If    ${els.__len__()}    Click Element    css:.jp-mod-${side} .lm-TabBar-tab.lm-mod-current
+    Run Keyword If    ${els.__len__()}    Click Element    css:.jp-mod-${side} .p-TabBar-tab.p-mod-current
 
 Open Context Menu for File
     [Arguments]    ${file}
@@ -105,9 +105,11 @@ Open ${file} in ${editor}
     Mouse Over    ${editor}
     Click Element    ${editor}
 
-Clean Up After Working With File
-    [Arguments]    ${file}
-    Remove File    ${OUTPUT DIR}${/}home${/}${file}
+Clean Up After Working With Files
+    [Arguments]    @{files}
+    FOR    ${file}    IN    @{files}
+        Remove File    ${OUTPUT DIR}${/}home${/}${file}
+    END
     Reset Application State
 
 Wait For Dialog
@@ -164,9 +166,9 @@ Get Editor Content
     ${content} =    Execute JavaScript    return document.querySelector('${css} .CodeMirror').CodeMirror.getValue()
     [Return]    ${content}
 
-Clean Up After Working with File and Settings
+Clean Up After Working with Files and Settings
     [Arguments]    ${file}
-    Clean Up After Working With File    ${file}
+    Clean Up After Working With Files    ${file}
     Reset Plugin Settings
 
 Close JupyterLab
@@ -175,7 +177,7 @@ Close JupyterLab
 Open Command Palette
     Press Keys    id:main    ${ACCEL}+SHIFT+c
     Wait Until Page Contains Element    ${CMD PALETTE INPUT}
-    Click Element    ${CMD PALETTE INPUT}
+    Wait Until Keyword Succeeds    3x    1s    Click Element    ${CMD PALETTE INPUT}
 
 Enter Command Name
     [Arguments]    ${cmd}
@@ -225,3 +227,12 @@ Ensure All Kernels Are Shut Down
     ${accept} =    Set Variable    css:.jp-mod-accept.jp-mod-warn
     Run Keyword If    ${els.__len__()}    Wait Until Page Contains Element    ${accept}
     Run Keyword If    ${els.__len__()}    Click Element    ${accept}
+
+Page Should Not Contain Contain Standard Errors
+    [Arguments]    ${prefix}=${EMPTY}    ${exceptions}=${None}
+    ${errors} =    Get WebElements    ${JLAB XP STDERR}
+    FOR    ${idx}    ${error}    IN ENUMERATE    @{errors}
+        ${sel} =    Set Variable    ${JLAB XP STDERR}\[${idx.__add__(1)}]
+        Capture Element Screenshot    ${sel}    ${prefix}error-${idx.__repr__().zfill(3)}.png
+    END
+    Page Should Not Contain Element    ${JLAB XP STDERR}

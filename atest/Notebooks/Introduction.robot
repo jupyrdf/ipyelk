@@ -7,12 +7,15 @@ Resource          ../_resources/keywords/IPyElk.robot
 
 *** Variables ***
 ${INTRODUCTION}    00_Introduction
+${SIMPLE}         simple.json
+@{SUPPORT}        ${IPYELK_EXAMPLES}${/}${SIMPLE}
 
 *** Test Cases ***
 Introduction
-    Open IPyElk Notebook    ${INTRODUCTION}
+    Open IPyElk Notebook    ${INTRODUCTION}    support files=@{SUPPORT}
     Restart and Run All
     Wait For All Cells To Run    60s
     Capture All Code Cells
-    Page Should Not Contain Element    ${JLAB XP STDERR}
-    [Teardown]    Clean up after Working with file    ${INTRODUCTION}.ipynb
+    Page Should Not Contain Contain Standard Errors
+    Capture Page Screenshot    99-fin.png
+    [Teardown]    Clean up after Working with Files    ${INTRODUCTION}.ipynb    ${SIMPLE}

@@ -76,6 +76,7 @@ def task_preflight():
                 P.SDIST,
                 P.WHEEL,
                 P.NPM_TGZ,
+                P.OK_ATEST,
             ],
             actions=[[*P.APR_DEFAULT, *P.PREFLIGHT, "release"]],
         ),
@@ -263,7 +264,7 @@ def task_test():
             file_dep=[*P.ALL_ROBOT, *P.ALL_PY_SRC, P.LAB_INDEX],
             actions=[[*P.APR_ATEST, *P.PYM, "scripts.atest"]],
         ),
-        P.OK_ROBOT_LINT,
+        P.OK_ATEST,
     )
 
 
@@ -330,6 +331,7 @@ def task_lint():
                 P.OK_ISORT,
                 P.OK_PRETTIER,
                 P.OK_PYFLAKES,
+                P.OK_ROBOT_LINT,
                 *P.OK_NBLINT.values(),
             ],
         ),
@@ -345,7 +347,7 @@ def task_lint():
                 [*P.APR_ATEST, *P.PYM, "scripts.atest", "--dryrun"],
             ],
         ),
-        P.OK_ATEST,
+        P.OK_ROBOT_LINT,
     )
 
 
