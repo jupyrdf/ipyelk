@@ -163,3 +163,5 @@ py_src/ipyelk/schema/*.json
 
 # task stuff
 .doit*
+.pabotsuitenames
+atest/output
