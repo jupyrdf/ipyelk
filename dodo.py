@@ -261,7 +261,13 @@ def task_test():
     yield _ok(
         dict(
             name="atest",
-            file_dep=[*P.ALL_ROBOT, *P.ALL_PY_SRC, P.LAB_INDEX, P.SCRIPTS / "atest.py"],
+            file_dep=[
+                *P.ALL_ROBOT,
+                *P.ALL_PY_SRC,
+                P.OK_ROBOT_LINT,
+                P.OK_PREFLIGHT_LAB,
+                P.SCRIPTS / "atest.py",
+            ],
             actions=[[*P.APR_ATEST, *P.PYM, "scripts.atest"]],
         ),
         P.OK_ATEST,
