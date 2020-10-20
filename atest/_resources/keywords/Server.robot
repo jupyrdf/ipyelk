@@ -31,6 +31,7 @@ Setup Server and Browser
     ${server} =    Start Process    ${cmd}    shell=yes    env:HOME=${home}    cwd=${home}    stdout=${LAB LOG}
     ...    stderr=STDOUT
     Set Global Variable    ${SERVER}    ${server}
+    Wait For Jupyter Server To Be Ready
     Open JupyterLab
     ${script} =    Get Element Attribute    id:jupyter-config-data    innerHTML
     ${config} =    Evaluate    __import__("json").loads("""${script}""")
@@ -65,3 +66,7 @@ Tear Down Everything
     Wait For Process    ${SERVER}    timeout=30s
     Terminate All Processes
     Terminate All Processes    kill=${True}
+
+Wait For Jupyter Server To Be Ready
+    Wait Until Keyword Succeeds    5x    5s
+    ...    Evaluate    __import__("urllib.request").request.urlopen("${URL}")

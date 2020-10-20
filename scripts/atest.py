@@ -93,8 +93,11 @@ def atest(attempt, extra_args):
     else:
         run_robot = pabot.main
         fake_cmd = "pabot"
+
         # pabot args must come first
         args = [
+            "--processes",
+            os.environ.get("ATEST_PROCESSES", "2"),
             "--artifactsinsubfolders",
             "--artifacts",
             "png,log",

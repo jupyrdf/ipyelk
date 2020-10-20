@@ -261,7 +261,7 @@ def task_test():
     yield _ok(
         dict(
             name="atest",
-            file_dep=[*P.ALL_ROBOT, *P.ALL_PY_SRC, P.LAB_INDEX],
+            file_dep=[*P.ALL_ROBOT, *P.ALL_PY_SRC, P.LAB_INDEX, P.SCRIPTS / "atest.py"],
             actions=[[*P.APR_ATEST, *P.PYM, "scripts.atest"]],
         ),
         P.OK_ATEST,
@@ -312,6 +312,7 @@ def task_lint():
         ),
         P.OK_PRETTIER,
     )
+
     for nb in P.EXAMPLE_IPYNB:
         yield _ok(
             dict(
@@ -321,6 +322,19 @@ def task_lint():
             ),
             P.OK_NBLINT[nb.name],
         )
+
+    yield _ok(
+        dict(
+            name="robot",
+            file_dep=[*P.ALL_ROBOT, *P.ALL_PY_SRC, *P.ALL_TS, P.SCRIPTS / "atest.py"],
+            actions=[
+                [*P.APR_ATEST, *P.PYM, "robot.tidy", "--inplace", *P.ALL_ROBOT],
+                [*P.APR_ATEST, *P.PYM, "scripts.atest", "--dryrun"],
+            ],
+        ),
+        P.OK_ROBOT_LINT,
+    )
+
     yield _ok(
         dict(
             name="all",
@@ -336,18 +350,6 @@ def task_lint():
             ],
         ),
         P.OK_LINT,
-    )
-
-    yield _ok(
-        dict(
-            name="robot",
-            file_dep=[*P.ALL_ROBOT, *P.ALL_PY_SRC, *P.ALL_TS],
-            actions=[
-                [*P.APR_ATEST, *P.PYM, "robot.tidy", "--inplace", *P.ALL_ROBOT],
-                [*P.APR_ATEST, *P.PYM, "scripts.atest", "--dryrun"],
-            ],
-        ),
-        P.OK_ROBOT_LINT,
     )
 
 
