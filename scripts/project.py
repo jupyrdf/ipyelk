@@ -128,6 +128,7 @@ OK_PYFLAKES = BUILD / "pyflakes.ok"
 OK_NBLINT = {nb.name: BUILD / f"nblint.{nb.name}.ok" for nb in EXAMPLE_IPYNB}
 OK_PIP_INSTALL = BUILD / "pip_install.ok"
 OK_PRETTIER = BUILD / "prettier.ok"
+OK_ATEST = BUILD / "atest.ok"
 
 # derived info
 PY_VERSION = re.findall(

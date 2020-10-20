@@ -261,14 +261,10 @@ def task_test():
         dict(
             name="atest",
             file_dep=[*P.ALL_ROBOT, *P.ALL_PY_SRC, P.LAB_INDEX],
-            actions=[
-                [*P.APR_ATEST, *P.PYM, "scripts.atest"],
-            ],
-
+            actions=[[*P.APR_ATEST, *P.PYM, "scripts.atest"]],
         ),
         P.OK_ROBOT_LINT,
     )
-
 
 
 def task_lint():
@@ -348,9 +344,8 @@ def task_lint():
                 [*P.APR_ATEST, *P.PYM, "robot.tidy", "--inplace", *P.ALL_ROBOT],
                 [*P.APR_ATEST, *P.PYM, "scripts.atest", "--dryrun"],
             ],
-
         ),
-        P.OK_ROBOT_LINT,
+        P.OK_ATEST,
     )
 
 

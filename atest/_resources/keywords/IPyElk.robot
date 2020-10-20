@@ -1,6 +1,6 @@
 *** Keywords ***
 Open IPyElk Notebook
-    [Arguments]    ${notebook}    ${path}=${IPYELK_EXAMPLES}  ${support files}=${None}
+    [Arguments]    ${notebook}    ${path}=${IPYELK_EXAMPLES}    ${support files}=${None}
     Set Tags    notebook:${notebook}
     ${full path} =    Normalize Path    ${path}${/}${notebook}.ipynb
     File Should Exist    ${full path}

@@ -6,7 +6,7 @@ Resource          ../_resources/keywords/Lab.robot
 Resource          ../_resources/keywords/IPyElk.robot
 
 *** Variables ***
-${INTRODUCTION}          00_Introduction
+${INTRODUCTION}    00_Introduction
 
 *** Test Cases ***
 Introduction
