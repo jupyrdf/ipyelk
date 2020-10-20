@@ -97,7 +97,7 @@ def atest(attempt, extra_args):
         # pabot args must come first
         args = [
             "--processes",
-            os.environ.get("ATEST_PROCESSES", "2"),
+            os.environ.get("ATEST_PROCESSES", "4"),
             "--artifactsinsubfolders",
             "--artifacts",
             "png,log",
