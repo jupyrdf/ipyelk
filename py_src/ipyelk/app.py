@@ -1,10 +1,10 @@
 # Copyright (c) 2020 Dane Freeman.
 # Distributed under the terms of the Modified BSD License.
 import asyncio
+from typing import Dict, Hashable, Optional
+
 import ipywidgets as W
 import traitlets as T
-
-from typing import Dict, Hashable, Optional
 
 from .diagram import ElkDiagram, ElkLabel, ElkNode
 from .schema import ElkSchemaValidator
@@ -24,10 +24,10 @@ class ElkTransformer(W.Widget):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        
+
         self.refresh()
 
-    async def transform(self)->ElkNode:
+    async def transform(self) -> ElkNode:
         """Generate elk json"""
         return ElkNode(**self.source)
 
@@ -38,7 +38,7 @@ class ElkTransformer(W.Widget):
     async def _refresh(self):
         root_node = await self.transform()
         value = root_node.to_dict()
-        
+
         # forces redraw on the frontend by creating to new label
         labels = value.get("labels", [])
         labels.append(ElkLabel(id=str(id(value))).to_dict())
@@ -52,7 +52,7 @@ class ElkTransformer(W.Widget):
         transformation task on event loop
         """
         self.log.debug("Refreshing elk transformer")
-        #remove previous refresh task if still pending
+        # remove previous refresh task if still pending
         if self._task and not self._task.done():
             self._task.cancel()
         self._task = asyncio.create_task(self._refresh())
@@ -65,7 +65,7 @@ class ElkTransformer(W.Widget):
         """Use original objects to find elk id"""
         return item
 
-    def connect(self, view: ElkDiagram)-> T.link:
+    def connect(self, view: ElkDiagram) -> T.link:
         """Connect the output value of this transformer to a diagram"""
         return T.dlink((self, "value"), (view, "value"))
 

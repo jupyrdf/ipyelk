@@ -1,10 +1,10 @@
-"""Simple widget to get text size from DOM
+"""Widget to get text size from DOM
 """
 # Copyright (c) 2020 Dane Freeman.
 # Distributed under the terms of the Modified BSD License.
 import asyncio
-from dataclasses import dataclass
-from typing import List
+from dataclasses import dataclass, field
+from typing import Dict, List
 
 import traitlets as T
 from ipywidgets import DOMWidget
@@ -21,7 +21,22 @@ class TextSize:
 @dataclass
 class Text:
     value: str
-    css_classes: List[str] = None
+    css_classes: List[str] = field(default_factory=list)
+
+    def __hash__(self):
+        value = self.value
+        if self.css_classes:
+            value += " ".join(self.css_classes)
+        return hash(value)
+
+    def message(self) -> Dict:
+        css_classes = ""
+        if self.css_classes:
+            css_classes = " ".join(self.css_classes)
+        return {
+            "value": self.value,
+            "cssClasses": css_classes,
+        }
 
 
 class ElkTextSizer(DOMWidget):
@@ -38,6 +53,8 @@ class ElkTextSizer(DOMWidget):
     _response_queue: asyncio.Queue = None
 
     custom_css = T.List()
+    timeout = T.Float(default_value=0.1, min=0)
+    max_size = T.Int(default_value=100)
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -56,8 +73,6 @@ class ElkTextSizer(DOMWidget):
 
     def _handle_response(self, _, content, buffers):
         """Method to process messages back from the browser and resolve measurements"""
-        self.log.error(f"_resolve_measurement handler {content}")
-
         if content.get("event", "") == "measurement":
             for test_size in content.get("measurements"):
                 asyncio.create_task(self._response_queue.put(test_size))
@@ -70,8 +85,11 @@ class ElkTextSizer(DOMWidget):
         :return: Text size object for the measured text
         :rtype: TextSize
         """
-        # if instance(test, list):
-        #     await asyncio.gather(self.measure(t) for t in texts)
+        if isinstance(text, str):
+            # go ahead and wrap in Text object
+            text = Text(value=text)
+        if not isinstance(text, Text):
+            return await asyncio.gather(*[self.measure(t) for t in text])
 
         if text not in self.futures:
             self.futures[text] = asyncio.Future()
@@ -81,23 +99,17 @@ class ElkTextSizer(DOMWidget):
     async def _process_requests(self):
         """Asyncio task loop to process the input request queue"""
         while True:
-            self.log.error("About to wait for request")
             texts = await self.get_requests()
-            self.log.error(f"Got {len(texts)} request(s) {texts}")
             if texts:
-                message = {
-                    "texts": [
-                        {"value": t.value, "cssClasses": " ".join(t.css_classes)}
-                        for t in texts
-                    ]
-                }
+                message = {"texts": [t.message() for t in texts]}
                 self.send(message)
 
-    async def get_requests(self, timeout=None, max_size=1) -> List[Text]:
+    async def get_requests(self) -> List[Text]:
         requests = []
 
         try:
-            while len(requests) < max_size:
+            while len(requests) < self.max_size:
+                timeout = None if len(requests) == 0 else self.timeout
                 value = await asyncio.wait_for(self._request_queue.get(), timeout)
                 if isinstance(value, str):
                     value = Text(value=value, css_classes=[])
@@ -110,10 +122,14 @@ class ElkTextSizer(DOMWidget):
     async def _process_responses(self):
         """Asyncio task loop to process the output response queue"""
         while True:
-            self.log.error("About to wait for response")
             response = await self._response_queue.get()
-            self.log.error(f"Got a response {response}")
-            future = self.futures[response.get("text")]
+            css_classes = response.get("cssClasses")
+            if len(css_classes) == 0:
+                css_classes = []
+            else:
+                css_classes = css_classes.split(" ")
+            text = Text(response.get("value"), css_classes,)
+            future = self.futures[text]
             future.set_result(
                 TextSize(width=response.get("width"), height=response.get("height"),)
             )

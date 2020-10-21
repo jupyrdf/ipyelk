@@ -18,6 +18,7 @@ from ..diagram.elk_model import (
     ElkNode,
     ElkPort,
 )
+from ..diagram.elk_text_sizer import ElkTextSizer, Text, TextSize
 from .factors import get_factors, invert, keep
 from .nx import Edge, EdgeMap, compact, get_roots, lowest_common_ancestor
 
@@ -56,6 +57,8 @@ class XELK(ElkTransformer):
     text_scale = T.Float(default_value=10)
     label_key = T.Unicode(default_value="label")
     label_offset = T.Float(default_value=5)
+
+    text_sizer = T.Instance(ElkTextSizer, kw={})
 
     @T.default("source")
     def _default_source(self):
@@ -110,6 +113,13 @@ class XELK(ElkTransformer):
             g, tree = self.source
             if root is None:
                 self.clear_cached()
+                # bulk calculate label sizes
+                labels = []
+                for node, data in g.nodes(data=True):
+                    name = data.get(self.label_key, data.get("_id", f"{node}"))
+                    labels.append(Text(value=name))
+                await self.text_sizer.measure(labels)
+
             elif is_hidden(tree, root, self.HIDDEN_ATTR):
                 # bail is the node is hidden
                 return None
@@ -128,7 +138,7 @@ class XELK(ElkTransformer):
             layout.update(base_layout)
 
             overrides = self.get_overrides(root)
-            labels = self.make_labels(root)
+            labels = await self.make_labels(root)
             kwargs = ChainMap(
                 overrides,
                 dict(
@@ -293,7 +303,8 @@ class XELK(ElkTransformer):
                 # Node is visible and in the hierarchy
                 if node in tree:
                     return [
-                        await self.transform(root=child) for child in tree.neighbors(node)
+                        await self.transform(root=child)
+                        for child in tree.neighbors(node)
                     ]
         return None
 
@@ -313,20 +324,30 @@ class XELK(ElkTransformer):
             width = self.text_scale
         return width, height
 
-    def make_labels(self, node) -> Optional[List[ElkLabel]]:
+    async def size_label(self, text: str) -> TextSize:
+        if self.text_sizer is None:
+            return TextSize(
+                width=self.text_scale * len(text), height=10,  # TODO add height default
+            )
+        else:
+            return await self.text_sizer.measure(text)
+
+    async def make_labels(self, node) -> Optional[List[ElkLabel]]:
         if node is None:
             return None
         g, tree = self.source
         data = g.nodes[node]
         name = data.get(self.label_key, data.get("_id", f"{node}"))
-        width = self.text_scale * len(name)
+        size = await self.size_label(name)
         # width = self.sizer.measure(name)
         label = ElkLabel(
             id=f"{name}_label_{node}",
             text=name,
-            width=width,
-            x=self.label_offset,
-            y=self.label_offset,
+            width=size.width,
+            height=size.height,
+            # x=self.label_offset,
+            # y=self.label_offset,
+            layoutOptions={"spacing.labelLabel": str(self.label_offset)},
         )
         self.register(label, node)
         return [label]

@@ -9,9 +9,6 @@ import _ from 'underscore';
 
 export class ELKTextSizerModel extends DOMWidgetModel {
   static model_name = 'ELKTextSizerModel';
-  el: HTMLElement;
-  label: HTMLElement;
-  id: string;
 
   defaults() {
     let defaults = {
@@ -38,20 +35,21 @@ export class ELKTextSizerModel extends DOMWidgetModel {
     super.initialize(attributes, options);
     ELK_DEBUG && console.warn('ELK Test Sizer Init');
     this.on('msg:custom', this.measure, this);
-
-    this.el = document.body.appendChild(document.createElement('div'));
-    this.el.classList.add('p-Widget', ELK_CSS.widget_class, ELK_CSS.sizer_class);
-    this.el.innerHTML = `<div class=""><svg><g id="${this.id}"></g></svg></div>`;
-
-    window.requestAnimationFrame(() => {
-      // Modify element size after placed on DOM
-      this.el.style.width = '100px';
-      this.el.style.height = '0px';
-    });
-    this.listenToOnce(this, 'destroy', this.cleanup);
+    (<any>window).sizer = this;
     ELK_DEBUG && console.warn('ELK Text Done Init');
   }
 
+  make_container(): HTMLElement {
+    let el: HTMLElement = document.body.appendChild(document.createElement('div'));
+    el.classList.add('p-Widget', ELK_CSS.widget_class, ELK_CSS.sizer_class);
+    el.innerHTML = `<div class="sprotty"><svg class="sprotty-graph"><g></g></svg></div>`;
+    return el;
+  }
+
+  /**
+   * SVG Text Element for given text string
+   * @param text
+   */
   make_label(text: IELKText): SVGElement {
     ELK_DEBUG && console.warn('ELK Text Label for text', text);
     let label: SVGElement = createSVGElement('text');
@@ -68,36 +66,44 @@ export class ELKTextSizerModel extends DOMWidgetModel {
     return label;
   }
 
+  /**
+   * Method to take a list of texts and build SVG Text Elements to attach to the DOM
+   * @param content TextSize Request
+   */
   measure(content: IELKTextSizeRequest) {
     ELK_DEBUG && console.warn('ELK Text Sizer Measure', content);
-    let view: HTMLElement = document.getElementById(this.id);
+    let el: HTMLElement = this.make_container();
+    let view: SVGElement = el.getElementsByTagName('g')[0];
 
     let new_g: SVGElement = createSVGElement('g');
     content.texts.forEach(text => {
       new_g.appendChild(this.make_label(text));
     });
+    view.appendChild(new_g);
 
-    // triggering DOM refresh
-    let old_g: SVGElement = view.getElementsByTagName('g')[0];
-    if (old_g) {
-      view.removeChild(old_g);
-    }
-    new_g = view.appendChild(new_g);
     ELK_DEBUG && console.warn('ELK Text Sizer to add node', new_g);
     ELK_DEBUG && console.warn('ELK Text Sizer node', view);
 
     let elements: SVGElement[] = Array.from(new_g.getElementsByTagName('text'));
 
+    el = document.body.appendChild(el);
     ELK_DEBUG && console.warn('Sized Text');
+    // Callback to take measurements and remove element from DOM
     window.requestAnimationFrame(() => {
       let response: IELKTextSizeResponse = {
         event: 'measurement',
         measurements: this.read_sizes(content.texts, elements)
       };
+      document.body.removeChild(el);
       this.send(response, {}, []);
     });
   }
 
+  /**
+   * Read the given SVG Text Elements sizes and generate TextSize Objects
+   * @param texts Original list of text strings requested to size
+   * @param elements List of SVG Text Elements to get their respective bounding boxes
+   */
   read_sizes(texts: IELKText[], elements: SVGElement[]): IELKTextSize[] {
     let measurements: IELKTextSize[] = [];
     let i = 0;
@@ -107,7 +113,8 @@ export class ELKTextSizerModel extends DOMWidgetModel {
       var size: DOMRect = label.getBoundingClientRect();
 
       let measurement: IELKTextSize = {
-        text: text.value,
+        value: text.value,
+        cssClasses: text.cssClasses,
         width: size.width,
         height: size.height
       };
@@ -117,10 +124,6 @@ export class ELKTextSizerModel extends DOMWidgetModel {
     }
     ELK_DEBUG && console.warn('Measurements', measurements);
     return measurements;
-  }
-
-  cleanup() {
-    console.log('destroy me');
   }
 }
 
@@ -133,8 +136,7 @@ export interface IELKTextSizeRequest {
   texts: IELKText[];
 }
 
-export interface IELKTextSize {
-  text: string;
+export interface IELKTextSize extends IELKText {
   width: number;
   height: number;
 }
