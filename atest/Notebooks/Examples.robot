@@ -22,6 +22,10 @@ ${HIER_TREE}      hier_tree.json
 ${SCREENS}        ${SCREENS ROOT}${/}notebooks
 
 *** Test Cases ***
+#    TODO:
+#    - as these get filled in, they should be migrated to standalone `.robot` files
+#    in this directory.
+#    - common keywords, variables should move into `../_resources/*/IPyElk.robot`
 00_Introduction
     Set Screenshot Directory    ${SCREENS}${/}00-introduction
     Open IPyElk Notebook    ${INTRODUCTION}    support files=@{SUPPORT}
