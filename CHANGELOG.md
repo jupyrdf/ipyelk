@@ -1,5 +1,22 @@
 # Changelog
 
+## @jupyrdf/jupyter-elk 0.2.0
+
+- provides in-browser text measurement against ground-truth CSS ([#15][])
+- upgrades to `sprotty-elk 0.9.0` ([#15][])
+
+## ipyelk 0.2.0
+
+- adds optional node label positioning with `NodeLabelPlacement` ([#15][])
+  - vertical/horizontal alignment
+  - inside/outside the node
+- improves evented updates of networkx to diagram with `ElkDiagram.connect(XElk)` ([#15][])
+- adds optional `ElkTextSizer` for interacting with browser text sizing ([#15][])
+
+[#15]: https://github.com/jupyrdf/ipyelk/pull/15
+
+---
+
 ## @jupyrdf/jupyter-elk 0.1.3
 
 - includes all files using `npm publish`
