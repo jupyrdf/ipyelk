@@ -121,8 +121,7 @@ export class ELKTextSizerModel extends DOMWidgetModel {
       const size: DOMRect = label.getBoundingClientRect();
 
       let measurement: IELKTextSize = {
-        value: text.value,
-        cssClasses: text.cssClasses,
+        id: text.id,
         width: size.width,
         height: size.height
       };
@@ -136,6 +135,7 @@ export class ELKTextSizerModel extends DOMWidgetModel {
 }
 
 export interface IELKText {
+  id: string;
   value: string;
   cssClasses: string;
 }
@@ -144,7 +144,8 @@ export interface IELKTextSizeRequest {
   texts: IELKText[];
 }
 
-export interface IELKTextSize extends IELKText {
+export interface IELKTextSize {
+  id: string;
   width: number;
   height: number;
 }

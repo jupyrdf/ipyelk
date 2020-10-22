@@ -118,7 +118,7 @@ class XELK(ElkTransformer):
                 for node, data in g.nodes(data=True):
                     name = data.get(self.label_key, data.get("_id", f"{node}"))
                     labels.append(Text(value=name))
-                await self.text_sizer.measure(labels)
+                await self.text_sizer.measure(tuple(labels))
 
             elif is_hidden(tree, root, self.HIDDEN_ATTR):
                 # bail is the node is hidden
