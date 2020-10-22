@@ -10,7 +10,8 @@
 - adds optional node label positioning with `NodeLabelPlacement` ([#15][])
   - vertical/horizontal alignment
   - inside/outside the node
-- improves evented updates of networkx to diagram with `ElkDiagram.connect(XElk)` ([#15][])
+- improves evented updates of networkx to diagram with `ElkDiagram.connect(XElk)`
+  ([#15][])
 - adds optional `ElkTextSizer` for interacting with browser text sizing ([#15][])
 
 [#15]: https://github.com/jupyrdf/ipyelk/pull/15
