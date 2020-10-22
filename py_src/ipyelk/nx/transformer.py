@@ -118,7 +118,7 @@ class XELK(ElkTransformer):
                 for node, data in g.nodes(data=True):
                     name = data.get(self.label_key, data.get("_id", f"{node}"))
                     labels.append(Text(value=name))
-                await self.text_sizer.measure(labels)
+                await self.text_sizer.measure(tuple(labels))
 
             elif is_hidden(tree, root, self.HIDDEN_ATTR):
                 # bail is the node is hidden
@@ -327,7 +327,8 @@ class XELK(ElkTransformer):
     async def size_label(self, text: str) -> TextSize:
         if self.text_sizer is None:
             return TextSize(
-                width=self.text_scale * len(text), height=10,  # TODO add height default
+                width=self.text_scale * len(text),
+                height=10,  # TODO add height default
             )
         else:
             return await self.text_sizer.measure(text)

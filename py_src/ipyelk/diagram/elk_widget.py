@@ -21,8 +21,7 @@ class Interactions(enum.Enum):
 
 
 class ElkDiagram(DOMWidget):
-    """Jupyterlab widget for interacting with ELK diagrams
-    """
+    """Jupyterlab widget for interacting with ELK diagrams"""
 
     _model_name = T.Unicode("ELKModel").tag(sync=True)
     _model_module = T.Unicode(EXTENSION_NAME).tag(sync=True)
@@ -105,8 +104,7 @@ class ElkDiagram(DOMWidget):
         max_zoom: float = None,
         padding: float = None,
     ):
-        """Pan/Zoom the Diagram View to focus on particular model ids
-        """
+        """Pan/Zoom the Diagram View to focus on particular model ids"""
         self.send(
             {
                 "action": "fit",

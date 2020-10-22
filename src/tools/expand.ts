@@ -27,6 +27,7 @@ import { ToolTYPES } from './types';
 import { IFeedbackActionDispatcher } from './feedback/feedback-action-dispatcher';
 import { DragAwareMouseListener } from './draw-aware-mouse-listener';
 import { DiagramTool, IMouseTool } from './tool';
+import { idGetter } from './util';
 
 export class ExpandAction implements Action {
   static readonly KIND = 'elementExpand';
@@ -110,12 +111,7 @@ export class NodeExpandToolMouseListener extends DragAwareMouseListener {
       }
     }
 
-    return [
-      new SelectAction(
-        entering.map(e => e.id),
-        exiting.map(e => e.id)
-      )
-    ];
+    return [new SelectAction(entering.map(idGetter), exiting.map(idGetter))];
   }
 
   /**

@@ -5,7 +5,15 @@
 
 import { DOMWidgetModel, DOMWidgetView } from '@jupyter-widgets/base';
 import { NAME, VERSION, ELK_CSS, ELK_DEBUG } from '.';
-import _ from 'underscore';
+
+const TAG_REGEX = /[&<>'"]/g;
+const TAGS_TO_REPLACE = {
+  '&': '&amp;',
+  '<': '&lt;',
+  '>': '&gt;',
+  '"': '&quot;',
+  "'": '"&#039;'
+};
 
 export class ELKTextSizerModel extends DOMWidgetModel {
   static model_name = 'ELKTextSizerModel';
@@ -108,13 +116,12 @@ export class ELKTextSizerModel extends DOMWidgetModel {
     let measurements: IELKTextSize[] = [];
     let i = 0;
     for (let label of elements) {
-      console.log(label.innerHTML);
-      let text: IELKText = texts[i];
-      var size: DOMRect = label.getBoundingClientRect();
+      ELK_DEBUG && console.warn(label.innerHTML);
+      const text: IELKText = texts[i];
+      const size: DOMRect = label.getBoundingClientRect();
 
       let measurement: IELKTextSize = {
-        value: text.value,
-        cssClasses: text.cssClasses,
+        id: text.id,
         width: size.width,
         height: size.height
       };
@@ -128,6 +135,7 @@ export class ELKTextSizerModel extends DOMWidgetModel {
 }
 
 export interface IELKText {
+  id: string;
   value: string;
   cssClasses: string;
 }
@@ -136,7 +144,8 @@ export interface IELKTextSizeRequest {
   texts: IELKText[];
 }
 
-export interface IELKTextSize extends IELKText {
+export interface IELKTextSize {
+  id: string;
   width: number;
   height: number;
 }
@@ -152,18 +161,15 @@ export class ELKTextSizerView extends DOMWidgetView {
   async render() {}
 }
 
+function escapeReplacer(tag: string): string {
+  return TAGS_TO_REPLACE[tag] || tag;
+}
+
 /**
  * Simple function to escape text for html before adding to dom
  */
 function escape(text: string) {
-  var tagsToReplace = {
-    '&': '&amp;',
-    '<': '&lt;',
-    '>': '&gt;'
-  };
-  return text.replace(/[&<>]/g, function(tag) {
-    return tagsToReplace[tag] || tag;
-  });
+  return text.replace(TAG_REGEX, escapeReplacer);
 }
 
 /**

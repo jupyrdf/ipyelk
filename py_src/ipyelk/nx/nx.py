@@ -46,7 +46,7 @@ def get_roots(tree: nx.DiGraph, g: nx.DiGraph) -> Iterable[Hashable]:
 
 
 def compact(array: Optional[List]) -> Optional[List]:
-    """ Compact an list by removing `None` elements. If the result is an empty
+    """Compact an list by removing `None` elements. If the result is an empty
         list, return `None`
 
     :param array: Inital list to compact
@@ -81,7 +81,7 @@ def lowest_common_ancestor(tree, nodes):
 
 
 def lca(tree: nx.DiGraph, a: Hashable, b: Hashable) -> Optional[Hashable]:
-    """ Wrapper around the NetworkX `lowest_common_ancestor` but allows either
+    """Wrapper around the NetworkX `lowest_common_ancestor` but allows either
         source or target node to not be in the tree
 
     :param tree: Node hierarchy

@@ -13,11 +13,14 @@ env:
   PYTHONIOENCODING: utf-8
   SKIP_CONDA_PREFLIGHT: 1
   INSTALL_ARTIFACT: wheel
+  ATEST_RETRIES: 2
+  ATEST_PROCESSES: 2
 
 jobs:
   ci:
     runs-on: ${{ matrix.os }}
     strategy:
+      fail-fast: false
       matrix:
         os:
           - ubuntu-latest
@@ -78,7 +81,7 @@ jobs:
         run: |
           call C:\Miniconda\Scripts\deactivate
           call C:\Miniconda\Scripts\activate C:\Miniconda\envs\_ipyelk_ci_
-          doit -n4 all || doit all || exit 1
+          doit all || exit 1
 
       - name: publish (linux)
         if: ${{ contains(matrix.os, 'ubuntu') }}
@@ -86,3 +89,10 @@ jobs:
         with:
           name: ipyelk dist ${{ github.run_number }}
           path: ./dist
+
+      - name: report (robot)
+        uses: actions/upload-artifact@v2
+        with:
+          name: ${{ job.status }} Robot ${{ matrix.os }} ${{ github.run_number }}
+          path: ./atest/output
+        if: always()

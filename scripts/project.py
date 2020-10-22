@@ -69,7 +69,19 @@ AP = ["anaconda-project"]
 AP_PREP = [*AP, "prepare", "--env-spec"]
 APR = [*AP, "run", "--env-spec"]
 APR_DEFAULT = [*APR, "default"]
+APR_ATEST = [*APR, "atest"]
 PRETTIER = [*JLPM, "--silent", "prettier"]
+
+JUPYTERLAB_EXE = [
+    os.environ["CONDA_EXE"],
+    "run",
+    "-p",
+    (ROOT / "envs/default"),
+    "python",
+    "-m",
+    "jupyter",
+    "lab",
+]
 
 # env stuff
 OK_ENV = {env: BUILD / f"prep_{env}.ok" for env in ["default"]}
@@ -120,6 +132,7 @@ OK_PREFLIGHT_RELEASE = BUILD / "preflight.release.ok"
 OK_BLACK = BUILD / "black.ok"
 OK_FLAKE8 = BUILD / "flake8.ok"
 OK_ISORT = BUILD / "isort.ok"
+OK_ROBOT_LINT = BUILD / "robot.lint.ok"
 OK_LINT = BUILD / "lint.ok"
 OK_PYFLAKES = BUILD / "pyflakes.ok"
 OK_NBLINT = {nb.name: BUILD / f"nblint.{nb.name}.ok" for nb in EXAMPLE_IPYNB}
@@ -138,3 +151,9 @@ WHEEL = DIST / f"{PY_PKG}-{PY_VERSION}-py3-none-any.whl"
 NPM_TGZ_STEM = JS_PKG.replace("@", "").replace("/", "-")
 NPM_TGZ = DIST / f"{NPM_TGZ_STEM}-{JS_VERSION_MANGLED}.tgz"
 EXAMPLE_HTML = [DIST_NBHTML / p.name.replace(".ipynb", ".html") for p in EXAMPLE_IPYNB]
+
+# robot testing
+ATEST = ROOT / "atest"
+ALL_ROBOT = [*ATEST.rglob("*.robot")]
+ATEST_OUT = ATEST / "output"
+ATEST_CANARY = BUILD / f"robot.{PLATFORM.lower()}_success.ok"

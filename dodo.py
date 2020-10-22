@@ -30,8 +30,7 @@ COMMIT = subprocess.check_output(["git", "rev-parse", "HEAD"]).decode("utf-8")
 
 
 def task_preflight():
-    """ ensure a sane development environment
-    """
+    """ensure a sane development environment"""
     file_dep = [P.PROJ_LOCK, P.SCRIPTS / "preflight.py"]
 
     yield _ok(
@@ -84,8 +83,7 @@ def task_preflight():
 
 
 def task_binder():
-    """ get to a minimal interactive environment
-    """
+    """get to a minimal interactive environment"""
     return dict(
         file_dep=[
             P.LAB_INDEX,
@@ -98,8 +96,7 @@ def task_binder():
 
 
 def task_env():
-    """ prepare project envs
-    """
+    """prepare project envs"""
     envs = ["default"]
     for i, env in enumerate(envs):
         file_dep = [P.PROJ_LOCK, P.OK_PREFLIGHT_CONDA]
@@ -112,8 +109,7 @@ def task_env():
 
 
 def task_release():
-    """ everything we'd need to do to release (except release)
-    """
+    """everything we'd need to do to release (except release)"""
     return _ok(
         dict(
             file_dep=[
@@ -130,8 +126,7 @@ def task_release():
 
 
 def task_setup():
-    """ perform all setup activities
-    """
+    """perform all setup activities"""
 
     _install = ["--no-deps", "--ignore-installed", "-vv"]
 
@@ -171,8 +166,7 @@ def task_setup():
 
 
 def task_build():
-    """ build packages
-    """
+    """build packages"""
 
     yield dict(
         name="ts:pre",
@@ -220,8 +214,7 @@ def task_build():
 
 
 def task_test():
-    """ run all the notebooks
-    """
+    """run all the notebooks"""
 
     def _nb_test(nb):
         def _test():
@@ -231,6 +224,8 @@ def task_test():
                 *P.APR_DEFAULT,
                 "jupyter",
                 "nbconvert",
+                "--to",
+                "html",
                 "--output-dir",
                 P.DIST_NBHTML,
                 "--execute",
@@ -257,10 +252,22 @@ def task_test():
     for nb in P.EXAMPLE_IPYNB:
         yield _nb_test(nb)
 
+    yield dict(
+        name="atest",
+        file_dep=[
+            *P.ALL_ROBOT,
+            *P.ALL_PY_SRC,
+            P.OK_ROBOT_LINT,
+            P.OK_PREFLIGHT_LAB,
+            P.SCRIPTS / "atest.py",
+        ],
+        actions=[[*P.APR_ATEST, *P.PYM, "scripts.atest"]],
+        targets=[P.ATEST_CANARY],
+    )
+
 
 def task_lint():
-    """ format all source files
-    """
+    """format all source files"""
 
     yield _ok(
         dict(
@@ -302,6 +309,7 @@ def task_lint():
         ),
         P.OK_PRETTIER,
     )
+
     for nb in P.EXAMPLE_IPYNB:
         yield _ok(
             dict(
@@ -311,6 +319,19 @@ def task_lint():
             ),
             P.OK_NBLINT[nb.name],
         )
+
+    yield _ok(
+        dict(
+            name="robot",
+            file_dep=[*P.ALL_ROBOT, *P.ALL_PY_SRC, *P.ALL_TS, P.SCRIPTS / "atest.py"],
+            actions=[
+                [*P.APR_ATEST, *P.PYM, "robot.tidy", "--inplace", *P.ALL_ROBOT],
+                [*P.APR_ATEST, *P.PYM, "scripts.atest", "--dryrun"],
+            ],
+        ),
+        P.OK_ROBOT_LINT,
+    )
+
     yield _ok(
         dict(
             name="all",
@@ -321,6 +342,7 @@ def task_lint():
                 P.OK_ISORT,
                 P.OK_PRETTIER,
                 P.OK_PYFLAKES,
+                P.OK_ROBOT_LINT,
                 *P.OK_NBLINT.values(),
             ],
         ),
@@ -329,8 +351,7 @@ def task_lint():
 
 
 def task_lab_build():
-    """ do a "production" build of lab
-    """
+    """do a "production" build of lab"""
     exts = [
         line.strip()
         for line in P.EXTENSIONS.read_text(encoding="utf-8").strip().splitlines()
@@ -363,8 +384,7 @@ def task_lab_build():
 
 
 def task_lab():
-    """ run JupyterLab "normally" (not watching sources)
-    """
+    """run JupyterLab "normally" (not watching sources)"""
 
     def lab():
         proc = subprocess.Popen(
@@ -389,8 +409,7 @@ def task_lab():
 
 
 def task_watch():
-    """ watch typescript sources, launch lab, rebuilding as files change
-    """
+    """watch typescript sources, launch lab, rebuilding as files change"""
 
     def _watch():
         proc = subprocess.Popen(
@@ -413,10 +432,10 @@ def task_watch():
 
 
 def task_all():
-    """ do everything except start lab
-    """
+    """do everything except start lab"""
     return dict(
-        file_dep=[P.OK_RELEASE, P.OK_PREFLIGHT_LAB], actions=([_echo_ok("ALL GOOD")]),
+        file_dep=[P.OK_RELEASE, P.OK_PREFLIGHT_LAB, P.ATEST_CANARY],
+        actions=([_echo_ok("ALL GOOD")]),
     )
 
 
