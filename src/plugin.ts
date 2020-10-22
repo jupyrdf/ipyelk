@@ -7,7 +7,7 @@ import { Widget } from '@phosphor/widgets';
 
 import { IJupyterWidgetRegistry } from '@jupyter-widgets/base';
 
-import { NAME, VERSION } from '.';
+import { NAME, VERSION, ELK_DEBUG } from '.';
 import '../style/index.css';
 
 const EXTENSION_ID = `${NAME}:plugin`;
@@ -17,12 +17,13 @@ const plugin: IPlugin<Application<Widget>, void> = {
   requires: [IJupyterWidgetRegistry],
   autoStart: true,
   activate: (app: Application<Widget>, registry: IJupyterWidgetRegistry) => {
-    console.log();
+    ELK_DEBUG && console.warn('elk activated');
     registry.registerWidget({
       name: NAME,
       version: VERSION,
       exports: async () => {
         const widgetExports = await import(/* webpackChunkName: "elk" */ './widget');
+        ELK_DEBUG && console.warn('widgets loaded');
         return widgetExports;
       }
     });

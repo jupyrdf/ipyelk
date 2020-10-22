@@ -108,7 +108,7 @@ export class ELKTextSizerModel extends DOMWidgetModel {
     let measurements: IELKTextSize[] = [];
     let i = 0;
     for (let label of elements) {
-      console.log(label.innerHTML);
+      ELK_DEBUG && console.warn(label.innerHTML);
       let text: IELKText = texts[i];
       var size: DOMRect = label.getBoundingClientRect();
 
