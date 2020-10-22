@@ -287,12 +287,13 @@ class XELK(ElkTransformer):
         g, tree = self.source
         attr = self.HIDDEN_ATTR
         if node is None:
-            if tree is None:
+            if tree is None or len(tree) == 0:
                 # Nonhierarchical graph. Iterate over only the main graph
                 return [await self.transform(root=node) for node in g.nodes()]
             else:
                 # Hierarchical graph but no specified root...
                 # start transforming from each root in the forest
+                assert nx.algorithms.is_forest(tree), "Hierarchical graph should be forest"
                 return [await self.transform(root=node) for node in get_roots(tree, g)]
 
         else:
@@ -316,10 +317,7 @@ class XELK(ElkTransformer):
             )  # max(len(ins), len(outs))  # max number of ports
         height = max(18, height)
         if node.labels:
-            width = (
-                self.text_scale * max(len(label.text or " ") for label in node.labels)
-                + self.label_offset
-            )
+            width = max(label.width for label in node.labels) + self.label_offset
         else:
             width = self.text_scale
         return width, height
