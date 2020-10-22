@@ -61,3 +61,20 @@ env_specs:
       - pandas
       - python >=3.7
       - ipython >=7
+
+  atest:
+    platforms:
+      - linux-64
+      - osx-64
+      - win-64
+    channels:
+      - https://conda.anaconda.org/conda-forge
+      - https://conda.anaconda.org/anaconda
+      - https://conda.anaconda.org/msys2
+    packages:
+      - firefox
+      - geckodriver
+      - python >=3.7,<3.8.0a0
+      - robotframework-lint
+      - robotframework-pabot
+      - robotframework-seleniumlibrary

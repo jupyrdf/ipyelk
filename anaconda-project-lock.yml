@@ -234,3 +234,88 @@ env_specs:
         - wincertstore=0.2=py37_1003
         - winpty=0.4.3=4
         - zeromq=4.3.2=ha925a31_3
+  atest:
+    locked: true
+    env_spec_hash: a3cbc653618884c4eb2c0cda4abc326eac9894ad
+    platforms:
+      - linux-64
+      - osx-64
+      - win-64
+    packages:
+      all:
+        - ca-certificates=2020.6.20=hecda079_0
+        - idna=2.10=pyh9f0ad1d_0
+        - pip=20.2.4=py_0
+        - pycparser=2.20=pyh9f0ad1d_2
+        - pyopenssl=19.1.0=py_1
+        - python_abi=3.7=1_cp37m
+        - robotframework-lint=1.1=pyh9f0ad1d_0
+        - robotframework-pabot=1.10.0=py_0
+        - robotframework-pythonlibcore=2.1.0=py_0
+        - robotframework-seleniumlibrary=4.5.0=pyh9f0ad1d_0
+        - robotframework=3.2.2=pyh9f0ad1d_0
+        - six=1.15.0=pyh9f0ad1d_0
+        - urllib3=1.25.11=py_0
+        - wheel=0.35.1=pyh9f0ad1d_0
+      linux-64:
+        - _libgcc_mutex=0.1=conda_forge
+        - _openmp_mutex=4.5=1_gnu
+        - brotlipy=0.7.0=py37hb5d75c8_1001
+        - certifi=2020.6.20=py37he5f6b98_2
+        - cffi=1.14.3=py37h00ebd2e_1
+        - cryptography=3.1.1=py37hff6837a_1
+        - firefox=81.0=he1b5a44_0
+        - geckodriver=0.27.0=he1b5a44_0
+        - ld_impl_linux-64=2.35=h769bd43_9
+        - libffi=3.2.1=he1b5a44_1007
+        - libgcc-ng=9.3.0=h5dbcf3e_17
+        - libgomp=9.3.0=h5dbcf3e_17
+        - libstdcxx-ng=9.3.0=h2ae2ef3_17
+        - ncurses=6.2=he1b5a44_2
+        - openssl=1.1.1h=h516909a_0
+        - pysocks=1.7.1=py37he5f6b98_2
+        - python=3.7.8=h6f2ec95_1_cpython
+        - readline=8.0=he28a2e2_2
+        - selenium=3.141.0=py37h8f50634_1002
+        - setuptools=49.6.0=py37he5f6b98_2
+        - sqlite=3.33.0=h4cf870e_1
+        - tk=8.6.10=hed695b0_1
+        - xz=5.2.5=h516909a_1
+        - zlib=1.2.11=h516909a_1010
+      osx-64:
+        - brotlipy=0.7.0=py37h395d20d_1001
+        - certifi=2020.6.20=py37h2987424_2
+        - cffi=1.14.3=py37h446cb54_1
+        - cryptography=3.1.1=py37h55b06a8_1
+        - firefox=81.0=hb1e8313_0
+        - geckodriver=0.27.0=hb1e8313_0
+        - libcxx=11.0.0=h439d374_0
+        - libffi=3.2.1=hb1e8313_1007
+        - ncurses=6.2=hb1e8313_2
+        - openssl=1.1.1h=haf1e3a3_0
+        - pysocks=1.7.1=py37h2987424_2
+        - python=3.7.8=hc9dea61_1_cpython
+        - readline=8.0=h0678c8f_2
+        - selenium=3.141.0=py37h60d8a13_1002
+        - setuptools=49.6.0=py37h2987424_2
+        - sqlite=3.33.0=h960bd1c_1
+        - tk=8.6.10=hb0a8c7a_1
+        - xz=5.2.5=haf1e3a3_1
+        - zlib=1.2.11=h7795811_1010
+      win-64:
+        - brotlipy=0.7.0=py37h0013d47_1001
+        - certifi=2020.6.20=py37hf50a25e_2
+        - cffi=1.14.3=py37hd6b71e5_1
+        - cryptography=3.1.1=py37hd6b71e5_1
+        - firefox=81.0=ha925a31_0
+        - geckodriver=0.27.0=h33f27b4_0
+        - openssl=1.1.1h=he774522_0
+        - pysocks=1.7.1=py37hf50a25e_2
+        - python=3.7.8=h60c2a47_1_cpython
+        - selenium=3.141.0=py37h4ab8f01_1002
+        - setuptools=49.6.0=py37hf50a25e_2
+        - sqlite=3.33.0=he774522_1
+        - vc=14.1=h869be7e_1
+        - vs2015_runtime=14.16.27012=h30e32a0_2
+        - win_inet_pton=1.1.0=py37hc8dfbb8_1
+        - wincertstore=0.2=py37hc8dfbb8_1005

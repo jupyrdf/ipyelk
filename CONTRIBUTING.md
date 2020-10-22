@@ -32,8 +32,10 @@ doit lab   # start lab
 | `package.json/`                       | `npm` package description for `@jupyrdf/jupyter-elk` |
 | `yarn.lock`                           | frozen `npm` dependencies                            |
 | `src/`                                | TypeScript source for `@jupyrdf/jupyter-elk`         |
+| `atest/`                              | Robot Framework source for acceptance tests          |
 
-- Most commands are run with `doit`
+- Run `doit` to get ready to develop
+- Most commands are run with `doit all` (this is what CI does)
 - Most typescript-related commands are run with
   `anaconda-project run jlpm <script in package.json>`
 
@@ -64,6 +66,7 @@ doit lint
 - If you add new features:
   - Add a new, minimal demonstration notebook to the examples.
   - Add appropriate links to your new example.
+  - Add appropriate Robot Framework tests
 
 ## Releasing
 

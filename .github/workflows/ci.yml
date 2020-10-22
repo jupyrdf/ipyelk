@@ -13,11 +13,14 @@ env:
   PYTHONIOENCODING: utf-8
   SKIP_CONDA_PREFLIGHT: 1
   INSTALL_ARTIFACT: wheel
+  ATEST_RETRIES: 3
+  ATEST_PROCESSES: 2
 
 jobs:
   ci:
     runs-on: ${{ matrix.os }}
     strategy:
+      fail-fast: false
       matrix:
         os:
           - ubuntu-latest
@@ -86,3 +89,10 @@ jobs:
         with:
           name: ipyelk dist ${{ github.run_number }}
           path: ./dist
+
+      - name: report (robot)
+        uses: actions/upload-artifact@v2
+        with:
+          name: ${{ job.status }} Robot ${{ matrix.os }} ${{ github.run_number }}
+          path: ./atest/output
+        if: always()
