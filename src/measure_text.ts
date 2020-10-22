@@ -109,8 +109,8 @@ export class ELKTextSizerModel extends DOMWidgetModel {
     let i = 0;
     for (let label of elements) {
       ELK_DEBUG && console.warn(label.innerHTML);
-      let text: IELKText = texts[i];
-      var size: DOMRect = label.getBoundingClientRect();
+      const text: IELKText = texts[i];
+      const size: DOMRect = label.getBoundingClientRect();
 
       let measurement: IELKTextSize = {
         value: text.value,
@@ -156,7 +156,7 @@ export class ELKTextSizerView extends DOMWidgetView {
  * Simple function to escape text for html before adding to dom
  */
 function escape(text: string) {
-  var tagsToReplace = {
+  const tagsToReplace = {
     '&': '&amp;',
     '<': '&lt;',
     '>': '&gt;'
