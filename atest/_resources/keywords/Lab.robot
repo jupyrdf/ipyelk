@@ -188,7 +188,7 @@ Lab Command
     [Arguments]    ${cmd}
     Enter Command Name    ${cmd}
     Wait Until Page Contains Element    ${CMD PALETTE ITEM ACTIVE}
-    Click Element    ${CMD PALETTE ITEM ACTIVE}
+    Wait Until Keyword Succeeds    5x    0.5s    Click Element    ${CMD PALETTE ITEM ACTIVE}
 
 Capture All Code Cells
     [Arguments]    ${prefix}=${EMPTY}    ${timeout}=30s
