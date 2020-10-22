@@ -257,6 +257,21 @@ def task_test():
     for nb in P.EXAMPLE_IPYNB:
         yield _nb_test(nb)
 
+    yield _ok(
+        dict(
+            name="atest",
+            file_dep=[
+                *P.ALL_ROBOT,
+                *P.ALL_PY_SRC,
+                P.OK_ROBOT_LINT,
+                P.OK_PREFLIGHT_LAB,
+                P.SCRIPTS / "atest.py",
+            ],
+            actions=[[*P.APR_ATEST, *P.PYM, "scripts.atest"]],
+        ),
+        P.OK_ATEST,
+    )
+
 
 def task_lint():
     """ format all source files
@@ -302,6 +317,7 @@ def task_lint():
         ),
         P.OK_PRETTIER,
     )
+
     for nb in P.EXAMPLE_IPYNB:
         yield _ok(
             dict(
@@ -311,6 +327,19 @@ def task_lint():
             ),
             P.OK_NBLINT[nb.name],
         )
+
+    yield _ok(
+        dict(
+            name="robot",
+            file_dep=[*P.ALL_ROBOT, *P.ALL_PY_SRC, *P.ALL_TS, P.SCRIPTS / "atest.py"],
+            actions=[
+                [*P.APR_ATEST, *P.PYM, "robot.tidy", "--inplace", *P.ALL_ROBOT],
+                [*P.APR_ATEST, *P.PYM, "scripts.atest", "--dryrun"],
+            ],
+        ),
+        P.OK_ROBOT_LINT,
+    )
+
     yield _ok(
         dict(
             name="all",
@@ -321,6 +350,7 @@ def task_lint():
                 P.OK_ISORT,
                 P.OK_PRETTIER,
                 P.OK_PYFLAKES,
+                P.OK_ROBOT_LINT,
                 *P.OK_NBLINT.values(),
             ],
         ),
@@ -416,7 +446,8 @@ def task_all():
     """ do everything except start lab
     """
     return dict(
-        file_dep=[P.OK_RELEASE, P.OK_PREFLIGHT_LAB], actions=([_echo_ok("ALL GOOD")]),
+        file_dep=[P.OK_RELEASE, P.OK_PREFLIGHT_LAB, P.OK_ATEST],
+        actions=([_echo_ok("ALL GOOD")]),
     )
 
 
