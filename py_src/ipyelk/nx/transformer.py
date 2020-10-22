@@ -293,7 +293,9 @@ class XELK(ElkTransformer):
             else:
                 # Hierarchical graph but no specified root...
                 # start transforming from each root in the forest
-                assert nx.algorithms.is_forest(tree), "Hierarchical graph should be forest"
+                assert nx.algorithms.is_forest(
+                    tree
+                ), "Hierarchical graph should be forest"
                 return [await self.transform(root=node) for node in get_roots(tree, g)]
 
         else:
