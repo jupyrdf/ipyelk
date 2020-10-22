@@ -37,6 +37,7 @@ Setup Server and Browser
     ${config} =    Evaluate    __import__("json").loads("""${script}""")
     Set Global Variable    ${PAGE CONFIG}    ${config}
     Set Global Variable    ${LAB VERSION}    ${config["appVersion"]}
+    Set Tags    lab:${LAB VERSION}
 
 Create Lab Launch Command
     [Arguments]    ${root}
