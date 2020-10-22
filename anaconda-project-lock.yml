@@ -19,7 +19,7 @@ env_specs:
     locked: false
   default:
     locked: true
-    env_spec_hash: d6d0a8c503481cd4fd041a336d526a425780d2c8
+    env_spec_hash: 8d5ab789c8457f559398c1d2c2b8bdff29feec79
     platforms:
       - linux-64
       - osx-64
@@ -27,6 +27,7 @@ env_specs:
     packages:
       all:
         - appdirs=1.4.4=pyh9f0ad1d_0
+        - async-lru=1.0.2=py_0
         - async_generator=1.10=py_0
         - attrs=20.2.0=pyh9f0ad1d_0
         - backcall=0.2.0=pyh9f0ad1d_0

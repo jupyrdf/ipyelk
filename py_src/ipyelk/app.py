@@ -120,7 +120,8 @@ class Elk(W.VBox, StyledWidget):
             self._data_link = None
         if self.transformer and self.diagram:
             self._data_link = T.dlink(
-                (self.transformer, "value"), (self.diagram, "value"),
+                (self.transformer, "value"),
+                (self.diagram, "value"),
             )
 
     @T.observe("diagram")

@@ -23,11 +23,19 @@ class NodeLabelPlacement(W.HBox):
 
         self.horizontal_options = W.RadioButtons(
             description="Horizontal",
-            options=(("Left", "left"), ("Center", "center"), ("Right", "right"),),
+            options=(
+                ("Left", "left"),
+                ("Center", "center"),
+                ("Right", "right"),
+            ),
         )
         self.vertical_options = W.RadioButtons(
             description="Vertical",
-            options=(("Top", "top"), ("Center", "center"), ("Bottom", "bottom"),),
+            options=(
+                ("Top", "top"),
+                ("Center", "center"),
+                ("Bottom", "bottom"),
+            ),
         )
         self.inside_options = W.Checkbox(description="Inside")
         self.horizontal_priority_options = W.Checkbox(description="Horizontal Priority")

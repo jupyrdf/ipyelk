@@ -7,9 +7,12 @@ from dataclasses import dataclass, field
 from typing import Dict, List
 
 import traitlets as T
+from async_lru import alru_cache
 from ipywidgets import DOMWidget
 
 from .._version import EXTENSION_NAME, EXTENSION_SPEC_VERSION
+
+print("TODO: use alru_cache", alru_cache)
 
 
 @dataclass
@@ -128,9 +131,15 @@ class ElkTextSizer(DOMWidget):
                 css_classes = []
             else:
                 css_classes = css_classes.split(" ")
-            text = Text(response.get("value"), css_classes,)
+            text = Text(
+                response.get("value"),
+                css_classes,
+            )
             future = self.futures[text]
             future.set_result(
-                TextSize(width=response.get("width"), height=response.get("height"),)
+                TextSize(
+                    width=response.get("width"),
+                    height=response.get("height"),
+                )
             )
             self._response_queue.task_done()

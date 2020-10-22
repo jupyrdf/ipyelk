@@ -32,8 +32,7 @@ def build(args=None):
 
 
 def prep():
-    """ do a normal build of lab, then clean out static
-    """
+    """do a normal build of lab, then clean out static"""
     print("building extension...", flush=True)
     subprocess.check_call([JLPM, "build"])
     print("installing extension...", flush=True)
@@ -53,8 +52,7 @@ def prep():
 
 
 def watch():
-    """ after preparing, install missing dependencies, and start watchers
-    """
+    """after preparing, install missing dependencies, and start watchers"""
     prep()
     print("watching src...", flush=True)
     ts = subprocess.Popen([JLPM, "watch"], cwd=str(ROOT))

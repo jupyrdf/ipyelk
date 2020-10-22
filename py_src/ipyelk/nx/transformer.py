@@ -327,7 +327,8 @@ class XELK(ElkTransformer):
     async def size_label(self, text: str) -> TextSize:
         if self.text_sizer is None:
             return TextSize(
-                width=self.text_scale * len(text), height=10,  # TODO add height default
+                width=self.text_scale * len(text),
+                height=10,  # TODO add height default
             )
         else:
             return await self.text_sizer.measure(text)
