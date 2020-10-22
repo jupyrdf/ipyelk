@@ -10,6 +10,8 @@ ${LINKING}        01_Linking
 ${TRANSFORMER}    02_Transformer
 ${APP}            03_App
 ${INTERACTIVE}    04_Interactive
+${LABEL PLACEMENT}    100_node_label_placement
+${TEXT SIZER}     101_text_sizer
 ${SIMPLE}         simple.json
 ${FLAT}           flat_graph.json
 ${HIER_PORTS}     hier_ports.json
@@ -69,3 +71,23 @@ ${SCREENS}        ${SCREENS ROOT}${/}notebooks
     Page Should Not Contain Contain Standard Errors
     Capture Page Screenshot    99-fin.png
     [Teardown]    Clean up after Working with Files    ${APP}.ipynb    @{CLEANUP}
+
+100_node_label_placement
+    Set Screenshot Directory    ${SCREENS}${/}100-node-label-placement
+    Open IPyElk Notebook    ${LABEL PLACEMENT}    support files=@{SUPPORT}
+    Restart and Run All
+    Wait For All Cells To Run    60s
+    Capture All Code Cells
+    Page Should Not Contain Contain Standard Errors
+    Capture Page Screenshot    99-fin.png
+    [Teardown]    Clean up after Working with Files    ${LABEL PLACEMENT}.ipynb    @{CLEANUP}
+
+101_text_sizer
+    Set Screenshot Directory    ${SCREENS}${/}100-node-label-placement
+    Open IPyElk Notebook    ${TEXT SIZER}    support files=@{SUPPORT}
+    Restart and Run All
+    Wait For All Cells To Run    60s
+    Capture All Code Cells
+    Page Should Not Contain Contain Standard Errors
+    Capture Page Screenshot    99-fin.png
+    [Teardown]    Clean up after Working with Files    ${TEXT SIZER}.ipynb    @{CLEANUP}

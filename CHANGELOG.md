@@ -4,6 +4,7 @@
 
 - provides in-browser text measurement against ground-truth CSS ([#15][])
 - upgrades to `sprotty-elk 0.9.0` ([#15][])
+- adds basic browser testing with Robot Framework ([#21][])
 
 ## ipyelk 0.2.0
 
@@ -15,6 +16,7 @@
 - adds optional `ElkTextSizer` for interacting with browser text sizing ([#15][])
 
 [#15]: https://github.com/jupyrdf/ipyelk/pull/15
+[#21]: https://github.com/jupyrdf/ipyelk/pull/21
 
 ---
 
