@@ -27,6 +27,7 @@ import { ToolTYPES } from './types';
 import { IFeedbackActionDispatcher } from './feedback/feedback-action-dispatcher';
 import { DragAwareHoverMouseListener } from './draw-aware-mouse-listener';
 import { DiagramTool, IMouseTool } from './tool';
+import { idGetter } from './util';
 
 @injectable()
 export class NodeSelectTool extends DiagramTool {
@@ -94,12 +95,7 @@ export class NodeSelectToolMouseListener extends DragAwareHoverMouseListener {
       }
     }
 
-    return [
-      new SelectAction(
-        entering.map(e => e.id),
-        exiting.map(e => e.id)
-      )
-    ];
+    return [new SelectAction(entering.map(idGetter), exiting.map(idGetter))];
   }
 
   /**

@@ -50,11 +50,11 @@ export class ElkGraphJsonToSprotty {
     };
 
     if (elkGraph.children) {
-      const children = elkGraph.children.map(n => this.transformElkNode(n));
+      const children = elkGraph.children.map(this.transformElkNode, this);
       sGraph.children.push(...children);
     }
     if (elkGraph.edges) {
-      const sEdges = elkGraph.edges.map(e => this.transformElkEdge(e));
+      const sEdges = elkGraph.edges.map(this.transformElkEdge, this);
       sGraph.children!.push(...sEdges);
     }
 
@@ -74,22 +74,22 @@ export class ElkGraphJsonToSprotty {
     };
     // children
     if (elkNode.children) {
-      const sNodes = elkNode.children.map(n => this.transformElkNode(n));
+      const sNodes = elkNode.children.map(this.transformElkNode, this);
       sNode.children!.push(...sNodes);
     }
     // ports
     if (elkNode.ports) {
-      const sPorts = elkNode.ports.map(p => this.transformElkPort(p));
+      const sPorts = elkNode.ports.map(this.transformElkPort, this);
       sNode.children!.push(...sPorts);
     }
     // labels
     if (elkNode.labels) {
-      const sLabels = elkNode.labels.map(l => this.transformElkLabel(l));
+      const sLabels = elkNode.labels.map(this.transformElkLabel, this);
       sNode.children!.push(...sLabels);
     }
     // edges
     if (elkNode.edges) {
-      const sEdges = elkNode.edges.map(e => this.transformElkEdge(e));
+      const sEdges = elkNode.edges.map(this.transformElkEdge, this);
       sNode.children!.push(...sEdges);
     }
     return sNode;
@@ -107,7 +107,7 @@ export class ElkGraphJsonToSprotty {
     };
     // labels
     if (elkPort.labels) {
-      const sLabels = elkPort.labels.map(l => this.transformElkLabel(l));
+      const sLabels = elkPort.labels.map(this.transformElkLabel, this);
       sPort.children!.push(...sLabels);
     }
     return sPort;
