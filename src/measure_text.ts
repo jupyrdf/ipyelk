@@ -5,7 +5,15 @@
 
 import { DOMWidgetModel, DOMWidgetView } from '@jupyter-widgets/base';
 import { NAME, VERSION, ELK_CSS, ELK_DEBUG } from '.';
-import _ from 'underscore';
+
+const TAG_REGEX = /[&<>'"]/g;
+const TAGS_TO_REPLACE = {
+  '&': '&amp;',
+  '<': '&lt;',
+  '>': '&gt;',
+  '"': '&quot;',
+  "'": '"&#039;'
+};
 
 export class ELKTextSizerModel extends DOMWidgetModel {
   static model_name = 'ELKTextSizerModel';
@@ -152,18 +160,15 @@ export class ELKTextSizerView extends DOMWidgetView {
   async render() {}
 }
 
+function escapeReplacer(tag: string): string {
+  return TAGS_TO_REPLACE[tag] || tag;
+}
+
 /**
  * Simple function to escape text for html before adding to dom
  */
 function escape(text: string) {
-  const tagsToReplace = {
-    '&': '&amp;',
-    '<': '&lt;',
-    '>': '&gt;'
-  };
-  return text.replace(/[&<>]/g, function(tag) {
-    return tagsToReplace[tag] || tag;
-  });
+  return text.replace(TAG_REGEX, escapeReplacer);
 }
 
 /**
