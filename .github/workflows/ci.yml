@@ -13,7 +13,7 @@ env:
   PYTHONIOENCODING: utf-8
   SKIP_CONDA_PREFLIGHT: 1
   INSTALL_ARTIFACT: wheel
-  ATEST_RETRIES: 3
+  ATEST_RETRIES: 2
   ATEST_PROCESSES: 2
 
 jobs:
@@ -81,7 +81,7 @@ jobs:
         run: |
           call C:\Miniconda\Scripts\deactivate
           call C:\Miniconda\Scripts\activate C:\Miniconda\envs\_ipyelk_ci_
-          doit -n4 all || doit all || exit 1
+          doit all || exit 1
 
       - name: publish (linux)
         if: ${{ contains(matrix.os, 'ubuntu') }}

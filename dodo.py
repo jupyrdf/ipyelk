@@ -252,19 +252,17 @@ def task_test():
     for nb in P.EXAMPLE_IPYNB:
         yield _nb_test(nb)
 
-    yield _ok(
-        dict(
-            name="atest",
-            file_dep=[
-                *P.ALL_ROBOT,
-                *P.ALL_PY_SRC,
-                P.OK_ROBOT_LINT,
-                P.OK_PREFLIGHT_LAB,
-                P.SCRIPTS / "atest.py",
-            ],
-            actions=[[*P.APR_ATEST, *P.PYM, "scripts.atest"]],
-        ),
-        P.OK_ATEST,
+    yield dict(
+        name="atest",
+        file_dep=[
+            *P.ALL_ROBOT,
+            *P.ALL_PY_SRC,
+            P.OK_ROBOT_LINT,
+            P.OK_PREFLIGHT_LAB,
+            P.SCRIPTS / "atest.py",
+        ],
+        actions=[[*P.APR_ATEST, *P.PYM, "scripts.atest"]],
+        targets=[P.ATEST_CANARY],
     )
 
 
@@ -436,7 +434,7 @@ def task_watch():
 def task_all():
     """do everything except start lab"""
     return dict(
-        file_dep=[P.OK_RELEASE, P.OK_PREFLIGHT_LAB, P.OK_ATEST],
+        file_dep=[P.OK_RELEASE, P.OK_PREFLIGHT_LAB, P.ATEST_CANARY],
         actions=([_echo_ok("ALL GOOD")]),
     )
 

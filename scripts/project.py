@@ -138,7 +138,6 @@ OK_PYFLAKES = BUILD / "pyflakes.ok"
 OK_NBLINT = {nb.name: BUILD / f"nblint.{nb.name}.ok" for nb in EXAMPLE_IPYNB}
 OK_PIP_INSTALL = BUILD / "pip_install.ok"
 OK_PRETTIER = BUILD / "prettier.ok"
-OK_ATEST = BUILD / "atest.ok"
 
 # derived info
 PY_VERSION = re.findall(
@@ -157,3 +156,4 @@ EXAMPLE_HTML = [DIST_NBHTML / p.name.replace(".ipynb", ".html") for p in EXAMPLE
 ATEST = ROOT / "atest"
 ALL_ROBOT = [*ATEST.rglob("*.robot")]
 ATEST_OUT = ATEST / "output"
+ATEST_CANARY = BUILD / f"robot.{PLATFORM.lower()}_success.ok"

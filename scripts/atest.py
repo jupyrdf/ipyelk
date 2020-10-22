@@ -123,12 +123,20 @@ def attempt_atest_with_retries(*extra_args):
 
     retries = int(os.environ.get("ATEST_RETRIES") or "0")
 
+    is_real = "--dryrun" not in extra_args
+
+    if is_real and P.ATEST_CANARY.exists():
+        P.ATEST_CANARY.unlink()
+
     while error_count != 0 and attempt <= retries:
         attempt += 1
         print("attempt {} of {}...".format(attempt, retries + 1))
         start_time = time.time()
         error_count = atest(attempt=attempt, extra_args=list(extra_args))
         print(error_count, "errors in", int(time.time() - start_time), "seconds")
+
+    if is_real and not error_count:
+        P.ATEST_CANARY.touch()
 
     return error_count
 

@@ -188,7 +188,7 @@ Lab Command
     [Arguments]    ${cmd}
     Enter Command Name    ${cmd}
     Wait Until Page Contains Element    ${CMD PALETTE ITEM ACTIVE}
-    Click Element    ${CMD PALETTE ITEM ACTIVE}
+    Wait Until Keyword Succeeds    5x    0.5s    Click Element    ${CMD PALETTE ITEM ACTIVE}
 
 Capture All Code Cells
     [Arguments]    ${prefix}=${EMPTY}    ${timeout}=30s
@@ -206,7 +206,7 @@ Restart and Run All
     Lab Command    Restart Kernel and Run All Cells
     Accept Default Dialog Option
     Ensure Sidebar Is Closed
-    Wait Until Element Contains    ${JLAB XP LAST CODE PROMPT}    [*]:
+    Run Keyword and Ignore Error    Wait Until Element Contains    ${JLAB XP LAST CODE PROMPT}    [*]:
 
 Reset Application State
     Try to Close All Tabs
