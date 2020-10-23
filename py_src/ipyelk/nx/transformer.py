@@ -1,7 +1,6 @@
 # Copyright (c) 2020 Dane Freeman.
 # Distributed under the terms of the Modified BSD License.
 
-import logging
 import uuid
 from collections import ChainMap, defaultdict
 from functools import lru_cache
@@ -21,9 +20,6 @@ from ..diagram.elk_model import (
 from ..diagram.elk_text_sizer import ElkTextSizer, Text, TextSize
 from .factors import get_factors, invert, keep
 from .nx import Edge, EdgeMap, compact, get_roots, lowest_common_ancestor
-
-logger = logging.getLogger(__name__)
-
 
 BASE_LAYOUT_DEFAULTS = {
     "hierarchyHandling": "INCLUDE_CHILDREN",
@@ -93,7 +89,7 @@ class XELK(ElkTransformer):
 
         # TODO: look into ways to remove the need to have a cache like this
         # NOTE: this is caused by a series of side effects
-        logger.debug("Clearing cached elk info")
+        self.log.debug("Clearing cached elk info")
         self._elk_to_item: Dict[str, Hashable] = {}
         self._item_to_elk: Dict[Hashable, str] = {}
         self._nodes: Dict[Hashable, ElkNode] = {}
@@ -109,69 +105,65 @@ class XELK(ElkTransformer):
         :return: Wrapped Elk node
         :rtype: ElkNode
         """
-        try:
-            g, tree = self.source
-            if root is None:
-                self.clear_cached()
-                # bulk calculate label sizes
-                labels = []
-                for node, data in g.nodes(data=True):
-                    name = data.get(self.label_key, data.get("_id", f"{node}"))
-                    labels.append(Text(value=name))
-                await self.text_sizer.measure(tuple(labels))
+        g, tree = self.source
+        if root is None:
+            self.clear_cached()
+            # bulk calculate label sizes
+            labels = []
+            for node, data in g.nodes(data=True):
+                name = data.get(self.label_key, data.get("_id", f"{node}"))
+                labels.append(Text(value=name))
+            await self.text_sizer.measure(tuple(labels))
 
-            elif is_hidden(tree, root, self.HIDDEN_ATTR):
-                # bail is the node is hidden
-                return None
-            nodes = self._nodes
-            ports = self._ports
+        elif is_hidden(tree, root, self.HIDDEN_ATTR):
+            # bail is the node is hidden
+            return None
+        nodes = self._nodes
+        ports = self._ports
 
-            base_layout = self.base_layout
+        base_layout = self.base_layout
 
-            if base_layout is None:
-                base_layout = {}
+        if base_layout is None:
+            base_layout = {}
 
-            layout = {}
+        layout = {}
 
-            # TODO: refactor this so you can specify node-specific layouts
-            # NOTE: add traitlet for it, and get based on node passed
-            layout.update(base_layout)
+        # TODO: refactor this so you can specify node-specific layouts
+        # NOTE: add traitlet for it, and get based on node passed
+        layout.update(base_layout)
 
-            overrides = self.get_overrides(root)
-            labels = await self.make_labels(root)
-            kwargs = ChainMap(
-                overrides,
-                dict(
-                    id=self.node_id(root),
-                    labels=labels,
-                    layoutOptions=layout,
-                    children=compact(await self.get_children(root)),
-                    properties=overrides.get("properties", None),
-                ),
+        overrides = self.get_overrides(root)
+        labels = await self.make_labels(root)
+        kwargs = ChainMap(
+            overrides,
+            dict(
+                id=self.node_id(root),
+                labels=labels,
+                layoutOptions=layout,
+                children=compact(await self.get_children(root)),
+                properties=overrides.get("properties", None),
+            ),
+        )
+        elk_node = ElkNode(**kwargs)
+        self._nodes[root] = self.register(elk_node, root)
+
+        if root is None:
+            # the top level of the transform
+
+            port_style = ["slack-port"]
+            edge_style = ["slack-edge"]
+            nodes, ports = self.process_edges(nodes, ports, self._visible_edges)
+            nodes, ports = self.process_edges(
+                nodes, ports, self._hidden_edges, edge_style, port_style
             )
-            elk_node = ElkNode(**kwargs)
-            self._nodes[root] = self.register(elk_node, root)
 
-            if root is None:
-                # the top level of the transform
+            for (owner, _), port in ports.items():
+                node = nodes[owner]
+                if node.ports is None:
+                    node.ports = []
+                node.ports += [port]
 
-                port_style = ["slack-port"]
-                edge_style = ["slack-edge"]
-                nodes, ports = self.process_edges(nodes, ports, self._visible_edges)
-                nodes, ports = self.process_edges(
-                    nodes, ports, self._hidden_edges, edge_style, port_style
-                )
-
-                for (owner, _), port in ports.items():
-                    node = nodes[owner]
-                    if node.ports is None:
-                        node.ports = []
-                    node.ports += [port]
-
-                nodes = self.size_nodes(nodes)
-        except Exception as E:
-            logger.error("Error transforming elk graph")
-            raise E
+            nodes = self.size_nodes(nodes)
 
         return nodes[root]  # top level node
 
