@@ -231,11 +231,19 @@ class NodeLabelPlacement(LayoutOptionWidget):
     def _ui(self) -> List[W.Widget]:
         horizontal_options = W.RadioButtons(
             description="Horizontal",
-            options=(("Left", "left"), ("Center", "center"), ("Right", "right"),),
+            options=(
+                ("Left", "left"),
+                ("Center", "center"),
+                ("Right", "right"),
+            ),
         )
         vertical_options = W.RadioButtons(
             description="Vertical",
-            options=(("Top", "top"), ("Center", "center"), ("Bottom", "bottom"),),
+            options=(
+                ("Top", "top"),
+                ("Center", "center"),
+                ("Bottom", "bottom"),
+            ),
         )
         inside_options = W.Checkbox(description="Inside")
         horizontal_priority_options = W.Checkbox(description="Horizontal Priority")
