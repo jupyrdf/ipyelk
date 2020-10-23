@@ -54,6 +54,24 @@ doit watch
 - After making changes, wait for `webpack` terminal output, then reload the browser
 - If you add a new file, probably will have to restart the whole thing
 
+### Logging
+
+In the browser, `jupyter-elk` should only emit `console.warn` (or higher) messages if
+there's actually a problem.
+
+For more verbose output, add `ELK_DEBUG` anywhere in a new browser URL, e.g.
+
+```http
+http://localhost:8888/lab#ELK_DEBUG
+```
+
+> Note: if a message will be helpful for debugging, make sure to `import` and guard
+> `console.*` or higher with `ELK_DEBUG &&`
+
+On the python side, each `Widget` has `.log.debug` which is preferable to `print`
+statements. The log level can be increased for a running kernel through the JupyterLab's
+_Log Console_, opened with the _Show Log Console_ command.
+
 ## Quality Assurance
 
 - Run:

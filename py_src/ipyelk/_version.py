@@ -1,7 +1,7 @@
 # Copyright (c) 2020 Dane Freeman.
 # Distributed under the terms of the Modified BSD License.
 
-__version__ = "0.1.3"
+__version__ = "0.2.0"
 
 # The version of the attribute spec that this package
 # implements. This is the value used in
@@ -10,4 +10,4 @@ __version__ = "0.1.3"
 # Update this value when attributes are added/removed from
 # your models, or serialized format changes.
 EXTENSION_NAME = "@jupyrdf/jupyter-elk"
-EXTENSION_SPEC_VERSION = "0.1.3"
+EXTENSION_SPEC_VERSION = "0.2.0"

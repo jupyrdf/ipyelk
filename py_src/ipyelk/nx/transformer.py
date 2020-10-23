@@ -1,8 +1,8 @@
 # Copyright (c) 2020 Dane Freeman.
 # Distributed under the terms of the Modified BSD License.
 
-import logging
-from collections import defaultdict
+import uuid
+from collections import ChainMap, defaultdict
 from functools import lru_cache
 from typing import Dict, Generator, Hashable, List, Optional, Tuple
 
@@ -10,12 +10,16 @@ import networkx as nx
 import traitlets as T
 
 from ..app import ElkTransformer
-from ..diagram.elk_model import ElkExtendedEdge, ElkLabel, ElkNode, ElkPort
+from ..diagram.elk_model import (
+    ElkExtendedEdge,
+    ElkGraphElement,
+    ElkLabel,
+    ElkNode,
+    ElkPort,
+)
+from ..diagram.elk_text_sizer import ElkTextSizer, Text, TextSize
 from .factors import get_factors, invert, keep
 from .nx import Edge, EdgeMap, compact, get_roots, lowest_common_ancestor
-
-logger = logging.getLogger(__name__)
-
 
 BASE_LAYOUT_DEFAULTS = {
     "hierarchyHandling": "INCLUDE_CHILDREN",
@@ -26,6 +30,10 @@ BASE_LAYOUT_DEFAULTS = {
 }
 
 
+def new_id() -> str:
+    return str(uuid.uuid4())
+
+
 class XELK(ElkTransformer):
     """NetworkX DiGraphs to ELK dictionary structure"""
 
@@ -34,14 +42,25 @@ class XELK(ElkTransformer):
     _hidden_edges: Optional[EdgeMap] = None
     _visible_edges: Optional[EdgeMap] = None
 
+    # internal map between output Elk Elements and incoming items
+    _elk_to_item: Dict[str, Hashable] = None
+    _item_to_elk: Dict[Hashable, str] = None
+
     source = T.Tuple(T.Instance(nx.Graph), T.Instance(nx.DiGraph, allow_none=True))
     base_layout = T.Dict(kw=BASE_LAYOUT_DEFAULTS)
+    mark_overrides = T.Dict(kw={})
     port_scale = T.Int(default_value=10)
     text_scale = T.Float(default_value=10)
     label_key = T.Unicode(default_value="label")
     label_offset = T.Float(default_value=5)
 
-    def eid(self, node: Hashable) -> str:
+    text_sizer = T.Instance(ElkTextSizer, kw={})
+
+    @T.default("source")
+    def _default_source(self):
+        return (nx.Graph(), None)
+
+    def node_id(self, node: Hashable) -> str:
         """Get the element id for a node in the main graph for use in elk
 
         :param node: Node in main  graph
@@ -57,7 +76,7 @@ class XELK(ElkTransformer):
         return f"{node}"
 
     def port_id(self, node, port):
-        return f"{self.eid(node)}.{port}"
+        return f"{self.node_id(node)}.{port}"
 
     def edge_id(self, edge: Edge):
         # TODO probably will need more sophisticated id generation in future
@@ -70,74 +89,81 @@ class XELK(ElkTransformer):
 
         # TODO: look into ways to remove the need to have a cache like this
         # NOTE: this is caused by a series of side effects
-        logger.debug("Clearing cached elk info")
+        self.log.debug("Clearing cached elk info")
+        self._elk_to_item: Dict[str, Hashable] = {}
+        self._item_to_elk: Dict[Hashable, str] = {}
         self._nodes: Dict[Hashable, ElkNode] = {}
         self._ports: Dict[Tuple[Hashable, Hashable], ElkPort] = {}
         self._visible_edges, self._hidden_edges = self.collect_edges()
         self.closest_common_visible.cache_clear()
         self.closest_visible.cache_clear()
 
-    def transform(self, root=None):
+    async def transform(self, root: Hashable = None) -> ElkNode:
         """Generate ELK dictionary structure
-        :param root: [description], defaults to None
-        :type root: [type], optional
-        :return: [description]
-        :rtype: [type]
+        :param root: Node in the networkx graph, defaults to None
+        :type root: Hashable, optional
+        :return: Wrapped Elk node
+        :rtype: ElkNode
         """
-        try:
-            g, tree = self.source
-            if root is None:
-                self.clear_cached()
-            elif is_hidden(tree, root, self.HIDDEN_ATTR):
-                # bail is the node is hidden
-                return None
-            nodes = self._nodes
-            ports = self._ports
+        g, tree = self.source
+        if root is None:
+            self.clear_cached()
+            # bulk calculate label sizes
+            labels = []
+            for node, data in g.nodes(data=True):
+                name = data.get(self.label_key, data.get("_id", f"{node}"))
+                labels.append(Text(value=name))
+            await self.text_sizer.measure(tuple(labels))
 
-            base_layout = self.base_layout
+        elif is_hidden(tree, root, self.HIDDEN_ATTR):
+            # bail is the node is hidden
+            return None
+        nodes = self._nodes
+        ports = self._ports
 
-            if base_layout is None:
-                base_layout = {}
+        base_layout = self.base_layout
 
-            layout = {}
+        if base_layout is None:
+            base_layout = {}
 
-            # TODO: refactor this so you can specify node-specific layouts
-            # NOTE: add traitlet for it, and get based on node passed
-            layout.update(base_layout)
+        layout = {}
 
-            properties = None
+        # TODO: refactor this so you can specify node-specific layouts
+        # NOTE: add traitlet for it, and get based on node passed
+        layout.update(base_layout)
 
-            labels = self.make_labels(root)
-            model_id = self.eid(root)
-
-            self._nodes[root] = ElkNode(
-                id=model_id,
+        overrides = self.get_overrides(root)
+        labels = await self.make_labels(root)
+        kwargs = ChainMap(
+            overrides,
+            dict(
+                id=self.node_id(root),
                 labels=labels,
                 layoutOptions=layout,
-                children=compact(self.get_children(root)),
-                properties=properties,
+                children=compact(await self.get_children(root)),
+                properties=overrides.get("properties", None),
+            ),
+        )
+        elk_node = ElkNode(**kwargs)
+        self._nodes[root] = self.register(elk_node, root)
+
+        if root is None:
+            # the top level of the transform
+
+            port_style = ["slack-port"]
+            edge_style = ["slack-edge"]
+            nodes, ports = self.process_edges(nodes, ports, self._visible_edges)
+            nodes, ports = self.process_edges(
+                nodes, ports, self._hidden_edges, edge_style, port_style
             )
 
-            if root is None:
-                # the top level of the transform
+            for (owner, _), port in ports.items():
+                node = nodes[owner]
+                if node.ports is None:
+                    node.ports = []
+                node.ports += [port]
 
-                port_style = ["slack-port"]
-                edge_style = ["slack-edge"]
-                nodes, ports = self.process_edges(nodes, ports, self._visible_edges)
-                nodes, ports = self.process_edges(
-                    nodes, ports, self._hidden_edges, edge_style, port_style
-                )
-
-                for (owner, _), port in ports.items():
-                    node = nodes[owner]
-                    if node.ports is None:
-                        node.ports = []
-                    node.ports += [port]
-
-                nodes = self.size_nodes(nodes)
-        except Exception as E:
-            logger.error("Error transforming elk graph")
-            raise E
+            nodes = self.size_nodes(nodes)
 
         return nodes[root]  # top level node
 
@@ -145,6 +171,20 @@ class XELK(ElkTransformer):
         for node in nodes.values():
             node.width, node.height = self.get_node_size(node)
         return nodes
+
+    def get_overrides(self, item: Hashable, styles: List[str] = None) -> dict:
+        # TODO improved nested dictionary merging
+
+        overrides = self.mark_overrides.get(item, {})
+        properties = overrides.get("properties", {})
+        css_classes = properties.get("cssClasses", [])
+        if styles:
+            css_classes += styles
+
+        properties = dict(
+            **ChainMap(dict(cssClasses=" ".join(css_classes)), properties)
+        )
+        return {**ChainMap({"properties": properties}, overrides)}
 
     def process_edges(
         self, nodes, ports, edges: EdgeMap, edge_style=None, port_style=None
@@ -156,7 +196,6 @@ class XELK(ElkTransformer):
                 if node.edges is None:
                     node.edges = []
 
-                node.edges += [self.make_edge(edge, edge_style)]
                 source_var = (edge.source, edge.source_port)
                 if source_var not in ports:
                     ports[source_var] = self.make_port(
@@ -167,45 +206,86 @@ class XELK(ElkTransformer):
                     ports[target_var] = self.make_port(
                         edge.target, edge.target_port, port_style
                     )
+                node.edges += [self.make_edge(edge, edge_style)]
         return nodes, ports
 
     def make_edge(
         self, edge: Edge, styles: Optional[List[str]] = None
     ) -> ElkExtendedEdge:
+        """Make the associated Elk edge for the given Edge
+
+        :param edge: Edge object to wrap
+        :type edge: Edge
+        :param styles: List of css classes to add to given Elk edge, defaults to None
+        :type styles: Optional[List[str]], optional
+        :return: Elk edge
+        :rtype: ElkExtendedEdge
+        """
         properties = None
         if styles:
             properties = dict(cssClasses=" ".join(styles))
 
-        return ElkExtendedEdge(
+        elk_edge = ElkExtendedEdge(
             id=self.edge_id(edge),
             sources=[self.port_id(edge.source, edge.source_port)],
             targets=[self.port_id(edge.target, edge.target_port)],
             properties=properties,
         )
+        self.register(elk_edge, edge)
+        return elk_edge
 
-    def make_port(self, owner, port, styles):
+    def make_port(self, owner: Hashable, port: Hashable, styles: List[str]) -> ElkPort:
+        """Make the associated elk port for the given owner node and port
+
+        :param owner: [description]
+        :type owner: Hashable
+        :param port: [description]
+        :type port: Hashable
+        :param styles: list of css classes to apply to given ElkPort
+        :type styles: List[str]
+        :return: [description]
+        :rtype: ElkPort
+        """
         properties = None
         if styles:
             properties = dict(cssClasses=" ".join(styles))
 
-        return ElkPort(
+        elk_port = ElkPort(
             id=self.port_id(owner, port),
             height=0.5 * self.port_scale,
             width=0.5 * self.port_scale,
             properties=properties,
         )
 
-    def get_children(self, node) -> Optional[List[ElkNode]]:
+        self.register(elk_port, port)
+        return elk_port
+
+    def register(self, element: ElkGraphElement, item: Hashable) -> str:
+        """Register Elk Element as a way to find the particular item.
+
+        This method is used in the `lookup` method for dereferencing the elk id.
+
+        :param element: [description]
+        :type element: ElkGraphElement
+        :param item: [description]
+        :type item: Hashable
+        """
+
+        self._elk_to_item[element.id] = item
+        self._item_to_elk[item] = element.id
+        return element
+
+    async def get_children(self, node: Hashable) -> Optional[List[ElkNode]]:
         g, tree = self.source
         attr = self.HIDDEN_ATTR
         if node is None:
             if tree is None:
                 # Nonhierarchical graph. Iterate over only the main graph
-                return [self.transform(root=node) for node in g.nodes()]
+                return [await self.transform(root=node) for node in g.nodes()]
             else:
                 # Hierarchical graph but no specified root...
                 # start transforming from each root in the forest
-                return [self.transform(root=node) for node in get_roots(tree, g)]
+                return [await self.transform(root=node) for node in get_roots(tree, g)]
 
         else:
             if is_hidden(tree, node, attr):
@@ -215,7 +295,8 @@ class XELK(ElkTransformer):
                 # Node is visible and in the hierarchy
                 if node in tree:
                     return [
-                        self.transform(root=child) for child in tree.neighbors(node)
+                        await self.transform(root=child)
+                        for child in tree.neighbors(node)
                     ]
         return None
 
@@ -235,23 +316,34 @@ class XELK(ElkTransformer):
             width = self.text_scale
         return width, height
 
-    def make_labels(self, node) -> Optional[List[ElkLabel]]:
+    async def size_label(self, text: str) -> TextSize:
+        if self.text_sizer is None:
+            return TextSize(
+                width=self.text_scale * len(text),
+                height=10,  # TODO add height default
+            )
+        else:
+            return await self.text_sizer.measure(text)
+
+    async def make_labels(self, node) -> Optional[List[ElkLabel]]:
         if node is None:
             return None
         g, tree = self.source
         data = g.nodes[node]
         name = data.get(self.label_key, data.get("_id", f"{node}"))
-        width = self.text_scale * len(name)
-
-        return [
-            ElkLabel(
-                id=f"{name}_label_{node}",
-                text=name,
-                width=width,
-                x=self.label_offset,
-                y=self.label_offset,
-            )
-        ]
+        size = await self.size_label(name)
+        # width = self.sizer.measure(name)
+        label = ElkLabel(
+            id=f"{name}_label_{node}",
+            text=name,
+            width=size.width,
+            height=size.height,
+            # x=self.label_offset,
+            # y=self.label_offset,
+            layoutOptions={"spacing.labelLabel": str(self.label_offset)},
+        )
+        self.register(label, node)
+        return [label]
 
     def collect_edges(self) -> Tuple[EdgeMap, EdgeMap]:
         """[summary]
@@ -264,10 +356,10 @@ class XELK(ElkTransformer):
         """
         visible: EdgeMap = defaultdict(
             list
-        )  # will index edges by nx.lowest_commen_ancestor
+        )  # will index edges by nx.lowest_common_ancestor
         hidden: EdgeMap = defaultdict(
             list
-        )  # will index edges by nx.lowest_commen_ancestor
+        )  # will index edges by nx.lowest_common_ancestor
 
         g, tree = self.source
 
@@ -291,10 +383,6 @@ class XELK(ElkTransformer):
                 hidden = merge(self.process_endpts(sources, targets), hidden)
 
         return visible, hidden
-
-    def to_dict(self) -> Dict:
-        """Transform the NetworkX graphs into Elk json"""
-        return self.transform().to_dict()
 
     def extract_factors(
         self,
@@ -388,6 +476,20 @@ class XELK(ElkTransformer):
             return None
         result = lowest_common_ancestor(tree, [self.closest_visible(n) for n in nodes])
         return result
+
+    def from_id(self, element_id: str) -> Hashable:
+        """Use the elk identifiers to find original objects"""
+        try:
+            return self._elk_to_item[element_id]
+        except KeyError:
+            raise ValueError(f"Element id `{element_id}` not in elk id registry.")
+
+    def to_id(self, item: Hashable) -> str:
+        """Use original objects to find elk id"""
+        try:
+            return self._item_to_elk[item]
+        except KeyError:
+            raise ValueError(f"Item `{item}` not in elk id registry.")
 
 
 def is_hidden(tree: nx.DiGraph, node: Hashable, attr: str) -> bool:

@@ -7,7 +7,6 @@ Resource          ../variables/Browser.robot
 Setup Suite For Screenshots
     [Arguments]    ${folder}
     Set Screenshot Directory    ${SCREENS ROOT}${/}${folder}
-    Set Tags    lab:${LAB VERSION}
 
 Get Firefox Binary
     [Documentation]    Get Firefox path from the environment... or hope for the best

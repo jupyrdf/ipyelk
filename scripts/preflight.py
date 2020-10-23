@@ -70,8 +70,7 @@ def check_drives(path_a, path_b, message):
 
 
 def preflight_conda():
-    """ this should only run from the `base` env
-    """
+    """this should only run from the `base` env"""
 
     conda_prefix = os.environ.get("CONDA_PREFIX", NOT_DEFINED)
     errors = [
@@ -106,8 +105,7 @@ def preflight_conda():
 
 
 def preflight_kernel():
-    """ this should only run from the `dev` env
-    """
+    """this should only run from the `dev` env"""
     print("Checking kernel list...", flush=True)
     raw = subprocess.check_output(["jupyter", "kernelspec", "list", "--json"])
     specs = json.loads(raw.decode("utf-8"))["kernelspecs"]
@@ -133,8 +131,7 @@ def preflight_kernel():
 
 
 def preflight_lab():
-    """ this should only run from the `dev` env
-    """
+    """this should only run from the `dev` env"""
     print("Checking lab build status...", flush=True)
     raw = subprocess.check_output(["jupyter", "labextension", "list"]).decode("utf-8")
     if "Build recommended" in raw:
