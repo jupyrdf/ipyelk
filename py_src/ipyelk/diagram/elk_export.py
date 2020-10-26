@@ -24,7 +24,7 @@ class ElkExporter(W.Widget):
     )
     value: str = T.Unicode(allow_none=True).tag(sync=True)
     format: str = T.Unicode(default_value="svg").tag(sync=True)
-    enabled: bool = T.Bool(default=True).tag(sync=True)
+    enabled: bool = T.Bool(default_value=True).tag(sync=True)
     extra_css: str = T.Unicode(default_value="").tag(sync=True)
     padding: float = T.Float(20).tag(sync=True)
 
