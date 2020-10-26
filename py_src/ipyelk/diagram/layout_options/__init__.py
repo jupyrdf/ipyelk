@@ -14,7 +14,13 @@ from .edge_options import (
     MergeEdges,
 )
 from .layout import LayoutAlgorithm
-from .node_options import NodeLabelPlacement, NodeSizeConstraints, NodeSizeMinimum
+from .node_options import (
+    ActivateInsideSelfLoops,
+    HierarchyHandling,
+    NodeLabelPlacement,
+    NodeSizeConstraints,
+    NodeSizeMinimum,
+)
 from .port_options import (
     AdditionalPortSpace,
     PortAnchorOffset,
@@ -28,7 +34,7 @@ from .port_options import (
 from .selection_widgets import LayoutOptionWidget, OptionsWidget, SpacingOptionWidget
 
 __all__ = [
-    "LayoutAlgorithm",
+    "ActivateInsideSelfLoops",
     "AdditionalPortSpace",
     "EdgeLabelPlacement",
     "EdgeLabelSpacing",
@@ -36,6 +42,8 @@ __all__ = [
     "EdgeNodeSpacing",
     "EdgeSpacing",
     "EdgeThickness",
+    "HierarchyHandling",
+    "LayoutAlgorithm",
     "LayoutOptionWidget",
     "MergeEdges",
     "NodeLabelPlacement",
