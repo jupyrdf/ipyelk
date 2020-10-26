@@ -44,7 +44,6 @@ export class ELKExporterModel extends WidgetModel {
       _view_module_version: VERSION,
       diagram: null,
       value: null,
-      format: 'svg',
       enabled: true,
       extra_css: '',
       padding: 20

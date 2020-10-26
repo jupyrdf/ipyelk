@@ -23,20 +23,6 @@ class ElkExporter(W.Widget):
         sync=True, **W.widget_serialization
     )
     value: str = T.Unicode(allow_none=True).tag(sync=True)
-    format: str = T.Unicode(default_value="svg").tag(sync=True)
     enabled: bool = T.Bool(default_value=True).tag(sync=True)
     extra_css: str = T.Unicode(default_value="").tag(sync=True)
     padding: float = T.Float(20).tag(sync=True)
-
-    @T.observe("diagram")
-    def _on_diagram(self, change: T.Bunch) -> None:
-        self._unobserve_diagram(change.old)
-        self._observe_diagram(change.new)
-
-    def _unobserve_diagram(self, diagram: ElkDiagram) -> None:
-        if not diagram:
-            return
-
-    def _observe_diagram(self, diagram: ElkDiagram) -> None:
-        if not diagram:
-            return
