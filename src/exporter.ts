@@ -64,10 +64,16 @@ export class ELKExporterModel extends WidgetModel {
       return;
     }
     this.diagram.layoutUpdated.connect(this._schedule_update, this);
+    if (!this.get('enabled')) {
+      return;
+    }
     this._schedule_update();
   }
 
   async a_view() {
+    if (!this.get('enabled')) {
+      return;
+    }
     const { views } = this.diagram;
     if (views == null) {
       return;
@@ -82,6 +88,9 @@ export class ELKExporterModel extends WidgetModel {
   }
 
   _schedule_update() {
+    if (!this.get('enabled')) {
+      return;
+    }
     if (this._update_timeout != null) {
       window.clearInterval(this._update_timeout);
       this._update_timeout = null;
@@ -91,6 +100,9 @@ export class ELKExporterModel extends WidgetModel {
   }
 
   async _on_layout_updated() {
+    if (!this.get('enabled')) {
+      return;
+    }
     const view = await this.a_view();
     const svg: HTMLElement = view?.el?.querySelector('svg');
     if (svg == null) {
