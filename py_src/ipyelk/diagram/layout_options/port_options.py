@@ -6,7 +6,7 @@ import ipywidgets as W
 import traitlets as T
 
 from ..elk_model import ElkNode, ElkPort
-from .layout_widgets import LayoutOptionWidget
+from .selection_widgets import LayoutOptionWidget
 
 PORT_CONSTRAINT_OPTIONS = {
     "Undefined": "UNDEFINED",
@@ -163,9 +163,9 @@ class PortSpacing(LayoutOptionWidget):
         T.link((self, "spacing"), (slider, "value"))
         return [slider]
 
-    @T.observe("offset")
+    @T.observe("spacing")
     def _update_value(self, change=None):
-        self.value = f"{self.offset}"
+        self.value = f"{self.spacing}"
 
 
 class PortConstraints(LayoutOptionWidget):
@@ -204,7 +204,7 @@ class PortLabelPlacement(LayoutOptionWidget):
 
     inside = T.Bool(default_value=True)
     next_to_port = T.Bool(default_value=True)
-    always_same_side = T.Bool(default_value=True)
+    always_same_side = T.Bool(default_value=False)
     space_efficient = T.Bool(default_value=True)
 
     value = T.Unicode(allow_none=True)
@@ -234,6 +234,7 @@ class PortLabelPlacement(LayoutOptionWidget):
             options.append("NEXT_TO_PORT_IF_POSSIBLE")
         if self.always_same_side:
             options.append("ALWAYS_SAME_SIDE")
+            self.space_efficient = False
 
         if self.space_efficient:
             options.append("SPACE_EFFICIENT")
@@ -289,7 +290,7 @@ class AdditionalPortSpace(LayoutOptionWidget):
 
     identifier = "org.eclipse.elk.spacing.portsSurrounding"
     metadata_provider = "org.options.CoreOptions"
-    applies_to = "parents"
+    applies_to = ["parents"]
     group = "spacing"
 
     space = T.Int(min=0, default_value=0)

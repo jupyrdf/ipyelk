@@ -4,7 +4,7 @@
 import uuid
 from collections import ChainMap, defaultdict
 from functools import lru_cache
-from typing import Dict, Generator, Hashable, List, Optional, Tuple
+from typing import Dict, Generator, Hashable, List, Optional, Tuple, Type
 
 import networkx as nx
 import traitlets as T
@@ -48,6 +48,11 @@ class XELK(ElkTransformer):
 
     source = T.Tuple(T.Instance(nx.Graph), T.Instance(nx.DiGraph, allow_none=True))
     base_layout = T.Dict(kw=BASE_LAYOUT_DEFAULTS)
+    base_css_classes = T.Dict(kw=BASE_LAYOUT_DEFAULTS)
+    element_layouts = (
+        T.Dict()
+    )  # keys:ElkElements / networkx nodes handle labels, edges, nodes
+    element_css_classes = T.Dict
     mark_overrides = T.Dict(kw={})
     port_scale = T.Int(default_value=10)
     text_scale = T.Float(default_value=10)
@@ -75,8 +80,20 @@ class XELK(ElkTransformer):
             return g.nodes[node].get("_id", f"{node}")
         return f"{node}"
 
-    def port_id(self, node, port):
-        return f"{self.node_id(node)}.{port}"
+    def port_id(self, node: Hashable, port: Optional[Hashable] = None) -> str:
+        """Get a suitable Elk identifier from the node and port
+
+        :param node: Node from the incoming networkx graph
+        :type node: Hashable
+        :param port: Port identifier, defaults to None
+        :type port: Optional[Hashable], optional
+        :return: If no port is provided will refer to the node
+        :rtype: str
+        """
+        if port is None:
+            return self.node_id(node)
+        else:
+            return f"{self.node_id(node)}.{port}"
 
     def edge_id(self, edge: Edge):
         # TODO probably will need more sophisticated id generation in future
@@ -121,16 +138,8 @@ class XELK(ElkTransformer):
         nodes = self._nodes
         ports = self._ports
 
-        base_layout = self.base_layout
-
-        if base_layout is None:
-            base_layout = {}
-
-        layout = {}
-
-        # TODO: refactor this so you can specify node-specific layouts
-        # NOTE: add traitlet for it, and get based on node passed
-        layout.update(base_layout)
+        elk_type = ElkNode if root is not None else "parents"
+        layout = self.get_layout(root, elk_type)
 
         overrides = self.get_overrides(root)
         labels = await self.make_labels(root)
@@ -167,6 +176,25 @@ class XELK(ElkTransformer):
 
         return nodes[root]  # top level node
 
+    def get_layout(self, node: Hashable, elk_type: Type[ElkGraphElement]):
+        """Get the Elk Layout Options appropriate for given networkx node and
+        filter by given elk_type
+
+        :param node: [description]
+        :type node: Hashable
+        :param elk_type: [description]
+        :type elk_type: Type[ElkGraphElement]
+        :return: [description]
+        :rtype: [type]
+        """
+        # TODO look at self.source hierachy and resolve layout with added
+        # infomation. until then use root node layout options
+        if node not in self.element_layouts:
+            node = None
+
+        type_opts = self.element_layouts.get(node, {})
+        return {**self.base_layout, **type_opts.get(elk_type, {})}
+
     def size_nodes(self, nodes: Dict[Hashable, ElkNode]) -> Dict[Hashable, ElkNode]:
         for node in nodes.values():
             node.width, node.height = self.get_node_size(node)
@@ -195,17 +223,18 @@ class XELK(ElkTransformer):
                 node = nodes[owner]
                 if node.edges is None:
                     node.edges = []
-
-                source_var = (edge.source, edge.source_port)
-                if source_var not in ports:
-                    ports[source_var] = self.make_port(
-                        edge.source, edge.source_port, port_style
-                    )
-                target_var = (edge.target, edge.target_port)
-                if target_var not in ports:
-                    ports[target_var] = self.make_port(
-                        edge.target, edge.target_port, port_style
-                    )
+                if edge.source_port is not None:
+                    source_var = (edge.source, edge.source_port)
+                    if source_var not in ports:
+                        ports[source_var] = self.make_port(
+                            edge.source, edge.source_port, port_style
+                        )
+                if edge.target_port is not None:
+                    target_var = (edge.target, edge.target_port)
+                    if target_var not in ports:
+                        ports[target_var] = self.make_port(
+                            edge.target, edge.target_port, port_style
+                        )
                 node.edges += [self.make_edge(edge, edge_style)]
         return nodes, ports
 
@@ -332,15 +361,13 @@ class XELK(ElkTransformer):
         data = g.nodes[node]
         name = data.get(self.label_key, data.get("_id", f"{node}"))
         size = await self.size_label(name)
-        # width = self.sizer.measure(name)
+
         label = ElkLabel(
             id=f"{name}_label_{node}",
             text=name,
             width=size.width,
             height=size.height,
-            # x=self.label_offset,
-            # y=self.label_offset,
-            layoutOptions={"spacing.labelLabel": str(self.label_offset)},
+            layoutOptions=self.get_layout(node, ElkLabel),
         )
         self.register(label, node)
         return [label]

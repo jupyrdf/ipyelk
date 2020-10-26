@@ -7,7 +7,7 @@ import ipywidgets as W
 import traitlets as T
 
 from ..elk_model import ElkEdge, ElkLabel
-from .layout_widgets import LayoutOptionWidget, SpacingOptionWidget
+from .selection_widgets import LayoutOptionWidget, SpacingOptionWidget
 
 EDGE_LABEL_OPTIONS = {
     "Center": "CENTER",
@@ -70,7 +70,7 @@ class InlineEdgeLabels(LayoutOptionWidget):
     inline = T.Bool(default_value=False)
 
     def _ui(self) -> List[W.Widget]:
-        cb = W.CheckBox(description="Inline Edge Labels")
+        cb = W.Checkbox(description="Inline Edge Labels")
 
         T.link((self, "inline"), (cb, "value"))
         return [cb]
@@ -159,7 +159,7 @@ class EdgeSpacing(SpacingOptionWidget):
     """
 
     identifier = "org.eclipse.elk.edge.edgeEdge"
-    applies_to = ["parents"]
+    applies_to = [ElkEdge]
     group = "spacing"
     _slider_description: str = "Edge Spacing"
 
@@ -275,7 +275,7 @@ class EadesRepulsion(LayoutOptionWidget):
     https://www.eclipse.org/elk/reference/options/org-eclipse-elk-force-repulsion.html
     """
 
-    identifier = "org.eclipse.elk.layered.edgeLabels.sideSelection"
+    identifier = "org.eclipse.elk.force.repulsion"
     metadata_provider = "options.ForceMetaDataProvider"
     applies_to = ["parents"]
     group = "edgeLabels"
@@ -334,7 +334,7 @@ class FeedbackEdges(LayoutOptionWidget):
 
     def _ui(self) -> List[W.Widget]:
 
-        cb = W.CheckBox()
+        cb = W.Checkbox()
 
         T.link((self, "reroute"), (cb, "value"))
         return [cb]
@@ -342,3 +342,29 @@ class FeedbackEdges(LayoutOptionWidget):
     @T.observe("reroute")
     def _update_value(self, change: T.Bunch = None):
         self.value = "true" if self.reroute else "false"
+
+
+class MergeEdges(LayoutOptionWidget):
+    """Edges that have no ports are merged so they touch the connected nodes at
+    the same points. When this option is disabled, one port is created for each
+    edge directly connected to a node. When it is enabled, all such incoming
+    edges share an input port, and all outgoing edges share an output port.
+
+    https://www.eclipse.org/elk/reference/options/org-eclipse-elk-layered-mergeedges.html
+    """
+
+    identifier = "org.eclipse.elk.layered.mergeEdges"
+    metadata_provider = "options.LayeredMetaDataProvider"
+    applies_to = ["parents"]
+
+    merge = T.Bool(default_value=False)
+
+    def _ui(self) -> List[W.Widget]:
+        cb = W.Checkbox(description="Merge Edges")
+
+        T.link((self, "merge"), (cb, "value"))
+        return [cb]
+
+    @T.observe("merge")
+    def _update_value(self, change: T.Bunch = None):
+        self.value = "true" if self.merge else "false"

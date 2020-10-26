@@ -1,7 +1,7 @@
 # Copyright (c) 2020 Dane Freeman.
 # Distributed under the terms of the Modified BSD License.
 import re
-from typing import Dict, Hashable, List
+from typing import Dict, Hashable, List, Type
 
 import ipywidgets as W
 import traitlets as T
@@ -14,6 +14,7 @@ class LayoutOptionWidget(W.VBox):
     metadata_provider: str = None
     applies_to: List[ElkGraphElement] = None
     group: str = None
+    title: str = None  # optional title for UI purposes
 
     value = T.Unicode()
 
@@ -34,6 +35,19 @@ class LayoutOptionWidget(W.VBox):
     def _update_value(self):
         pass  # expecting subclasses to override
 
+    @classmethod
+    def matches(cls, elk_type: Type[ElkGraphElement]):
+        """Checks if this LayoutOption applies to given ElkGraphElement type"""
+        if cls.applies_to is None:
+            return False
+        if isinstance(cls.applies_to, (tuple, list)):
+            is_valid = elk_type in cls.applies_to
+            # if not is_valid and elk_type is ElkNode:
+            #     # options with applies_to "parents" should match ElkNode
+            #     is_valid = cls.matches("parents")
+            return is_valid
+        return elk_type == cls.applies_to
+
 
 class SpacingOptionWidget(LayoutOptionWidget):
     spacing = T.Float(default_value=10, min=0)
@@ -52,7 +66,7 @@ class SpacingOptionWidget(LayoutOptionWidget):
 
 
 class OptionsWidget(W.Accordion, LayoutOptionWidget):
-    options: List[LayoutOptionWidget] = T.List(T.Instance(LayoutOptionWidget))
+    options: List["OptionsWidget"] = T.List()
     value: Dict = T.Dict()
 
     @T.observe("options")
@@ -72,7 +86,9 @@ class OptionsWidget(W.Accordion, LayoutOptionWidget):
             if not option.children:
                 option.children = option._ui()
 
-            title = re.sub(r"(\w)([A-Z])", r"\1 \2", option.__class__.__name__)
+            title = option.title
+            if title is None:
+                title = re.sub(r"(\w)([A-Z])", r"\1 \2", option.__class__.__name__)
             self.set_title(i, title)
         return self.options
 

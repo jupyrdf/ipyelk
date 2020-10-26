@@ -7,7 +7,13 @@ import ipywidgets as W
 import traitlets as T
 
 from ..elk_model import ElkLabel, ElkNode
-from .layout_widgets import LayoutOptionWidget
+from .selection_widgets import LayoutOptionWidget
+
+HIERARCHY_HANDLING = {
+    "Inherit": "INHERIT",
+    "Include Children": "INCLUDE_CHILDREN",
+    "Separate Children": "SEPARATE_CHILDREN",
+}
 
 NODESIZE_OPTIONS_OPTIONS = {
     "default_minimum_size": "DEFAULT_MINIMUM_SIZE",
@@ -204,7 +210,7 @@ class NodeSizeOptions(LayoutOptionWidget):
     )
     def _update_value(self, change: T.Bunch = None):
         options = []
-        for attr, option in NODESIZE_OPTIONS_OPTIONS.keys():
+        for attr, option in NODESIZE_OPTIONS_OPTIONS.items():
             value = getattr(self, attr)
             if value is True:
                 options.append(option)
@@ -313,3 +319,29 @@ class ActivateInsideSelfLoops(LayoutOptionWidget):
     @T.observe("activate")
     def _update_value(self, change: T.Bunch = None):
         self.value = "true" if self.activate else "false"
+
+
+class HierarchyHandling(LayoutOptionWidget):
+    """If this option is set to SEPARATE_CHILDREN, each hierarchy level of the
+    graph is processed independently, possibly by different layout algorithms,
+    beginning with the lowest level. If it is set to INCLUDE_CHILDREN, the
+    algorithm is responsible to process all hierarchy levels that are contained
+    in the associated parent node. If the root node is set to inherit (or not
+    set at all), the default behavior is SEPARATE_CHILDREN.
+
+    https://www.eclipse.org/elk/reference/options/org-eclipse-elk-hierarchyhandling.html
+    """
+
+    identifier = "org.eclipse.elk.hierarchyHandling"
+    metadata_provider = "core.options.CoreOptions"
+    applies_to = ["parents", ElkNode]
+
+    value = T.Enum(
+        values=list(HIERARCHY_HANDLING.values()), default_value="INCLUDE_CHILDREN"
+    )
+
+    def _ui(self) -> List[W.Widget]:
+        dropdown = W.Dropdown(options=list(HIERARCHY_HANDLING.items()))
+        T.link((self, "value"), (dropdown, "value"))
+
+        return [dropdown]

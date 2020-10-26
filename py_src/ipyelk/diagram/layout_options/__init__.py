@@ -11,8 +11,9 @@ from .edge_options import (
     EdgeNodeSpacing,
     EdgeSpacing,
     EdgeThickness,
+    MergeEdges,
 )
-from .layout_widgets import LayoutOptionWidget, OptionsWidget, SpacingOptionWidget
+from .layout import LayoutAlgorithm
 from .node_options import NodeLabelPlacement, NodeSizeConstraints, NodeSizeMinimum
 from .port_options import (
     AdditionalPortSpace,
@@ -24,26 +25,29 @@ from .port_options import (
     PortSide,
     TreatPortLabelsAsGroup,
 )
+from .selection_widgets import LayoutOptionWidget, OptionsWidget, SpacingOptionWidget
 
 __all__ = [
-    "LayoutOptionWidget",
-    "OptionsWidget",
-    "SpacingOptionWidget",
+    "LayoutAlgorithm",
+    "AdditionalPortSpace",
     "EdgeLabelPlacement",
     "EdgeLabelSpacing",
     "EdgeNodeLayerSpacing",
     "EdgeNodeSpacing",
     "EdgeSpacing",
     "EdgeThickness",
+    "LayoutOptionWidget",
+    "MergeEdges",
     "NodeLabelPlacement",
     "NodeSizeConstraints",
     "NodeSizeMinimum",
-    "AdditionalPortSpace",
+    "OptionsWidget",
     "PortAnchorOffset",
     "PortBorderOffset",
     "PortConstraints",
     "PortIndex",
     "PortLabelPlacement",
     "PortSide",
+    "SpacingOptionWidget",
     "TreatPortLabelsAsGroup",
 ]
