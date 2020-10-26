@@ -31,6 +31,10 @@ ${SCREENS}        ${SCREENS ROOT}${/}notebooks
     Example Should Restart-and-Run-All    ${INTERACTIVE}
     [Teardown]    Clean up after Example    ${INTERACTIVE}
 
+05_SVG_Exporter
+    Example Should Restart-and-Run-All    ${EXPORTER}
+    [Teardown]    Clean up after Example    ${EXPORTER}
+
 100_node_label_placement
     Example Should Restart-and-Run-All    ${LABEL PLACEMENT}
     [Teardown]    Clean up after Example    ${LABEL PLACEMENT}

@@ -165,3 +165,5 @@ py_src/ipyelk/schema/*.json
 .doit*
 .pabotsuitenames
 atest/output
+untitled*
+Untitled*
