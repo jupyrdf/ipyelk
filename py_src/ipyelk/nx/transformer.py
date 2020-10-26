@@ -59,7 +59,7 @@ class XELK(ElkTransformer):
     label_key = T.Unicode(default_value="label")
     label_offset = T.Float(default_value=5)
 
-    text_sizer = T.Instance(ElkTextSizer, kw={})
+    text_sizer:ElkTextSizer = T.Instance(ElkTextSizer, kw={})
 
     @T.default("source")
     def _default_source(self):
@@ -126,11 +126,7 @@ class XELK(ElkTransformer):
         if root is None:
             self.clear_cached()
             # bulk calculate label sizes
-            labels = []
-            for node, data in g.nodes(data=True):
-                name = data.get(self.label_key, data.get("_id", f"{node}"))
-                labels.append(Text(value=name))
-            await self.text_sizer.measure(tuple(labels))
+            await self.text_sizer.measure(self.collect_labels())
 
         elif is_hidden(tree, root, self.HIDDEN_ATTR):
             # bail is the node is hidden
@@ -345,7 +341,8 @@ class XELK(ElkTransformer):
             width = self.text_scale
         return width, height
 
-    async def size_label(self, text: str) -> TextSize:
+    async def size_label(self, label: ElkLabel) -> TextSize:
+        text = label.text
         if self.text_sizer is None:
             return TextSize(
                 width=self.text_scale * len(text),
@@ -354,23 +351,42 @@ class XELK(ElkTransformer):
         else:
             return await self.text_sizer.measure(text)
 
+    def collect_labels(self, *nodes)->Tuple[ElkLabel]:
+        labels = []
+        g, tree = self.source
+        if len(nodes) == 0:
+            return self.collect_labels(*g.nodes)
+        for node in nodes:
+            data = g.nodes[node]
+            values = data.get(self.label_key, [data.get("_id", f"{node}")])
+            for name in values:
+                if isinstance(name, str):
+                    label = ElkLabel(
+                        id=f"{name}_label_{node}",
+                        text=name,
+                    )
+                elif isinstance(name, ElkLabel):
+                    label = name
+                else:
+                    raise TypeError(f"Expected type of ElkLabel not `{type(name)}`")
+            labels.append(label)
+        return tuple(labels)
+
     async def make_labels(self, node) -> Optional[List[ElkLabel]]:
         if node is None:
             return None
         g, tree = self.source
         data = g.nodes[node]
-        name = data.get(self.label_key, data.get("_id", f"{node}"))
-        size = await self.size_label(name)
+        labels = self.collect_labels(node)
 
-        label = ElkLabel(
-            id=f"{name}_label_{node}",
-            text=name,
-            width=size.width,
-            height=size.height,
-            layoutOptions=self.get_layout(node, ElkLabel),
-        )
-        self.register(label, node)
-        return [label]
+        for label in labels:
+            label.layoutOptions = self.get_layout(node, ElkLabel)
+            size = await self.size_label(label)
+            label.width=size.width
+            label.height=size.height
+            self.register(label, node)
+
+        return labels
 
     def collect_edges(self) -> Tuple[EdgeMap, EdgeMap]:
         """[summary]

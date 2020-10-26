@@ -276,6 +276,10 @@ class ElkLabel(ElkShape):
         result["y"] = from_union([to_float, from_none], self.y)
         return strip_none(result)
 
+    def __hash__(self):
+        """Hash function used to track unique text size measurement requests"""
+        return hash(self.id)
+
 
 @dataclass
 class ElkEdge(ElkGraphElement):
