@@ -100,7 +100,7 @@ def atest(attempt, extra_args):
             os.environ.get("ATEST_PROCESSES", "4"),
             "--artifactsinsubfolders",
             "--artifacts",
-            "png,log",
+            "png,log,svg",
             "--testlevelsplit",
             *args,
         ]
