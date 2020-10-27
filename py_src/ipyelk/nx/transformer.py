@@ -286,6 +286,13 @@ class XELK(ElkTransformer):
         :return: [description]
         :rtype: ElkPort
         """
+        # Test if elk port has already been created
+        port_id = self.port_id(owner, port)
+        if port_id in self._elk_to_item:
+            elk_port = self.from_id(port_id)
+            assert isinstance(elk_port, ElkPort)
+            return elk_port
+
         properties = None
         if styles:
             properties = dict(cssClasses=" ".join(styles))
