@@ -2,7 +2,7 @@
 # Distributed under the terms of the Modified BSD License.
 import traitlets as T
 
-from ipyelk.diagram.elk_model import ElkEdge, ElkLabel, ElkNode
+from ipyelk.diagram.elk_model import ElkEdge, ElkLabel, ElkNode, ElkPort
 
 from ..diagram.layout_options import LayoutOptionWidget, OptionsWidget
 
@@ -10,11 +10,15 @@ from ..diagram.layout_options import LayoutOptionWidget, OptionsWidget
 class XELKTypedLayout(OptionsWidget):
 
     selected = T.Any(allow_none=True)  # placeholder trait while playing with patterns
+    value = (
+        T.Dict()
+    )  # TODO get some typing around the dictionary e.g. Dict[Hashable, NEWDATACLASS]
     _type_map = {
         "Parents": "parents",
         "Node": ElkNode,
         "Label": ElkLabel,
         "Edge": ElkEdge,
+        "Port": ElkPort,
     }
 
     def __init__(self, *args, **kwargs):
