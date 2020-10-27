@@ -121,7 +121,7 @@ class XELK(ElkTransformer):
         if root is None:
             self.clear_cached()
             # bulk calculate label sizes
-            await self.text_sizer.measure(self.collect_labels())
+            # await self.text_sizer.measure(self.collect_labels())
 
         elif is_hidden(tree, root, self.HIDDEN_ATTR):
             # bail is the node is hidden
@@ -391,15 +391,19 @@ class XELK(ElkTransformer):
         g, tree = self.source
         data = g.nodes[node]
         labels = self.collect_labels(node)
-
+        css = self.get_css(node, ElkLabel)
+        properties = None
+        if css:
+            properties = dict(cssClasses=" ".join(css))
         for label in labels:
             label.layoutOptions = self.get_layout(node, ElkLabel)
             size = await self.size_label(label)
             label.width=size.width
             label.height=size.height
+            label.properties=properties
             self.register(label, node)
 
-        return labels
+        return list(labels)
 
     def collect_edges(self) -> Tuple[EdgeMap, EdgeMap]:
         """[summary]

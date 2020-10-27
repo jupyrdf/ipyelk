@@ -241,6 +241,7 @@ class ElkLabel(ElkShape):
     width: Optional[float] = None
     x: Optional[float] = None
     y: Optional[float] = None
+    properties: Optional[Dict[str, str]] = None
 
     @staticmethod
     def from_dict(obj: Any) -> "ElkLabel":
@@ -257,7 +258,10 @@ class ElkLabel(ElkShape):
         width = from_union([from_float, from_none], obj.get("width"))
         x = from_union([from_float, from_none], obj.get("x"))
         y = from_union([from_float, from_none], obj.get("y"))
-        return ElkLabel(id, text, height, labels, layoutOptions, width, x, y)
+        properties = from_union(
+            [lambda x: from_dict(from_str, x), from_none], obj.get("properties")
+        )
+        return ElkLabel(id, text, height, labels, layoutOptions, width, x, y, properties)
 
     def to_dict(self) -> dict:
         result: dict = {}
@@ -274,6 +278,9 @@ class ElkLabel(ElkShape):
         result["width"] = from_union([to_float, from_none], self.width)
         result["x"] = from_union([to_float, from_none], self.x)
         result["y"] = from_union([to_float, from_none], self.y)
+        result["properties"] = from_union(
+            [lambda x: from_dict(from_str, x), from_none], self.properties
+        )
         return strip_none(result)
 
     def __hash__(self):
