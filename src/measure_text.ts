@@ -61,14 +61,12 @@ export class ELKTextSizerModel extends DOMWidgetModel {
   make_label(text: IELKText): SVGElement {
     ELK_DEBUG && console.warn('ELK Text Label for text', text);
     let label: SVGElement = createSVGElement('text');
-    let classes: string = '';
+    let classes: string[] = [ELK_CSS.label];
     if (text.cssClasses.length > 0) {
-      classes = [text.cssClasses, ELK_CSS.label].join(' ');
-    } else {
-      classes = ELK_CSS.label;
+      classes = classes.concat(text.cssClasses.split(" "));
     }
 
-    label.classList.add(classes);
+    label.classList.add(...classes);
     label.textContent = escape(text.value);
     ELK_DEBUG && console.warn('ELK Text Label', label);
     return label;

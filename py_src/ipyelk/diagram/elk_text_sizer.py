@@ -11,6 +11,7 @@ import traitlets as T
 from async_lru import alru_cache
 from ipywidgets import DOMWidget
 
+from .elk_model import ElkLabel
 from .._version import EXTENSION_NAME, EXTENSION_SPEC_VERSION
 
 
@@ -21,20 +22,8 @@ class TextSize:
 
 
 @dataclass
-class Text:
-    value: str
-    css_classes: List[str] = field(default_factory=list)
-
-    def __hash__(self):
-        value = self.value
-        if self.css_classes:
-            value += " ".join(self.css_classes)
-        return hash(value)
-
-
-@dataclass
 class SizingRequest:
-    text: Text
+    text: ElkLabel
     _id: str = None
 
     @property
@@ -44,11 +33,14 @@ class SizingRequest:
         return self._id
 
     def message(self) -> Dict:
-        """Build message to send to the frontend with the Text Object and message id"""
-        css_classes = ""
-        if self.text.css_classes:
-            css_classes = " ".join(self.text.css_classes)
-        return {"value": self.text.value, "cssClasses": css_classes, "id": self.id}
+        """Build message to send to the frontend with the Text Object and
+        message id"""
+        css_classes = None
+        if self.text.properties:
+            css_classes = self.text.properties.get("cssClasses", None)
+        if css_classes is None:
+            css_classes = ""
+        return {"value": self.text.text, "cssClasses": css_classes, "id": self.id}
 
 
 class ElkTextSizer(DOMWidget):
@@ -90,7 +82,7 @@ class ElkTextSizer(DOMWidget):
                 asyncio.create_task(self._response_queue.put(test_size))
 
     @alru_cache(maxsize=800)
-    async def measure(self, text: Union[Text, str]) -> TextSize:
+    async def measure(self, text: Union[ElkLabel, str]) -> TextSize:
         """Measure the given text and return `TextSize` object containing the width and height
 
         :param text: Text to pass to the browser for sizing
@@ -101,8 +93,8 @@ class ElkTextSizer(DOMWidget):
 
         if isinstance(text, str):
             # go ahead and wrap in Text object
-            text = Text(value=text)
-        if not isinstance(text, Text):
+            text = ElkLabel(id=str(uuid.uuid4()), text=text)
+        if not isinstance(text, ElkLabel):
             return await asyncio.gather(*[self.measure(t) for t in text])
 
         # create shared reference of the message future
@@ -122,7 +114,7 @@ class ElkTextSizer(DOMWidget):
             if requests:
                 self.send({"texts": [r.message() for r in requests]})
 
-    async def get_requests(self) -> List[Text]:
+    async def get_requests(self) -> List[ElkLabel]:
         """Get requests from the request queue up to the `max_size` and
         `timeout` limits
         """

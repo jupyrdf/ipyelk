@@ -18,7 +18,7 @@ from ..diagram.elk_model import (
     ElkNode,
     ElkPort,
 )
-from ..diagram.elk_text_sizer import ElkTextSizer, Text, TextSize
+from ..diagram.elk_text_sizer import ElkTextSizer, TextSize
 from ..diagram.layout_options import HierarchyHandling, OptionsWidget
 from .factors import get_factors, invert, keep
 from .nx import Edge, EdgeMap, compact, get_roots, lowest_common_ancestor
@@ -167,7 +167,7 @@ class XELK(ElkTransformer):
 
         return nodes[root]  # top level node
 
-    def get_layout(self, node: Hashable, elk_type: Type[ElkGraphElement]):
+    def get_layout(self, node: Hashable, elk_type: Type[ElkGraphElement])->Optional[Dict]:
         """Get the Elk Layout Options appropriate for given networkx node and
         filter by given elk_type
 
@@ -184,7 +184,9 @@ class XELK(ElkTransformer):
             node = None
 
         type_opts = self.layouts.get(node, {})
-        return {**type_opts.get(elk_type, {})}
+        options = {**type_opts.get(elk_type, {})}
+        if options:
+            return options
 
     def get_css(
         self,
@@ -355,14 +357,13 @@ class XELK(ElkTransformer):
         return width, height
 
     async def size_label(self, label: ElkLabel) -> TextSize:
-        text = label.text
         if self.text_sizer is None:
             return TextSize(
-                width=self.text_scale * len(text),
+                width=self.text_scale * len(label.text),
                 height=10,  # TODO add height default
             )
         else:
-            return await self.text_sizer.measure(text)
+            return await self.text_sizer.measure(label)
 
     def collect_labels(self, *nodes)->Tuple[ElkLabel]:
         labels = []
@@ -372,17 +373,19 @@ class XELK(ElkTransformer):
         for node in nodes:
             data = g.nodes[node]
             values = data.get(self.label_key, [data.get("_id", f"{node}")])
-            for name in values:
+            for i, name in enumerate(values):
                 if isinstance(name, str):
                     label = ElkLabel(
-                        id=f"{name}_label_{node}",
+                        id=f"{name}_label_{i}_{node}",
                         text=name,
                     )
+                elif isinstance(name, dict):
+                    label = ElkLabel(**name)
                 elif isinstance(name, ElkLabel):
                     label = name
                 else:
                     raise TypeError(f"Expected type of ElkLabel not `{type(name)}`")
-            labels.append(label)
+                labels.append(label)
         return tuple(labels)
 
     async def make_labels(self, node) -> Optional[List[ElkLabel]]:
@@ -390,20 +393,22 @@ class XELK(ElkTransformer):
             return None
         g, tree = self.source
         data = g.nodes[node]
-        labels = self.collect_labels(node)
+        labels = []
         css = self.get_css(node, ElkLabel)
         properties = None
         if css:
             properties = dict(cssClasses=" ".join(css))
-        for label in labels:
-            label.layoutOptions = self.get_layout(node, ElkLabel)
+        for label in self.collect_labels(node):
+            label = ElkLabel(**label.to_dict())
+            label.layoutOptions = merge(label.layoutOptions, self.get_layout(node, ElkLabel))
             size = await self.size_label(label)
             label.width=size.width
             label.height=size.height
-            label.properties=properties
+            label.properties=merge(label.properties, properties)
+            labels.append(label)
             self.register(label, node)
 
-        return list(labels)
+        return labels
 
     def collect_edges(self) -> Tuple[EdgeMap, EdgeMap]:
         """[summary]
@@ -561,3 +566,24 @@ def is_hidden(tree: nx.DiGraph, node: Hashable, attr: str) -> bool:
             if tree.nodes[ancestor].get(attr, False):
                 return True
     return False
+
+
+def merge(d1:Optional[Dict], d2:Optional[Dict])->Optional[Dict]:
+    """Merge two dictionaries while first testing if either are `None`.
+    The first dictionary's keys take precedence over the second dictionary.
+    If the final merged dictionary is empty `None` is returned.
+
+    :param d1: primary dictionary
+    :type d1: Optional[Dict]
+    :param d2: secondary dictionary
+    :type d2: Optional[Dict]
+    :return: merged dictionary
+    :rtype: Dict
+    """
+    if d1 is None:
+        d1 = {}
+    if d2 is None:
+        d2 = {}
+    value = {**d2, **d1}  # right most wins if duplicated keys
+    if value:
+        return value

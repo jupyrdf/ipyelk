@@ -66,6 +66,7 @@ class SpacingOptionWidget(LayoutOptionWidget):
 
 
 class OptionsWidget(W.Accordion, LayoutOptionWidget):
+    identifier = T.Any()
     options: List["OptionsWidget"] = T.List()
     value: Dict = T.Dict()
 

@@ -285,7 +285,12 @@ class ElkLabel(ElkShape):
 
     def __hash__(self):
         """Hash function used to track unique text size measurement requests"""
-        return hash(self.id)
+        value = self.text
+        if self.properties:
+            css_classes = self.properties.get("cssClasses", None)
+            if css_classes:
+                value += css_classes
+        return hash(value)
 
 
 @dataclass
