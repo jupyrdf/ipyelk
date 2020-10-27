@@ -6,6 +6,7 @@ import ipywidgets as W
 import traitlets as T
 
 from .._version import EXTENSION_NAME, EXTENSION_SPEC_VERSION
+from ..app import Elk
 from .elk_widget import ElkDiagram
 
 
@@ -26,3 +27,4 @@ class ElkExporter(W.Widget):
     enabled: bool = T.Bool(default_value=True).tag(sync=True)
     extra_css: str = T.Unicode(default_value="").tag(sync=True)
     padding: float = T.Float(20).tag(sync=True)
+    app: Elk = T.Instance(Elk, allow_none=True).tag(sync=True, **W.widget_serialization)

@@ -6,7 +6,7 @@ import { WidgetModel, WidgetView } from '@jupyter-widgets/base';
 
 import { unpack_models as deserialize } from '@jupyter-widgets/base';
 
-import { NAME, VERSION } from '.';
+import { ELK_DEBUG, NAME, VERSION } from '.';
 
 import { ELKModel, ELKView } from './widget';
 
@@ -30,7 +30,8 @@ export class ELKExporterModel extends WidgetModel {
 
   static serializers = {
     ...WidgetModel.serializers,
-    diagram: { deserialize }
+    diagram: { deserialize },
+    app: { deserialize }
   };
 
   defaults() {
@@ -46,18 +47,34 @@ export class ELKExporterModel extends WidgetModel {
       value: null,
       enabled: true,
       extra_css: '',
-      padding: 20
+      padding: 20,
+      app: null
     };
     return defaults;
+  }
+
+  get diagram(): ELKModel {
+    return this.get('diagram');
+  }
+
+  get app(): WidgetModel {
+    return this.get('app');
+  }
+
+  get app_raw_css(): string[] {
+    return this.app?.get('raw_css') || [];
   }
 
   initialize(attributes: any, options: any) {
     super.initialize(attributes, options);
     this.on('change:diagram', this._on_diagram_changed, this);
+    this.on('change:app', this._on_app_changed, this);
     this._on_diagram_changed();
+    this._on_app_changed();
   }
 
   _on_diagram_changed() {
+    ELK_DEBUG && console.warn('[export] diagram changed', arguments);
     const { diagram } = this;
     if (diagram == null) {
       return;
@@ -67,6 +84,14 @@ export class ELKExporterModel extends WidgetModel {
       return;
     }
     this._schedule_update();
+  }
+
+  _on_app_changed() {
+    ELK_DEBUG && console.warn('[export] app changed', arguments);
+    const { app } = this;
+    if (app != null) {
+      app.on('change:raw_css', this._schedule_update, this);
+    }
   }
 
   async a_view() {
@@ -95,7 +120,7 @@ export class ELKExporterModel extends WidgetModel {
       this._update_timeout = null;
     }
     // does weird stuff with `this` apparently
-    this._update_timeout = setTimeout(() => this._on_layout_updated(), 300);
+    this._update_timeout = setTimeout(() => this._on_layout_updated(), 1000);
   }
 
   async _on_layout_updated() {
@@ -109,10 +134,18 @@ export class ELKExporterModel extends WidgetModel {
     }
     const { outerHTML } = svg;
     const padding = this.get('padding');
-    const style = `<style>
-      ${STANDALONE_CSS}
-      ${this.get('extra_css') || ''}
-    </style>`;
+    const raw_app_css = this.app_raw_css;
+    const rawStyle = `
+        ${STANDALONE_CSS}
+        ${raw_app_css.join('\n')}
+        ${this.get('extra_css') || ''}
+    `.replace(/\/\*[.\n]*\*\//g, ' ');
+    const style = `
+      <style type="text/css">
+        <![CDATA[
+          ${rawStyle}
+        ]]>
+      </style>`;
     const g: SVGGElement = svg.querySelector('g');
     const transform = g.attributes['transform'].value;
     let scaleFactor = 1.0;
@@ -124,19 +157,16 @@ export class ELKExporterModel extends WidgetModel {
 
     const withCSS = outerHTML
       .replace(
-        /<svg(.*)>/,
+        /<svg([^>]+)>/,
         `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${width / scaleFactor +
-          padding} ${height / scaleFactor + padding}" $1>`
+          padding} ${height / scaleFactor + padding}" $1>
+          ${style}
+        `
       )
-      .replace(/ transform=".*?"/, '')
-      .replace('</svg>', `${style}</svg>`);
+      .replace(/ transform=".*?"/, '');
     this.set({ value: `${XML_HEADER}\n${withCSS}` });
 
     this.save_changes(view.callbacks);
-  }
-
-  get diagram(): ELKModel {
-    return this.get('diagram');
   }
 }
 
