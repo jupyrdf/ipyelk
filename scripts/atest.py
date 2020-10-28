@@ -76,6 +76,7 @@ def atest(attempt, extra_args):
         "--randomize",
         "all",
         *(extra_args or []),
+        *(os.environ.get("ATEST_ARGS", "").split(" ")),
     ]
 
     os.chdir(P.ATEST)

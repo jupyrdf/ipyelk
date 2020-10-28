@@ -108,7 +108,8 @@ Open ${file} in ${editor}
 Clean Up After Working With Files
     [Arguments]    @{files}
     FOR    ${file}    IN    @{files}
-        Remove File    ${OUTPUT DIR}${/}home${/}${file}
+        ${src}    ${name} =    Split Path    ${file}
+        Remove File    ${OUTPUT DIR}${/}home${/}${name}
     END
     Reset Application State
 
