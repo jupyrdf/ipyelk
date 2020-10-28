@@ -257,6 +257,7 @@ def task_test():
         file_dep=[
             *P.ALL_ROBOT,
             *P.ALL_PY_SRC,
+            *P.EXAMPLE_IPYNB,
             P.OK_ROBOT_LINT,
             P.OK_PREFLIGHT_LAB,
             P.SCRIPTS / "atest.py",
