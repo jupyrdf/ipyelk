@@ -6,3 +6,5 @@ ${APP}            03_App
 ${INTERACTIVE}    04_Interactive
 ${LABEL PLACEMENT}    100_node_label_placement
 ${TEXT SIZER}     101_text_sizer
+${LAYOUT OPTIONS}    102_layout_options
+${TX LAYOUT OPTIONS}    103_transformer_layout_options

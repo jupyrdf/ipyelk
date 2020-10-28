@@ -38,3 +38,11 @@ ${SCREENS}        ${SCREENS ROOT}${/}notebooks
 101_text_sizer
     Example Should Restart-and-Run-All    ${TEXT SIZER}
     [Teardown]    Clean up after Example    ${TEXT SIZER}
+
+102_layout_options
+    Example Should Restart-and-Run-All    ${LAYOUT OPTIONS}
+    [Teardown]    Clean up after Example    ${LAYOUT OPTIONS}
+
+103_transformer_layout_options
+    Example Should Restart-and-Run-All    ${TX LAYOUT OPTIONS}
+    [Teardown]    Clean up after Example    ${TX LAYOUT OPTIONS}
