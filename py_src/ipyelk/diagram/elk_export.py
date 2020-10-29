@@ -29,3 +29,4 @@ class ElkExporter(W.Widget):
     padding: float = T.Float(20).tag(sync=True)
     app: Elk = T.Instance(Elk, allow_none=True).tag(sync=True, **W.widget_serialization)
     strip_ids = T.Bool(default_value=True).tag(sync=True)
+    add_xml_header = T.Bool(default_value=True).tag(sync=True)

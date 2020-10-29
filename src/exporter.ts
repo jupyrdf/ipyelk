@@ -54,7 +54,8 @@ export class ELKExporterModel extends WidgetModel {
       extra_css: '',
       padding: 20,
       app: null,
-      strip_ids: true
+      strip_ids: true,
+      add_xml_header: true
     };
     return defaults;
   }
@@ -141,6 +142,7 @@ export class ELKExporterModel extends WidgetModel {
     const { outerHTML } = svg;
     const padding = this.get('padding');
     const strip_ids = this.get('strip_ids');
+    const add_xml_header = this.get('add_xml_header');
     const raw_app_css = this.app_raw_css;
     const rawStyle = `
         ${STANDALONE_CSS}
@@ -172,13 +174,15 @@ export class ELKExporterModel extends WidgetModel {
       )
       .replace(/ transform=".*?"/, '');
 
-    ELK_DEBUG && console.warn('[export] stripping ids', strip_ids, withCSS.length);
     if (strip_ids) {
       withCSS = withCSS.replace(/\s*id="[^"]*"\s*/g, ' ');
-      ELK_DEBUG && console.warn('[export] stripped', withCSS.length);
     }
 
-    this.set({ value: `${XML_HEADER}\n${withCSS}` });
+    if (add_xml_header) {
+      withCSS = `${XML_HEADER}\n${withCSS}`;
+    }
+
+    this.set({ value: withCSS });
 
     this.save_changes(view.callbacks);
   }
