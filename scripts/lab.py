@@ -34,7 +34,9 @@ def build(args=None):
 
 
 def prep():
-    """do a normal build of lab, then clean out static"""
+    """do a normal build of lab, install missing watch dependencies, and then
+    clean out static
+    """
     exts = [
         line.strip()
         for line in EXTENSIONS.read_text(encoding="utf-8").strip().splitlines()
@@ -65,7 +67,7 @@ def prep():
 
 
 def watch():
-    """after preparing, install missing dependencies, and start watchers"""
+    """after preparing, start watchers"""
     prep()
     print("watching src...", flush=True)
     ts = subprocess.Popen([JLPM, "watch"], cwd=str(ROOT))
