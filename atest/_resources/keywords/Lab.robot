@@ -15,7 +15,7 @@ Open JupyterLab
     Create WebDriver    Firefox
     ...    executable_path=${geckodriver}
     ...    firefox_binary=${firefox}
-    ...    service_log_path=${OUTPUT DIR}${/}geckodriver-${PABOT ID}-${NEXT BROWSER}.log
+    ...    service_log_path=${OUTPUT DIR}${/}geckodriver-${NEXT BROWSER}.log
     ...    service_args=${service args}
     Wait Until Keyword Succeeds    3x    5s    Wait For Splash
 
@@ -108,7 +108,8 @@ Open ${file} in ${editor}
 Clean Up After Working With Files
     [Arguments]    @{files}
     FOR    ${file}    IN    @{files}
-        Remove File    ${OUTPUT DIR}${/}home${/}${file}
+        ${src}    ${name} =    Split Path    ${file}
+        Remove File    ${OUTPUT DIR}${/}home${/}${name}
     END
     Reset Application State
 
