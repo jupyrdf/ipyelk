@@ -15,6 +15,9 @@ from pabot import pabot
 
 from . import project as P
 
+PROCESSES = int(os.environ.get("ATEST_PROCESSES", "4"))
+RETRIES = int(os.environ.get("ATEST_RETRIES", "0"))
+
 
 def get_stem(attempt, extra_args):
     """make a directory stem with the run type, python and os version"""
@@ -88,7 +91,7 @@ def atest(attempt, extra_args):
         except Exception as err:
             print("Error deleting {}, hopefully harmless: {}".format(out_dir, err))
 
-    if "--dryrun" in extra_args:
+    if "--dryrun" in extra_args or PROCESSES == 1:
         run_robot = robot.run_cli
         fake_cmd = "robot"
     else:
@@ -98,7 +101,7 @@ def atest(attempt, extra_args):
         # pabot args must come first
         args = [
             "--processes",
-            os.environ.get("ATEST_PROCESSES", "4"),
+            PROCESSES,
             "--artifactsinsubfolders",
             "--artifacts",
             "png,log",
@@ -122,16 +125,14 @@ def attempt_atest_with_retries(*extra_args):
     attempt = 0
     error_count = -1
 
-    retries = int(os.environ.get("ATEST_RETRIES") or "0")
-
     is_real = "--dryrun" not in extra_args
 
     if is_real and P.ATEST_CANARY.exists():
         P.ATEST_CANARY.unlink()
 
-    while error_count != 0 and attempt <= retries:
+    while error_count != 0 and attempt <= RETRIES:
         attempt += 1
-        print("attempt {} of {}...".format(attempt, retries + 1))
+        print("attempt {} of {}...".format(attempt, RETRIES + 1))
         start_time = time.time()
         error_count = atest(attempt=attempt, extra_args=list(extra_args))
         print(error_count, "errors in", int(time.time() - start_time), "seconds")
