@@ -19,6 +19,8 @@ APP_DIR = Path(get_app_dir())
 STAGING = APP_DIR / "staging"
 STATIC = APP_DIR / "static"
 INDEX = STATIC / "index.html"
+EXTENSIONS = ROOT / "labextensions.txt"
+LAB_EXT = ["jupyter", "labextension"]
 
 INTERVAL = 10
 
@@ -33,11 +35,22 @@ def build(args=None):
 
 def prep():
     """do a normal build of lab, then clean out static"""
+    exts = [
+        line.strip()
+        for line in EXTENSIONS.read_text(encoding="utf-8").strip().splitlines()
+        if line and not line.startswith("#")
+    ]
+
+    print("installing third-party extensions...", flush=True)
+    subprocess.check_call(
+        [*LAB_EXT, "install", "--no-build", "--debug", *exts],
+        cwd=str(ROOT),
+    )
     print("building extension...", flush=True)
     subprocess.check_call([JLPM, "build"])
-    print("installing extension...", flush=True)
+    print("linking extension...", flush=True)
     subprocess.check_call(
-        ["jupyter", "labextension", "link", ".", "--no-build", "--debug"],
+        [*LAB_EXT, "link", ".", "--no-build", "--debug"],
         cwd=str(ROOT),
     )
     print("pre-building lab...", flush=True)
