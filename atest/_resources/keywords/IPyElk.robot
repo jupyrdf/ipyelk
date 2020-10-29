@@ -24,6 +24,7 @@ Open IPyElk Notebook
     Copy Support Files    ${files}
     Open File    ${full path}    ${MENU NOTEBOOK}
     Wait Until Page Contains Element    ${JLAB XP KERNEL IDLE}    timeout=30s
+    Lab Command    Clear All Outputs
     Ensure Sidebar Is Closed
     Capture Page Screenshot    01-loaded.png
 
@@ -38,13 +39,44 @@ Example Should Restart-and-Run-All
     [Arguments]    ${example}
     Set Screenshot Directory    ${SCREENS}${/}${example.lower()}
     Open IPyElk Notebook    ${example}
+    # nothing should be on the page, yet
+    Elk Counts Should Be    # all 0
     Restart and Run All
     Wait For All Cells To Run    60s
     Capture All Code Cells
     Page Should Not Contain Contain Standard Errors
     Capture Page Screenshot    99-fin.png
 
-Clean up after Example
-    [Arguments]    ${example}
+Clean up after IPyElk Example
     ${files} =    Get All IPyElk Example File Names
     Clean up after Working with Files    @{files}
+
+Elk Counts Should Be
+    [Arguments]    ${nodes}=${0}    ${edges}=${0}    ${labels}=${0}    ${ports}=${0}    ${prefix}=${EMPTY}    ${n}=${1}
+    ${found nodes} =    Get Elk Node Count    prefix=${prefix}
+    ${found edges} =    Get Elk Edge Count    prefix=${prefix}
+    ${found labels} =    Get Elk Label Count    prefix=${prefix}
+    ${found ports} =    Get Elk Port Count    prefix=${prefix}
+    Should Be Equal As Strings
+    ...    nodes:${found nodes} edges:${found edges} labels:${found labels} ports:${found ports}
+    ...    nodes:${nodes.__mul__(${n})} edges:${edges.__mul__(${n})} labels:${labels.__mul__(${n})} ports:${ports.__mul__(${n})}
+
+Get Elk Node Count
+    [Arguments]    ${prefix}=${EMPTY}    ${suffix}=${EMPTY}
+    ${nodes} =    Get Element Count    css:${prefix}${CSS ELK NODE}${suffix}
+    [Return]    ${nodes}
+
+Get Elk Edge Count
+    [Arguments]    ${prefix}=${EMPTY}    ${suffix}=${EMPTY}
+    ${edges} =    Get Element Count    css:${prefix}${CSS ELK EDGE}${suffix}
+    [Return]    ${edges}
+
+Get Elk Label Count
+    [Arguments]    ${prefix}=${EMPTY}    ${suffix}=${EMPTY}
+    ${labels} =    Get Element Count    css:${prefix}${CSS ELK LABEL}${suffix}
+    [Return]    ${labels}
+
+Get Elk Port Count
+    [Arguments]    ${prefix}=${EMPTY}    ${suffix}=${EMPTY}
+    ${ports} =    Get Element Count    css:${prefix}${CSS ELK PORT}${suffix}
+    [Return]    ${ports}

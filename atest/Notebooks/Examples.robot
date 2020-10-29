@@ -2,6 +2,7 @@
 Resource          ../_resources/keywords/Browser.robot
 Resource          ../_resources/keywords/Lab.robot
 Resource          ../_resources/keywords/IPyElk.robot
+Test Teardown     Clean up after IPyElk Example
 
 *** Variables ***
 ${SCREENS}        ${SCREENS ROOT}${/}notebooks
@@ -12,41 +13,78 @@ ${SCREENS}        ${SCREENS ROOT}${/}notebooks
 #    in this directory.
 #    - common keywords, variables should move into `../_resources/*/IPyElk.robot`
 00_Introduction
+    [Tags]    data:simple.json
     Example Should Restart-and-Run-All    ${INTRODUCTION}
-    [Teardown]    Clean up after Example    ${INTRODUCTION}
+    Elk Counts Should Be
+    ...    nodes=${SIMPLE NODE COUNT}
+    ...    edges=${SIMPLE EDGE COUNT}
+    ...    labels=${SIMPLE LABEL COUNT}
 
 01_Linking
+    [Tags]    data:simple.json
     Example Should Restart-and-Run-All    ${LINKING}
-    [Teardown]    Clean up after Example    ${LINKING}
+    Elk Counts Should Be
+    ...    nodes=${SIMPLE NODE COUNT}
+    ...    edges=${SIMPLE EDGE COUNT}
+    ...    labels=${SIMPLE LABEL COUNT}
+    ...    n=${2}
 
 02_Transformer
+    [Tags]    data:flat_graph.json    data:hier_tree.json    data:hier_ports.json
     Example Should Restart-and-Run-All    ${TRANSFORMER}
-    [Teardown]    Clean up after Example    ${TRANSFORMER}
+    Elk Counts Should Be
+    ...    nodes=${FLAT NODE COUNT.__add__(${HIER NODE COUNT})}
+    ...    edges=${FLAT EDGE COUNT.__add__(${HIER EDGE COUNT})}
+    ...    labels=${FLAT LABEL COUNT.__add__(${HIER LABEL COUNT})}
+    ...    ports=${HIER PORT COUNT}
 
 03_App
+    [Tags]    data:hier_tree.json    data:hier_ports.json
     Example Should Restart-and-Run-All    ${APP}
-    [Teardown]    Clean up after Example    ${APP}
+    Elk Counts Should Be
+    ...    nodes=${HIER NODE COUNT}
+    ...    edges=${HIER EDGE COUNT}
+    ...    labels=${HIER LABEL COUNT}
+    ...    ports=${HIER PORT COUNT}
+    ...    n=${5}
 
 04_Interactive
     Example Should Restart-and-Run-All    ${INTERACTIVE}
-    [Teardown]    Clean up after Example    ${INTERACTIVE}
+    # not worth counting anything, as is basically non-deterministic
 
 05_SVG_Exporter
+    [Tags]    data:simple.json
     Example Should Restart-and-Run-All    ${EXPORTER}
-    [Teardown]    Clean up after Example    ${EXPORTER}
+    Elk Counts Should Be
+    ...    nodes=${SIMPLE NODE COUNT}
+    ...    edges=${SIMPLE EDGE COUNT}
+    ...    labels=${SIMPLE LABEL COUNT}
 
 100_node_label_placement
+    [Tags]    data:simple.json
     Example Should Restart-and-Run-All    ${LABEL PLACEMENT}
-    [Teardown]    Clean up after Example    ${LABEL PLACEMENT}
+    Elk Counts Should Be
+    ...    nodes=${SIMPLE NODE COUNT}
+    ...    edges=${SIMPLE EDGE COUNT}
+    ...    labels=${SIMPLE LABEL COUNT}
 
 101_text_sizer
     Example Should Restart-and-Run-All    ${TEXT SIZER}
-    [Teardown]    Clean up after Example    ${TEXT SIZER}
+    # not worth counting anything, doesn't put any elks on page
 
 102_layout_options
+    [Tags]    data:simple.json
     Example Should Restart-and-Run-All    ${LAYOUT OPTIONS}
-    [Teardown]    Clean up after Example    ${LAYOUT OPTIONS}
+    Elk Counts Should Be
+    ...    nodes=${SIMPLE NODE COUNT}
+    ...    edges=${SIMPLE EDGE COUNT}
+    ...    labels=${SIMPLE LABEL COUNT}
 
 103_transformer_layout_options
+    [Tags]    data:flat_graph.json    data:hier_tree.json    data:hier_ports.json
     Example Should Restart-and-Run-All    ${TX LAYOUT OPTIONS}
-    [Teardown]    Clean up after Example    ${TX LAYOUT OPTIONS}
+    Elk Counts Should Be
+    ...    nodes=${FLAT NODE COUNT.__add__(${HIER NODE COUNT})}
+    ...    edges=${FLAT EDGE COUNT.__add__(${HIER EDGE COUNT})}
+    ...    labels=${FLAT LABEL COUNT.__add__(${HIER LABEL COUNT})}
+    ...    ports=${HIER PORT COUNT}
