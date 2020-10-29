@@ -1,5 +1,7 @@
 *** Settings ***
 Library           Collections
+Library           XML    WITH NAME    XML
+Library           OperatingSystem
 Resource          ../variables/IPyElk.robot
 
 *** Keywords ***
@@ -50,6 +52,12 @@ Example Should Restart-and-Run-All
 Clean up after IPyElk Example
     ${files} =    Get All IPyElk Example File Names
     Clean up after Working with Files    @{files}
+
+Exported SVG should be valid XML
+    [Arguments]    ${file}
+    ${path} =    Set Variable    ${OUTPUT DIR}${/}home${/}${file}
+    Wait Until Created    ${path}
+    [Return]    XML.Parse XML    ${file}
 
 Elk Counts Should Be
     [Arguments]    ${nodes}=${0}    ${edges}=${0}    ${labels}=${0}    ${ports}=${0}    ${prefix}=${EMPTY}    ${n}=${1}

@@ -53,21 +53,23 @@ ${SCREENS}        ${SCREENS ROOT}${/}notebooks
     # not worth counting anything, as is basically non-deterministic
 
 05_SVG_Exporter
-    [Tags]    data:simple.json
+    [Tags]    data:simple.json    feature:svg
     Example Should Restart-and-Run-All    ${EXPORTER}
     Elk Counts Should Be
     ...    nodes=${SIMPLE NODE COUNT}
     ...    edges=${SIMPLE EDGE COUNT}
     ...    labels=${SIMPLE LABEL COUNT}
+    Exported SVG should be valid XML    untitled_example.svg
 
 06_SVG_App_Exporter
-    [Tags]    data:hier_tree.json    data:hier_ports.json
+    [Tags]    data:hier_tree.json    data:hier_ports.json    feature:svg
     Example Should Restart-and-Run-All    ${APP EXPORTER}
     Elk Counts Should Be
     ...    nodes=${HIER NODE COUNT}
     ...    edges=${HIER EDGE COUNT}
     ...    labels=${HIER LABEL COUNT}
     ...    ports=${HIER PORT COUNT}
+    Exported SVG should be valid XML    untitled_stylish_example.svg
 
 100_node_label_placement
     [Tags]    data:simple.json

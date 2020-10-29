@@ -91,6 +91,23 @@ doit lint
   - Add appropriate links to your new example.
   - Add appropriate Robot Framework tests
 
+### Limiting Testing
+
+To run just _some_ acceptance tests, add something like:
+
+```robotframework
+*** Test Cases ***
+Some Test
+  [Tags]  some:tag
+  ...
+```
+
+Then run:
+
+```bash
+ATEST_ARGS="--exclude NOTsome:tag" doit test:atest
+```
+
 ## Releasing
 
 - After merging to `master`, download the ipyelk dist artifacts
