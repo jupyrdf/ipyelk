@@ -111,7 +111,7 @@ Clean Up After Working With Files
         ${src}    ${name} =    Split Path    ${file}
         Remove File    ${OUTPUT DIR}${/}home${/}${name}
     END
-    Reset Application State
+    Maybe Reset Application State
 
 Wait For Dialog
     Wait Until Page Contains Element    ${DIALOG WINDOW}    timeout=180s
@@ -167,11 +167,6 @@ Get Editor Content
     ${content} =    Execute JavaScript    return document.querySelector('${css} .CodeMirror').CodeMirror.getValue()
     [Return]    ${content}
 
-Clean Up After Working with Files and Settings
-    [Arguments]    ${file}
-    Clean Up After Working With Files    ${file}
-    Reset Plugin Settings
-
 Close JupyterLab
     Close All Browsers
 
@@ -208,6 +203,11 @@ Restart and Run All
     Accept Default Dialog Option
     Ensure Sidebar Is Closed
     Run Keyword and Ignore Error    Wait Until Element Contains    ${JLAB XP LAST CODE PROMPT}    [*]:
+
+Maybe Reset Application State
+    [Documentation]    when running under pabot, it's not neccessary to reset, saves ~10s/test
+    ${in pabot} =    Get Variable Value    ${PABOT ID}    NOPE
+    Run Keyword If    "${in pabot}" != "NOPE"    Reset Application State
 
 Reset Application State
     Try to Close All Tabs

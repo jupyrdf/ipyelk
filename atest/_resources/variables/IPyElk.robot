@@ -5,6 +5,7 @@ ${TRANSFORMER}    02_Transformer
 ${APP}            03_App
 ${INTERACTIVE}    04_Interactive
 ${EXPORTER}       05_SVG_Exporter
+${APP EXPORTER}    06_SVG_App_Exporter
 ${LABEL PLACEMENT}    100_node_label_placement
 ${TEXT SIZER}     101_text_sizer
 ${LAYOUT OPTIONS}    102_layout_options

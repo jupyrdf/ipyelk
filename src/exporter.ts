@@ -8,7 +8,7 @@ import { unpack_models as deserialize } from '@jupyter-widgets/base';
 
 import { ELK_DEBUG, NAME, VERSION } from '.';
 
-import { ELKModel, ELKView } from './widget';
+import { ELKModel } from './widget';
 
 import elkRawCSS from '!!raw-loader!../style/diagram.css';
 
@@ -60,6 +60,10 @@ export class ELKExporterModel extends WidgetModel {
     return defaults;
   }
 
+  get enabled(): boolean {
+    return this.get('enabled') || true;
+  }
+
   get diagram(): ELKModel {
     return this.get('diagram');
   }
@@ -83,43 +87,60 @@ export class ELKExporterModel extends WidgetModel {
   _on_diagram_changed() {
     ELK_DEBUG && console.warn('[export] diagram changed', arguments);
     const { diagram } = this;
-    if (diagram == null) {
+    if (diagram?.layoutUpdated == null) {
       return;
     }
     this.diagram.layoutUpdated.connect(this._schedule_update, this);
-    if (!this.get('enabled')) {
+    if (!this.enabled) {
       return;
     }
     this._schedule_update();
   }
 
+  is_an_elkmodel(model: WidgetModel) {
+    return model instanceof ELKModel;
+  }
+
   _on_app_changed() {
     ELK_DEBUG && console.warn('[export] app changed', arguments);
     const { app } = this;
-    if (app != null) {
+    if (app?.on != null) {
       app.on('change:raw_css', this._schedule_update, this);
+      const children: WidgetModel[] = app.get('children') || [];
+      const diagrams = children.filter(this.is_an_elkmodel) as ELKModel[];
+      if (diagrams.length && diagrams[0].layoutUpdated) {
+        diagrams[0].layoutUpdated.connect(this._schedule_update, this);
+      } else {
+        ELK_DEBUG && console.warn('[export] no app diagram ready', children);
+      }
     }
   }
 
-  async a_view() {
-    if (!this.get('enabled')) {
+  async a_view(): Promise<WidgetView | null> {
+    if (!this.enabled) {
       return;
     }
-    const { views } = this.diagram;
-    if (views == null) {
+    let views = this.diagram.views;
+
+    if (this.app?.views) {
+      views = { ...views, ...this.app.views };
+    }
+
+    if (!Object.keys(views).length) {
       return;
     }
 
     for (const promise of Object.values(views)) {
-      const view = (await promise) as ELKView;
+      const view = (await promise) as WidgetView;
       if (view.el) {
+        await view.displayed;
         return view;
       }
     }
   }
 
   _schedule_update() {
-    if (!this.get('enabled')) {
+    if (!this.enabled) {
       return;
     }
     if (this._update_timeout != null) {
@@ -131,12 +152,13 @@ export class ELKExporterModel extends WidgetModel {
   }
 
   async _on_layout_updated() {
-    if (!this.get('enabled')) {
+    if (!this.enabled) {
       return;
     }
     const view = await this.a_view();
     const svg: HTMLElement = view?.el?.querySelector('svg');
     if (svg == null) {
+      this._schedule_update();
       return;
     }
     const { outerHTML } = svg;

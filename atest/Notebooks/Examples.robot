@@ -60,6 +60,15 @@ ${SCREENS}        ${SCREENS ROOT}${/}notebooks
     ...    edges=${SIMPLE EDGE COUNT}
     ...    labels=${SIMPLE LABEL COUNT}
 
+06_SVG_App_Exporter
+    [Tags]    data:hier_tree.json    data:hier_ports.json
+    Example Should Restart-and-Run-All    ${APP EXPORTER}
+    Elk Counts Should Be
+    ...    nodes=${HIER NODE COUNT}
+    ...    edges=${HIER EDGE COUNT}
+    ...    labels=${HIER LABEL COUNT}
+    ...    ports=${HIER PORT COUNT}
+
 100_node_label_placement
     [Tags]    data:simple.json
     Example Should Restart-and-Run-All    ${LABEL PLACEMENT}
