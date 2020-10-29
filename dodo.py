@@ -169,7 +169,7 @@ def task_build():
     """build packages"""
 
     yield dict(
-        name="ts:pre",
+        name="schema",
         file_dep=[P.YARN_INTEGRITY, P.TS_SCHEMA, P.OK_ENV["default"]],
         actions=[[*P.APR_DEFAULT, *P.JLPM, "schema"]],
         targets=[P.PY_SCHEMA],
