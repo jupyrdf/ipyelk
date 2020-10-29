@@ -19,8 +19,13 @@ import labRawCss from '!!raw-loader!@jupyterlab/theme-light-extension/style/vari
 const STANDALONE_CSS = `
   ${materialRawCss}
   ${labRawCss}
-  ${elkRawCSS.replace(/.jp-ElkView .sprotty /g, '')}
-`;
+  ${elkRawCSS}
+`
+  .replace(/\/\*(.|\n)*?\*\//gm, ' ')
+  .replace(/.jp-ElkView .sprotty /g, '')
+  .replace(/\n/g, ' ')
+  .replace(/\s+/g, ' ')
+  .replace(/\}/g, '}\n');
 
 const XML_HEADER = '<?xml version="1.0" standalone="no"?>';
 
@@ -48,7 +53,8 @@ export class ELKExporterModel extends WidgetModel {
       enabled: true,
       extra_css: '',
       padding: 20,
-      app: null
+      app: null,
+      strip_ids: true
     };
     return defaults;
   }
@@ -134,12 +140,13 @@ export class ELKExporterModel extends WidgetModel {
     }
     const { outerHTML } = svg;
     const padding = this.get('padding');
+    const strip_ids = this.get('strip_ids');
     const raw_app_css = this.app_raw_css;
     const rawStyle = `
         ${STANDALONE_CSS}
         ${raw_app_css.join('\n')}
         ${this.get('extra_css') || ''}
-    `.replace(/\/\*[.\n]*\*\//g, ' ');
+    `;
     const style = `
       <style type="text/css">
         <![CDATA[
@@ -155,7 +162,7 @@ export class ELKExporterModel extends WidgetModel {
     }
     const { width, height } = g.getBoundingClientRect();
 
-    const withCSS = outerHTML
+    let withCSS = outerHTML
       .replace(
         /<svg([^>]+)>/,
         `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${width / scaleFactor +
@@ -164,6 +171,13 @@ export class ELKExporterModel extends WidgetModel {
         `
       )
       .replace(/ transform=".*?"/, '');
+
+    ELK_DEBUG && console.warn('[export] stripping ids', strip_ids, withCSS.length);
+    if (strip_ids) {
+      withCSS = withCSS.replace(/\s*id="[^"]*"\s*/g, ' ');
+      ELK_DEBUG && console.warn('[export] stripped', withCSS.length);
+    }
+
     this.set({ value: `${XML_HEADER}\n${withCSS}` });
 
     this.save_changes(view.callbacks);

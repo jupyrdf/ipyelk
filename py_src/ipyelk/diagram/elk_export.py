@@ -28,3 +28,4 @@ class ElkExporter(W.Widget):
     extra_css: str = T.Unicode(default_value="").tag(sync=True)
     padding: float = T.Float(20).tag(sync=True)
     app: Elk = T.Instance(Elk, allow_none=True).tag(sync=True, **W.widget_serialization)
+    strip_ids = T.Bool(default_value=True).tag(sync=True)
