@@ -1,22 +1,33 @@
 # Copyright (c) 2020 Dane Freeman.
 # Distributed under the terms of the Modified BSD License.
+import networkx as nx
 
 from dataclasses import dataclass
 from itertools import tee
 from typing import Dict, Hashable, Iterable, List, Optional, Tuple
 
-import networkx as nx
+from ..diagram.elk_model import ElkNode, ElkPort
 
 
 @dataclass(frozen=True)
 class Edge:
     source: Hashable
-    source_port: Hashable  # Optional?
+    source_port: Optional[Hashable]
     target: Hashable
-    target_port: Hashable  # Optional?
+    target_port: Optional[Hashable]
 
 
+@dataclass(frozen=True)
+class Port:
+    node: Hashable
+    elkport: ElkPort
+
+    def __hash__(self):
+        return hash(tuple([hash(self.node), hash(self.elkport.id)]))
+
+NodeMap = Dict[Hashable, ElkNode]
 EdgeMap = Dict[Hashable, List[Edge]]
+PortMap = Dict[Hashable, Port]
 
 
 def get_roots(tree: nx.DiGraph, g: nx.DiGraph) -> Iterable[Hashable]:

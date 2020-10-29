@@ -104,7 +104,11 @@ class ELKConstructorArguments:
             obj.get("defaultLayoutOptions"),
         )
         workerUrl = from_union([from_str, from_none], obj.get("workerUrl"))
-        return ELKConstructorArguments(algorithms, defaultLayoutOptions, workerUrl)
+        return ELKConstructorArguments(
+            algorithms=algorithms,
+            defaultLayoutOptions=defaultLayoutOptions,
+            workerUrl=workerUrl
+        )
 
     def to_dict(self) -> dict:
         result: dict = {}
@@ -128,7 +132,7 @@ class ELKLayoutArguments:
         layoutOptions = from_union(
             [lambda x: from_dict(from_str, x), from_none], obj.get("layoutOptions")
         )
-        return ELKLayoutArguments(layoutOptions)
+        return ELKLayoutArguments(layoutOptions=layoutOptions)
 
     def to_dict(self) -> dict:
         result: dict = {}
@@ -148,7 +152,7 @@ class ElkPoint:
         assert isinstance(obj, dict)
         x = from_float(obj.get("x"))
         y = from_float(obj.get("y"))
-        return ElkPoint(x, y)
+        return ElkPoint(x=x, y=y)
 
     def to_dict(self) -> dict:
         result: dict = {}
@@ -173,7 +177,11 @@ class ElkGraphElement:
         layoutOptions = from_union(
             [lambda x: from_dict(from_str, x), from_none], obj.get("layoutOptions")
         )
-        return ElkGraphElement(id, labels, layoutOptions)
+        return ElkGraphElement(
+            id=id,
+            labels=labels,
+            layoutOptions=layoutOptions
+        )
 
     def to_dict(self) -> dict:
         result: dict = {}
@@ -212,7 +220,15 @@ class ElkShape(ElkGraphElement):
         width = from_union([from_float, from_none], obj.get("width"))
         x = from_union([from_float, from_none], obj.get("x"))
         y = from_union([from_float, from_none], obj.get("y"))
-        return ElkShape(id, height, labels, layoutOptions, width, x, y)
+        return ElkShape(
+            id=id,
+            height=height,
+            labels=labels,
+            layoutOptions=layoutOptions,
+            width=width,
+            x=x,
+            y=y,
+        )
 
     def to_dict(self) -> dict:
         result: dict = {}
@@ -261,7 +277,18 @@ class ElkLabel(ElkShape):
         properties = from_union(
             [lambda x: from_dict(from_str, x), from_none], obj.get("properties")
         )
-        return ElkLabel(id, text, height, labels, layoutOptions, width, x, y, properties)
+        return ElkLabel(
+            id=id,
+            text=text,
+            height=height,
+            labels=labels,
+            layoutOptions=layoutOptions,
+            width=width,
+            x=x,
+            y=y,
+            properties=properties
+        )
+
 
     def to_dict(self) -> dict:
         result: dict = {}
@@ -371,16 +398,16 @@ class ElkEdgeSection(ElkGraphElement):
         )
         outgoingShape = from_union([from_str, from_none], obj.get("outgoingShape"))
         return ElkEdgeSection(
-            endPoint,
-            id,
-            startPoint,
-            bendPoints,
-            incomingSections,
-            incomingShape,
-            labels,
-            layoutOptions,
-            outgoingSections,
-            outgoingShape,
+            endPoint=endPoint,
+            id=id,
+            startPoint=startPoint,
+            bendPoints=bendPoints,
+            incomingSections=incomingSections,
+            incomingShape=incomingShape,
+            labels=labels,
+            layoutOptions=layoutOptions,
+            outgoingSections=outgoingSections,
+            outgoingShape=outgoingShape,
         )
 
     def to_dict(self) -> dict:
@@ -442,14 +469,14 @@ class ElkExtendedEdge(ElkEdge):
             [lambda x: from_dict(from_str, x), from_none], obj.get("properties")
         )
         return ElkExtendedEdge(
-            id,
-            sections,
-            sources,
-            targets,
-            junctionPoints,
-            labels,
-            layoutOptions,
-            properties,
+            id=id,
+            sections=sections,
+            sources=sources,
+            targets=targets,
+            junctionPoints=junctionPoints,
+            labels=labels,
+            layoutOptions=layoutOptions,
+            properties=properties,
         )
 
     def to_dict(self) -> dict:
@@ -506,7 +533,16 @@ class ElkPort(ElkShape):
         width = from_union([from_float, from_none], obj.get("width"))
         x = from_union([from_float, from_none], obj.get("x"))
         y = from_union([from_float, from_none], obj.get("y"))
-        return ElkPort(id, height, labels, layoutOptions, width, x, y, properties)
+        return ElkPort(
+            id=id,
+            height=height,
+            labels=labels,
+            layoutOptions=layoutOptions,
+            width=width,
+            x=x,
+            y=y,
+            properties=properties
+        )
 
     def to_dict(self) -> dict:
         result: dict = {}
@@ -569,17 +605,17 @@ class ElkNode(ElkShape):
         x = from_union([from_float, from_none], obj.get("x"))
         y = from_union([from_float, from_none], obj.get("y"))
         return ElkNode(
-            id,
-            children,
-            edges,
-            height,
-            labels,
-            layoutOptions,
-            properties,
-            ports,
-            width,
-            x,
-            y,
+            id=id,
+            children=children,
+            edges=edges,
+            height=height,
+            labels=labels,
+            layoutOptions=layoutOptions,
+            properties=properties,
+            ports=ports,
+            width=width,
+            x=x,
+            y=y,
         )
 
     def to_dict(self) -> dict:
@@ -661,18 +697,18 @@ class ElkPrimitiveEdge(ElkEdge):
             [lambda x: from_dict(from_str, x), from_none], obj.get("properties")
         )
         return ElkPrimitiveEdge(
-            id,
-            source,
-            target,
-            bendPoints,
-            junctionPoints,
-            labels,
-            layoutOptions,
-            sourcePoint,
-            sourcePort,
-            targetPoint,
-            targetPort,
-            properties,
+            id=id,
+            source=source,
+            target=target,
+            bendPoints=bendPoints,
+            junctionPoints=junctionPoints,
+            labels=labels,
+            layoutOptions=layoutOptions,
+            sourcePoint=sourcePoint,
+            sourcePort=sourcePort,
+            targetPoint=targetPoint,
+            targetPort=targetPort,
+            properties=properties,
         )
 
     def to_dict(self) -> dict:

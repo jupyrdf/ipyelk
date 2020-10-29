@@ -1,13 +1,13 @@
 # Copyright (c) 2020 Dane Freeman.
 # Distributed under the terms of the Modified BSD License.
-
-import uuid
-from collections import defaultdict
-from functools import lru_cache
-from typing import Dict, Generator, Hashable, List, Optional, Set, Tuple, Type
-
+import asyncio
 import networkx as nx
 import traitlets as T
+import uuid
+
+from collections import defaultdict
+from functools import lru_cache
+from typing import Dict, Generator, Hashable, List, Optional, Set, Tuple, Type, Iterable
 
 from ..app import ElkTransformer
 from ..diagram.elk_model import (
@@ -21,11 +21,7 @@ from ..diagram.elk_model import (
 from ..diagram.elk_text_sizer import ElkTextSizer, TextSize
 from ..diagram.layout_options import HierarchyHandling, OptionsWidget
 from .factors import get_factors, invert, keep
-from .nx import Edge, EdgeMap, compact, get_roots, lowest_common_ancestor
-
-
-def new_id() -> str:
-    return str(uuid.uuid4())
+from .nx import Edge, EdgeMap, NodeMap, PortMap, compact, get_roots, lowest_common_ancestor, Port
 
 
 class XELK(ElkTransformer):
@@ -44,12 +40,13 @@ class XELK(ElkTransformer):
     layouts = T.Dict()  # keys: networkx nodes {ElkElements: {layout options}}
     css_classes = T.Dict()
 
-    port_scale = T.Int(default_value=10)
+    port_scale = T.Int(default_value=5)
     text_scale = T.Float(default_value=10)
     label_key = T.Unicode(default_value="label")
+    port_key = T.Unicode(default_value="ports")
     label_offset = T.Float(default_value=5)
 
-    text_sizer:ElkTextSizer = T.Instance(ElkTextSizer, kw={})
+    text_sizer:ElkTextSizer = T.Instance(ElkTextSizer, kw={}, allow_none=True)
 
     @T.default("source")
     def _default_source(self):
@@ -104,8 +101,8 @@ class XELK(ElkTransformer):
         self.log.debug("Clearing cached elk info")
         self._elk_to_item: Dict[str, Hashable] = {}
         self._item_to_elk: Dict[Hashable, str] = {}
-        self._nodes: Dict[Hashable, ElkNode] = {}
-        self._ports: Dict[Tuple[Hashable, Hashable], ElkPort] = {}
+        self._nodes: NodeMap = {}
+        self._ports: PortMap = {}
         self._visible_edges, self._hidden_edges = self.collect_edges()
         self.closest_common_visible.cache_clear()
         self.closest_visible.cache_clear()
@@ -127,7 +124,7 @@ class XELK(ElkTransformer):
             # bail is the node is hidden
             return None
         nodes = self._nodes
-        ports = self._ports
+        ports:PortMap = self._ports
 
         elk_type = ElkNode if root is not None else "parents"
         layout = self.get_layout(root, elk_type)
@@ -137,6 +134,12 @@ class XELK(ElkTransformer):
         css = self.get_css(root, ElkNode)
         if css:
             properties = dict(cssClasses=" ".join(css))
+
+        # update port map with declared ports in the networkx node data
+        node_ports = await self.collect_ports(root)
+        for key, value in node_ports.items():
+            ports[key] = value
+
         elk_node = ElkNode(
             id=self.node_id(root),
             labels=labels,
@@ -152,16 +155,26 @@ class XELK(ElkTransformer):
             # closest visible ancestors
             port_style = {"slack-port"}
             edge_style = {"slack-edge"}
-            nodes, ports = self.process_edges(nodes, ports, self._visible_edges)
-            nodes, ports = self.process_edges(
+
+            nodes, ports = await self.process_edges(nodes, ports, self._visible_edges)
+            nodes, ports = await self.process_edges(
                 nodes, ports, self._hidden_edges, edge_style, port_style
             )
 
-            for (owner, _), port in ports.items():
-                node = nodes[owner]
-                if node.ports is None:
-                    node.ports = []
-                node.ports += [port]
+            # iterate through the port map and add ports to ElkNodes
+            for port_id, port in ports.items():
+                owner = port.node
+                elkport = port.elkport
+                elknode = nodes[owner]
+                if elknode.ports is None:
+                    elknode.ports = []
+                # size port labels
+                layout = self.get_layout(owner, ElkPort)
+                elkport.layoutOptions = merge(elkport.layoutOptions, layout)
+                if elkport.labels:
+                    for label in elkport.labels:
+                        await self.size_label(label)
+                elknode.ports += [elkport]
 
             nodes = self.size_nodes(nodes)
 
@@ -218,39 +231,42 @@ class XELK(ElkTransformer):
             node.width, node.height = self.get_node_size(node)
         return nodes
 
-    def process_edges(
+    async def process_edges(
         self,
-        nodes,
-        ports,
+        nodes: NodeMap,
+        ports: PortMap,
         edges: EdgeMap,
         edge_style: Set[str] = None,
         port_style: Set[str] = None,
-    ):
+    )-> Tuple[NodeMap, PortMap]:
         for owner, edge_list in edges.items():
+            edge_css = self.get_css(owner, ElkEdge, edge_style)
+            port_css = self.get_css(owner, ElkPort, port_style)
+            layout_options = self.get_layout(owner, ElkEdge)
             for edge in edge_list:
-                node = nodes[owner]
-                edge_css = self.get_css(owner, ElkEdge, edge_style)
-                port_css = self.get_css(owner, ElkPort, port_style)
-                if node.edges is None:
-                    node.edges = []
+                elknode = nodes[owner]
+                if elknode.edges is None:
+                    elknode.edges = []
                 if edge.source_port is not None:
                     source_var = (edge.source, edge.source_port)
                     if source_var not in ports:
-                        ports[source_var] = self.make_port(
+                        port = await self.make_port(
                             edge.source, edge.source_port, port_css
                         )
+                        ports[port.elkport.id] = port
                 if edge.target_port is not None:
                     target_var = (edge.target, edge.target_port)
                     if target_var not in ports:
-                        ports[target_var] = self.make_port(
+                        port = await self.make_port(
                             edge.target, edge.target_port, port_css
                         )
+                        ports[port.elkport.id] = port
 
-                node.edges += [self.make_edge(edge, edge_css)]
+                elknode.edges += [await self.make_edge(edge, edge_css, layout_options)]
         return nodes, ports
 
-    def make_edge(
-        self, edge: Edge, styles: Optional[Set[str]] = None
+    async def make_edge(
+        self, edge: Edge, styles: Optional[Set[str]] = None, layout_options: Dict=None
     ) -> ElkExtendedEdge:
         """Make the associated Elk edge for the given Edge
 
@@ -270,11 +286,12 @@ class XELK(ElkTransformer):
             sources=[self.port_id(edge.source, edge.source_port)],
             targets=[self.port_id(edge.target, edge.target_port)],
             properties=properties,
+            layoutOptions=layout_options,
         )
         self.register(elk_edge, edge)
         return elk_edge
 
-    def make_port(self, owner: Hashable, port: Hashable, styles: List[str]) -> ElkPort:
+    async def make_port(self, owner: Hashable, port: Hashable, styles: Optional[Set[str]]=None) -> Port:
         """Make the associated elk port for the given owner node and port
 
         :param owner: [description]
@@ -288,24 +305,28 @@ class XELK(ElkTransformer):
         """
         # Test if elk port has already been created
         port_id = self.port_id(owner, port)
-        if port_id in self._elk_to_item:
-            elk_port = self.from_id(port_id)
-            assert isinstance(elk_port, ElkPort)
-            return elk_port
+        port = self._ports.get(port_id, None)
+        if port:
+            return port
 
         properties = None
         if styles:
             properties = dict(cssClasses=" ".join(styles))
 
+        #TODO labels
+        self.get_node_data(owner).get(self.port_key, {})
+        #todo ports a list or a dict?
+
         elk_port = ElkPort(
-            id=self.port_id(owner, port),
-            height=0.5 * self.port_scale,
-            width=0.5 * self.port_scale,
+            id=port_id,
+            height=self.port_scale,
+            width=self.port_scale,
             properties=properties,
         )
-
+        port = Port(node=owner, elkport=elk_port)
         self.register(elk_port, port)
-        return elk_port
+        self._ports[port_id] = port
+        return port
 
     def register(self, element: ElkGraphElement, item: Hashable) -> str:
         """Register Elk Element as a way to find the particular item.
@@ -354,7 +375,7 @@ class XELK(ElkTransformer):
         height = 0
         if node.ports:
             height = (
-                1.25 * self.port_scale * len(node.ports)
+                1.25 * 2 * self.port_scale * len(node.ports)
             )  # max(len(ins), len(outs))  # max number of ports
         height = max(18, height)
         if node.labels:
@@ -365,14 +386,53 @@ class XELK(ElkTransformer):
 
     async def size_label(self, label: ElkLabel) -> TextSize:
         if self.text_sizer is None:
-            return TextSize(
+            size = TextSize(
                 width=self.text_scale * len(label.text),
                 height=10,  # TODO add height default
             )
         else:
-            return await self.text_sizer.measure(label)
+            size = await self.text_sizer.measure(label)
 
-    def collect_labels(self, *nodes)->Tuple[ElkLabel]:
+        label.width=size.width
+        label.height=size.height
+        return size
+
+    def get_node_data(self, node:Hashable)->Dict:
+        g, tree = self.source
+        data = {}
+        if node in g:
+            data = g.nodes[node]
+        return data
+
+    async def collect_ports(self, *nodes) -> PortMap:
+        ports: PortMap = {}
+        for node in nodes:
+            values = self.get_node_data(node).get(self.port_key, [])
+            for i, port in enumerate(values):
+                if isinstance(port, ElkPort):
+                    # generate a fresh copy of the port to prevent mutating original
+                    port = port.to_dict()
+                elif isinstance(port, str):
+                    port_id = self.port_id(node, port)
+                    port = {
+                        "id":port_id,
+                        "labels":[{
+                            "text":port,
+                            "id":f"{port}_label_{i}",
+                        }]
+                    }
+
+                if isinstance(port, dict):
+                    elkport = ElkPort.from_dict(port)
+
+                if elkport.width is None:
+                    elkport.width = self.port_scale
+                if elkport.height is None:
+                    elkport.height = self.port_scale
+                ports[elkport.id] = Port(node=node, elkport=elkport)
+        return ports
+
+    def collect_labels(self, *nodes:Iterable[Hashable])->Tuple[ElkLabel]:
         labels = []
         g, tree = self.source
         if len(nodes) == 0:
@@ -395,11 +455,9 @@ class XELK(ElkTransformer):
                 labels.append(label)
         return tuple(labels)
 
-    async def make_labels(self, node) -> Optional[List[ElkLabel]]:
+    async def make_labels(self, node:Hashable) -> Optional[List[ElkLabel]]:
         if node is None:
             return None
-        g, tree = self.source
-        data = g.nodes[node]
         labels = []
         css = self.get_css(node, ElkLabel)
         properties = None
@@ -408,10 +466,8 @@ class XELK(ElkTransformer):
         for label in self.collect_labels(node):
             label = ElkLabel(**label.to_dict())
             label.layoutOptions = merge(label.layoutOptions, self.get_layout(node, ElkLabel))
-            size = await self.size_label(label)
-            label.width=size.width
-            label.height=size.height
             label.properties=merge(label.properties, properties)
+            await self.size_label(label)
             labels.append(label)
             self.register(label, node)
 
