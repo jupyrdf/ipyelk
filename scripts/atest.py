@@ -79,7 +79,7 @@ def atest(attempt, extra_args):
         "--randomize",
         "all",
         *(extra_args or []),
-        *(os.environ.get("ATEST_ARGS", "").split(" ")),
+        *(os.environ.get("ATEST_ARGS", "").split()),
     ]
 
     os.chdir(P.ATEST)
@@ -109,11 +109,13 @@ def atest(attempt, extra_args):
             *args,
         ]
 
-    print(f"[{fake_cmd} arguments]\n", " ".join(list(map(str, args))))
+    args += ["."]
+
     print(f"[{fake_cmd} test root]\n", P.ATEST)
+    print(f"[{fake_cmd} arguments]\n", " ".join(list(map(str, args))))
 
     try:
-        run_robot(list(map(str, args + [P.ATEST])))
+        run_robot(list(map(str, args)))
         return 0
     except SystemExit as err:
         print(run_robot.__name__, "exited with", err.code)
