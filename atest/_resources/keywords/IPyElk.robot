@@ -71,20 +71,20 @@ Elk Counts Should Be
 
 Get Elk Node Count
     [Arguments]    ${prefix}=${EMPTY}    ${suffix}=${EMPTY}
-    ${nodes} =    Get Element Count    css:${prefix}${CSS ELK NODE}${suffix}
+    ${nodes} =    SeleniumLibrary.Get Element Count    css:${prefix}${CSS ELK NODE}${suffix}
     [Return]    ${nodes}
 
 Get Elk Edge Count
     [Arguments]    ${prefix}=${EMPTY}    ${suffix}=${EMPTY}
-    ${edges} =    Get Element Count    css:${prefix}${CSS ELK EDGE}${suffix}
+    ${edges} =    SeleniumLibrary.Get Element Count    css:${prefix}${CSS ELK EDGE}${suffix}
     [Return]    ${edges}
 
 Get Elk Label Count
     [Arguments]    ${prefix}=${EMPTY}    ${suffix}=${EMPTY}
-    ${labels} =    Get Element Count    css:${prefix}${CSS ELK LABEL}${suffix}
+    ${labels} =    SeleniumLibrary.Get Element Count    css:${prefix}${CSS ELK LABEL}${suffix}
     [Return]    ${labels}
 
 Get Elk Port Count
     [Arguments]    ${prefix}=${EMPTY}    ${suffix}=${EMPTY}
-    ${ports} =    Get Element Count    css:${prefix}${CSS ELK PORT}${suffix}
+    ${ports} =    SeleniumLibrary.Get Element Count    css:${prefix}${CSS ELK PORT}${suffix}
     [Return]    ${ports}
