@@ -310,9 +310,7 @@ class XELK(ElkTransformer):
             sources=[self.port_id(edge.source, edge.source_port)],
             targets=[self.port_id(edge.target, edge.target_port)],
             properties=properties,
-            layoutOptions=self.get_layout(
-                edge.owner, ElkEdge
-            ),
+            layoutOptions=self.get_layout(edge.owner, ElkEdge),
             labels=compact(labels),
         )
         self.register(elk_edge, edge)

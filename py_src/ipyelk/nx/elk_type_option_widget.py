@@ -39,8 +39,9 @@ class XELKTypedLayout(OptionsWidget):
 
             groups.append(option_group)
         self.options = groups
-        self.children = self._ui()
+
         super().__init__(*args, **kwargs)
+        self.children = self._ui()
 
     def _collect_type_options(self):
         registry = {}

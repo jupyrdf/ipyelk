@@ -21,11 +21,6 @@
     },
     {
       "source": "n1",
-      "target": "n2",
-      "key": 1
-    },
-    {
-      "source": "n1",
       "target": "n3",
       "key": 0
     },

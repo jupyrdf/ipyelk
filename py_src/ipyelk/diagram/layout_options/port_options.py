@@ -77,11 +77,14 @@ class PortAnchorOffset(LayoutOptionWidget):
     x = T.Int(default_value=0)
     y = T.Int(default_value=0)
     value = T.Unicode(allow_none=True)
+    active = T.Bool(default_value=False)
 
     def _ui(self) -> List[W.Widget]:
+        cb = W.Checkbox(description="Active")
         x_slider = W.IntSlider(description="Width")
         y_slider = W.IntSlider(description="Height")
 
+        T.link((self, "active"), (cb, "value"))
         T.link((self, "x"), (x_slider, "value"))
         T.link((self, "y"), (y_slider, "value"))
         return [
@@ -91,7 +94,10 @@ class PortAnchorOffset(LayoutOptionWidget):
 
     @T.observe("x", "y")
     def _update_value(self, change=None):
-        self.value = f"({self.x}, {self.y})"
+        if self.active:
+            self.value = f"({self.x}, {self.y})"
+        else:
+            self.value = None
 
 
 class PortIndex(LayoutOptionWidget):

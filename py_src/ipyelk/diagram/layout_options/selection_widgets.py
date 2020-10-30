@@ -96,5 +96,6 @@ class OptionsWidget(W.Accordion, LayoutOptionWidget):
     def _update_value(self, change: T.Bunch = None):
         value = {}
         for option in self.options:
-            value[option.identifier] = option.value
+            if option.value is not None:
+                value[option.identifier] = option.value
         self.value = value
