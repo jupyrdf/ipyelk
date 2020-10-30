@@ -5,6 +5,7 @@
 - provides in-browser text measurement against ground-truth CSS ([#15][])
 - upgrades to `sprotty-elk 0.9.0` ([#15][])
 - adds basic browser testing with Robot Framework ([#21][])
+- adds SVG export with `ElkExporter` ([#27][])
 
 ## ipyelk 0.2.0
 
@@ -17,6 +18,7 @@
 
 [#15]: https://github.com/jupyrdf/ipyelk/pull/15
 [#21]: https://github.com/jupyrdf/ipyelk/pull/21
+[#27]: https://github.com/jupyrdf/ipyelk/pull/27
 
 ---
 

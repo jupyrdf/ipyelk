@@ -21,6 +21,8 @@ WIN = PLATFORM == "Windows"
 OSX = PLATFORM == "Darwin"
 UNIX = not WIN
 
+WIN_CI = bool(json.loads(os.environ.get("WIN_CI", "0")))
+
 # CI jank
 SKIP_CONDA_PREFLIGHT = bool(json.loads(os.environ.get("SKIP_CONDA_PREFLIGHT", "false")))
 FORCE_SERIAL_ENV_PREP = bool(
@@ -84,7 +86,7 @@ JUPYTERLAB_EXE = [
 ]
 
 # env stuff
-OK_ENV = {env: BUILD / f"prep_{env}.ok" for env in ["default"]}
+OK_ENV = {env: BUILD / f"prep_{env}.ok" for env in ["default", "atest"]}
 
 # python stuff
 PY_SRC = ROOT / "py_src" / PY_PKG

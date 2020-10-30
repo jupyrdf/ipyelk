@@ -15,6 +15,9 @@ from pabot import pabot
 
 from . import project as P
 
+PROCESSES = int(os.environ.get("ATEST_PROCESSES", "4"))
+RETRIES = int(os.environ.get("ATEST_RETRIES", "0"))
+
 
 def get_stem(attempt, extra_args):
     """make a directory stem with the run type, python and os version"""
@@ -29,11 +32,6 @@ def get_stem(attempt, extra_args):
 def atest(attempt, extra_args):
     """perform a single attempt of the acceptance tests"""
     stem = get_stem(attempt, extra_args)
-
-    if attempt != 1:
-        previous = P.ATEST_OUT / f"{get_stem(attempt - 1, extra_args)}.robot.xml"
-        if previous.exists():
-            extra_args += ["--rerunfailed", str(previous)]
 
     if "FIREFOX_BINARY" not in os.environ:
         os.environ["FIREFOX_BINARY"] = shutil.which("firefox")
@@ -53,6 +51,15 @@ def atest(attempt, extra_args):
     assert os.path.exists(
         os.environ["FIREFOX_BINARY"]
     ), "No firefox found, this would not go well"
+
+    if attempt != 1:
+        previous = P.ATEST_OUT / f"{get_stem(attempt - 1, extra_args)}" / "output.xml"
+        print(f"Attempt {attempt} will try to re-run tests from {previous}")
+
+        if previous.exists():
+            extra_args += ["--rerunfailed", previous]
+        else:
+            print(f"... can't re-run failed, missing: {previous}")
 
     out_dir = P.ATEST_OUT / stem
 
@@ -76,6 +83,7 @@ def atest(attempt, extra_args):
         "--randomize",
         "all",
         *(extra_args or []),
+        *(os.environ.get("ATEST_ARGS", "").split()),
     ]
 
     os.chdir(P.ATEST)
@@ -87,7 +95,7 @@ def atest(attempt, extra_args):
         except Exception as err:
             print("Error deleting {}, hopefully harmless: {}".format(out_dir, err))
 
-    if "--dryrun" in extra_args:
+    if "--dryrun" in extra_args or PROCESSES == 1:
         run_robot = robot.run_cli
         fake_cmd = "robot"
     else:
@@ -97,19 +105,21 @@ def atest(attempt, extra_args):
         # pabot args must come first
         args = [
             "--processes",
-            os.environ.get("ATEST_PROCESSES", "4"),
+            PROCESSES,
             "--artifactsinsubfolders",
             "--artifacts",
-            "png,log",
+            "png,log,svg",
             "--testlevelsplit",
             *args,
         ]
 
-    print(f"[{fake_cmd} arguments]\n", " ".join(list(map(str, args))))
+    args += ["."]
+
     print(f"[{fake_cmd} test root]\n", P.ATEST)
+    print(f"[{fake_cmd} arguments]\n", " ".join(list(map(str, args))))
 
     try:
-        run_robot(list(map(str, args + [P.ATEST])))
+        run_robot(list(map(str, args)))
         return 0
     except SystemExit as err:
         print(run_robot.__name__, "exited with", err.code)
@@ -121,16 +131,14 @@ def attempt_atest_with_retries(*extra_args):
     attempt = 0
     error_count = -1
 
-    retries = int(os.environ.get("ATEST_RETRIES") or "0")
-
     is_real = "--dryrun" not in extra_args
 
     if is_real and P.ATEST_CANARY.exists():
         P.ATEST_CANARY.unlink()
 
-    while error_count != 0 and attempt <= retries:
+    while error_count != 0 and attempt <= RETRIES:
         attempt += 1
-        print("attempt {} of {}...".format(attempt, retries + 1))
+        print("attempt {} of {}...".format(attempt, RETRIES + 1))
         start_time = time.time()
         error_count = atest(attempt=attempt, extra_args=list(extra_args))
         print(error_count, "errors in", int(time.time() - start_time), "seconds")

@@ -75,7 +75,7 @@ derived from [other works][copyright].
 
 [copyright]: https://github.com/jupyrdf/ipyelk/tree/master/COPYRIGHT.md
 [license]: https://github.com/jupyrdf/ipyelk/tree/master/LICENSE.md
-[examples]: https://github.com/jupyrdf/ipyelk/tree/master/examples/00_Introduction.ipynb
+[examples]: https://github.com/jupyrdf/ipyelk/tree/master/examples/_index.ipynb
 [contributing]: https://github.com/jupyrdf/ipyelk/tree/master/CONTRIBUTING.md
 [changelog]: https://github.com/jupyrdf/ipyelk/tree/master/CHANGELOG.md
 [ci-badge]: https://github.com/jupyrdf/ipyelk/workflows/CI/badge.svg
