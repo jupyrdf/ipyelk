@@ -252,18 +252,10 @@ def task_test():
     for nb in P.EXAMPLE_IPYNB:
         yield _nb_test(nb)
 
-    def _atest_with_logs():
-        proc = subprocess.Popen([*P.APR_ATEST, *P.PYM, "scripts.atest"])
-
-        atest_rc = proc.wait()
-
+    def _pabot_logs():
         for robot_out in sorted(P.ATEST_OUT.rglob("robot_*.out")):
             print(f"\n[{robot_out.relative_to(P.ROOT)}]")
             print(robot_out.read_text() or "<EMPTY>")
-
-        if atest_rc != 0:
-            print(f"\n[FAILED {atest_rc}]\n")
-            return False
 
     yield dict(
         name="atest",
@@ -275,7 +267,7 @@ def task_test():
             P.OK_PREFLIGHT_LAB,
             P.SCRIPTS / "atest.py",
         ],
-        actions=[_atest_with_logs],
+        actions=[[*P.APR_ATEST, *P.PYM, "scripts.atest"], _pabot_logs],
         targets=[P.ATEST_CANARY],
     )
 
