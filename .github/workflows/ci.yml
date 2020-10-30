@@ -80,6 +80,7 @@ jobs:
         shell: cmd /C CALL {0}
         env:
           ATEST_PROCESSES: 1
+          WIN_CI: 1
         run: |
           call C:\Miniconda\Scripts\deactivate
           call C:\Miniconda\Scripts\activate C:\Miniconda\envs\_ipyelk_ci_
