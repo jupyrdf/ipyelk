@@ -97,7 +97,7 @@ def task_binder():
 
 def task_env():
     """prepare project envs"""
-    envs = ["default"]
+    envs = ["default", "atest"]
     for i, env in enumerate(envs):
         file_dep = [P.PROJ_LOCK, P.OK_PREFLIGHT_CONDA]
         if P.FORCE_SERIAL_ENV_PREP and i:
@@ -335,6 +335,7 @@ def task_lint():
                 *P.ALL_TS,
                 P.SCRIPTS / "atest.py",
                 P.OK_PYFLAKES,
+                P.OK_ENV["atest"],
             ],
             actions=[
                 [*P.APR_ATEST, *P.PYM, "robot.tidy", "--inplace", *P.ALL_ROBOT],

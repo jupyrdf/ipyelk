@@ -84,7 +84,7 @@ JUPYTERLAB_EXE = [
 ]
 
 # env stuff
-OK_ENV = {env: BUILD / f"prep_{env}.ok" for env in ["default"]}
+OK_ENV = {env: BUILD / f"prep_{env}.ok" for env in ["default", "atest"]}
 
 # python stuff
 PY_SRC = ROOT / "py_src" / PY_PKG
