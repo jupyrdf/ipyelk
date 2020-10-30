@@ -252,6 +252,16 @@ def task_test():
     for nb in P.EXAMPLE_IPYNB:
         yield _nb_test(nb)
 
+    def _atest_with_logs():
+        atest_rc = subprocess.call([*P.APR_ATEST, *P.PYM, "scripts.atest"])
+
+        for robot_out in sorted(P.ATEST_OUT.rglob("robot_*.out")):
+            print(f"\n[{robot_out.relative_to(P.ROOT)}]")
+            print(robot_out.read_text() or "<EMPTY>")
+
+        if atest_rc != 0:
+            raise RuntimeError(f"\natest FAILED {atest_rc}\n")
+
     yield dict(
         name="atest",
         file_dep=[
@@ -262,7 +272,7 @@ def task_test():
             P.OK_PREFLIGHT_LAB,
             P.SCRIPTS / "atest.py",
         ],
-        actions=[[*P.APR_ATEST, *P.PYM, "scripts.atest"]],
+        actions=[_atest_with_logs],
         targets=[P.ATEST_CANARY],
     )
 
