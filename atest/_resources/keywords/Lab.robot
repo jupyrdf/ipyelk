@@ -12,7 +12,7 @@ Open JupyterLab
     ${geckodriver} =    Which    geckodriver
     ${service args} =    Create List    --log    info
     Set Global Variable    ${NEXT BROWSER}    ${NEXT BROWSER.__add__(1)}
-    Create WebDriver    Firefox
+    Wait Until Keyword Succeeds    5x    5s    Create WebDriver    Firefox
     ...    executable_path=${geckodriver}
     ...    firefox_binary=${firefox}
     ...    service_log_path=${OUTPUT DIR}${/}geckodriver-${NEXT BROWSER}.log
@@ -207,7 +207,8 @@ Restart and Run All
 Maybe Reset Application State
     [Documentation]    when running under pabot, it's not neccessary to reset, saves ~10s/test
     ${in pabot} =    Get Variable Value    ${PABOT ID}    NOPE
-    Run Keyword If    "${in pabot}" != "NOPE"    Reset Application State
+    Try to Close All Tabs
+    Run Keyword If    "${in pabot}" == "NOPE"    Reset Application State
 
 Reset Application State
     Try to Close All Tabs

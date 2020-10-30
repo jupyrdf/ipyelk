@@ -97,7 +97,7 @@ def task_binder():
 
 def task_env():
     """prepare project envs"""
-    envs = ["default"]
+    envs = ["default", "atest"]
     for i, env in enumerate(envs):
         file_dep = [P.PROJ_LOCK, P.OK_PREFLIGHT_CONDA]
         if P.FORCE_SERIAL_ENV_PREP and i:
@@ -240,10 +240,10 @@ def task_test():
                 *P.ALL_PY_SRC,
                 *P.EXAMPLE_IPYNB,
                 P.OK_ENV["default"],
-                P.OK_NBLINT[nb.name],
                 P.OK_PIP_INSTALL,
                 P.OK_PREFLIGHT_KERNEL,
                 P.PY_SCHEMA,
+                *([] if P.WIN_CI else [P.OK_NBLINT[nb.name]]),
             ],
             actions=[_test()],
             targets=[P.DIST_NBHTML / nb.name.replace(".ipynb", ".html")],
@@ -251,6 +251,11 @@ def task_test():
 
     for nb in P.EXAMPLE_IPYNB:
         yield _nb_test(nb)
+
+    def _pabot_logs():
+        for robot_out in sorted(P.ATEST_OUT.rglob("robot_*.out")):
+            print(f"\n[{robot_out.relative_to(P.ROOT)}]")
+            print(robot_out.read_text() or "<EMPTY>")
 
     yield dict(
         name="atest",
@@ -262,7 +267,7 @@ def task_test():
             P.OK_PREFLIGHT_LAB,
             P.SCRIPTS / "atest.py",
         ],
-        actions=[[*P.APR_ATEST, *P.PYM, "scripts.atest"]],
+        actions=[[*P.APR_ATEST, *P.PYM, "scripts.atest"], _pabot_logs],
         targets=[P.ATEST_CANARY],
     )
 
@@ -324,7 +329,14 @@ def task_lint():
     yield _ok(
         dict(
             name="robot",
-            file_dep=[*P.ALL_ROBOT, *P.ALL_PY_SRC, *P.ALL_TS, P.SCRIPTS / "atest.py"],
+            file_dep=[
+                *P.ALL_ROBOT,
+                *P.ALL_PY_SRC,
+                *P.ALL_TS,
+                P.SCRIPTS / "atest.py",
+                P.OK_PYFLAKES,
+                P.OK_ENV["atest"],
+            ],
             actions=[
                 [*P.APR_ATEST, *P.PYM, "robot.tidy", "--inplace", *P.ALL_ROBOT],
                 [*P.APR_ATEST, *P.PYM, "scripts.atest", "--dryrun"],
@@ -344,7 +356,7 @@ def task_lint():
                 P.OK_PRETTIER,
                 P.OK_PYFLAKES,
                 P.OK_ROBOT_LINT,
-                *P.OK_NBLINT.values(),
+                *([] if P.WIN_CI else P.OK_NBLINT.values()),
             ],
         ),
         P.OK_LINT,
