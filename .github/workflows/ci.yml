@@ -82,7 +82,7 @@ jobs:
         run: |
           call C:\Miniconda\Scripts\deactivate
           call C:\Miniconda\Scripts\activate C:\Miniconda\envs\_ipyelk_ci_
-          doit all || exit 1
+          doit all || doit all || exit 1
 
       - name: publish (linux)
         if: ${{ contains(matrix.os, 'ubuntu') }}

@@ -253,7 +253,9 @@ def task_test():
         yield _nb_test(nb)
 
     def _atest_with_logs():
-        atest_rc = subprocess.call([*P.APR_ATEST, *P.PYM, "scripts.atest"])
+        proc = subprocess.Popen([*P.APR_ATEST, *P.PYM, "scripts.atest"])
+
+        atest_rc = proc.wait()
 
         for robot_out in sorted(P.ATEST_OUT.rglob("robot_*.out")):
             print(f"\n[{robot_out.relative_to(P.ROOT)}]")
