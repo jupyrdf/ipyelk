@@ -260,7 +260,8 @@ def task_test():
             print(robot_out.read_text() or "<EMPTY>")
 
         if atest_rc != 0:
-            raise RuntimeError(f"\natest FAILED {atest_rc}\n")
+            print(f"\n[FAILED {atest_rc}]\n")
+            return False
 
     yield dict(
         name="atest",

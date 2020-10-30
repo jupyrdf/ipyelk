@@ -33,11 +33,6 @@ def atest(attempt, extra_args):
     """perform a single attempt of the acceptance tests"""
     stem = get_stem(attempt, extra_args)
 
-    if attempt != 1:
-        previous = P.ATEST_OUT / f"{get_stem(attempt - 1, extra_args)}.robot.xml"
-        if previous.exists():
-            extra_args += ["--rerunfailed", str(previous)]
-
     if "FIREFOX_BINARY" not in os.environ:
         os.environ["FIREFOX_BINARY"] = shutil.which("firefox")
 
@@ -56,6 +51,15 @@ def atest(attempt, extra_args):
     assert os.path.exists(
         os.environ["FIREFOX_BINARY"]
     ), "No firefox found, this would not go well"
+
+    if attempt != 1:
+        previous = P.ATEST_OUT / f"{get_stem(attempt - 1, extra_args)}" / "output.xml"
+        print(f"Attempt {attempt} will try to re-run tests from {previous}")
+
+        if previous.exists():
+            extra_args += ["--rerunfailed", previous]
+        else:
+            print(f"... can't re-run failed, missing: {previous}")
 
     out_dir = P.ATEST_OUT / stem
 
