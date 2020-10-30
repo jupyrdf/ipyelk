@@ -1,13 +1,11 @@
 # Copyright (c) 2020 Dane Freeman.
 # Distributed under the terms of the Modified BSD License.
-import asyncio
-import networkx as nx
-import traitlets as T
-import uuid
-
 from collections import defaultdict
 from functools import lru_cache
-from typing import Dict, Generator, Hashable, List, Optional, Set, Tuple, Type, Iterable
+from typing import Dict, Hashable, Iterable, List, Optional, Set, Tuple, Type
+
+import networkx as nx
+import traitlets as T
 
 from ..app import ElkTransformer
 from ..diagram.elk_model import (
@@ -20,8 +18,17 @@ from ..diagram.elk_model import (
 )
 from ..diagram.elk_text_sizer import ElkTextSizer, TextSize
 from ..diagram.layout_options import HierarchyHandling, OptionsWidget
-from .factors import get_factors, invert, keep
-from .nx import Edge, EdgeMap, NodeMap, PortMap, compact, get_roots, lowest_common_ancestor, Port
+from .nx import (
+    Edge,
+    EdgeMap,
+    NodeMap,
+    Port,
+    PortMap,
+    compact,
+    get_ports,
+    get_roots,
+    lowest_common_ancestor,
+)
 
 
 class XELK(ElkTransformer):
@@ -46,7 +53,7 @@ class XELK(ElkTransformer):
     port_key = T.Unicode(default_value="ports")
     label_offset = T.Float(default_value=5)
 
-    text_sizer:ElkTextSizer = T.Instance(ElkTextSizer, kw={}, allow_none=True)
+    text_sizer: ElkTextSizer = T.Instance(ElkTextSizer, kw={}, allow_none=True)
 
     @T.default("source")
     def _default_source(self):
@@ -124,7 +131,7 @@ class XELK(ElkTransformer):
             # bail is the node is hidden
             return None
         nodes = self._nodes
-        ports:PortMap = self._ports
+        ports: PortMap = self._ports
 
         elk_type = ElkNode if root is not None else "parents"
         layout = self.get_layout(root, elk_type)
@@ -180,7 +187,9 @@ class XELK(ElkTransformer):
 
         return nodes[root]  # top level node
 
-    def get_layout(self, node: Hashable, elk_type: Type[ElkGraphElement])->Optional[Dict]:
+    def get_layout(
+        self, node: Hashable, elk_type: Type[ElkGraphElement]
+    ) -> Optional[Dict]:
         """Get the Elk Layout Options appropriate for given networkx node and
         filter by given elk_type
 
@@ -238,7 +247,7 @@ class XELK(ElkTransformer):
         edges: EdgeMap,
         edge_style: Set[str] = None,
         port_style: Set[str] = None,
-    )-> Tuple[NodeMap, PortMap]:
+    ) -> Tuple[NodeMap, PortMap]:
         for owner, edge_list in edges.items():
             edge_css = self.get_css(owner, ElkEdge, edge_style)
             port_css = self.get_css(owner, ElkPort, port_style)
@@ -266,7 +275,7 @@ class XELK(ElkTransformer):
         return nodes, ports
 
     async def make_edge(
-        self, edge: Edge, styles: Optional[Set[str]] = None, layout_options: Dict=None
+        self, edge: Edge, styles: Optional[Set[str]] = None, layout_options: Dict = None
     ) -> ElkExtendedEdge:
         """Make the associated Elk edge for the given Edge
 
@@ -281,17 +290,37 @@ class XELK(ElkTransformer):
         if styles:
             properties = dict(cssClasses=" ".join(styles))
 
+        labels = []
+        for i, label in enumerate(edge.data.get("labels", [])):
+            layout_options = self.get_layout(
+                edge.owner, ElkLabel
+            )  # TODO add edgelabel type?
+            if isinstance(label, ElkLabel):
+                label = label.to_dict()  # used to create copy of label
+            if isinstance(label, dict):
+                label = ElkLabel.from_dict(label)
+            if isinstance(label, str):
+                label = ElkLabel(id=f"{edge.owner}_label_{i}_{label}", text=label)
+            label.layoutOptions = merge(label.layoutOptions, layout_options)
+            # TODO size the labels in bulk
+            await self.size_label(label)
+            labels.append(label)
         elk_edge = ElkExtendedEdge(
             id=self.edge_id(edge),
             sources=[self.port_id(edge.source, edge.source_port)],
             targets=[self.port_id(edge.target, edge.target_port)],
             properties=properties,
-            layoutOptions=layout_options,
+            layoutOptions=self.get_layout(
+                edge.owner, ElkEdge
+            ),
+            labels=compact(labels),
         )
         self.register(elk_edge, edge)
         return elk_edge
 
-    async def make_port(self, owner: Hashable, port: Hashable, styles: Optional[Set[str]]=None) -> Port:
+    async def make_port(
+        self, owner: Hashable, port: Hashable, styles: Optional[Set[str]] = None
+    ) -> Port:
         """Make the associated elk port for the given owner node and port
 
         :param owner: [description]
@@ -313,9 +342,9 @@ class XELK(ElkTransformer):
         if styles:
             properties = dict(cssClasses=" ".join(styles))
 
-        #TODO labels
+        # TODO labels
         self.get_node_data(owner).get(self.port_key, {})
-        #todo ports a list or a dict?
+        # todo ports a list or a dict?
 
         elk_port = ElkPort(
             id=port_id,
@@ -393,11 +422,11 @@ class XELK(ElkTransformer):
         else:
             size = await self.text_sizer.measure(label)
 
-        label.width=size.width
-        label.height=size.height
+        label.width = size.width
+        label.height = size.height
         return size
 
-    def get_node_data(self, node:Hashable)->Dict:
+    def get_node_data(self, node: Hashable) -> Dict:
         g, tree = self.source
         data = {}
         if node in g:
@@ -415,11 +444,13 @@ class XELK(ElkTransformer):
                 elif isinstance(port, str):
                     port_id = self.port_id(node, port)
                     port = {
-                        "id":port_id,
-                        "labels":[{
-                            "text":port,
-                            "id":f"{port}_label_{i}",
-                        }]
+                        "id": port_id,
+                        "labels": [
+                            {
+                                "text": port,
+                                "id": f"{port}_label_{i}",
+                            }
+                        ],
                     }
 
                 if isinstance(port, dict):
@@ -432,7 +463,7 @@ class XELK(ElkTransformer):
                 ports[elkport.id] = Port(node=node, elkport=elkport)
         return ports
 
-    def collect_labels(self, *nodes:Iterable[Hashable])->Tuple[ElkLabel]:
+    def collect_labels(self, *nodes: Iterable[Hashable]) -> Tuple[ElkLabel]:
         labels = []
         g, tree = self.source
         if len(nodes) == 0:
@@ -455,7 +486,7 @@ class XELK(ElkTransformer):
                 labels.append(label)
         return tuple(labels)
 
-    async def make_labels(self, node:Hashable) -> Optional[List[ElkLabel]]:
+    async def make_labels(self, node: Hashable) -> Optional[List[ElkLabel]]:
         if node is None:
             return None
         labels = []
@@ -465,8 +496,10 @@ class XELK(ElkTransformer):
             properties = dict(cssClasses=" ".join(css))
         for label in self.collect_labels(node):
             label = ElkLabel(**label.to_dict())
-            label.layoutOptions = merge(label.layoutOptions, self.get_layout(node, ElkLabel))
-            label.properties=merge(label.properties, properties)
+            label.layoutOptions = merge(
+                label.layoutOptions, self.get_layout(node, ElkLabel)
+            )
+            label.properties = merge(label.properties, properties)
             await self.size_label(label)
             labels.append(label)
             self.register(label, node)
@@ -488,89 +521,60 @@ class XELK(ElkTransformer):
         hidden: EdgeMap = defaultdict(
             list
         )  # will index edges by nx.lowest_common_ancestor
-
-        g, tree = self.source
-
-        factors = self.extract_factors()
-
-        def merge(
-            update: Dict[Hashable, List], base: Dict[Hashable, List]
-        ) -> Dict[Hashable, List]:
-            for key, value in update.items():
-                base[key].extend(value)
-            return base
-
-        try:
-            while True:
-                sources, targets = next(factors)
-                visible = merge(self.process_endpts(sources, targets), visible)
-
-        except StopIteration as e:
-            hidden_factors: List[Tuple[List, List]] = e.value
-            for sources, targets in hidden_factors:
-                hidden = merge(self.process_endpts(sources, targets), hidden)
-
-        return visible, hidden
-
-    def extract_factors(
-        self,
-    ) -> Generator[Tuple[List, List], None, List[Tuple[List, List]]]:
         g, tree = self.source
         attr = self.HIDDEN_ATTR
         hidden: List[Tuple[List, List]] = []
 
-        for source_vars, target_vars in get_factors(g):
-            shidden = [is_hidden(tree, var[0], attr) for var in source_vars]
-            thidden = [is_hidden(tree, var[0], attr) for var in target_vars]
+        visible: EdgeMap = defaultdict(
+            list
+        )  # will index edges by nx.lowest_common_ancestor
+        hidden: EdgeMap = defaultdict(
+            list
+        )  # will index edges by nx.lowest_common_ancestor
 
-            sources = source_vars
-            targets = target_vars
-            try:
-                vis_source = self.closest_common_visible((s for s, sp in source_vars))
-                vis_target = self.closest_common_visible((t for t, tp in target_vars))
-            except ValueError:
-                continue  # bail if no possible target or source
-            if any(shidden) or any(thidden):
-                if vis_source == vis_target:
-                    # bail if factor is completely internal
-                    continue
+        for source, target, edge_data in g.edges(data=True):
+            shidden = is_hidden(tree, source, attr)
+            thidden = is_hidden(tree, target, attr)
 
-                # trim hidden...
-                sources = list(keep(source_vars, invert(shidden)))
-                targets = list(keep(target_vars, invert(thidden)))
+            source_port, target_port = get_ports(edge_data)
 
-                if all(shidden) or all(thidden):
-                    if len(sources) == 0:
-                        sources = [(vis_source, v) for v in source_vars]
+            if shidden or thidden:
+                try:
+                    vis_source = self.closest_visible(source)
+                    vis_target = self.closest_visible(target)
+                    owner = self.closest_common_visible((vis_source, vis_target))
 
-                    if len(targets) == 0:
-                        target_vars.sort()
-                        targets = [(vis_target, v) for v in target_vars]
-
-                    # [tuple(source_vars), tuple(target_vars)] = (
-                    #   vis_source,
-                    #   vis_target
-                    # )
-                    hidden.append((sources, targets))
-                    continue
-
-            yield sources, targets
-        return hidden
-
-    def process_endpts(self, sources, targets) -> Dict[Hashable, List[Edge]]:
-        g, tree = self.source
-
-        edge_dict: Dict[Hashable, List[Edge]] = defaultdict(list)
-
-        for s, sp in sources:
-
-            for t, tp in targets:
-                owner = self.closest_common_visible((s, t))
-                edge_dict[owner].append(
-                    Edge(source=s, source_port=sp, target=t, target_port=tp)
+                    # create new slack ports if source or target is remapped
+                    if vis_source != source:
+                        source_port = (source, source_port)
+                    if vis_target != target:
+                        target_port = (target, target_port)
+                except ValueError:
+                    continue  # bail if no possible target or source
+                if vis_source != vis_target:
+                    hidden[owner].append(
+                        Edge(
+                            source=vis_source,
+                            source_port=source_port,
+                            target=vis_target,
+                            target_port=target_port,
+                            data=edge_data,
+                            owner=owner,
+                        )
+                    )
+            else:
+                owner = self.closest_common_visible((source, target))
+                visible[owner].append(
+                    Edge(
+                        source=source,
+                        source_port=source_port,
+                        target=target,
+                        target_port=target_port,
+                        data=edge_data,
+                        owner=owner,
+                    )
                 )
-
-        return edge_dict
+        return visible, hidden
 
     @lru_cache()
     def closest_visible(self, node: Hashable):
@@ -631,7 +635,7 @@ def is_hidden(tree: nx.DiGraph, node: Hashable, attr: str) -> bool:
     return False
 
 
-def merge(d1:Optional[Dict], d2:Optional[Dict])->Optional[Dict]:
+def merge(d1: Optional[Dict], d2: Optional[Dict]) -> Optional[Dict]:
     """Merge two dictionaries while first testing if either are `None`.
     The first dictionary's keys take precedence over the second dictionary.
     If the final merged dictionary is empty `None` is returned.

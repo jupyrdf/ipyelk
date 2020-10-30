@@ -107,7 +107,7 @@ class ELKConstructorArguments:
         return ELKConstructorArguments(
             algorithms=algorithms,
             defaultLayoutOptions=defaultLayoutOptions,
-            workerUrl=workerUrl
+            workerUrl=workerUrl,
         )
 
     def to_dict(self) -> dict:
@@ -177,11 +177,7 @@ class ElkGraphElement:
         layoutOptions = from_union(
             [lambda x: from_dict(from_str, x), from_none], obj.get("layoutOptions")
         )
-        return ElkGraphElement(
-            id=id,
-            labels=labels,
-            layoutOptions=layoutOptions
-        )
+        return ElkGraphElement(id=id, labels=labels, layoutOptions=layoutOptions)
 
     def to_dict(self) -> dict:
         result: dict = {}
@@ -286,9 +282,8 @@ class ElkLabel(ElkShape):
             width=width,
             x=x,
             y=y,
-            properties=properties
+            properties=properties,
         )
-
 
     def to_dict(self) -> dict:
         result: dict = {}
@@ -541,7 +536,7 @@ class ElkPort(ElkShape):
             width=width,
             x=x,
             y=y,
-            properties=properties
+            properties=properties,
         )
 
     def to_dict(self) -> dict:

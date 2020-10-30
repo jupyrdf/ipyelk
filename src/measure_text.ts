@@ -63,7 +63,7 @@ export class ELKTextSizerModel extends DOMWidgetModel {
     let label: SVGElement = createSVGElement('text');
     let classes: string[] = [ELK_CSS.label];
     if (text.cssClasses.length > 0) {
-      classes = classes.concat(text.cssClasses.split(" "));
+      classes = classes.concat(text.cssClasses.split(' '));
     }
 
     label.classList.add(...classes);

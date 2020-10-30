@@ -4,15 +4,15 @@
 # Distributed under the terms of the Modified BSD License.
 import asyncio
 import uuid
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Dict, List, Union
 
 import traitlets as T
 from async_lru import alru_cache
 from ipywidgets import DOMWidget
 
-from .elk_model import ElkLabel
 from .._version import EXTENSION_NAME, EXTENSION_SPEC_VERSION
+from .elk_model import ElkLabel
 
 
 @dataclass

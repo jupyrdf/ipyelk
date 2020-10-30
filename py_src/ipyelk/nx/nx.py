@@ -1,10 +1,10 @@
 # Copyright (c) 2020 Dane Freeman.
 # Distributed under the terms of the Modified BSD License.
-import networkx as nx
-
 from dataclasses import dataclass
 from itertools import tee
 from typing import Dict, Hashable, Iterable, List, Optional, Tuple
+
+import networkx as nx
 
 from ..diagram.elk_model import ElkNode, ElkPort
 
@@ -15,6 +15,11 @@ class Edge:
     source_port: Optional[Hashable]
     target: Hashable
     target_port: Optional[Hashable]
+    owner: Hashable
+    data: Optional[Dict]
+
+    def __hash__(self):
+        return hash((self.source, self.source_port, self.target, self.target_port))
 
 
 @dataclass(frozen=True)
@@ -24,6 +29,7 @@ class Port:
 
     def __hash__(self):
         return hash(tuple([hash(self.node), hash(self.elkport.id)]))
+
 
 NodeMap = Dict[Hashable, ElkNode]
 EdgeMap = Dict[Hashable, List[Edge]]

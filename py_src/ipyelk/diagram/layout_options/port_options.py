@@ -340,12 +340,12 @@ class AllowNonFlowPortsToSwitchSides(LayoutOptionWidget):
 
     https://www.eclipse.org/elk/reference/options/org-eclipse-elk-layered-allownonflowportstoswitchsides.html
     """
+
     identifier = "org.eclipse.elk.layered.allowNonFlowPortsToSwitchSides"
     metadata_provider = "options.LayeredMetaDataProvider"
     applies_to = [ElkPort]
 
     allow_switch = T.Bool(default_value=False)
-
 
     def _ui(self) -> List[W.Widget]:
         cb = W.Checkbox(description="Allow Non-Flow Ports To Switch Sides")
@@ -361,6 +361,7 @@ class AllowNonFlowPortsToSwitchSides(LayoutOptionWidget):
         else:
             self.value = "false"
 
+
 class LabelPortSpacing(SpacingOptionWidget):
     """Spacing to be preserved between labels and the ports they are associated
     with. Note that the placement of a label is influenced by the
@@ -368,6 +369,7 @@ class LabelPortSpacing(SpacingOptionWidget):
 
     https://www.eclipse.org/elk/reference/options/org-eclipse-elk-spacing-labelport.html
     """
+
     identifier = "org.eclipse.elk.spacing.labelPort"
     metadata_provider = "core.options.CoreOptions"
     applies_to = ["parents"]
@@ -378,16 +380,20 @@ class LabelPortSpacing(SpacingOptionWidget):
 
 
 class PortAlignment(LayoutOptionWidget):
-    """Defines the default port distribution for a node. May be overridden for each side individually.
+    """Defines the default port distribution for a node. May be overridden for
+    each side individually.
 
     https://www.eclipse.org/elk/reference/options/org-eclipse-elk-portalignment-default.html
     """
+
     identifier = "org.eclipse.elk.portAlignment.default"
     metadata_provider = "core.options.CoreOptions"
     applies_to = [ElkNode]
     group = "portAlignment"
 
-    value = T.Enum(values=list(PORT_ALIGNMENT_OPTIONS.values()), default_value="DISTRIBUTED")
+    value = T.Enum(
+        values=list(PORT_ALIGNMENT_OPTIONS.values()), default_value="DISTRIBUTED"
+    )
 
     def _ui(self) -> List[W.Widget]:
         dropdown = W.Dropdown(options=list(PORT_ALIGNMENT_OPTIONS.items()))
@@ -395,32 +401,44 @@ class PortAlignment(LayoutOptionWidget):
 
         return [dropdown]
 
+
 class PortAlignmentEast(LayoutOptionWidget):
-    """Defines how ports on the eastern side are placed, overriding the node’s general port alignment.
+    """Defines how ports on the eastern side are placed, overriding the node’s
+    general port alignment.
 
     https://www.eclipse.org/elk/reference/options/org-eclipse-elk-portalignment-east.html
     """
+
     identifier = "org.eclipse.elk.portAlignment.east"
 
+
 class PortAlignmentWest(LayoutOptionWidget):
-    """Defines how ports on the western side are placed, overriding the node’s general port alignment.
+    """Defines how ports on the western side are placed, overriding the node’s
+    general port alignment.
 
     https://www.eclipse.org/elk/reference/options/org-eclipse-elk-portalignment-west.html
     """
+
     identifier = "org.eclipse.elk.portAlignment.west"
 
+
 class PortAlignmentNorth(LayoutOptionWidget):
-    """Defines how ports on the northern side are placed, overriding the node’s general port alignment.
+    """Defines how ports on the northern side are placed, overriding the node’s
+    general port alignment.
 
     https://www.eclipse.org/elk/reference/options/org-eclipse-elk-portalignment-north.html
     """
+
     identifier = "org.eclipse.elk.portAlignment.north"
 
+
 class PortAlignmentSouth(LayoutOptionWidget):
-    """Defines how ports on the southern side are placed, overriding the node’s general port alignment.
+    """Defines how ports on the southern side are placed, overriding the node’s
+    general port alignment.
 
     https://www.eclipse.org/elk/reference/options/org-eclipse-elk-portalignment-south.html
     """
+
     identifier = "org.eclipse.elk.portAlignment.south"
 
 
@@ -431,11 +449,14 @@ class PortSortingStrategy(LayoutOptionWidget):
 
     https://www.eclipse.org/elk/reference/options/org-eclipse-elk-layered-portsortingstrategy.html
     """
+
     identifier = "org.eclipse.elk.layered.portSortingStrategy"
     metadata_provider = "options.LayeredMetaDataProvider"
     applies_to = ["parents"]
 
-    value = T.Enum(values=list(PORT_SORTING_STRATEGY_OPTIONS.values()), default_value="INPUT_ORDER")
+    value = T.Enum(
+        values=list(PORT_SORTING_STRATEGY_OPTIONS.values()), default_value="INPUT_ORDER"
+    )
 
     def _ui(self) -> List[W.Widget]:
         dropdown = W.Dropdown(options=list(PORT_SORTING_STRATEGY_OPTIONS.items()))
