@@ -80,11 +80,33 @@ _Log Console_, opened with the _Show Log Console_ command.
 doit lint
 ```
 
-- Ensure the [examples](./examples) work.
+- Ensure the [examples](./examples) work. These will be tested in CI with:
+  - `nbconvert --execute`
+  - in JupyterLab by Robot Framework with _Restart Kernel and Run All Cells_
 - If you add new features:
   - Add a new, minimal demonstration notebook to the examples.
+    - Treat each feature as a function which can be reused for other examples, with:
+      - the example in a humane name, e.g. `a_basic_elk_example`
+      - some suitable defaults and knobs to twiddle
   - Add appropriate links to your new example.
   - Add appropriate Robot Framework tests
+
+### Limiting Testing
+
+To run just _some_ acceptance tests, add something like:
+
+```robotframework
+*** Test Cases ***
+Some Test
+  [Tags]  some:tag
+  ...
+```
+
+Then run:
+
+```bash
+ATEST_ARGS="--exclude NOTsome:tag" doit test:atest
+```
 
 ## Releasing
 

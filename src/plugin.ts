@@ -22,7 +22,10 @@ const plugin: IPlugin<Application<Widget>, void> = {
       name: NAME,
       version: VERSION,
       exports: async () => {
-        const widgetExports = await import(/* webpackChunkName: "elk" */ './widget');
+        const widgetExports = {
+          ...(await import(/* webpackChunkName: "elk" */ './widget')),
+          ...(await import(/* webpackChunkName: "elkexporter" */ './exporter'))
+        };
         ELK_DEBUG && console.warn('widgets loaded');
         return widgetExports;
       }

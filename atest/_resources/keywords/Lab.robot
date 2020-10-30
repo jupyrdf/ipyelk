@@ -15,7 +15,7 @@ Open JupyterLab
     Create WebDriver    Firefox
     ...    executable_path=${geckodriver}
     ...    firefox_binary=${firefox}
-    ...    service_log_path=${OUTPUT DIR}${/}geckodriver-${PABOT ID}-${NEXT BROWSER}.log
+    ...    service_log_path=${OUTPUT DIR}${/}geckodriver-${NEXT BROWSER}.log
     ...    service_args=${service args}
     Wait Until Keyword Succeeds    3x    5s    Wait For Splash
 
@@ -108,9 +108,10 @@ Open ${file} in ${editor}
 Clean Up After Working With Files
     [Arguments]    @{files}
     FOR    ${file}    IN    @{files}
-        Remove File    ${OUTPUT DIR}${/}home${/}${file}
+        ${src}    ${name} =    Split Path    ${file}
+        Remove File    ${OUTPUT DIR}${/}home${/}${name}
     END
-    Reset Application State
+    Maybe Reset Application State
 
 Wait For Dialog
     Wait Until Page Contains Element    ${DIALOG WINDOW}    timeout=180s
@@ -166,11 +167,6 @@ Get Editor Content
     ${content} =    Execute JavaScript    return document.querySelector('${css} .CodeMirror').CodeMirror.getValue()
     [Return]    ${content}
 
-Clean Up After Working with Files and Settings
-    [Arguments]    ${file}
-    Clean Up After Working With Files    ${file}
-    Reset Plugin Settings
-
 Close JupyterLab
     Close All Browsers
 
@@ -207,6 +203,11 @@ Restart and Run All
     Accept Default Dialog Option
     Ensure Sidebar Is Closed
     Run Keyword and Ignore Error    Wait Until Element Contains    ${JLAB XP LAST CODE PROMPT}    [*]:
+
+Maybe Reset Application State
+    [Documentation]    when running under pabot, it's not neccessary to reset, saves ~10s/test
+    ${in pabot} =    Get Variable Value    ${PABOT ID}    NOPE
+    Run Keyword If    "${in pabot}" != "NOPE"    Reset Application State
 
 Reset Application State
     Try to Close All Tabs

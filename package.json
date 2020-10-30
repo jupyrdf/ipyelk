@@ -31,7 +31,7 @@
     "bootstrap": "jlpm --ignore-optional --ignore-scripts && jlpm clean && jlpm schema && jlpm lint && jlpm build",
     "build": "tsc -b",
     "clean": "rimraf lib ./py_src/ipyelk/schema/elkschema.json",
-    "watch": "jlpm build -w",
+    "watch": "jlpm build -w --preserveWatchOutput",
     "schema": "ts-json-schema-generator --tsconfig tsconfig.json --path ./src/elkschema.ts -o ./py_src/ipyelk/schema/elkschema.json",
     "lint": "jlpm lint:prettier",
     "lint:prettier": "prettier --write --list-different \"*.{json,yml,md}\"  \"{src,style,py_src,.ci,.github}/**/*.{ts,tsx,js,jsx,css,json,md,yml}\""

@@ -7,7 +7,8 @@ import traitlets as T
 
 @W.register
 class StyledWidget(W.Box):
-    style = T.Dict(kw={})
+    style = T.Dict(kw={}).tag(sync=True)
+    raw_css = T.Tuple().tag(sync=True)
     _css_widget = T.Instance(W.HTML, kw={"layout": {"display": "None"}})
 
     def __init__(self, *args, **kwargs):
@@ -28,12 +29,14 @@ class StyledWidget(W.Box):
     def _update_style(self, change: T.Bunch = None):
         """Build the custom css to attach to the dom"""
         style = []
+        raw_css = []
         for _cls, attrs in self.style.items():
             if "@keyframes" not in _cls:
                 selector = f".{self._css_class}{_cls}"
-                css_attributes = "".join(
+                css_attributes = "\n".join(
                     [f"{key}: {value};" for key, value in attrs.items()]
                 )
+                raw_css += [f"{_cls}{{ {css_attributes} }}"]
             else:
                 # process keyframe css
                 selector = _cls
@@ -43,8 +46,9 @@ class StyledWidget(W.Box):
                     for stop, frame in value.items():
                         steps.append(f"{stop}:{frame};")
                     attributes.append(f"{key} {{{''.join(steps)}}}")
-                css_attributes = "".join(attributes)
+                css_attributes = "\n".join(attributes)
             style.append(f"{selector}{{{css_attributes}}}")
+        self.raw_css = raw_css
         self._css_widget.value = f"<style>{''.join(style)}</style>"
 
     @property

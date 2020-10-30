@@ -7,6 +7,7 @@ import difference from 'lodash/difference';
 
 import { Message } from '@phosphor/messaging';
 import { Widget } from '@phosphor/widgets';
+import { Signal } from '@phosphor/signaling';
 
 import { DOMWidgetModel, DOMWidgetView } from '@jupyter-widgets/base';
 
@@ -46,6 +47,8 @@ export class ELKModel extends DOMWidgetModel {
   static model_name = 'ELKModel';
 
   protected _elk: ELK.ELK;
+
+  layoutUpdated = new Signal<ELKModel, void>(this);
 
   defaults() {
     let defaults = {
@@ -231,6 +234,7 @@ export class ELKView extends DOMWidgetView {
    */
   _handle_click(event) {
     // event.preventDefault();
+    this.model.layoutUpdated.emit();
     this.send({ event: 'click', id: this.model.get('hovered') });
   }
 
@@ -259,6 +263,7 @@ export class ELKView extends DOMWidgetView {
   async diagramLayout() {
     let layout = this.model.get('_mark_layout');
     await this.source.updateLayout(layout);
+    this.model.layoutUpdated.emit();
   }
 
   normalizeElementIds(model_id: string | string[] | null) {
