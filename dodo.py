@@ -337,7 +337,13 @@ def task_lint():
     yield _ok(
         dict(
             name="robot",
-            file_dep=[*P.ALL_ROBOT, *P.ALL_PY_SRC, *P.ALL_TS, P.SCRIPTS / "atest.py"],
+            file_dep=[
+                *P.ALL_ROBOT,
+                *P.ALL_PY_SRC,
+                *P.ALL_TS,
+                P.SCRIPTS / "atest.py",
+                P.OK_PYFLAKES,
+            ],
             actions=[
                 [*P.APR_ATEST, *P.PYM, "robot.tidy", "--inplace", *P.ALL_ROBOT],
                 [*P.APR_ATEST, *P.PYM, "scripts.atest", "--dryrun"],
