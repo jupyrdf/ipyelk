@@ -345,7 +345,7 @@ def task_lint():
         P.OK_ROBOT_LINT,
     )
 
-    index_src = P.EXAMPLE_INDEX.read_text()
+    index_src = P.EXAMPLE_INDEX.read_text(encoding="utf-8")
 
     def _make_index_check(ex):
         def _check():
