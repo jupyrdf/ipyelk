@@ -81,7 +81,7 @@ class ElkTextSizer(DOMWidget):
             for test_size in content.get("measurements"):
                 asyncio.create_task(self._response_queue.put(test_size))
 
-    @alru_cache(maxsize=800)
+    @alru_cache(maxsize=8000)
     async def measure(self, text: Union[ElkLabel, str]) -> TextSize:
         """Measure the given text and return `TextSize` object containing the width and height
 

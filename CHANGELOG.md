@@ -15,10 +15,15 @@
 - improves evented updates of networkx to diagram with `ElkDiagram.connect(XElk)`
   ([#15][])
 - adds optional `ElkTextSizer` for interacting with browser text sizing ([#15][])
+- add layout options widgets to control various layout parameters ([#24][])
+- add support for multiline node labels, port labels, and edge labels ([#35][])
+  - adds possibility of passing css classes through to the final DOM elements
 
 [#15]: https://github.com/jupyrdf/ipyelk/pull/15
 [#21]: https://github.com/jupyrdf/ipyelk/pull/21
+[#24]: https://github.com/jupyrdf/ipyelk/pull/24
 [#27]: https://github.com/jupyrdf/ipyelk/pull/27
+[#34]: https://github.com/jupyrdf/ipyelk/pull/34
 
 ---
 

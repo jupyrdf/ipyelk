@@ -2,7 +2,7 @@
 # Distributed under the terms of the Modified BSD License.
 from collections import defaultdict
 from functools import lru_cache
-from typing import Dict, Hashable, Iterable, List, Optional, Set, Tuple, Type
+from typing import Dict, Hashable, List, Optional, Set, Tuple, Type
 
 import networkx as nx
 import traitlets as T
@@ -124,8 +124,6 @@ class XELK(ElkTransformer):
         g, tree = self.source
         if root is None:
             self.clear_cached()
-            # bulk calculate label sizes
-            # await self.text_sizer.measure(self.collect_labels())
 
         elif is_hidden(tree, root, self.HIDDEN_ATTR):
             # bail is the node is hidden
@@ -178,13 +176,14 @@ class XELK(ElkTransformer):
                 # size port labels
                 layout = self.get_layout(owner, ElkPort)
                 elkport.layoutOptions = merge(elkport.layoutOptions, layout)
-                if elkport.labels:
-                    for label in elkport.labels:
-                        await self.size_label(label)
                 elknode.ports += [elkport]
 
-            nodes = self.size_nodes(nodes)
+                self.register(elkport, port)
+                for label in listed(elkport.labels):
+                    self.register(label, port)
 
+        # bulk calculate label sizes
+        await self.size_labels(self.collect_labels())
         return nodes[root]  # top level node
 
     def get_layout(
@@ -234,11 +233,6 @@ class XELK(ElkTransformer):
         if dom_classes is None:
             return css_classes
         return css_classes | dom_classes
-
-    def size_nodes(self, nodes: Dict[Hashable, ElkNode]) -> Dict[Hashable, ElkNode]:
-        for node in nodes.values():
-            node.width, node.height = self.get_node_size(node)
-        return nodes
 
     async def process_edges(
         self,
@@ -303,8 +297,10 @@ class XELK(ElkTransformer):
                 label = ElkLabel(id=f"{edge.owner}_label_{i}_{label}", text=label)
             label.layoutOptions = merge(label.layoutOptions, layout_options)
             # TODO size the labels in bulk
-            await self.size_label(label)
+            await self.size_labels([label])
             labels.append(label)
+        for label in labels:
+            self.register(label, edge)
         elk_edge = ElkExtendedEdge(
             id=self.edge_id(edge),
             sources=[self.port_id(edge.source, edge.source_port)],
@@ -351,7 +347,6 @@ class XELK(ElkTransformer):
             properties=properties,
         )
         port = Port(node=owner, elkport=elk_port)
-        self.register(elk_port, port)
         self._ports[port_id] = port
         return port
 
@@ -398,31 +393,27 @@ class XELK(ElkTransformer):
                     ]
         return None
 
-    def get_node_size(self, node: ElkNode) -> Tuple[Optional[float], Optional[float]]:
-        height = 0
-        if node.ports:
-            height = (
-                1.25 * 2 * self.port_scale * len(node.ports)
-            )  # max(len(ins), len(outs))  # max number of ports
-        height = max(18, height)
-        if node.labels:
-            width = max(label.width for label in node.labels) + self.label_offset
-        else:
-            width = self.text_scale
-        return width, height
+    async def size_labels(self, labels: List[ElkLabel]):
+        """Run a list of ElkLabels through to the TextSizer measurer
 
-    async def size_label(self, label: ElkLabel) -> TextSize:
-        if self.text_sizer is None:
-            size = TextSize(
-                width=self.text_scale * len(label.text),
-                height=10,  # TODO add height default
-            )
+        :param labels: [description]
+        :type labels: List[ElkLabel]
+        :return: Updated Labels
+        """
+        if self.text_sizer is not None:
+            sizes = await self.text_sizer.measure(tuple(labels))
         else:
-            size = await self.text_sizer.measure(label)
+            sizes = [
+                TextSize(
+                    width=self.text_scale * len(label.text),
+                    height=10,  # TODO add height default
+                )
+                for label in labels
+            ]
 
-        label.width = size.width
-        label.height = size.height
-        return size
+        for size, label in zip(sizes, labels):
+            label.width = size.width
+            label.height = size.height
 
     def get_node_data(self, node: Hashable) -> Dict:
         g, tree = self.source
@@ -461,27 +452,28 @@ class XELK(ElkTransformer):
                 ports[elkport.id] = Port(node=node, elkport=elkport)
         return ports
 
-    def collect_labels(self, *nodes: Iterable[Hashable]) -> Tuple[ElkLabel]:
+    def collect_labels(self) -> Tuple[ElkLabel]:
+        """Iterate over the map of ElkNodes and pluck labels from:
+            * node
+            * node.ports
+            * node.edges
+
+        :param nodes: [description]
+        :type nodes: NodeMap
+        :return: [description]
+        :rtype: Tuple[ElkLabel]
+        """
+        nodes: NodeMap = self._nodes
         labels = []
-        g, tree = self.source
-        if len(nodes) == 0:
-            return self.collect_labels(*g.nodes)
-        for node in nodes:
-            data = g.nodes[node]
-            values = data.get(self.label_key, [data.get("_id", f"{node}")])
-            for i, name in enumerate(values):
-                if isinstance(name, str):
-                    label = ElkLabel(
-                        id=f"{name}_label_{i}_{node}",
-                        text=name,
-                    )
-                elif isinstance(name, dict):
-                    label = ElkLabel(**name)
-                elif isinstance(name, ElkLabel):
-                    label = name
-                else:
-                    raise TypeError(f"Expected type of ElkLabel not `{type(name)}`")
+        for elknode in nodes.values():
+            for label in listed(elknode.labels):
                 labels.append(label)
+            for elkport in listed(elknode.ports):
+                for label in listed(elkport.labels):
+                    labels.append(label)
+            for elkedge in listed(elknode.edges):
+                for label in listed(elkedge.labels):
+                    labels.append(label)
         return tuple(labels)
 
     async def make_labels(self, node: Hashable) -> Optional[List[ElkLabel]]:
@@ -490,18 +482,36 @@ class XELK(ElkTransformer):
         labels = []
         css = self.get_css(node, ElkLabel)
         properties = None
+        g, tree = self.source
+        data = g.nodes[node]
+        values = data.get(self.label_key, [data.get("_id", f"{node}")])
+
         if css:
             properties = dict(cssClasses=" ".join(css))
-        for label in self.collect_labels(node):
-            label = ElkLabel(**label.to_dict())
+
+        if isinstance(values, (str, ElkLabel)):
+            values = [values]
+        # get node labels
+        for i, label in enumerate(values):
+            if isinstance(label, str):
+                label = ElkLabel(
+                    id=f"{label}_label_{i}_{node}",
+                    text=label,
+                )
+            elif isinstance(label, ElkLabel):
+                # prevent mutating original label in the node data
+                label = label.to_dict()
+            if isinstance(label, dict):
+                label = ElkLabel(**label)
+
+            # add css classes and layout options
             label.layoutOptions = merge(
                 label.layoutOptions, self.get_layout(node, ElkLabel)
             )
             label.properties = merge(label.properties, properties)
-            await self.size_label(label)
+
             labels.append(label)
             self.register(label, node)
-
         return labels
 
     def collect_edges(self) -> Tuple[EdgeMap, EdgeMap]:
@@ -652,3 +662,17 @@ def merge(d1: Optional[Dict], d2: Optional[Dict]) -> Optional[Dict]:
     value = {**d2, **d1}  # right most wins if duplicated keys
     if value:
         return value
+
+
+def listed(values: Optional[List]) -> List:
+    """Checks if incoming `values` is None then either returns a new list or
+    original value.
+
+    :param values: List of values
+    :type values: Optional[List]
+    :return: List of values or empty list
+    :rtype: List
+    """
+    if values is None:
+        return []
+    return values
