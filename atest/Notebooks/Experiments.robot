@@ -51,7 +51,7 @@ ${SCREENS}        ${SCREENS ROOT}${/}notebook-experiments
     Example Should Restart-and-Run-All    ${TX PORTS}
     Elk Counts Should Be
     ...    nodes=${1}
-    ...    labels=${4}
+    ...    labels=${5}
     ...    ports=${2}
 
 106_transformer_edges
