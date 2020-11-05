@@ -300,10 +300,7 @@ class TreatPortLabelsAsGroup(LayoutOptionWidget):
 
     @T.observe("treat_as_group")
     def _update_value(self, change: T.Bunch = None):
-        if self.treat_as_group:
-            self.value = "true"
-        else:
-            self.value = None
+        self.value = "true" if self.treat_as_group else "false"
 
 
 class AdditionalPortSpace(LayoutOptionWidget):
