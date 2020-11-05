@@ -131,7 +131,7 @@ def pairwise(iterable):
     return zip(a, b)
 
 
-def get_ports(edge_data: Dict) -> Tuple[str, str]:
+def get_ports(edge_data: Dict) -> Tuple[Optional[Hashable], Optional[Hashable]]:
     """Get the source and target ports."""
     p = edge_data.get("port", None)
     source_port = edge_data.get("sourcePort", None) or p

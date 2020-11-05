@@ -88,6 +88,7 @@ class PortAnchorOffset(LayoutOptionWidget):
         T.link((self, "x"), (x_slider, "value"))
         T.link((self, "y"), (y_slider, "value"))
         return [
+            cb,
             x_slider,
             y_slider,
         ]
@@ -171,7 +172,7 @@ class PortSpacing(LayoutOptionWidget):
     port’s north border touches the node’s south border; if the port side is
     west, the port’s east border touches the node’s west border.
 
-    https://www.eclipse.org/elk/reference/options/org-eclipse-elk-spacing-portport.html
+    https://www.eclipse.org/elk/reference/options/org-eclipse-elk-spacing-portPort.html
     """
 
     identifier = "org.eclipse.elk.spacing.portPort"
@@ -197,7 +198,7 @@ class PortSpacing(LayoutOptionWidget):
 class PortConstraints(LayoutOptionWidget):
     """Defines constraints of the position of the ports of a node.
 
-    https://www.eclipse.org/elk/reference/options/org-eclipse-elk-portconstraints.html
+    https://www.eclipse.org/elk/reference/options/org-eclipse-elk-portConstraints.html
     """
 
     identifier = "org.eclipse.elk.portConstraints"
@@ -221,7 +222,7 @@ class PortLabelPlacement(LayoutOptionWidget):
     """Decides on a placement method for port labels; if empty, the node label’s
     position is not modified.
 
-    https://www.eclipse.org/elk/reference/options/org-eclipse-elk-portlabels-placement.html
+    https://www.eclipse.org/elk/reference/options/org-eclipse-elk-portLabels-placement.html
     """
 
     identifier = "org.eclipse.elk.portLabels.placement"
@@ -280,7 +281,7 @@ class TreatPortLabelsAsGroup(LayoutOptionWidget):
     western ports and will have no effect if labels are not placed next to their
     port.
 
-    https://www.eclipse.org/elk/reference/options/org-eclipse-elk-portlabels-treatasgroup.html
+    https://www.eclipse.org/elk/reference/options/org-eclipse-elk-portLabels-treatAsGroup.html
     """
 
     identifier = "org.eclipse.elk.portLabels.treatAsGroup"
@@ -312,7 +313,7 @@ class AdditionalPortSpace(LayoutOptionWidget):
     first port on the western and eastern side is 20 units away from the
     northern border.
 
-    https://www.eclipse.org/elk/reference/options/org-eclipse-elk-spacing-portssurrounding.html
+    https://www.eclipse.org/elk/reference/options/org-eclipse-elk-spacing-portsSurrounding.html
     """
 
     identifier = "org.eclipse.elk.spacing.portsSurrounding"
@@ -344,7 +345,7 @@ class AllowNonFlowPortsToSwitchSides(LayoutOptionWidget):
     of edge crossings. Hence, edge length and other aesthetics criteria are not
     addressed.
 
-    https://www.eclipse.org/elk/reference/options/org-eclipse-elk-layered-allownonflowportstoswitchsides.html
+    https://www.eclipse.org/elk/reference/options/org-eclipse-elk-layered-allowNonFlowPortsToSwitchSides.html
     """
 
     identifier = "org.eclipse.elk.layered.allowNonFlowPortsToSwitchSides"
@@ -373,7 +374,7 @@ class LabelPortSpacing(SpacingOptionWidget):
     with. Note that the placement of a label is influenced by the
     ‘portlabels.placement’ option.
 
-    https://www.eclipse.org/elk/reference/options/org-eclipse-elk-spacing-labelport.html
+    https://www.eclipse.org/elk/reference/options/org-eclipse-elk-spacing-labelPort.html
     """
 
     identifier = "org.eclipse.elk.spacing.labelPort"
@@ -389,7 +390,7 @@ class PortAlignment(LayoutOptionWidget):
     """Defines the default port distribution for a node. May be overridden for
     each side individually.
 
-    https://www.eclipse.org/elk/reference/options/org-eclipse-elk-portalignment-default.html
+    https://www.eclipse.org/elk/reference/options/org-eclipse-elk-portAlignment-default.html
     """
 
     identifier = "org.eclipse.elk.portAlignment.default"
@@ -412,7 +413,7 @@ class PortAlignmentEast(LayoutOptionWidget):
     """Defines how ports on the eastern side are placed, overriding the node’s
     general port alignment.
 
-    https://www.eclipse.org/elk/reference/options/org-eclipse-elk-portalignment-east.html
+    https://www.eclipse.org/elk/reference/options/org-eclipse-elk-portAlignment-east.html
     """
 
     identifier = "org.eclipse.elk.portAlignment.east"
@@ -422,7 +423,7 @@ class PortAlignmentWest(LayoutOptionWidget):
     """Defines how ports on the western side are placed, overriding the node’s
     general port alignment.
 
-    https://www.eclipse.org/elk/reference/options/org-eclipse-elk-portalignment-west.html
+    https://www.eclipse.org/elk/reference/options/org-eclipse-elk-portAlignment-west.html
     """
 
     identifier = "org.eclipse.elk.portAlignment.west"
@@ -432,7 +433,7 @@ class PortAlignmentNorth(LayoutOptionWidget):
     """Defines how ports on the northern side are placed, overriding the node’s
     general port alignment.
 
-    https://www.eclipse.org/elk/reference/options/org-eclipse-elk-portalignment-north.html
+    https://www.eclipse.org/elk/reference/options/org-eclipse-elk-portAlignment-north.html
     """
 
     identifier = "org.eclipse.elk.portAlignment.north"
@@ -442,7 +443,7 @@ class PortAlignmentSouth(LayoutOptionWidget):
     """Defines how ports on the southern side are placed, overriding the node’s
     general port alignment.
 
-    https://www.eclipse.org/elk/reference/options/org-eclipse-elk-portalignment-south.html
+    https://www.eclipse.org/elk/reference/options/org-eclipse-elk-portAlignment-south.html
     """
 
     identifier = "org.eclipse.elk.portAlignment.south"
@@ -453,7 +454,7 @@ class PortSortingStrategy(LayoutOptionWidget):
     way a node’s ports are distributed on the sides of a node if their order is
     not prescribed. The option is set on parent nodes.
 
-    https://www.eclipse.org/elk/reference/options/org-eclipse-elk-layered-portsortingstrategy.html
+    https://www.eclipse.org/elk/reference/options/org-eclipse-elk-layered-portSortingStrategy.html
     """
 
     identifier = "org.eclipse.elk.layered.portSortingStrategy"

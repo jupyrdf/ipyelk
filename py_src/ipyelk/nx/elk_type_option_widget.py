@@ -1,9 +1,10 @@
 # Copyright (c) 2020 Dane Freeman.
 # Distributed under the terms of the Modified BSD License.
+from typing import Dict
+
 import traitlets as T
 
-from ipyelk.diagram.elk_model import ElkEdge, ElkLabel, ElkNode, ElkPort
-
+from ..diagram.elk_model import ElkEdge, ElkLabel, ElkNode, ElkPort
 from ..diagram.layout_options import LayoutOptionWidget, OptionsWidget
 
 
@@ -44,17 +45,7 @@ class XELKTypedLayout(OptionsWidget):
         self.children = self._ui()
 
     def _collect_type_options(self):
-        registry = {}
-        for _cls in LayoutOptionWidget.__subclasses__():
-            if _cls.identifier is None:
-                continue
-            if _cls.identifier in registry:
-                existing = registry[_cls.identifier]
-                raise ValueError(
-                    f"Duplicated Identifiers for `{_cls}` and `{existing}`"
-                )
-            registry[_cls.identifier] = _cls
-        return registry
+        return type_options(LayoutOptionWidget)
 
     def _update_value(self, change: T.Bunch = None):
         if change and change.new:
@@ -64,3 +55,17 @@ class XELKTypedLayout(OptionsWidget):
                 opt.identifier: opt.value for opt in self.options
             }
         self._notify_trait("value", {}, self.value)
+
+
+def type_options(cls, registry=None) -> Dict:
+    if registry is None:
+        registry = {}
+    for sub_cls in cls.__subclasses__():
+        if sub_cls.identifier is None:
+            type_options(sub_cls, registry)
+            continue
+        if sub_cls.identifier in registry:
+            existing = registry[sub_cls.identifier]
+            raise ValueError(f"Duplicated Identifiers for `{sub_cls}` and `{existing}`")
+        registry[sub_cls.identifier] = sub_cls
+    return registry
