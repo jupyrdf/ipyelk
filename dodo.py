@@ -345,6 +345,29 @@ def task_lint():
         P.OK_ROBOT_LINT,
     )
 
+    index_src = P.EXAMPLE_INDEX.read_text()
+
+    def _make_index_check(ex):
+        def _check():
+            md = f"(./{ex.name})"
+
+            if md not in index_src:
+                print(f"{ex.name} link missing in _index.ipynb")
+                return False
+
+        return _check
+
+    yield _ok(
+        dict(
+            name="index",
+            file_dep=P.EXAMPLE_IPYNB,
+            actions=[
+                _make_index_check(ex) for ex in P.EXAMPLE_IPYNB if ex != P.EXAMPLE_INDEX
+            ],
+        ),
+        P.OK_INDEX,
+    )
+
     yield _ok(
         dict(
             name="all",
@@ -356,6 +379,7 @@ def task_lint():
                 P.OK_PRETTIER,
                 P.OK_PYFLAKES,
                 P.OK_ROBOT_LINT,
+                P.OK_INDEX,
                 *([] if P.WIN_CI else P.OK_NBLINT.values()),
             ],
         ),
