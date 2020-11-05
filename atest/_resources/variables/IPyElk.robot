@@ -26,15 +26,15 @@ ${SIMPLE LABEL COUNT}    ${SIMPLE NODE COUNT}
 # from flat_graph.json
 #
 ${FLAT NODE COUNT}    ${3}
-${FLAT EDGE COUNT}    ${2}
+${FLAT EDGE COUNT}    ${3}
 ${FLAT LABEL COUNT}    ${FLAT NODE COUNT}
 #
 # from hier_graph.json
 #
 ${HIER NODE COUNT}    ${4}
-${HIER EDGE COUNT}    ${6}
+${HIER EDGE COUNT}    ${5}
 ${HIER LABEL COUNT}    ${HIER NODE COUNT}
 #
 # from hier_ports.json
 #
-${HIER PORT COUNT}    ${10}
+${HIER PORT COUNT}    ${8}
