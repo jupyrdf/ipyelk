@@ -8,6 +8,7 @@ import networkx as nx
 import traitlets as T
 
 import ipyelk.diagram.layout_options as opt
+
 from ..app import ElkTransformer
 from ..diagram.elk_model import (
     ElkEdge,
@@ -62,25 +63,22 @@ class XELK(ElkTransformer):
     @T.default("layouts")
     def _default_layouts(self):
         parent_opts = opt.OptionsWidget(
-            identifier = "parents",
+            identifier="parents",
             options=[
                 opt.HierarchyHandling(),
-            ]
+            ],
         )
         label_opts = opt.OptionsWidget(
-            identifier=ElkLabel,
-            options=[
-                opt.NodeLabelPlacement(horizontal="center")
-            ]
+            identifier=ElkLabel, options=[opt.NodeLabelPlacement(horizontal="center")]
         )
         node_opts = opt.OptionsWidget(
             identifier=ElkNode,
             options=[
                 opt.NodeSizeConstraints(),
-            ]
+            ],
         )
 
-        default = opt.OptionsWidget(options=[parent_opts,node_opts, label_opts])
+        default = opt.OptionsWidget(options=[parent_opts, node_opts, label_opts])
         return {None: default.value}
 
     def node_id(self, node: Hashable) -> str:

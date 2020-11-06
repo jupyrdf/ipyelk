@@ -147,7 +147,7 @@ class Elk(W.VBox, StyledWidget):
     def _handle_diagram_hovered(self, change: T.Bunch):
         try:
             _id = self.transformer.from_id(change.new)
-        except:
+        except ValueError:  # TODO introduce custom ipyelk exceptions
             _id = None
         if _id != self.hovered:
             self.hovered = _id
