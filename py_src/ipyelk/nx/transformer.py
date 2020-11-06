@@ -179,8 +179,8 @@ class XELK(ElkTransformer):
                 elknode.ports += [elkport]
 
                 self.register(elkport, port)
-                for label in listed(elkport.labels):
-                    self.register(label, port)
+                # for label in listed(elkport.labels):
+                #     self.register(label, port)
 
         # bulk calculate label sizes
         await self.size_labels(self.collect_labels())

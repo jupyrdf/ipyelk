@@ -145,7 +145,10 @@ class Elk(W.VBox, StyledWidget):
             self.selected = items
 
     def _handle_diagram_hovered(self, change: T.Bunch):
-        _id = self.transformer.from_id(change.new)
+        try:
+            _id = self.transformer.from_id(change.new)
+        except:
+            _id = None
         if _id != self.hovered:
             self.hovered = _id
 
