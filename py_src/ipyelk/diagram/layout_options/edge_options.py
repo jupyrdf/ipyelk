@@ -59,7 +59,7 @@ class InlineEdgeLabels(LayoutOptionWidget):
     label’s rendering is such that it is not crossed by its edge and thus stays
     legible.
 
-    https://www.eclipse.org/elk/reference/options/org-eclipse-elk-edgelabels-inline.html
+    https://www.eclipse.org/elk/reference/options/org-eclipse-elk-edgeLabels-inline.html
     """
 
     identifier = "org.eclipse.elk.edgeLabels.inline"
@@ -83,7 +83,7 @@ class InlineEdgeLabels(LayoutOptionWidget):
 class EdgeLabelPlacement(LayoutOptionWidget):
     """Gives a hint on where to put edge labels.
 
-    https://www.eclipse.org/elk/reference/options/org-eclipse-elk-edgelabels-placement.html
+    https://www.eclipse.org/elk/reference/options/org-eclipse-elk-edgeLabels-placement.html
     """
 
     identifier = "org.eclipse.elk.edgeLabels.placement"
@@ -155,11 +155,11 @@ class EdgeSpacing(SpacingOptionWidget):
     somewhat easily be satisfied for the segments of orthogonally drawn edges,
     it is harder for general polylines or splines.
 
-    https://www.eclipse.org/elk/reference/options/org-eclipse-elk-spacing-edgeedge.html
+    https://www.eclipse.org/elk/reference/options/org-eclipse-elk-spacing-edgeEdge.html
     """
 
     identifier = "org.eclipse.elk.edge.edgeEdge"
-    applies_to = [ElkEdge]
+    applies_to = ["parents"]
     group = "spacing"
     _slider_description: str = "Edge Spacing"
 
@@ -167,7 +167,7 @@ class EdgeSpacing(SpacingOptionWidget):
 class EdgeNodeSpacing(SpacingOptionWidget):
     """Spacing to be preserved between nodes and edges.
 
-    https://www.eclipse.org/elk/reference/options/org-eclipse-elk-spacing-edgenode.html
+    https://www.eclipse.org/elk/reference/options/org-eclipse-elk-spacing-edgeNode.html
     """
 
     identifier = "org.eclipse.elk.edge.edgeNode"
@@ -181,13 +181,13 @@ class EdgeEdgeLayerSpacing(SpacingOptionWidget):
     the same pair of layers. Note that ‘spacing.edgeEdge’ is used for the
     spacing between pairs of edges crossing the same layer.
 
-    https://www.eclipse.org/elk/reference/options/org-eclipse-elk-layered-spacing-edgeedgebetweenlayers.html
+    https://www.eclipse.org/elk/reference/options/org-eclipse-elk-layered-spacing-edgeEdgeBetweenLayers.html
     """
 
     identifier = "org.eclipse.elk.edge.edgeEdgeBetweenLayers"
     applies_to = ["parents"]
     group = "spacing"
-    _slider_description = "Edge Edge Layer Spacing"
+    _slider_description = "Edge Edge Between Layer Spacing"
 
 
 class EdgeNodeLayerSpacing(SpacingOptionWidget):
@@ -195,7 +195,7 @@ class EdgeNodeLayerSpacing(SpacingOptionWidget):
     to the node’s layer. For the spacing between nodes and edges that cross the
     node’s layer‘spacing.edgeNode’ is used.
 
-    https://www.eclipse.org/elk/reference/options/org-eclipse-elk-layered-spacing-edgenodebetweenlayers.html
+    https://www.eclipse.org/elk/reference/options/org-eclipse-elk-layered-spacing-edgeNodeBetweenLayers.html
     """
 
     identifier = "org.eclipse.elk.edge.edgeNodeBetweenLayers"
@@ -209,13 +209,13 @@ class EdgeLabelSpacing(SpacingOptionWidget):
      associated with. Note that the placement of a label is influenced by the
      ‘edgelabels.placement’ option.
 
-    https://www.eclipse.org/elk/reference/options/org-eclipse-elk-spacing-edgelabel.html
+    https://www.eclipse.org/elk/reference/options/org-eclipse-elk-spacing-edgeLabel.html
     """
 
     identifier = "org.eclipse.elk.edge.edgeLabel"
     applies_to = ["parents"]
     group = "spacing"
-    _slider_description = "Edge Node Spacing"
+    _slider_description = "Edge Label Spacing"
 
     spacing = T.Float(default_value=2, min=0)
 
@@ -223,7 +223,7 @@ class EdgeLabelSpacing(SpacingOptionWidget):
 class EdgeLabelSideSelection(LayoutOptionWidget):
     """Method to decide on edge label sides.
 
-    https://www.eclipse.org/elk/reference/options/org-eclipse-elk-layered-edgelabels-sideselection.html
+    https://www.eclipse.org/elk/reference/options/org-eclipse-elk-layered-edgeLabels-sideSelection.html
     """
 
     identifier = "org.eclipse.elk.layered.edgeLabels.sideSelection"
@@ -243,10 +243,10 @@ class EdgeLabelSideSelection(LayoutOptionWidget):
         return [dropdown]
 
 
-class EdgeLabelPlacementStrategy(LayoutOptionWidget):
+class EdgeCenterLabelPlacementStrategy(LayoutOptionWidget):
     """Determines in which layer center labels of long edges should be placed.
 
-    https://www.eclipse.org/elk/reference/options/org-eclipse-elk-layered-edgelabels-centerlabelplacementstrategy.html
+    https://www.eclipse.org/elk/reference/options/org-eclipse-elk-layered-edgeLabels-centerLabelPlacementStrategy.html
     """
 
     identifier = "org.eclipse.elk.layered.edgeLabels.centerLabelPlacementStrategy"
@@ -299,7 +299,7 @@ class EdgeRouting(LayoutOptionWidget):
     mark them as splines. The bend point list of edges with this option set to
     SPLINES must be interpreted as control points for a piecewise cubic spline.
 
-    https://www.eclipse.org/elk/reference/options/org-eclipse-elk-edgerouting.html
+    https://www.eclipse.org/elk/reference/options/org-eclipse-elk-edgeRouting.html
     """
 
     identifier = "org.eclipse.elk.edgeRouting"
@@ -324,7 +324,7 @@ class EdgeRouting(LayoutOptionWidget):
 class FeedbackEdges(LayoutOptionWidget):
     """Whether feedback edges should be highlighted by routing around the nodes.
 
-    https://www.eclipse.org/elk/reference/options/org-eclipse-elk-layered-feedbackedges.html
+    https://www.eclipse.org/elk/reference/options/org-eclipse-elk-layered-feedbackEdges.html
     """
 
     identifier = "org.eclipse.elk.layered.feedbackEdges"
@@ -350,7 +350,7 @@ class MergeEdges(LayoutOptionWidget):
     edge directly connected to a node. When it is enabled, all such incoming
     edges share an input port, and all outgoing edges share an output port.
 
-    https://www.eclipse.org/elk/reference/options/org-eclipse-elk-layered-mergeedges.html
+    https://www.eclipse.org/elk/reference/options/org-eclipse-elk-layered-mergeEdges.html
     """
 
     identifier = "org.eclipse.elk.layered.mergeEdges"
@@ -362,6 +362,33 @@ class MergeEdges(LayoutOptionWidget):
     def _ui(self) -> List[W.Widget]:
         cb = W.Checkbox(description="Merge Edges")
 
+        T.link((self, "merge"), (cb, "value"))
+        return [cb]
+
+    @T.observe("merge")
+    def _update_value(self, change: T.Bunch = None):
+        self.value = "true" if self.merge else "false"
+
+
+class MergeHierarchyCrossingEdges(LayoutOptionWidget):
+    """If hierarchical layout is active, hierarchy-crossing edges use as few
+    hierarchical ports as possible. They are broken by the algorithm, with
+    hierarchical ports inserted as required. Usually, one such port is created
+    for each edge at each hierarchy crossing point. With this option set to
+    true, we try to create as few hierarchical ports as possible in the process.
+    In particular, all edges that form a hyperedge can share a port.
+
+    https://www.eclipse.org/elk/reference/options/org-eclipse-elk-layered-mergeHierarchyEdges.html
+    """
+
+    identifier = "org.eclipse.elk.layered.mergeHierarchyEdges"
+    metadata_provider = "options.LayeredMetaDataProvider"
+    applies_to = ["parents"]
+
+    merge = T.Bool(default_value=True)
+
+    def _ui(self) -> List[W.Widget]:
+        cb = W.Checkbox(description="Merge Hierarchy Crossing Edges")
         T.link((self, "merge"), (cb, "value"))
         return [cb]
 

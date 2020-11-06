@@ -31,7 +31,7 @@ class NodeSizeConstraints(LayoutOptionWidget):
     """What should be taken into account when calculating a node’s size. Empty
     size constraints specify that a node’s size is already fixed and should not
     be changed.
-    https://www.eclipse.org/elk/reference/options/org-eclipse-elk-nodesize-constraints.html
+    https://www.eclipse.org/elk/reference/options/org-eclipse-elk-nodeSize-constraints.html
 
     Size constraints basically restrict the freedom a layout algorithm has in
     resizing a node subject to its node labels, ports, and port labels. The
@@ -98,7 +98,7 @@ class NodeSizeConstraints(LayoutOptionWidget):
 class NodeSizeMinimum(LayoutOptionWidget):
     """The minimal size to which a node can be reduced.
 
-    https://www.eclipse.org/elk/reference/options/org-eclipse-elk-nodesize-minimum.html
+    https://www.eclipse.org/elk/reference/options/org-eclipse-elk-nodeSize-minimum.html
     """
 
     identifier = "org.eclipse.elk.nodeSize.minimum"
@@ -172,7 +172,7 @@ class NodeSizeOptions(LayoutOptionWidget):
         also ensure that center node labels will actually be placed in the
         center.
 
-    https://www.eclipse.org/elk/reference/options/org-eclipse-elk-nodesize-options.html
+    https://www.eclipse.org/elk/reference/options/org-eclipse-elk-nodeSize-options.html
     """
 
     identifier = "org.eclipse.elk.nodeSize.options"
@@ -221,7 +221,7 @@ class NodeLabelPlacement(LayoutOptionWidget):
     """Hints for where node labels are to be placed; if empty, the node label’s
     position is not modified.
 
-    https://www.eclipse.org/elk/reference/options/org-eclipse-elk-nodelabels-placement.html
+    https://www.eclipse.org/elk/reference/options/org-eclipse-elk-nodeLabels-placement.html
     """
 
     identifier = "org.eclipse.elk.nodeLabels.placement"
@@ -300,7 +300,7 @@ class ActivateInsideSelfLoops(LayoutOptionWidget):
     isn’t already, and will require the layout algorithm to support compound
     nodes with hierarchical ports.
 
-    https://www.eclipse.org/elk/reference/options/org-eclipse-elk-insideselfloops-activate.html
+    https://www.eclipse.org/elk/reference/options/org-eclipse-elk-insideSelfLoops-activate.html
     """
 
     identifier = "org.eclipse.elk.insideSelfLoops.activate"
@@ -329,7 +329,7 @@ class HierarchyHandling(LayoutOptionWidget):
     in the associated parent node. If the root node is set to inherit (or not
     set at all), the default behavior is SEPARATE_CHILDREN.
 
-    https://www.eclipse.org/elk/reference/options/org-eclipse-elk-hierarchyhandling.html
+    https://www.eclipse.org/elk/reference/options/org-eclipse-elk-hierarchyHandling.html
     """
 
     identifier = "org.eclipse.elk.hierarchyHandling"
@@ -345,3 +345,57 @@ class HierarchyHandling(LayoutOptionWidget):
         T.link((self, "value"), (dropdown, "value"))
 
         return [dropdown]
+
+
+class LayoutPartition(LayoutOptionWidget):
+    """Partition to which the node belongs. This requires Layout Partitioning to
+    be active. Nodes with lower partition IDs will appear to the left of nodes
+    with higher partition IDs (assuming a left-to-right layout direction).
+
+    https://www.eclipse.org/elk/reference/options/org-eclipse-elk-partitioning-partition.html
+    """
+
+    identifier = "org.eclipse.elk.partitioning.partition"
+    metadata_provider = "core.options.CoreOptions"
+    applies_to = ["parents", ElkNode]
+
+    index = T.Int(default_value=0)
+    dependencies = (("org.eclipse.elk.partitioning.activate", "true"),)
+
+    def _ui(self) -> List[W.Widget]:
+        input_widget = W.IntText()
+
+        T.link((self, "index"), (input_widget, "value"))
+        return [input_widget]
+
+    @T.observe("index")
+    def _update_value(self, change: T.Bunch = None):
+        self.value = str(self.index)
+
+
+class LayoutPartitioning(LayoutOptionWidget):
+    """Whether to activate partitioned layout. This will allow to group nodes
+    through the Layout Partition option. a pair of nodes with different
+    partition indices is then placed such that the node with lower index is
+    placed to the left of the other node (with left-to-right layout direction).
+    Depending on the layout algorithm, this may only be guaranteed to work if
+    all nodes have a layout partition configured, or at least if edges that
+    cross partitions are not part of a partition-crossing cycle.
+
+    https://www.eclipse.org/elk/reference/options/org-eclipse-elk-partitioning-activate.html
+    """
+
+    identifier = "org.eclipse.elk.partitioning.active"
+    metadata_provider = "core.options.CoreOptions"
+    applies_to = ["parents"]
+
+    active = T.Bool(default_value=False)
+
+    def _ui(self) -> List[W.Widget]:
+        cb = W.Checkbox(description="Layout Partitioning")
+        T.link((self, "active"), (cb, "value"))
+        return [cb]
+
+    @T.observe("index")
+    def _update_value(self, change: T.Bunch = None):
+        self.value = "true" if self.active else "false"

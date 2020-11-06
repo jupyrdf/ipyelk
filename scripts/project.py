@@ -113,6 +113,7 @@ EXAMPLE_IPYNB = [
     p for p in EXAMPLES.rglob("*.ipynb") if ".ipynb_checkpoints" not in str(p)
 ]
 EXAMPLE_PY = [*EXAMPLES.rglob("*.py")]
+EXAMPLE_INDEX = EXAMPLES / "_index.ipynb"
 DIST_NBHTML = DIST / "nbsmoke"
 
 # mostly linting
@@ -140,6 +141,7 @@ OK_PYFLAKES = BUILD / "pyflakes.ok"
 OK_NBLINT = {nb.name: BUILD / f"nblint.{nb.name}.ok" for nb in EXAMPLE_IPYNB}
 OK_PIP_INSTALL = BUILD / "pip_install.ok"
 OK_PRETTIER = BUILD / "prettier.ok"
+OK_INDEX = BUILD / "index.ox"
 
 # derived info
 PY_VERSION = re.findall(

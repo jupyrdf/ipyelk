@@ -18,7 +18,7 @@ class Algorithm:
 
 class Draw2DLayout(Algorithm):
     """
-    https://www.eclipse.org/elk/reference/algorithms/org-eclipse-elk-conn-gmf-layouter-draw2d.html
+    https://www.eclipse.org/elk/reference/algorithms/org-eclipse-elk-conn-gmf-layouter-Draw2D.html
     """
 
     identifier = "org.eclipse.elk.conn.gmf.layouter.Draw2D"

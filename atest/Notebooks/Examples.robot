@@ -5,7 +5,7 @@ Resource          ../_resources/keywords/IPyElk.robot
 Test Teardown     Clean up after IPyElk Example
 
 *** Variables ***
-${SCREENS}        ${SCREENS ROOT}${/}notebooks
+${SCREENS}        ${SCREENS ROOT}${/}notebook-examples
 
 *** Test Cases ***
 #    TODO:
@@ -70,32 +70,3 @@ ${SCREENS}        ${SCREENS ROOT}${/}notebooks
     ...    labels=${HIER LABEL COUNT}
     ...    ports=${HIER PORT COUNT}
     Exported SVG should be valid XML    untitled_stylish_example.svg
-
-100_node_label_placement
-    [Tags]    data:simple.json
-    Example Should Restart-and-Run-All    ${LABEL PLACEMENT}
-    Elk Counts Should Be
-    ...    nodes=${SIMPLE NODE COUNT}
-    ...    edges=${SIMPLE EDGE COUNT}
-    ...    labels=${SIMPLE LABEL COUNT}
-
-101_text_sizer
-    Example Should Restart-and-Run-All    ${TEXT SIZER}
-    # not worth counting anything, doesn't put any elks on page
-
-102_layout_options
-    [Tags]    data:simple.json
-    Example Should Restart-and-Run-All    ${LAYOUT OPTIONS}
-    Elk Counts Should Be
-    ...    nodes=${SIMPLE NODE COUNT}
-    ...    edges=${SIMPLE EDGE COUNT}
-    ...    labels=${SIMPLE LABEL COUNT}
-
-103_transformer_layout_options
-    [Tags]    data:flat_graph.json    data:hier_tree.json    data:hier_ports.json
-    Example Should Restart-and-Run-All    ${TX LAYOUT OPTIONS}
-    Elk Counts Should Be
-    ...    nodes=${FLAT NODE COUNT.__add__(${HIER NODE COUNT})}
-    ...    edges=${FLAT EDGE COUNT.__add__(${HIER EDGE COUNT})}
-    ...    labels=${FLAT LABEL COUNT.__add__(${HIER LABEL COUNT})}
-    ...    ports=${HIER PORT COUNT}

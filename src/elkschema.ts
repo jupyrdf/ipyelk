@@ -23,10 +23,12 @@ export type AnyElkEdge =
   | LazyElkEdge;
 
 export type AnyElkEdgeWithProperties = AnyElkEdge & { properties?: object };
+export type AnyElkLabelWithProperties = ELK.ElkLabel & { properties?: object };
 
 export interface AnyElkNode extends ELK.ElkNode {
   children?: AnyElkNode[];
   ports?: AnyElkPort[];
   edges?: AnyElkEdgeWithProperties[];
   properties?: object;
+  labels?: AnyElkLabelWithProperties[];
 }

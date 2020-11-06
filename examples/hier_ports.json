@@ -52,7 +52,7 @@
     {
       "port": "x",
       "targetPort": "w",
-      "source": "n2",
+      "source": "n1",
       "target": "n3",
       "key": 1
     }

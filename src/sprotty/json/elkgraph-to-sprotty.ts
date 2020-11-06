@@ -169,7 +169,11 @@ export class ElkGraphJsonToSprotty {
       });
     }
 
-    // TODO labels
+    // labels
+    if (elkEdge.labels) {
+      const sLabels = elkEdge.labels.map(this.transformElkLabel, this);
+      sEdge.children!.push(...sLabels);
+    }
     return sEdge;
   }
 

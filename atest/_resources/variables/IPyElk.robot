@@ -10,6 +10,9 @@ ${LABEL PLACEMENT}    100_node_label_placement
 ${TEXT SIZER}     101_text_sizer
 ${LAYOUT OPTIONS}    102_layout_options
 ${TX LAYOUT OPTIONS}    103_transformer_layout_options
+${TX MULTI LABEL}    104_transformer_multi_label
+${TX PORTS}       105_transformer_ports
+${TX EDGES}       106_transformer_edges
 ${CSS ELK VIEW}    .jp-ElkView
 ${CSS SPROTTY GRAPH}    .sprotty-graph
 ${CSS ELK NODE}    .elknode
@@ -26,15 +29,15 @@ ${SIMPLE LABEL COUNT}    ${SIMPLE NODE COUNT}
 # from flat_graph.json
 #
 ${FLAT NODE COUNT}    ${3}
-${FLAT EDGE COUNT}    ${2}
+${FLAT EDGE COUNT}    ${3}
 ${FLAT LABEL COUNT}    ${FLAT NODE COUNT}
 #
 # from hier_graph.json
 #
 ${HIER NODE COUNT}    ${4}
-${HIER EDGE COUNT}    ${6}
+${HIER EDGE COUNT}    ${5}
 ${HIER LABEL COUNT}    ${HIER NODE COUNT}
 #
 # from hier_ports.json
 #
-${HIER PORT COUNT}    ${10}
+${HIER PORT COUNT}    ${8}
