@@ -7,6 +7,7 @@ from typing import Dict, Hashable, List, Optional, Set, Tuple, Type
 import networkx as nx
 import traitlets as T
 
+import ipyelk.diagram.layout_options as opt
 from ..app import ElkTransformer
 from ..diagram.elk_model import (
     ElkEdge,
@@ -17,7 +18,6 @@ from ..diagram.elk_model import (
     ElkPort,
 )
 from ..diagram.elk_text_sizer import ElkTextSizer, TextSize
-from ..diagram.layout_options import HierarchyHandling, OptionsWidget
 from .nx import (
     Edge,
     EdgeMap,
@@ -61,8 +61,27 @@ class XELK(ElkTransformer):
 
     @T.default("layouts")
     def _default_layouts(self):
-        opts = OptionsWidget(options=[HierarchyHandling()])
-        return {None: {"parents": opts.value}}
+        parent_opts = opt.OptionsWidget(
+            identifier = "parents",
+            options=[
+                opt.HierarchyHandling(),
+            ]
+        )
+        label_opts = opt.OptionsWidget(
+            identifier=ElkLabel,
+            options=[
+                opt.NodeLabelPlacement(horizontal="center")
+            ]
+        )
+        node_opts = opt.OptionsWidget(
+            identifier=ElkNode,
+            options=[
+                opt.NodeSizeConstraints(),
+            ]
+        )
+
+        default = opt.OptionsWidget(options=[parent_opts,node_opts, label_opts])
+        return {None: default.value}
 
     def node_id(self, node: Hashable) -> str:
         """Get the element id for a node in the main graph for use in elk
