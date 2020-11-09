@@ -6,6 +6,7 @@
 - upgrades to `sprotty-elk 0.9.0` ([#15][])
 - adds basic browser testing with Robot Framework ([#21][])
 - adds SVG export with `ElkExporter` ([#27][])
+- handles multiple views of the same ELK model more robustly ([#36][])
 
 ## ipyelk 0.2.0
 
@@ -24,6 +25,7 @@
 [#24]: https://github.com/jupyrdf/ipyelk/pull/24
 [#27]: https://github.com/jupyrdf/ipyelk/pull/27
 [#34]: https://github.com/jupyrdf/ipyelk/pull/34
+[#36]: https://github.com/jupyrdf/ipyelk/pull/36
 
 ---
 
