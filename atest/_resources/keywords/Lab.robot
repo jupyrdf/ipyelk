@@ -72,7 +72,7 @@ Ensure File Browser is Open
 Ensure Sidebar Is Closed
     [Arguments]    ${side}=left
     ${els} =    Get WebElements    css:#jp-${side}-stack
-    Run Keyword If    ${els.__len__()}    Click Element    css:.jp-mod-${side} .p-TabBar-tab.p-mod-current
+    Run Keyword If    ${els.__len__()}    Wait Until Keyword Succeeds    3x    0.5s    Click Element    css:.jp-mod-${side} .p-TabBar-tab.p-mod-current
 
 Open Context Menu for File
     [Arguments]    ${file}

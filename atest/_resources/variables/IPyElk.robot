@@ -41,3 +41,24 @@ ${HIER LABEL COUNT}    ${HIER NODE COUNT}
 # from hier_ports.json
 #
 ${HIER PORT COUNT}    ${8}
+#
+# convenience roll-ups
+#
+&{SIMPLE COUNTS}
+...               nodes=${SIMPLE NODE COUNT}
+...               edges=${SIMPLE EDGE COUNT}
+...               labels=${SIMPLE LABEL COUNT}
+&{HIER COUNTS}
+...               nodes=${HIER NODE COUNT}
+...               edges=${HIER EDGE COUNT}
+...               labels=${HIER LABEL COUNT}
+...               ports=${HIER PORT COUNT}
+&{FLAT COUNTS}
+...               nodes=${FLAT NODE COUNT}
+...               edges=${FLAT EDGE COUNT}
+...               labels=${FLAT LABEL COUNT}
+&{FLAT AND HIER COUNTS}
+...               nodes=${FLAT NODE COUNT.__add__(${HIER NODE COUNT})}
+...               edges=${FLAT EDGE COUNT.__add__(${HIER EDGE COUNT})}
+...               labels=${FLAT LABEL COUNT.__add__(${HIER LABEL COUNT})}
+...               ports=${HIER PORT COUNT}
