@@ -49,10 +49,8 @@ class XELK(ElkTransformer):
     css_classes = T.Dict()
 
     port_scale = T.Int(default_value=5)
-    text_scale = T.Float(default_value=10)
     label_key = T.Unicode(default_value="label")
     port_key = T.Unicode(default_value="ports")
-    label_offset = T.Float(default_value=5)
 
     text_sizer: ElkTextSizer = T.Instance(ElkTextSizer, kw={}, allow_none=True)
 
@@ -422,7 +420,7 @@ class XELK(ElkTransformer):
         else:
             sizes = [
                 TextSize(
-                    width=self.text_scale * len(label.text),
+                    width=10 * len(label.text),
                     height=10,  # TODO add height default
                 )
                 for label in labels

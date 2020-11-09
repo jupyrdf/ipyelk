@@ -40,8 +40,10 @@ import {
 import { ToolTYPES } from './tools/types';
 import { ELKTextSizerModel, ELKTextSizerView } from './measure_text';
 export { ELKTextSizerModel, ELKTextSizerView };
+import { PromiseDelegate } from '@phosphor/coreutils';
 
 const DEFAULT_VALUE = { id: 'root' };
+const POLL = 300;
 
 export class ELKModel extends DOMWidgetModel {
   static model_name = 'ELKModel';
@@ -132,6 +134,7 @@ export class ELKView extends DOMWidgetView {
   actionDispatcher: ActionDispatcher;
   feedbackDispatcher: IFeedbackActionDispatcher;
   elementRegistry: SModelRegistry;
+  was_shown = new PromiseDelegate<void>();
 
   initialize(parameters: any) {
     super.initialize(parameters);
@@ -139,17 +142,28 @@ export class ELKView extends DOMWidgetView {
   }
 
   async render() {
-    // don't bother initializing sprotty until actually on the page
-    this.once('displayed', this.initSprotty, this);
-  }
-
-  initSprotty() {
     const root = this.el as HTMLDivElement;
     const sprottyDiv = document.createElement('div');
     this.div_id = sprottyDiv.id = Private.next_id();
 
     root.appendChild(sprottyDiv);
 
+    // don't bother initializing sprotty until actually on the page
+    // schedule it
+    this.initSprotty().catch(console.warn);
+    this.wait_for_visible(true);
+  }
+
+  wait_for_visible = (initial = false) => {
+    if (!this.pWidget.isVisible) {
+      this.was_shown.resolve();
+    } else {
+      setTimeout(this.wait_for_visible, initial ? 0 : POLL);
+    }
+  };
+
+  async initSprotty() {
+    await this.was_shown.promise;
     // Create Sprotty viewer
     const container = createContainer(this.div_id, this);
     this.container = container;
@@ -185,18 +199,25 @@ export class ELKView extends DOMWidgetView {
     );
   }
 
+  resize = (width = -1, height = -1) => {
+    if (width === -1 || height === -1) {
+      const rect = (this.el as HTMLDivElement).getBoundingClientRect();
+      width = rect.width;
+      height = rect.height;
+    }
+    this.source.resize({ width, height, x: 0, y: 0 });
+  };
+
   processPhosphorMessage(msg: Message): void {
     super.processPhosphorMessage(msg);
     switch (msg.type) {
       case 'resize':
         const resizeMessage = msg as Widget.ResizeMessage;
         let { width, height } = resizeMessage;
-        if (width === -1 || height === -1) {
-          const rect = (this.el as HTMLDivElement).getBoundingClientRect();
-          width = rect.width;
-          height = rect.height;
-        }
-        this.source.resize({ width, height, x: 0, y: 0 });
+        this.resize(width, height);
+        break;
+      case 'after-show':
+        this.resize();
         break;
     }
   }
