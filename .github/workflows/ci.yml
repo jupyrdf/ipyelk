@@ -18,14 +18,14 @@ env:
 
 jobs:
   ci:
-    runs-on: ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}-latest
     strategy:
       fail-fast: false
       matrix:
         os:
-          - ubuntu-latest
-          - macos-latest
-          - windows-latest
+          - ubuntu
+          - macos
+          - windows
     steps:
       - name: configure line endings
         run: |
