@@ -1,7 +1,7 @@
 # Copyright (c) 2020 Dane Freeman.
 # Distributed under the terms of the Modified BSD License.
 import re
-from typing import Dict, Hashable, List, Type
+from typing import Dict, Hashable, List, Type, Union
 
 import ipywidgets as W
 import traitlets as T
@@ -99,3 +99,25 @@ class OptionsWidget(W.Accordion, LayoutOptionWidget):
             if option.value is not None:
                 value[option.identifier] = option.value
         self.value = value
+
+    def get(self, key: Union[str, Type[LayoutOptionWidget]]) -> LayoutOptionWidget:
+        """Get the `LayoutOptionWidget` instance in for this option group for
+        the given key
+
+        :param key: Key to lookup option
+        :type key: Union[str, Type[LayoutOptionWidget]]
+        :raises KeyError: [description]
+        :return: Instance of the associated layout option widget
+        :rtype: LayoutOptionWidget
+        """
+        identifier = key
+        try:
+            if issubclass(key, LayoutOptionWidget):
+                identifier = key.identifier
+        except TypeError:
+            pass  # okay if key is not a class
+
+        for option in self.options:
+            if option.identifier == identifier:
+                return option
+        raise KeyError(f"`{key}` is not a valid option for this widget")
