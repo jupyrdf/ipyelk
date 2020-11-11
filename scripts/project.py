@@ -156,6 +156,9 @@ NPM_TGZ_STEM = JS_PKG.replace("@", "").replace("/", "-")
 NPM_TGZ = DIST / f"{NPM_TGZ_STEM}-{JS_VERSION_MANGLED}.tgz"
 EXAMPLE_HTML = [DIST_NBHTML / p.name.replace(".ipynb", ".html") for p in EXAMPLE_IPYNB]
 
+# unit testing
+XUNIT = BUILD / "xunit.xml"
+
 # robot testing
 ATEST = ROOT / "atest"
 ALL_ROBOT = [*ATEST.rglob("*.robot")]
