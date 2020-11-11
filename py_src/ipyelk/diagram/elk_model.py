@@ -6,9 +6,12 @@
 # Distributed under the terms of the Modified BSD License.
 
 # flake8: noqa
-
+from collections import namedtuple
 from dataclasses import dataclass
 from typing import Any, Callable, Dict, List, Optional, Type, TypeVar, cast
+
+# Sentinel Value for tracking the root node in the Elk JSON
+ElkRoot = namedtuple("ElkRootNode", [])()
 
 T = TypeVar("T")
 

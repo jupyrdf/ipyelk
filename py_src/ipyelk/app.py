@@ -4,9 +4,10 @@ import ipywidgets as W
 import traitlets as T
 
 from .diagram import ElkDiagram
+from .diagram.elk_model import ElkRoot
 from .styled_widget import StyledWidget
 from .toolbar import Toolbar
-from .transform import ELK_ROOT_NODE, ElkTransformer
+from .transform import ElkTransformer
 
 
 class Elk(W.VBox, StyledWidget):
@@ -15,7 +16,7 @@ class Elk(W.VBox, StyledWidget):
     transformer: ElkTransformer = T.Instance(ElkTransformer)
     diagram: ElkDiagram = T.Instance(ElkDiagram)
     selected = T.Tuple()
-    hovered = T.Any(allow_none=True, default_value=ELK_ROOT_NODE)
+    hovered = T.Any(allow_none=True, default_value=ElkRoot)
     toolbar: Toolbar = T.Instance(Toolbar, kw={})
 
     _data_link: T.dlink = None

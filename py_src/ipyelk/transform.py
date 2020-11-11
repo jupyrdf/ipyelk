@@ -1,7 +1,6 @@
 # Copyright (c) 2020 Dane Freeman.
 # Distributed under the terms of the Modified BSD License.
 import asyncio
-from collections import namedtuple
 from typing import Dict, Hashable, Optional
 
 import ipywidgets as W
@@ -12,9 +11,6 @@ from .schema import ElkSchemaValidator
 from .styled_widget import StyledWidget
 from .toolbar import Toolbar
 from .trait_types import Schema
-
-# Sentinel Value for tracking the root node in the Elk JSON
-ELK_ROOT_NODE = namedtuple("ElkRootNode", [])()
 
 
 class ElkTransformer(W.Widget):

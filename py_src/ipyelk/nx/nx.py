@@ -6,8 +6,7 @@ from typing import Dict, Hashable, List, Optional, Tuple
 
 import networkx as nx
 
-from ..diagram.elk_model import ElkNode, ElkPort
-from ..transform import ELK_ROOT_NODE
+from ..diagram.elk_model import ElkNode, ElkPort, ElkRoot
 
 
 @dataclass(frozen=True)
@@ -57,7 +56,7 @@ def compact(array: Optional[List]) -> Optional[List]:
 
 def lowest_common_ancestor(tree, nodes):
     if tree is None:
-        return ELK_ROOT_NODE
+        return ElkRoot
     while len(nodes) > 1:
         nodes = [
             lca(tree, u, v)
@@ -83,7 +82,7 @@ def lca(tree: nx.DiGraph, a: Hashable, b: Hashable) -> Optional[Hashable]:
         common = nx.lowest_common_ancestor(tree, a, b)
         if common in tree:
             return common
-    return ELK_ROOT_NODE
+    return ElkRoot
 
 
 def pairwise(iterable):

@@ -4,9 +4,8 @@ from typing import Dict
 
 import traitlets as T
 
-from ..diagram.elk_model import ElkEdge, ElkLabel, ElkNode, ElkPort
+from ..diagram.elk_model import ElkEdge, ElkLabel, ElkNode, ElkPort, ElkRoot
 from ..diagram.layout_options import LayoutOptionWidget, OptionsWidget
-from ..transform import ELK_ROOT_NODE
 
 
 # TODO Layout dictionary widget needs to be reimplemented to allow more flexible
@@ -14,7 +13,7 @@ from ..transform import ELK_ROOT_NODE
 class XELKTypedLayout(OptionsWidget):
 
     selected = T.Any(
-        default_value=ELK_ROOT_NODE
+        default_value=ElkRoot
     )  # placeholder trait while playing with patterns
     value = (
         T.Dict()

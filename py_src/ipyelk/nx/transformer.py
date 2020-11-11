@@ -16,9 +16,10 @@ from ..diagram.elk_model import (
     ElkLabel,
     ElkNode,
     ElkPort,
+    ElkRoot,
 )
 from ..diagram.elk_text_sizer import ElkTextSizer, TextSize
-from ..transform import ELK_ROOT_NODE, ElkTransformer
+from ..transform import ElkTransformer
 from .nx import (
     Edge,
     EdgeMap,
@@ -35,6 +36,7 @@ class XELK(ElkTransformer):
     """NetworkX DiGraphs to ELK dictionary structure"""
 
     HIDDEN_ATTR = "hidden"
+    ELK_ROOT_ID = "root"
 
     _hidden_edges: Optional[EdgeMap] = None
     _visible_edges: Optional[EdgeMap] = None
@@ -76,7 +78,7 @@ class XELK(ElkTransformer):
         )
 
         default = opt.OptionsWidget(options=[parent_opts, node_opts, label_opts])
-        return {ELK_ROOT_NODE: default.value}
+        return {ElkRoot: default.value}
 
     def node_id(self, node: Hashable) -> str:
         """Get the element id for a node in the main graph for use in elk
@@ -87,7 +89,7 @@ class XELK(ElkTransformer):
         :rtype: str
         """
         g, tree = self.source
-        if node is ELK_ROOT_NODE:
+        if node is ElkRoot:
             return "root"
         elif node in g:
             return g.nodes.get(node, {}).get("_id", f"{node}")
@@ -180,9 +182,18 @@ class XELK(ElkTransformer):
         return top
 
     def build_hierarchy(self, elknodes: NodeMap) -> ElkNode:
+        """The Elk JSON is hierarchical. This method iterates through the build
+        elknodes and links children to parents if the incoming source includes a
+        hierarcichal networkx diagraph tree.
+
+        :param elknodes: mapping of networkx nodes to their elknode representations
+        :type elknodes: NodeMap
+        :return: The root elknode
+        :rtype: ElkNode
+        """
         g, tree = self.source
         attr = self.HIDDEN_ATTR
-        if tree is not None and len(tree) > 0:
+        if tree:
             # roots of the tree
             roots = [n for n, d in tree.in_degree() if d == 0]
             for n, elknode in elknodes.items():
@@ -203,11 +214,11 @@ class XELK(ElkTransformer):
                     roots.append(n)
 
         top = ElkNode(
-            id="root",
+            id=self.ELK_ROOT_ID,
             children=[elknodes[n] for n in roots],
-            layoutOptions=self.get_layout(ELK_ROOT_NODE, "parents"),
+            layoutOptions=self.get_layout(ElkRoot, "parents"),
         )
-        elknodes[ELK_ROOT_NODE] = top  # using `None` to represent root elknode
+        elknodes[ElkRoot] = top  # using `None` to represent root elknode
         return top  # returns top level node
 
     async def make_elknode(self, node) -> ElkNode:
@@ -248,7 +259,7 @@ class XELK(ElkTransformer):
         # TODO look at self.source hierarchy and resolve layout with added
         # infomation. until then use root node `None` for layout options
         if node not in self.layouts:
-            node = ELK_ROOT_NODE
+            node = ElkRoot
 
         type_opts = self.layouts.get(node, {})
         options = {**type_opts.get(elk_type, {})}
@@ -625,7 +636,7 @@ class XELK(ElkTransformer):
     def closest_common_visible(self, nodes: Tuple[Hashable]) -> Hashable:
         g, tree = self.source
         if tree is None:
-            return ELK_ROOT_NODE
+            return ElkRoot
         result = lowest_common_ancestor(tree, [self.closest_visible(n) for n in nodes])
         return result
 
