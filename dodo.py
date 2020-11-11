@@ -221,6 +221,7 @@ def task_test():
         actions=[[*P.APR_DEFAULT, "pytest"]],
         file_dep=[
             *P.ALL_PY_SRC,
+            P.OK_PIP_INSTALL,
             P.OK_PYFLAKES,
             P.PY_SCHEMA,
         ],
