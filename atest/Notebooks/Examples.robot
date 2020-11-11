@@ -55,3 +55,11 @@ ${SCREENS}        ${SCREENS ROOT}${/}notebook-examples
     Elk Counts Should Be    &{HIER COUNTS}
     Exported SVG should be valid XML    untitled_stylish_example.svg
     Linked Elk Output Counts Should Be    &{HIER COUNTS}
+
+07_Simulation
+    Example Should Restart-and-Run-All    ${SIM PLUMBING}
+    # not worth counting anything, as is basically non-deterministic
+
+08_Simulation_App
+    Example Should Restart-and-Run-All    ${SIM APP}
+    # not worth counting anything, as is basically non-deterministic
