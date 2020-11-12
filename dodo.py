@@ -216,6 +216,18 @@ def task_build():
 def task_test():
     """run all the notebooks"""
 
+    yield dict(
+        name="unit",
+        actions=[[*P.APR_DEFAULT, "pytest"]],
+        file_dep=[
+            *P.ALL_PY_SRC,
+            P.OK_PIP_INSTALL,
+            P.OK_PYFLAKES,
+            P.PY_SCHEMA,
+        ],
+        targets=[P.XUNIT],
+    )
+
     def _nb_test(nb):
         def _test():
             env = dict(os.environ)
@@ -471,7 +483,7 @@ def task_watch():
 def task_all():
     """do everything except start lab"""
     return dict(
-        file_dep=[P.OK_RELEASE, P.OK_PREFLIGHT_LAB, P.ATEST_CANARY],
+        file_dep=[P.OK_RELEASE, P.OK_PREFLIGHT_LAB, P.ATEST_CANARY, P.XUNIT],
         actions=([_echo_ok("ALL GOOD")]),
     )
 

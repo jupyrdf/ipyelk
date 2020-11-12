@@ -40,9 +40,13 @@ env_specs:
     packages:
       - black
       - flake8
+      - hypothesis
+      - hypothesis-jsonschema
       - isort <5
       - pip
       - pyflakes
+      - pytest-asyncio
+      - pytest-cov
       - python >=3.7,<3.8.0a0
       - twine
       - wheel
