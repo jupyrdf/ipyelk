@@ -212,6 +212,23 @@ def task_build():
         targets=[P.WHEEL, P.SDIST],
     )
 
+    if not P.WIN_CI:
+
+        def _run_hash():
+            names = [p.name for p in P.HASH_DEPS]
+            P.SHA256SUMS.write_text(
+                subprocess.check_output(["sha256sum", *names], cwd=P.DIST).decode(
+                    "utf-8"
+                )
+            )
+
+        yield dict(
+            name="hash",
+            file_dep=P.HASH_DEPS,
+            targets=[P.SHA256SUMS],
+            actions=[_run_hash],
+        )
+
 
 def task_test():
     """run all the notebooks"""
@@ -227,7 +244,7 @@ def task_test():
                 "--to",
                 "html",
                 "--output-dir",
-                P.DIST_NBHTML,
+                P.BUILD_NBHTML,
                 "--execute",
                 "--ExecutePreprocessor.timeout=1200",
                 nb,
@@ -246,7 +263,7 @@ def task_test():
                 *([] if P.WIN_CI else [P.OK_NBLINT[nb.name]]),
             ],
             actions=[_test()],
-            targets=[P.DIST_NBHTML / nb.name.replace(".ipynb", ".html")],
+            targets=[P.BUILD_NBHTML / nb.name.replace(".ipynb", ".html")],
         )
 
     for nb in P.EXAMPLE_IPYNB:
@@ -470,8 +487,14 @@ def task_watch():
 
 def task_all():
     """do everything except start lab"""
+
+    all_dep = [P.OK_RELEASE, P.OK_PREFLIGHT_LAB, P.ATEST_CANARY]
+
+    if not P.WIN_CI:
+        all_dep += [P.SHA256SUMS]
+
     return dict(
-        file_dep=[P.OK_RELEASE, P.OK_PREFLIGHT_LAB, P.ATEST_CANARY],
+        file_dep=all_dep,
         actions=([_echo_ok("ALL GOOD")]),
     )
 

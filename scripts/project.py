@@ -114,7 +114,7 @@ EXAMPLE_IPYNB = [
 ]
 EXAMPLE_PY = [*EXAMPLES.rglob("*.py")]
 EXAMPLE_INDEX = EXAMPLES / "_index.ipynb"
-DIST_NBHTML = DIST / "nbsmoke"
+BUILD_NBHTML = BUILD / "nbsmoke"
 
 # mostly linting
 ALL_PY_SRC = [*PY_SRC.rglob("*.py")]
@@ -154,7 +154,10 @@ SDIST = DIST / f"{PY_PKG}-{PY_VERSION}.tar.gz"
 WHEEL = DIST / f"{PY_PKG}-{PY_VERSION}-py3-none-any.whl"
 NPM_TGZ_STEM = JS_PKG.replace("@", "").replace("/", "-")
 NPM_TGZ = DIST / f"{NPM_TGZ_STEM}-{JS_VERSION_MANGLED}.tgz"
-EXAMPLE_HTML = [DIST_NBHTML / p.name.replace(".ipynb", ".html") for p in EXAMPLE_IPYNB]
+EXAMPLE_HTML = [BUILD_NBHTML / p.name.replace(".ipynb", ".html") for p in EXAMPLE_IPYNB]
+HASH_DEPS = sorted([SDIST, NPM_TGZ, WHEEL])
+SHA256SUMS = DIST / "SHA256SUMS"
+
 
 # robot testing
 ATEST = ROOT / "atest"
