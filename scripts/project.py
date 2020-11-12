@@ -19,6 +19,7 @@ PY_PKG = "ipyelk"
 PLATFORM = os.environ.get("FAKE_PLATFORM", platform.system())
 WIN = PLATFORM == "Windows"
 OSX = PLATFORM == "Darwin"
+LINUX = PLATFORM == "Linux"
 UNIX = not WIN
 
 WIN_CI = bool(json.loads(os.environ.get("WIN_CI", "0")))

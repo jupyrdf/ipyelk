@@ -210,7 +210,7 @@ def task_build():
         targets=[P.WHEEL, P.SDIST],
     )
 
-    if not P.WIN_CI:
+    if P.LINUX:
 
         def _run_hash():
             names = [p.name for p in P.HASH_DEPS]
@@ -493,7 +493,7 @@ def task_all():
         *P.EXAMPLE_HTML,
     ]
 
-    if not P.WIN_CI:
+    if P.LINUX:
         all_dep += [P.SHA256SUMS]
 
     return dict(
