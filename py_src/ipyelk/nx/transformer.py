@@ -50,7 +50,7 @@ class XELK(ElkTransformer):
     css_classes = T.Dict()
 
     port_scale = T.Int(default_value=5)
-    label_key = T.Unicode(default_value="label")
+    label_key = T.Unicode(default_value="labels")
     port_key = T.Unicode(default_value="ports")
 
     text_sizer: ElkTextSizer = T.Instance(ElkTextSizer, kw={}, allow_none=True)
@@ -133,6 +133,7 @@ class XELK(ElkTransformer):
         :return: Root Elk node
         :rtype: ElkNode
         """
+        # TODO decide behavior for nodes that exist in the tree but not g
         g, tree = self.source
         self.clear_cached()
         ports: PortMap = self._ports
@@ -342,7 +343,7 @@ class XELK(ElkTransformer):
             properties = dict(cssClasses=" ".join(styles))
 
         labels = []
-        for i, label in enumerate(edge.data.get("labels", [])):
+        for i, label in enumerate(edge.data.get(self.label_key, [])):
             layout_options = self.get_layout(
                 edge.owner, ElkLabel
             )  # TODO add edgelabel type?
