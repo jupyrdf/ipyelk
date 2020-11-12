@@ -12,6 +12,7 @@
 
 import os
 import subprocess
+from hashlib import sha256
 
 import scripts.project as P
 from doit.action import CmdAction
@@ -211,14 +212,19 @@ def task_build():
     )
 
     if P.LINUX:
-
         def _run_hash():
-            names = [p.name for p in P.HASH_DEPS]
-            P.SHA256SUMS.write_text(
-                subprocess.check_output(["sha256sum", *names], cwd=P.DIST).decode(
-                    "utf-8"
-                )
-            )
+            # mimic sha256sum CLI
+            if P.SHA256SUMS.exists():
+                P.SHA256SUMS.unlink()
+
+            lines = []
+
+            for p in P.HASH_DEPS:
+                lines += ["  ".join([sha256(p.read_bytes()).hexdigest(), p.name])]
+
+            output = "\n".join(lines)
+            print(output)
+            P.SHA256SUMS.write_text(output)
 
         yield dict(
             name="hash",
