@@ -211,27 +211,26 @@ def task_build():
         targets=[P.WHEEL, P.SDIST],
     )
 
-    if P.LINUX:
-        def _run_hash():
-            # mimic sha256sum CLI
-            if P.SHA256SUMS.exists():
-                P.SHA256SUMS.unlink()
+    def _run_hash():
+        # mimic sha256sum CLI
+        if P.SHA256SUMS.exists():
+            P.SHA256SUMS.unlink()
 
-            lines = []
+        lines = []
 
-            for p in P.HASH_DEPS:
-                lines += ["  ".join([sha256(p.read_bytes()).hexdigest(), p.name])]
+        for p in P.HASH_DEPS:
+            lines += ["  ".join([sha256(p.read_bytes()).hexdigest(), p.name])]
 
-            output = "\n".join(lines)
-            print(output)
-            P.SHA256SUMS.write_text(output)
+        output = "\n".join(lines)
+        print(output)
+        P.SHA256SUMS.write_text(output)
 
-        yield dict(
-            name="hash",
-            file_dep=P.HASH_DEPS,
-            targets=[P.SHA256SUMS],
-            actions=[_run_hash],
-        )
+    yield dict(
+        name="hash",
+        file_dep=P.HASH_DEPS,
+        targets=[P.SHA256SUMS],
+        actions=[_run_hash],
+    )
 
 
 def task_test():
@@ -492,18 +491,14 @@ def task_watch():
 def task_all():
     """do everything except start lab"""
 
-    all_dep = [
-        P.OK_RELEASE,
-        P.OK_PREFLIGHT_LAB,
-        P.ATEST_CANARY,
-        *P.EXAMPLE_HTML,
-    ]
-
-    if P.LINUX:
-        all_dep += [P.SHA256SUMS]
-
     return dict(
-        file_dep=all_dep,
+        file_dep=[
+            *P.EXAMPLE_HTML,
+            P.ATEST_CANARY,
+            P.OK_PREFLIGHT_LAB,
+            P.OK_RELEASE,
+            P.SHA256SUMS,
+        ],
         actions=([_echo_ok("ALL GOOD")]),
     )
 
