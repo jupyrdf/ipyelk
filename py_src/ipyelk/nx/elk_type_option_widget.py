@@ -4,13 +4,17 @@ from typing import Dict
 
 import traitlets as T
 
-from ..diagram.elk_model import ElkEdge, ElkLabel, ElkNode, ElkPort
+from ..diagram.elk_model import ElkEdge, ElkLabel, ElkNode, ElkPort, ElkRoot
 from ..diagram.layout_options import LayoutOptionWidget, OptionsWidget
 
 
+# TODO Layout dictionary widget needs to be reimplemented to allow more flexible
+# programatic setting of layout options
 class XELKTypedLayout(OptionsWidget):
 
-    selected = T.Any(allow_none=True)  # placeholder trait while playing with patterns
+    selected = T.Any(
+        default_value=ElkRoot
+    )  # placeholder trait while playing with patterns
     value = (
         T.Dict()
     )  # TODO get some typing around the dictionary e.g. Dict[Hashable, NEWDATACLASS]
@@ -55,6 +59,15 @@ class XELKTypedLayout(OptionsWidget):
                 opt.identifier: opt.value for opt in self.options
             }
         self._notify_trait("value", {}, self.value)
+
+    def get(self, element_type) -> OptionsWidget:
+        """Get the `OptionsWidget` for the given element_type according to the
+        current active selection
+        """
+        for option in self.options:
+            if option.identifier == element_type:
+                return option
+        raise KeyError(f"`{element_type}` is not a valid element for this widget")
 
 
 def type_options(cls, registry=None) -> Dict:

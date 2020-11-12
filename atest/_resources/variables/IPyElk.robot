@@ -6,6 +6,8 @@ ${APP}            03_App
 ${INTERACTIVE}    04_Interactive
 ${EXPORTER}       05_SVG_Exporter
 ${APP EXPORTER}    06_SVG_App_Exporter
+${SIM PLUMBING}    07_Simulation
+${SIM APP}        08_Simulation_App
 ${LABEL PLACEMENT}    100_node_label_placement
 ${TEXT SIZER}     101_text_sizer
 ${LAYOUT OPTIONS}    102_layout_options
@@ -41,3 +43,24 @@ ${HIER LABEL COUNT}    ${HIER NODE COUNT}
 # from hier_ports.json
 #
 ${HIER PORT COUNT}    ${8}
+#
+# convenience roll-ups
+#
+&{SIMPLE COUNTS}
+...               nodes=${SIMPLE NODE COUNT}
+...               edges=${SIMPLE EDGE COUNT}
+...               labels=${SIMPLE LABEL COUNT}
+&{HIER COUNTS}
+...               nodes=${HIER NODE COUNT}
+...               edges=${HIER EDGE COUNT}
+...               labels=${HIER LABEL COUNT}
+...               ports=${HIER PORT COUNT}
+&{FLAT COUNTS}
+...               nodes=${FLAT NODE COUNT}
+...               edges=${FLAT EDGE COUNT}
+...               labels=${FLAT LABEL COUNT}
+&{FLAT AND HIER COUNTS}
+...               nodes=${FLAT NODE COUNT.__add__(${HIER NODE COUNT})}
+...               edges=${FLAT EDGE COUNT.__add__(${HIER EDGE COUNT})}
+...               labels=${FLAT LABEL COUNT.__add__(${HIER LABEL COUNT})}
+...               ports=${HIER PORT COUNT}

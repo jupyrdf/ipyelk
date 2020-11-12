@@ -7,7 +7,7 @@ import traitlets as T
 
 @W.register
 class StyledWidget(W.Box):
-    style = T.Dict(kw={}).tag(sync=True)
+    style = T.Dict(kw={})
     raw_css = T.Tuple().tag(sync=True)
     _css_widget = T.Instance(W.HTML, kw={"layout": {"display": "None"}})
 

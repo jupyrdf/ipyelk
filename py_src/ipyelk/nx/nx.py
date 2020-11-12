@@ -2,11 +2,11 @@
 # Distributed under the terms of the Modified BSD License.
 from dataclasses import dataclass
 from itertools import tee
-from typing import Dict, Hashable, Iterable, List, Optional, Tuple
+from typing import Dict, Hashable, List, Optional, Tuple
 
 import networkx as nx
 
-from ..diagram.elk_model import ElkNode, ElkPort
+from ..diagram.elk_model import ElkNode, ElkPort, ElkRoot
 
 
 @dataclass(frozen=True)
@@ -36,32 +36,6 @@ EdgeMap = Dict[Hashable, List[Edge]]
 PortMap = Dict[Hashable, Port]
 
 
-def get_roots(tree: nx.DiGraph, g: nx.DiGraph) -> Iterable[Hashable]:
-    """Iterate through the roots in the tree and any orphaned nodes in the graph
-
-    :param tree: Hierarchical graph
-    :type tree: nx.DiGraph
-    :param g: [description]
-    :type g: nx.DiGraph
-    :return: [description]
-    :rtype: Hashable
-    :yield: [description]
-    :rtype: Hashable
-    """
-    if len(tree) == 0:
-        # graph is empty
-        return []
-    assert nx.is_forest(
-        tree
-    ), "The given hierarchy should be a NetworkX DiGraph that is also a Forest"
-    for node, degree in tree.in_degree():
-        if degree == 0:
-            yield node
-    for node in g.nodes():
-        if node not in tree:
-            yield node
-
-
 def compact(array: Optional[List]) -> Optional[List]:
     """Compact an list by removing `None` elements. If the result is an empty
         list, return `None`
@@ -80,19 +54,13 @@ def compact(array: Optional[List]) -> Optional[List]:
     return None
 
 
-def get_edge_data(g: nx.DiGraph, source, target):
-    if isinstance(g, nx.MultiDiGraph):
-        return g.get_edge_data(source, target).values()
-    return [g.get_edge_data(source, target)]
-
-
 def lowest_common_ancestor(tree, nodes):
     if tree is None:
-        return None
+        return ElkRoot
     while len(nodes) > 1:
         nodes = [
             lca(tree, u, v)
-            for u, v in pairwise(nodes)  # can be more efficient than pairwise
+            for u, v in pairwise(nodes)  # TODO be more efficient than pairwise
         ]
     return nodes[0]
 
@@ -111,8 +79,10 @@ def lca(tree: nx.DiGraph, a: Hashable, b: Hashable) -> Optional[Hashable]:
     :rtype: [type]
     """
     if a in tree and b in tree:
-        return nx.lowest_common_ancestor(tree, a, b)
-    return None
+        common = nx.lowest_common_ancestor(tree, a, b)
+        if common in tree:
+            return common
+    return ElkRoot
 
 
 def pairwise(iterable):
