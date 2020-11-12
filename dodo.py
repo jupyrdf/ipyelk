@@ -113,11 +113,9 @@ def task_release():
     return _ok(
         dict(
             file_dep=[
-                P.OK_PIP_INSTALL,
                 P.OK_LINT,
-                P.WHEEL,
-                *P.EXAMPLE_HTML,
                 P.OK_PREFLIGHT_RELEASE,
+                P.SHA256SUMS,
             ],
             actions=[_echo_ok("ready to release")],
         ),
@@ -488,7 +486,12 @@ def task_watch():
 def task_all():
     """do everything except start lab"""
 
-    all_dep = [P.OK_RELEASE, P.OK_PREFLIGHT_LAB, P.ATEST_CANARY]
+    all_dep = [
+        P.OK_RELEASE,
+        P.OK_PREFLIGHT_LAB,
+        P.ATEST_CANARY,
+        *P.EXAMPLE_HTML,
+    ]
 
     if not P.WIN_CI:
         all_dep += [P.SHA256SUMS]
