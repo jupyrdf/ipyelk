@@ -1,5 +1,15 @@
 # Changelog
 
+> ## @jupyrdf/jupyter-elk 0.2.1
+>
+> TBD
+
+> ## ipyelk 0.2.1
+>
+> TBD
+
+---
+
 ## @jupyrdf/jupyter-elk 0.2.0
 
 - provides in-browser text measurement against ground-truth CSS ([#15][])

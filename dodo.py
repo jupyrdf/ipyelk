@@ -12,6 +12,7 @@
 
 import os
 import subprocess
+from hashlib import sha256
 
 import scripts.project as P
 from doit.action import CmdAction
@@ -113,11 +114,9 @@ def task_release():
     return _ok(
         dict(
             file_dep=[
-                P.OK_PIP_INSTALL,
                 P.OK_LINT,
-                P.WHEEL,
-                *P.EXAMPLE_HTML,
                 P.OK_PREFLIGHT_RELEASE,
+                P.SHA256SUMS,
             ],
             actions=[_echo_ok("ready to release")],
         ),
@@ -212,6 +211,27 @@ def task_build():
         targets=[P.WHEEL, P.SDIST],
     )
 
+    def _run_hash():
+        # mimic sha256sum CLI
+        if P.SHA256SUMS.exists():
+            P.SHA256SUMS.unlink()
+
+        lines = []
+
+        for p in P.HASH_DEPS:
+            lines += ["  ".join([sha256(p.read_bytes()).hexdigest(), p.name])]
+
+        output = "\n".join(lines)
+        print(output)
+        P.SHA256SUMS.write_text(output)
+
+    yield dict(
+        name="hash",
+        file_dep=P.HASH_DEPS,
+        targets=[P.SHA256SUMS],
+        actions=[_run_hash],
+    )
+
 
 def task_test():
     """run all the notebooks"""
@@ -227,7 +247,7 @@ def task_test():
                 "--to",
                 "html",
                 "--output-dir",
-                P.DIST_NBHTML,
+                P.BUILD_NBHTML,
                 "--execute",
                 "--ExecutePreprocessor.timeout=1200",
                 nb,
@@ -246,7 +266,7 @@ def task_test():
                 *([] if P.WIN_CI else [P.OK_NBLINT[nb.name]]),
             ],
             actions=[_test()],
-            targets=[P.DIST_NBHTML / nb.name.replace(".ipynb", ".html")],
+            targets=[P.BUILD_NBHTML / nb.name.replace(".ipynb", ".html")],
         )
 
     for nb in P.EXAMPLE_IPYNB:
@@ -266,6 +286,7 @@ def task_test():
             P.OK_ROBOT_LINT,
             P.OK_PREFLIGHT_LAB,
             P.SCRIPTS / "atest.py",
+            *([] if P.WIN_CI else P.OK_NBLINT.values()),
         ],
         actions=[[*P.APR_ATEST, *P.PYM, "scripts.atest"], _pabot_logs],
         targets=[P.ATEST_CANARY],
@@ -380,7 +401,6 @@ def task_lint():
                 P.OK_PYFLAKES,
                 P.OK_ROBOT_LINT,
                 P.OK_INDEX,
-                *([] if P.WIN_CI else P.OK_NBLINT.values()),
             ],
         ),
         P.OK_LINT,
@@ -470,8 +490,15 @@ def task_watch():
 
 def task_all():
     """do everything except start lab"""
+
     return dict(
-        file_dep=[P.OK_RELEASE, P.OK_PREFLIGHT_LAB, P.ATEST_CANARY],
+        file_dep=[
+            *P.EXAMPLE_HTML,
+            P.ATEST_CANARY,
+            P.OK_PREFLIGHT_LAB,
+            P.OK_RELEASE,
+            P.SHA256SUMS,
+        ],
         actions=([_echo_ok("ALL GOOD")]),
     )
 
