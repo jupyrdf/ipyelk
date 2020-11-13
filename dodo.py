@@ -259,6 +259,7 @@ def task_test():
             file_dep=[
                 *P.ALL_PY_SRC,
                 *P.EXAMPLE_IPYNB,
+                *P.EXAMPLE_JSON,
                 P.OK_ENV["default"],
                 P.OK_PIP_INSTALL,
                 P.OK_PREFLIGHT_KERNEL,
@@ -283,6 +284,7 @@ def task_test():
             *P.ALL_ROBOT,
             *P.ALL_PY_SRC,
             *P.EXAMPLE_IPYNB,
+            *P.EXAMPLE_JSON,
             P.OK_ROBOT_LINT,
             P.OK_PREFLIGHT_LAB,
             P.SCRIPTS / "atest.py",
