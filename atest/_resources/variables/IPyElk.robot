@@ -27,12 +27,14 @@ ${CSS ELK PORT}    .elkport
 ${SIMPLE NODE COUNT}    ${10}
 ${SIMPLE EDGE COUNT}    ${14}
 ${SIMPLE LABEL COUNT}    ${SIMPLE NODE COUNT}
+${SIMPLE CUSTOM NODE CLASS}
 #
 # from flat_graph.json
 #
 ${FLAT NODE COUNT}    ${3}
 ${FLAT EDGE COUNT}    ${3}
 ${FLAT LABEL COUNT}    ${FLAT NODE COUNT}
+${FLAT PORT COUNT}    ${0}
 #
 # from hier_graph.json
 #
@@ -59,8 +61,9 @@ ${HIER PORT COUNT}    ${8}
 ...               nodes=${FLAT NODE COUNT}
 ...               edges=${FLAT EDGE COUNT}
 ...               labels=${FLAT LABEL COUNT}
+...               ports=${FLAT PORT COUNT}
 &{FLAT AND HIER COUNTS}
 ...               nodes=${FLAT NODE COUNT.__add__(${HIER NODE COUNT})}
 ...               edges=${FLAT EDGE COUNT.__add__(${HIER EDGE COUNT})}
 ...               labels=${FLAT LABEL COUNT.__add__(${HIER LABEL COUNT})}
-...               ports=${HIER PORT COUNT}
+...               ports=${FLAT LABEL COUNT.__add__(${HIER PORT COUNT})}

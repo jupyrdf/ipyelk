@@ -10,7 +10,18 @@
       "id": "n2"
     },
     {
-      "id": "n3"
+      "id": "n3",
+      "properties": {
+        "cssClasses": "example-data-node-class-from-flat"
+      },
+      "ports": [
+        {
+          "id": "p1",
+          "properties": {
+            "cssClasses": "example-data-port-class-from-flat"
+          }
+        }
+      ]
     }
   ],
   "links": [
@@ -27,7 +38,10 @@
     {
       "source": "n2",
       "target": "n3",
-      "key": 0
+      "key": 0,
+      "properties": {
+        "cssClasses": "example-data-edge-class-from-flat"
+      }
     }
   ]
 }
