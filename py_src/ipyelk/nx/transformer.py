@@ -2,7 +2,7 @@
 # Distributed under the terms of the Modified BSD License.
 from collections import defaultdict
 from functools import lru_cache
-from typing import Dict, Hashable, List, Optional, Set, Tuple, Type
+from typing import Dict, Hashable, List, Optional, Set, Tuple, Type, Union
 
 import networkx as nx
 import traitlets as T
@@ -112,7 +112,7 @@ class XELK(ElkTransformer):
 
     def edge_id(self, edge: Edge):
         # TODO probably will need more sophisticated id generation in future
-        return "{}.{} -> {}.{}".format(
+        return "{}__{}___{}__{}".format(
             edge.source, edge.source_port, edge.target, edge.target_port
         )
 
@@ -225,15 +225,13 @@ class XELK(ElkTransformer):
         layout = self.get_layout(node, ElkNode)
 
         labels = await self.make_labels(node)
-        properties = None
-        css = self.get_css(node, ElkNode)
-        if css:
-            properties = dict(cssClasses=" ".join(css))
 
         # update port map with declared ports in the networkx node data
         node_ports = await self.collect_ports(node)
         for key, value in node_ports.items():
             self._ports[key] = value
+
+        properties = self.get_properties(node, self.get_css(node, ElkNode)) or None
 
         elk_node = ElkNode(
             id=self.node_id(node),
@@ -265,6 +263,55 @@ class XELK(ElkTransformer):
         options = {**type_opts.get(elk_type, {})}
         if options:
             return options
+
+    def get_properties(
+        self,
+        element: Optional[Union[Hashable, str]],
+        dom_classes: Optional[Set[str]] = None,
+    ) -> Dict:
+        """Get the properties for a graph element
+
+        :param element: Networkx node or edge
+        :type node: Hashable
+        :param dom_classes: Set of base CSS DOM classes to merge, defaults to
+        Set[str]=None
+        :type dom_classes: [type], optional
+        :return: Set of CSS Classes to apply
+        :rtype: Set[str]
+        """
+
+        g, tree = self.source
+
+        properties = []
+
+        if isinstance(element, str):
+            if g and element in g:
+                g_props = g.nodes[element].get("properties", {})
+                if g_props:
+                    properties += [g_props]
+            if tree and element in tree:
+                tree_props = tree.nodes[element].get("properties", {})
+                if tree_props:
+                    properties += [tree_props]
+        elif hasattr(element, "data"):
+            properties += [element.data.get("properties", {})]
+        elif isinstance(element, dict):
+            properties += [element.get("properties", {})]
+
+        if dom_classes:
+            properties += [{"cssClasses": " ".join(dom_classes)}]
+
+        if not properties:
+            return {}
+        elif len(properties) == 1:
+            return properties[0]
+
+        merged_properties = {}
+
+        for props in properties[::-1]:
+            merged_properties = merge(props, merged_properties)
+
+        return merged_properties
 
     def get_css(
         self,
@@ -337,11 +384,11 @@ class XELK(ElkTransformer):
         :return: Elk edge
         :rtype: ElkExtendedEdge
         """
-        properties = None
-        if styles:
-            properties = dict(cssClasses=" ".join(styles))
 
         labels = []
+
+        properties = self.get_properties(edge, styles) or None
+
         for i, label in enumerate(edge.data.get("labels", [])):
             layout_options = self.get_layout(
                 edge.owner, ElkLabel
@@ -389,13 +436,11 @@ class XELK(ElkTransformer):
         if port:
             return port
 
-        properties = None
-        if styles:
-            properties = dict(cssClasses=" ".join(styles))
-
         # TODO labels
         self.get_node_data(owner).get(self.port_key, {})
         # todo ports a list or a dict?
+
+        properties = self.get_properties(port, styles) or None
 
         elk_port = ElkPort(
             id=port_id,
@@ -503,14 +548,11 @@ class XELK(ElkTransformer):
 
     async def make_labels(self, node: Hashable) -> Optional[List[ElkLabel]]:
         labels = []
-        css = self.get_css(node, ElkLabel)
-        properties = None
-        g, tree = self.source
+        g = self.source[0]
         data = g.nodes.get(node, {})
         values = data.get(self.label_key, [data.get("_id", f"{node}")])
 
-        if css:
-            properties = dict(cssClasses=" ".join(css))
+        properties = self.get_properties(node, self.get_css(node, ElkLabel))
 
         if isinstance(values, (str, ElkLabel)):
             values = [values]
@@ -657,7 +699,7 @@ class XELK(ElkTransformer):
 
 def is_hidden(tree: nx.DiGraph, node: Hashable, attr: str) -> bool:
     """Iterate  on the node ancestors and determine if it is hidden along the chain"""
-    if tree is not None and node in tree:
+    if tree and node in tree:
         if tree.nodes[node].get(attr, False):
             return True
         for ancestor in nx.ancestors(tree, node):
@@ -682,7 +724,17 @@ def merge(d1: Optional[Dict], d2: Optional[Dict]) -> Optional[Dict]:
         d1 = {}
     if d2 is None:
         d2 = {}
+
+    cl1 = d1.get("cssClasses", "")
+    cl2 = d2.get("cssClasses", "")
+    cl = " ".join(sorted(set([*cl1.split(), *cl2.split()]))).strip()
+
     value = {**d2, **d1}  # right most wins if duplicated keys
+
+    # if either had cssClasses, update that
+    if cl:
+        value["cssClasses"] = cl
+
     if value:
         return value
 
