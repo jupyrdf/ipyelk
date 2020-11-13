@@ -289,10 +289,6 @@ class XELK(ElkTransformer):
                 g_props = g.nodes[element].get("properties", {})
                 if g_props:
                     properties += [g_props]
-            if tree and element in tree:
-                tree_props = tree.nodes[element].get("properties", {})
-                if tree_props:
-                    properties += [tree_props]
         elif hasattr(element, "data"):
             properties += [element.data.get("properties", {})]
         elif isinstance(element, dict):

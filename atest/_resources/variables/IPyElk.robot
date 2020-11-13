@@ -46,8 +46,6 @@ ${FLAT PORT COUNT}    ${1}
 ${HIER NODE COUNT}    ${4}
 ${HIER EDGE COUNT}    ${5}
 ${HIER LABEL COUNT}    ${HIER NODE COUNT}
-@{HIER TREE CUSTOM}
-...               css:.example-data-node-class-from-tree
 #
 # from hier_ports.json
 #

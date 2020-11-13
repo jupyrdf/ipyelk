@@ -34,7 +34,6 @@ ${SCREENS}        ${SCREENS ROOT}${/}notebook-examples
     Elk Counts Should Be    &{FLAT AND HIER COUNTS}
     Linked Elk Output Counts Should Be    &{FLAT COUNTS}
     Custom Elk Selectors Should Exist    @{FLAT CUSTOM}
-    Custom Elk Selectors Should Exist    @{HIER TREE CUSTOM}
     Custom Elk Selectors Should Exist    @{HIER PORT CUSTOM}
 
 03_App
@@ -42,7 +41,6 @@ ${SCREENS}        ${SCREENS ROOT}${/}notebook-examples
     Example Should Restart-and-Run-All    ${APP}
     Elk Counts Should Be    n=${5}    &{HIER COUNTS}
     Linked Elk Output Counts Should Be    &{HIER COUNTS}
-    Custom Elk Selectors Should Exist    @{HIER TREE CUSTOM}
     Custom Elk Selectors Should Exist    @{HIER PORT CUSTOM}
 
 04_Interactive
@@ -63,7 +61,6 @@ ${SCREENS}        ${SCREENS ROOT}${/}notebook-examples
     Elk Counts Should Be    &{HIER COUNTS}
     Exported SVG should be valid XML    untitled_stylish_example.svg
     Linked Elk Output Counts Should Be    &{HIER COUNTS}
-    Custom Elk Selectors Should Exist    @{HIER TREE CUSTOM}
     Custom Elk Selectors Should Exist    @{HIER PORT CUSTOM}
 
 07_Simulation
