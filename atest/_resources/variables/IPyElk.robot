@@ -27,7 +27,9 @@ ${CSS ELK PORT}    .elkport
 ${SIMPLE NODE COUNT}    ${10}
 ${SIMPLE EDGE COUNT}    ${14}
 ${SIMPLE LABEL COUNT}    ${SIMPLE NODE COUNT}
-${SIMPLE CUSTOM CLASSES}    .example-data-node-class-from-simple    .example-data-edge-class-from-simple
+@{SIMPLE CUSTOM}
+...               css:.example-data-node-class-from-simple
+...               css:.example-data-edge-class-from-simple
 #
 # from flat_graph.json
 #
@@ -35,19 +37,24 @@ ${FLAT NODE COUNT}    ${3}
 ${FLAT EDGE COUNT}    ${3}
 ${FLAT LABEL COUNT}    ${FLAT NODE COUNT}
 ${FLAT PORT COUNT}    ${1}
-${FLAT CUSTOM CLASSES}    .example-data-node-class-from-flat    .example-data-edge-class-from-flat
+@{FLAT CUSTOM}
+...               css:.example-data-node-class-from-flat
+...               css:.example-data-edge-class-from-flat
 #
 # from hier_graph.json
 #
 ${HIER NODE COUNT}    ${4}
 ${HIER EDGE COUNT}    ${5}
 ${HIER LABEL COUNT}    ${HIER NODE COUNT}
-${HIER TREE CUSTOM CLASSES}    .example-data-node-class-from-tree
+@{HIER TREE CUSTOM}
+...               css:.example-data-node-class-from-tree
 #
 # from hier_ports.json
 #
 ${HIER PORT COUNT}    ${8}
-${HIER PORT CUSTOM CLASSES}    .example-data-node-class-from-ports    .example-data-edge-class-from-ports
+@{HIER PORT CUSTOM}
+...               css:.example-data-node-class-from-ports
+...               css:.example-data-edge-class-from-ports
 #
 # convenience roll-ups
 #
