@@ -18,6 +18,7 @@ ${SCREENS}        ${SCREENS ROOT}${/}notebook-examples
     Example Should Restart-and-Run-All    ${INTRODUCTION}
     Elk Counts Should Be    &{SIMPLE COUNTS}
     Linked Elk Output Counts Should Be    &{SIMPLE COUNTS}
+    Custom Elk Selectors Should Exist    @{SIMPLE CUSTOM}
 
 01_Linking
     [Tags]    data:simple.json
@@ -25,18 +26,22 @@ ${SCREENS}        ${SCREENS ROOT}${/}notebook-examples
     ${counts} =    Create Dictionary    n=${2}    &{SIMPLE COUNTS}
     Elk Counts Should Be    &{counts}
     Linked Elk Output Counts Should Be    &{counts}
+    Custom Elk Selectors Should Exist    @{SIMPLE CUSTOM}
 
 02_Transformer
     [Tags]    data:flat_graph.json    data:hier_tree.json    data:hier_ports.json
     Example Should Restart-and-Run-All    ${TRANSFORMER}
     Elk Counts Should Be    &{FLAT AND HIER COUNTS}
     Linked Elk Output Counts Should Be    &{FLAT COUNTS}
+    Custom Elk Selectors Should Exist    @{FLAT CUSTOM}
+    Custom Elk Selectors Should Exist    @{HIER PORT CUSTOM}
 
 03_App
     [Tags]    data:hier_tree.json    data:hier_ports.json    foo:bar
     Example Should Restart-and-Run-All    ${APP}
     Elk Counts Should Be    n=${5}    &{HIER COUNTS}
     Linked Elk Output Counts Should Be    &{HIER COUNTS}
+    Custom Elk Selectors Should Exist    @{HIER PORT CUSTOM}
 
 04_Interactive
     Example Should Restart-and-Run-All    ${INTERACTIVE}
@@ -48,6 +53,7 @@ ${SCREENS}        ${SCREENS ROOT}${/}notebook-examples
     Elk Counts Should Be    &{SIMPLE COUNTS}
     Exported SVG should be valid XML    untitled_example.svg
     Linked Elk Output Counts Should Be    &{SIMPLE COUNTS}
+    Custom Elk Selectors Should Exist    @{SIMPLE CUSTOM}
 
 06_SVG_App_Exporter
     [Tags]    data:hier_tree.json    data:hier_ports.json    feature:svg
@@ -55,6 +61,7 @@ ${SCREENS}        ${SCREENS ROOT}${/}notebook-examples
     Elk Counts Should Be    &{HIER COUNTS}
     Exported SVG should be valid XML    untitled_stylish_example.svg
     Linked Elk Output Counts Should Be    &{HIER COUNTS}
+    Custom Elk Selectors Should Exist    @{HIER PORT CUSTOM}
 
 07_Simulation
     Example Should Restart-and-Run-All    ${SIM PLUMBING}

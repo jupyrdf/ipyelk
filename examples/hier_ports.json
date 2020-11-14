@@ -4,7 +4,10 @@
   "graph": {},
   "nodes": [
     {
-      "id": "n0"
+      "id": "n0",
+      "properties": {
+        "cssClasses": "example-data-node-class-from-ports"
+      }
     },
     {
       "id": "n1"
@@ -47,7 +50,10 @@
       "targetPort": "x",
       "source": "n2",
       "target": "n3",
-      "key": 0
+      "key": 0,
+      "properties": {
+        "cssClasses": "example-data-edge-class-from-ports"
+      }
     },
     {
       "port": "x",

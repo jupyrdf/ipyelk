@@ -410,13 +410,12 @@ class Direction(LayoutOptionWidget):
 
     https://www.eclipse.org/elk/reference/options/org-eclipse-elk-direction.html
     """
+
     identifier = "org.eclipse.elk.direction"
     metadata_provider = "core.options.CoreOptions"
     applies_to = ["parents"]
 
-    value = T.Enum(
-        values=list(DIRECTION_OPTIONS.values()), default_value="UNDEFINED"
-    )
+    value = T.Enum(values=list(DIRECTION_OPTIONS.values()), default_value="UNDEFINED")
 
     def _ui(self) -> List[W.Widget]:
         dropdown = W.Dropdown(options=list(DIRECTION_OPTIONS.items()))

@@ -60,6 +60,12 @@ Exported SVG should be valid XML
     Wait Until Created    ${path}
     [Return]    XML.Parse XML    ${file}
 
+Custom Elk Selectors Should Exist
+    [Arguments]    @{selectors}
+    FOR    ${selector}    IN    @{selectors}
+        Page Should Contain Element    ${selector}
+    END
+
 Elk Counts Should Be
     [Arguments]    ${nodes}=${0}    ${edges}=${0}    ${labels}=${0}    ${ports}=${0}    ${prefix}=${EMPTY}    ${n}=${1}    ${screen}=20-counted.png
     ${found nodes} =    Get Elk Node Count    prefix=${prefix}
