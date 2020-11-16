@@ -18,7 +18,7 @@ from ..diagram.elk_model import (
     ElkPort,
     ElkRoot,
 )
-from ..diagram.elk_text_sizer import ElkTextSizer, TextSize
+from ..diagram.elk_text_sizer import ElkTextSizer, size_labels
 from ..transform import ElkTransformer
 from .nx import (
     Edge,
@@ -40,10 +40,6 @@ class XELK(ElkTransformer):
 
     _hidden_edges: Optional[EdgeMap] = None
     _visible_edges: Optional[EdgeMap] = None
-
-    # internal map between output Elk Elements and incoming items
-    _elk_to_item: Dict[str, Hashable] = None
-    _item_to_elk: Dict[Hashable, str] = None
 
     source = T.Tuple(T.Instance(nx.Graph), T.Instance(nx.DiGraph, allow_none=True))
     layouts = T.Dict()  # keys: networkx nodes {ElkElements: {layout options}}
@@ -144,8 +140,13 @@ class XELK(ElkTransformer):
             n for n in g.nodes() if not is_hidden(tree, n, self.HIDDEN_ATTR)
         ]
 
+        # make elknodes then connect their hierarchy
         elknodes = {node: await self.make_elknode(node) for node in visible_nodes}
-        top = self.build_hierarchy(elknodes)  # top level node
+        elknodes[ElkRoot] = top = ElkNode(
+            id=self.ELK_ROOT_ID,
+            children=self.build_hierarchy(elknodes),
+            layoutOptions=self.get_layout(ElkRoot, "parents"),
+        )
 
         # TODO flag to control if slack ports and edges should be hoisted to
         # closest visible ancestors
@@ -174,53 +175,13 @@ class XELK(ElkTransformer):
             #     self.register(label, port)
 
         # bulk calculate label sizes
-        await self.size_labels(self.collect_labels(elknodes))
+        await size_labels(self.text_sizer, self.collect_labels(elknodes))
         # link children to parents
         self._nodes = elknodes
 
         for node, elk_node in elknodes.items():
             self.register(elk_node, node)
         return top
-
-    def build_hierarchy(self, elknodes: NodeMap) -> ElkNode:
-        """The Elk JSON is hierarchical. This method iterates through the build
-        elknodes and links children to parents if the incoming source includes a
-        hierarcichal networkx diagraph tree.
-
-        :param elknodes: mapping of networkx nodes to their elknode representations
-        :type elknodes: NodeMap
-        :return: The root elknode
-        :rtype: ElkNode
-        """
-        g, tree = self.source
-        attr = self.HIDDEN_ATTR
-        if tree:
-            # roots of the tree
-            roots = [n for n, d in tree.in_degree() if d == 0]
-            for n, elknode in elknodes.items():
-                if n in tree:
-                    elknode.children = [
-                        elknodes[c]
-                        for c in tree.neighbors(n)
-                        if not is_hidden(tree, c, attr)
-                    ]
-                else:
-                    # nodes that are not in the tree
-                    roots.append(n)
-        else:
-            # only flat graph provided
-            roots = []
-            for n, elknode in elknodes.items():
-                if not is_hidden(tree, n, attr):
-                    roots.append(n)
-
-        top = ElkNode(
-            id=self.ELK_ROOT_ID,
-            children=[elknodes[n] for n in roots],
-            layoutOptions=self.get_layout(ElkRoot, "parents"),
-        )
-        elknodes[ElkRoot] = top  # using `None` to represent root elknode
-        return top  # returns top level node
 
     async def make_elknode(self, node) -> ElkNode:
         layout = self.get_layout(node, ElkNode)
@@ -396,8 +357,6 @@ class XELK(ElkTransformer):
             if isinstance(label, str):
                 label = ElkLabel(id=f"{edge.owner}_label_{i}_{label}", text=label)
             label.layoutOptions = merge(label.layoutOptions, layout_options)
-            # TODO size the labels in bulk
-            await self.size_labels([label])
             labels.append(label)
         for label in labels:
             self.register(label, edge)
@@ -447,43 +406,6 @@ class XELK(ElkTransformer):
         port = Port(node=owner, elkport=elk_port)
         self._ports[port_id] = port
         return port
-
-    def register(self, element: ElkGraphElement, item: Hashable) -> str:
-        """Register Elk Element as a way to find the particular item.
-
-        This method is used in the `lookup` method for dereferencing the elk id.
-
-        :param element: [description]
-        :type element: ElkGraphElement
-        :param item: [description]
-        :type item: Hashable
-        """
-
-        self._elk_to_item[element.id] = item
-        self._item_to_elk[item] = element.id
-        return element
-
-    async def size_labels(self, labels: List[ElkLabel]):
-        """Run a list of ElkLabels through to the TextSizer measurer
-
-        :param labels: [description]
-        :type labels: List[ElkLabel]
-        :return: Updated Labels
-        """
-        if self.text_sizer is not None:
-            sizes = await self.text_sizer.measure(tuple(labels))
-        else:
-            sizes = [
-                TextSize(
-                    width=10 * len(label.text),
-                    height=10,  # TODO add height default
-                )
-                for label in labels
-            ]
-
-        for size, label in zip(sizes, labels):
-            label.width = size.width
-            label.height = size.height
 
     def get_node_data(self, node: Hashable) -> Dict:
         g, tree = self.source
@@ -747,3 +669,43 @@ def listed(values: Optional[List]) -> List:
     if values is None:
         return []
     return values
+
+
+def build_hierarchy(
+    g: nx.Graph, tree: nx.DiGraph, elknodes: NodeMap, HIDDEN_ATTR: str
+) -> List[ElkNode]:
+    """The Elk JSON is hierarchical. This method iterates through the build
+    elknodes and links children to parents if the incoming source includes a
+    hierarcichal networkx diagraph tree.
+
+    :param g: [description]
+    :type g: nx.Graph
+    :param tree: [description]
+    :type tree: nx.DiGraph
+    :param elknodes: mapping of networkx nodes to their elknode representations
+    :type elknodes: NodeMap
+    :param HIDDEN_ATTR: [description]
+    :type HIDDEN_ATTR: str
+    :return: Top level ElkNodes to put as children under the ElkRoot
+    :rtype: List[ElkNode]
+    """
+    if tree:
+        # roots of the tree
+        roots = [n for n, d in tree.in_degree() if d == 0]
+        for n, elknode in elknodes.items():
+            if n in tree:
+                elknode.children = [
+                    elknodes[c]
+                    for c in tree.neighbors(n)
+                    if not is_hidden(tree, c, HIDDEN_ATTR)
+                ]
+            else:
+                # nodes that are not in the tree
+                roots.append(n)
+    else:
+        # only flat graph provided
+        roots = []
+        for n, elknode in elknodes.items():
+            if not is_hidden(tree, n, HIDDEN_ATTR):
+                roots.append(n)
+    return [elknodes[n] for n in roots]
