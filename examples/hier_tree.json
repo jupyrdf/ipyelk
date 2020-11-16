@@ -4,7 +4,10 @@
   "graph": {},
   "nodes": [
     {
-      "id": "n0"
+      "id": "n0",
+      "properties": {
+        "cssClasses": "example-data-node-class-from-tree"
+      }
     },
     {
       "hidden": false,

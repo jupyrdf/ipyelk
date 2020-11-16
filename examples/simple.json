@@ -4,78 +4,88 @@
       "height": 25,
       "id": "kernel",
       "width": 50,
-      "labels": [{"text": "kernel", "id": "kernel_label", "x": 5, "y": 5}]
+      "labels": [{ "text": "kernel", "id": "kernel_label", "x": 5, "y": 5 }],
+      "properties": {
+        "cssClasses": "example-data-node-class-from-simple"
+      }
     },
     {
       "height": 25,
       "id": "model",
       "width": 50,
-      "labels": [{"text": "model", "id": "model_label", "x": 5, "y": 5}]
+      "labels": [{ "text": "model", "id": "model_label", "x": 5, "y": 5 }]
     },
     {
       "height": 25,
       "id": "elk",
       "width": 25,
-      "labels": [{"text": "🦌", "id": "elk_label", "x": 5, "y": 5}]
+      "labels": [{ "text": "🦌", "id": "elk_label", "x": 5, "y": 5 }]
     },
     {
       "height": 25,
       "id": "view1",
       "width": 50,
-      "labels": [{"text": "view", "id": "view1_label", "x": 5, "y": 5}]
+      "labels": [{ "text": "view", "id": "view1_label", "x": 5, "y": 5 }]
     },
     {
       "height": 25,
       "id": "svg1",
       "width": 50,
-      "labels": [{"text": "SVG", "id": "svg1_label", "x": 5, "y": 5}]
+      "labels": [{ "text": "SVG", "id": "svg1_label", "x": 5, "y": 5 }]
     },
     {
       "height": 25,
       "id": "sprotty1",
       "width": 50,
-      "labels": [{"text": "sprotty", "id": "sprotty1_label", "x": 5, "y": 5}]
+      "labels": [{ "text": "sprotty", "id": "sprotty1_label", "x": 5, "y": 5 }]
     },
     {
       "height": 25,
       "id": "mouse",
       "width": 25,
-      "labels": [{"text": "🐁", "id": "mouse_label", "x": 5, "y": 5}]
+      "labels": [{ "text": "🐁", "id": "mouse_label", "x": 5, "y": 5 }]
     },
     {
       "height": 25,
       "id": "user",
       "width": 50,
-      "labels": [{"text": "YOU", "id": "user_label", "x": 5, "y": 5}]
+      "labels": [{ "text": "YOU", "id": "user_label", "x": 5, "y": 5 }]
     },
     {
       "height": 25,
       "id": "keyboard",
       "width": 25,
-      "labels": [{"text": "⌨️", "id": "keyboard_label", "x": 5, "y": 5}]
+      "labels": [{ "text": "⌨️", "id": "keyboard_label", "x": 5, "y": 5 }]
     },
     {
       "height": 25,
       "id": "display",
       "width": 25,
-      "labels": [{"text": "🖥️", "id": "display_label", "x": 5, "y": 5}]
+      "labels": [{ "text": "🖥️", "id": "display_label", "x": 5, "y": 5 }]
     }
   ],
   "edges": [
-    {"id": "e0", "sources": ["keyboard"], "targets": ["kernel"]},
-    {"id": "e1", "sources": ["kernel"], "targets": ["model"]},
-    {"id": "e2", "sources": ["model"], "targets": ["kernel"]},
-    {"id": "e3", "sources": ["model"], "targets": ["elk"]},
-    {"id": "e5", "sources": ["model"], "targets": ["view1"]},
-    {"id": "e6", "sources": ["view1"], "targets": ["sprotty1"]},
-    {"id": "e7", "sources": ["sprotty1"], "targets": ["view1"]},
-    {"id": "e8", "sources": ["sprotty1"], "targets": ["svg1"]},
-    {"id": "e9", "sources": ["svg1"], "targets": ["sprotty1"]},
-    {"id": "e98", "sources": ["mouse"], "targets": ["svg1"]},
-    {"id": "e100", "sources": ["user"], "targets": ["mouse"]},
-    {"id": "e101", "sources": ["user"], "targets": ["keyboard"]},
-    {"id": "e102", "sources": ["display"], "targets": ["user"]},
-    {"id": "e103", "sources": ["svg1"], "targets": ["display"]}
+    { "id": "e0", "sources": ["keyboard"], "targets": ["kernel"] },
+    { "id": "e1", "sources": ["kernel"], "targets": ["model"] },
+    { "id": "e2", "sources": ["model"], "targets": ["kernel"] },
+    { "id": "e3", "sources": ["model"], "targets": ["elk"] },
+    { "id": "e5", "sources": ["model"], "targets": ["view1"] },
+    { "id": "e6", "sources": ["view1"], "targets": ["sprotty1"] },
+    { "id": "e7", "sources": ["sprotty1"], "targets": ["view1"] },
+    { "id": "e8", "sources": ["sprotty1"], "targets": ["svg1"] },
+    { "id": "e9", "sources": ["svg1"], "targets": ["sprotty1"] },
+    { "id": "e98", "sources": ["mouse"], "targets": ["svg1"] },
+    { "id": "e100", "sources": ["user"], "targets": ["mouse"] },
+    { "id": "e101", "sources": ["user"], "targets": ["keyboard"] },
+    { "id": "e102", "sources": ["display"], "targets": ["user"] },
+    {
+      "id": "e103",
+      "sources": ["svg1"],
+      "targets": ["display"],
+      "properties": {
+        "cssClasses": "example-data-edge-class-from-simple"
+      }
+    }
   ],
   "id": "root",
   "properties": {

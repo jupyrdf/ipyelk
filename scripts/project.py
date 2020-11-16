@@ -113,6 +113,9 @@ EXAMPLES = ROOT / "examples"
 EXAMPLE_IPYNB = [
     p for p in EXAMPLES.rglob("*.ipynb") if ".ipynb_checkpoints" not in str(p)
 ]
+EXAMPLE_JSON = [
+    p for p in EXAMPLES.rglob("*.json") if ".ipynb_checkpoints" not in str(p)
+]
 EXAMPLE_PY = [*EXAMPLES.rglob("*.py")]
 EXAMPLE_INDEX = EXAMPLES / "_index.ipynb"
 BUILD_NBHTML = BUILD / "nbsmoke"
@@ -121,7 +124,7 @@ BUILD_NBHTML = BUILD / "nbsmoke"
 ALL_PY_SRC = [*PY_SRC.rglob("*.py")]
 ALL_PY = [DODO, *ALL_PY_SRC, *EXAMPLE_PY, *SCRIPTS.rglob("*.py")]
 ALL_YML = [*ROOT.glob("*.yml"), *CI.rglob("*.yml")]
-ALL_JSON = [*ROOT.glob("*.json"), PY_SCHEMA]
+ALL_JSON = [*ROOT.glob("*.json"), *EXAMPLE_JSON, PY_SCHEMA]
 ALL_MD = [*ROOT.glob("*.md")]
 ALL_TS = [*TS_SRC.rglob("*.ts")]
 ALL_CSS = [*STYLE.rglob("*.css")]
