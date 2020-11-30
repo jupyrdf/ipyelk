@@ -4,7 +4,7 @@ import ipywidgets as W
 import traitlets as T
 
 from .diagram import ElkDiagram
-from .diagram.elk_model import ElkRoot
+from .diagram.elk_model import ElkNullElement
 from .styled_widget import StyledWidget
 from .toolbar import Toolbar
 from .transform import ElkTransformer
@@ -16,7 +16,7 @@ class Elk(W.VBox, StyledWidget):
     transformer: ElkTransformer = T.Instance(ElkTransformer)
     diagram: ElkDiagram = T.Instance(ElkDiagram)
     selected = T.Tuple()
-    hovered = T.Any(allow_none=True, default_value=ElkRoot)
+    hovered = T.Any(allow_none=True, default_value=ElkNullElement)
     toolbar: Toolbar = T.Instance(Toolbar, kw={})
 
     _data_link: T.dlink = None
@@ -88,7 +88,7 @@ class Elk(W.VBox, StyledWidget):
         try:
             _id = self.transformer.from_id(change.new)
         except ValueError:  # TODO introduce custom ipyelk exceptions
-            _id = None
+            _id = ElkNullElement
         if _id != self.hovered:
             self.hovered = _id
 
@@ -104,11 +104,15 @@ class Elk(W.VBox, StyledWidget):
 
     @T.observe("hovered")
     def _update_hover(self, change: T.Bunch):
-        if not self.diagram:
+        if not self.diagram or self.hovered is ElkNullElement:
             return
 
         # transform hovered nodes into elk id
-        self.diagram.hover = self.transformer.to_id(self.hovered)
+        try:
+            self.diagram.hover = self.transformer.to_id(self.hovered)
+        except ValueError:  # TODO introduce custom ipyelk exceptions
+            # okay not to pass the hovered state to the diagram?
+            pass
 
     def refresh(self):
         self.transformer.refresh()

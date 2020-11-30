@@ -12,6 +12,9 @@ from typing import Any, Callable, Dict, List, Optional, Type, TypeVar, cast
 
 # Sentinel Value for tracking the root node in the Elk JSON
 ElkRoot = namedtuple("ElkRootNode", [])()
+# Sentinel Value for tracking hovered mark state
+ElkNullElement = namedtuple("ElkNullElement", [])()
+
 
 T = TypeVar("T")
 

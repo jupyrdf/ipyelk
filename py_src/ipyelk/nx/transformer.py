@@ -659,7 +659,7 @@ class XELK(ElkTransformer):
         attr = self.HIDDEN_ATTR
         g, tree = self.source
         if node not in tree:
-            return None
+            return node
         if not is_hidden(tree, node, attr):
             return node
         predecesors = list(tree.predecessors(node))
