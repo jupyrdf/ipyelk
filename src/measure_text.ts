@@ -6,15 +6,6 @@
 import { DOMWidgetModel, DOMWidgetView } from '@jupyter-widgets/base';
 import { NAME, VERSION, ELK_CSS, ELK_DEBUG } from '.';
 
-const TAG_REGEX = /[&<>'"]/g;
-const TAGS_TO_REPLACE = {
-  '&': '&amp;',
-  '<': '&lt;',
-  '>': '&gt;',
-  '"': '&quot;',
-  "'": '"&#039;'
-};
-
 export class ELKTextSizerModel extends DOMWidgetModel {
   static model_name = 'ELKTextSizerModel';
 
@@ -67,7 +58,7 @@ export class ELKTextSizerModel extends DOMWidgetModel {
     }
 
     label.classList.add(...classes);
-    label.textContent = escape(text.value);
+    label.textContent = text.value;
     ELK_DEBUG && console.warn('ELK Text Label', label);
     return label;
   }
@@ -100,7 +91,7 @@ export class ELKTextSizerModel extends DOMWidgetModel {
         event: 'measurement',
         measurements: this.read_sizes(content.texts, elements)
       };
-      document.body.removeChild(el);
+      // document.body.removeChild(el);
       this.send(response, {}, []);
     });
   }
@@ -157,17 +148,6 @@ export class ELKTextSizerView extends DOMWidgetView {
 
   model: ELKTextSizerModel;
   async render() {}
-}
-
-function escapeReplacer(tag: string): string {
-  return TAGS_TO_REPLACE[tag] || tag;
-}
-
-/**
- * Simple function to escape text for html before adding to dom
- */
-function escape(text: string) {
-  return text.replace(TAG_REGEX, escapeReplacer);
 }
 
 /**
