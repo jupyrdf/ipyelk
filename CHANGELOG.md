@@ -3,12 +3,14 @@
 ## @jupyrdf/jupyter-elk 0.2.1
 
 - fix `ElkTransformer` handling of custom properties ([#46][])
+- add `ElkTextSizer` passing through of custom css style when sizing labels ([#48][])
 
 ## ipyelk 0.2.1
 
-> TBD
+- update Elk schema to allow for properties on edge labels and port labels ([#48][])
 
 [#46]: https://github.com/jupyrdf/ipyelk/pull/46
+[#48]: https://github.com/jupyrdf/ipyelk/pull/48
 
 ---
 

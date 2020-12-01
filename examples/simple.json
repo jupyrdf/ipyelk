@@ -87,8 +87,5 @@
       }
     }
   ],
-  "id": "root",
-  "properties": {
-    "algorithm": "layered"
-  }
+  "id": "root"
 }
