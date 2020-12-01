@@ -41,7 +41,8 @@ export class ELKTextSizerModel extends DOMWidgetModel {
   make_container(): HTMLElement {
     let el: HTMLElement = document.body.appendChild(document.createElement('div'));
     el.classList.add('p-Widget', ELK_CSS.widget_class, ELK_CSS.sizer_class);
-    el.innerHTML = `<div class="sprotty"><svg class="sprotty-graph"><g></g></svg></div>`;
+    let raw_css: string = this.get('raw_css').join(''); //TODO should this `raw_css` string be escaped?
+    el.innerHTML = `<div class="sprotty"><style>${raw_css}</style><svg class="sprotty-graph"><g></g></svg></div>`;
     return el;
   }
 
@@ -91,7 +92,9 @@ export class ELKTextSizerModel extends DOMWidgetModel {
         event: 'measurement',
         measurements: this.read_sizes(content.texts, elements)
       };
-      // document.body.removeChild(el);
+      if (!ELK_DEBUG) {
+        document.body.removeChild(el);
+      }
       this.send(response, {}, []);
     });
   }
