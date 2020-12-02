@@ -14,9 +14,10 @@ import os
 import subprocess
 from hashlib import sha256
 
-import scripts.project as P
 from doit.action import CmdAction
 from doit.tools import PythonInteractiveAction, config_changed
+from scripts import project as P
+from scripts import utils as U
 
 os.environ["PYTHONIOENCODING"] = "utf-8"
 
@@ -27,7 +28,24 @@ DOIT_CONFIG = {
     "default_tasks": ["binder"],
 }
 
-COMMIT = subprocess.check_output(["git", "rev-parse", "HEAD"]).decode("utf-8")
+COMMIT = subprocess.check_output(["git", "rev-parse", "HEAD"]).decode("utf-8").strip()
+
+
+def task_all():
+    """do everything except start lab"""
+
+    return dict(
+        file_dep=[
+            *P.EXAMPLE_HTML,
+            P.ATEST_CANARY,
+            P.HTMLCOV_INDEX,
+            P.OK_PREFLIGHT_LAB,
+            P.OK_RELEASE,
+            P.PYTEST_HTML,
+            P.SHA256SUMS,
+        ],
+        actions=([_echo_ok("ALL GOOD")]),
+    )
 
 
 def task_preflight():
@@ -273,6 +291,20 @@ def task_test():
     for nb in P.EXAMPLE_IPYNB:
         yield _nb_test(nb)
 
+    yield dict(
+        name="utest",
+        doc="run unit tests with pytest",
+        uptodate=[config_changed(COMMIT)],
+        file_dep=[*P.ALL_PY_SRC, P.SETUP_CFG],
+        targets=[P.HTMLCOV_INDEX, P.PYTEST_HTML],
+        actions=[
+            [*P.APR_DEFAULT, *P.PYM, "pytest"],
+            lambda: U.strip_timestamps(
+                *P.HTMLCOV.rglob("*.html"), P.PYTEST_HTML, slug=COMMIT
+            ),
+        ],
+    )
+
     def _pabot_logs():
         for robot_out in sorted(P.ATEST_OUT.rglob("robot_*.out")):
             print(f"\n[{robot_out.relative_to(P.ROOT)}]")
@@ -487,21 +519,6 @@ def task_watch():
         uptodate=[lambda: False],
         file_dep=[P.OK_PIP_INSTALL],
         actions=[PythonInteractiveAction(_watch)],
-    )
-
-
-def task_all():
-    """do everything except start lab"""
-
-    return dict(
-        file_dep=[
-            *P.EXAMPLE_HTML,
-            P.ATEST_CANARY,
-            P.OK_PREFLIGHT_LAB,
-            P.OK_RELEASE,
-            P.SHA256SUMS,
-        ],
-        actions=([_echo_ok("ALL GOOD")]),
     )
 
 

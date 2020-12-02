@@ -147,6 +147,10 @@ OK_PIP_INSTALL = BUILD / "pip_install.ok"
 OK_PRETTIER = BUILD / "prettier.ok"
 OK_INDEX = BUILD / "index.ox"
 
+HTMLCOV = BUILD / "htmlcov"
+HTMLCOV_INDEX = HTMLCOV / "index.html"
+PYTEST_HTML = BUILD / "pytest.html"
+
 # derived info
 PY_VERSION = re.findall(
     r'''__version__ = "(.*)"''', VERSION_PY.read_text(encoding="utf-8")

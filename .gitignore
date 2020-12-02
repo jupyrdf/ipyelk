@@ -44,6 +44,7 @@ nosetests.xml
 coverage.xml
 *,cover
 .hypothesis/
+.pytest_cache/
 
 # Translations
 *.mo
@@ -67,8 +68,10 @@ docs/source/_static/embed-bundle.js.map
 # PyBuilder
 target/
 
-# IPython Notebook
+# Jupyter
 .ipynb_checkpoints
+untitled*
+Untitled*
 
 # pyenv
 .python-version
@@ -165,5 +168,3 @@ py_src/ipyelk/schema/*.json
 .doit*
 .pabotsuitenames
 atest/output
-untitled*
-Untitled*
