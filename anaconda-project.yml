@@ -37,12 +37,10 @@ env_specs:
       - win-64
     inherit_from:
       - ipyelk
+      - _utest
+      - _lint
     packages:
-      - black
-      - flake8
-      - isort <5
       - pip
-      - pyflakes
       - python >=3.7,<3.8.0a0
       - twine
       - wheel
@@ -65,6 +63,7 @@ env_specs:
       - python >=3.7
 
   atest:
+    description: acceptance test environment (kept separate because firefox)
     platforms:
       - linux-64
       - osx-64
@@ -80,3 +79,21 @@ env_specs:
       - robotframework-lint
       - robotframework-pabot
       - robotframework-seleniumlibrary
+
+  _lint:
+    description: linting/formatting environment. not actually created.
+    packages:
+      - black
+      - isort <5
+      - pyflakes
+      - flake8
+
+  _utest:
+    description: unit test environment. not actually created.
+    packages:
+      - ansi2html
+      - hypothesis-jsonschema
+      - pytest-asyncio
+      - pytest-cov
+      - pytest-html
+      - pytest-xdist
