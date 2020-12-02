@@ -93,9 +93,12 @@ jobs:
           name: ipyelk dist ${{ github.run_number }}
           path: ./dist
 
-      - name: report (robot)
+      - name: reports
         uses: actions/upload-artifact@v2
         with:
-          name: ${{ job.status }} Robot ${{ matrix.os }} ${{ github.run_number }}
-          path: ./atest/output
+          name: ${{ job.status }} reports ${{ matrix.os }} ${{ github.run_number }}
+          path: |
+            ./atest/output
+            ./build/htmcov
+            ./build/pytest.html
         if: always()

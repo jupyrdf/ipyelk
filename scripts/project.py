@@ -31,6 +31,9 @@ FORCE_SERIAL_ENV_PREP = bool(
 )
 # one of: None, wheel or sdist
 INSTALL_ARTIFACT = os.environ.get("INSTALL_ARTIFACT")
+UTEST_PROCESSES = os.environ.get(
+    "UTEST_PROCESSES", os.environ.get("ATEST_PROCESSES", "")
+)
 
 # find root
 SCRIPTS = Path(__file__).parent.resolve()
@@ -146,6 +149,12 @@ OK_NBLINT = {nb.name: BUILD / f"nblint.{nb.name}.ok" for nb in EXAMPLE_IPYNB}
 OK_PIP_INSTALL = BUILD / "pip_install.ok"
 OK_PRETTIER = BUILD / "prettier.ok"
 OK_INDEX = BUILD / "index.ox"
+
+HTMLCOV = BUILD / "htmlcov"
+HTMLCOV_INDEX = HTMLCOV / "index.html"
+PYTEST_COV_THRESHOLD = 17
+PYTEST_HTML = BUILD / "pytest.html"
+PYTEST_XUNIT = BUILD / "pytest.xunit.xml"
 
 # derived info
 PY_VERSION = re.findall(
