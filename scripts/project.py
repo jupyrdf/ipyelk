@@ -152,7 +152,9 @@ OK_INDEX = BUILD / "index.ox"
 
 HTMLCOV = BUILD / "htmlcov"
 HTMLCOV_INDEX = HTMLCOV / "index.html"
+PYTEST_COV_THRESHOLD = 17
 PYTEST_HTML = BUILD / "pytest.html"
+PYTEST_XUNIT = BUILD / "pytest.xunit.xml"
 
 # derived info
 PY_VERSION = re.findall(

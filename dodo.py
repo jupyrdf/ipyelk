@@ -292,7 +292,13 @@ def task_test():
     for nb in P.EXAMPLE_IPYNB:
         yield _nb_test(nb)
 
-    utest_args = [*P.APR_DEFAULT, *P.PYM, "pytest"]
+    utest_args = [
+        *P.APR_DEFAULT,
+        *P.PYM,
+        "pytest",
+        "--cov-fail-under",
+        str(P.PYTEST_COV_THRESHOLD),
+    ]
 
     if P.UTEST_PROCESSES:
         utest_args += ["-n", P.UTEST_PROCESSES]
@@ -310,7 +316,7 @@ def task_test():
         doc="run unit tests with pytest",
         uptodate=[config_changed(COMMIT)],
         file_dep=[*P.ALL_PY_SRC, P.SETUP_CFG, P.OK_PIP_INSTALL],
-        targets=[P.HTMLCOV_INDEX, P.PYTEST_HTML],
+        targets=[P.HTMLCOV_INDEX, P.PYTEST_HTML, P.PYTEST_XUNIT],
         actions=[
             utest_args,
             lambda: U.strip_timestamps(
