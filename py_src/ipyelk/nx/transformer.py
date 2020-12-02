@@ -19,6 +19,7 @@ from ..diagram.elk_model import (
     ElkRoot,
 )
 from ..diagram.elk_text_sizer import ElkTextSizer, size_labels
+from ..exceptions import ElkHierarchyError
 from ..transform import (
     Edge,
     EdgeMap,
@@ -36,10 +37,7 @@ class XELK(ElkTransformer):
     """NetworkX DiGraphs to ELK dictionary structure"""
 
     HIDDEN_ATTR = "hidden"
-    ELK_ROOT_ID = "root"
-
-    _hidden_edges: Optional[EdgeMap] = None
-    _visible_edges: Optional[EdgeMap] = None
+    hoist_hidden_edges: bool = True
 
     source = T.Tuple(T.Instance(nx.Graph), T.Instance(nx.DiGraph, allow_none=True))
     layouts = T.Dict()  # keys: networkx nodes {ElkElements: {layout options}}
@@ -88,7 +86,7 @@ class XELK(ElkTransformer):
         """
         g, tree = self.source
         if node is ElkRoot:
-            return "root"
+            return self.ELK_ROOT_ID
         elif node in g:
             return g.nodes.get(node, {}).get("_id", f"{node}")
         return f"{node}"
@@ -120,9 +118,7 @@ class XELK(ElkTransformer):
         # TODO: look into ways to remove the need to have a cache like this
         # NOTE: this is caused by a series of side effects
         self.log.debug("Clearing cached elk info")
-        self._elk_to_item: Dict[str, Hashable] = {}
-        self._item_to_elk: Dict[Hashable, str] = {}
-        self._ports: PortMap = {}
+        self.clear_registry()
         self.closest_common_visible.cache_clear()
         self.closest_visible.cache_clear()
 
@@ -134,8 +130,7 @@ class XELK(ElkTransformer):
         # TODO decide behavior for nodes that exist in the tree but not g
         g, tree = self.source
         self.clear_cached()
-        ports: PortMap = self._ports
-        self._visible_edges, self._hidden_edges = self.collect_edges()
+        visible_edges, hidden_edges = self.collect_edges()
 
         # Process visible networkx nodes into elknodes
         visible_nodes = [
@@ -143,22 +138,35 @@ class XELK(ElkTransformer):
         ]
 
         # make elknodes then connect their hierarchy
-        elknodes = {node: await self.make_elknode(node) for node in visible_nodes}
+        elknodes: NodeMap = {}
+        ports: PortMap = {}
+        for node in visible_nodes:
+            elknode, node_ports = await self.make_elknode(node)
+            for key, value in node_ports.items():
+                ports[key] = value
+            elknodes[node] = elknode
+
+        # make top level ElkNode and attach all others as children
         elknodes[ElkRoot] = top = ElkNode(
             id=self.ELK_ROOT_ID,
             children=build_hierarchy(g, tree, elknodes, self.HIDDEN_ATTR),
             layoutOptions=self.get_layout(ElkRoot, "parents"),
         )
 
-        # TODO flag to control if slack ports and edges should be hoisted to
-        # closest visible ancestors
-        port_style = {"slack-port"}
-        edge_style = {"slack-edge"}
+        # map of original nodes to the generated elknodes
+        for node, elk_node in elknodes.items():
+            self.register(elk_node, node)
 
-        elknodes, ports = await self.process_edges(elknodes, ports, self._visible_edges)
-        elknodes, ports = await self.process_edges(
-            elknodes, ports, self._hidden_edges, edge_style, port_style
-        )
+        elknodes, ports = await self.process_edges(elknodes, ports, visible_edges)
+        # process edges with one or both original endpoints are hidden
+        if self.hoist_hidden_edges:
+            elknodes, ports = await self.process_edges(
+                elknodes,
+                ports,
+                hidden_edges,
+                edge_style={"slack-edge"},
+                port_style={"slack-port"},
+            )
 
         # iterate through the port map and add ports to ElkNodes
         for port_id, port in ports.items():
@@ -167,25 +175,19 @@ class XELK(ElkTransformer):
             elknode = elknodes[owner]
             if elknode.ports is None:
                 elknode.ports = []
-            # size port labels
             layout = self.get_layout(owner, ElkPort)
             elkport.layoutOptions = merge(elkport.layoutOptions, layout)
             elknode.ports += [elkport]
 
+            # map of ports to the generated elkports
             self.register(elkport, port)
-            # for label in listed(elkport.labels):
-            #     self.register(label, port)
 
         # bulk calculate label sizes
         await size_labels(self.text_sizer, collect_labels([top]))
-        # link children to parents
-        self._nodes = elknodes
 
-        for node, elk_node in elknodes.items():
-            self.register(elk_node, node)
         return top
 
-    async def make_elknode(self, node) -> ElkNode:
+    async def make_elknode(self, node) -> Tuple[ElkNode, PortMap]:
         # merge layout options defined on the node data with default layout options
         layout = merge(
             self.get_node_data(node).get("layoutOptions", {}),
@@ -195,8 +197,6 @@ class XELK(ElkTransformer):
 
         # update port map with declared ports in the networkx node data
         node_ports = await self.collect_ports(node)
-        for key, value in node_ports.items():
-            self._ports[key] = value
 
         properties = self.get_properties(node, self.get_css(node, ElkNode)) or None
 
@@ -206,7 +206,7 @@ class XELK(ElkTransformer):
             layoutOptions=layout,
             properties=properties,
         )
-        return elk_node
+        return elk_node, node_ports
 
     def get_layout(
         self, node: Hashable, elk_type: Type[ElkGraphElement]
@@ -318,19 +318,17 @@ class XELK(ElkTransformer):
                 if elknode.edges is None:
                     elknode.edges = []
                 if edge.source_port is not None:
-                    source_var = (edge.source, edge.source_port)
-                    if source_var not in ports:
-                        port = await self.make_port(
+                    port_id = self.port_id(edge.source, edge.source_port)
+                    if port_id not in ports:
+                        ports[port_id] = await self.make_port(
                             edge.source, edge.source_port, port_css
                         )
-                        ports[port.elkport.id] = port
                 if edge.target_port is not None:
-                    target_var = (edge.target, edge.target_port)
-                    if target_var not in ports:
-                        port = await self.make_port(
+                    port_id = self.port_id(edge.target, edge.target_port)
+                    if port_id not in ports:
+                        ports[port_id] = await self.make_port(
                             edge.target, edge.target_port, port_css
                         )
-                        ports[port.elkport.id] = port
 
                 elknode.edges += [await self.make_edge(edge, edge_css, layout_options)]
         return nodes, ports
@@ -390,16 +388,7 @@ class XELK(ElkTransformer):
         :return: [description]
         :rtype: ElkPort
         """
-        # Test if elk port has already been created
         port_id = self.port_id(owner, port)
-        port = self._ports.get(port_id, None)
-        if port:
-            return port
-
-        # TODO labels
-        self.get_node_data(owner).get(self.port_key, {})
-        # todo ports a list or a dict?
-
         properties = self.get_properties(port, styles) or None
 
         elk_port = ElkPort(
@@ -407,10 +396,9 @@ class XELK(ElkTransformer):
             height=self.port_scale,
             width=self.port_scale,
             properties=properties,
+            # TODO labels
         )
-        port = Port(node=owner, elkport=elk_port)
-        self._ports[port_id] = port
-        return port
+        return Port(node=owner, elkport=elk_port)
 
     def get_node_data(self, node: Hashable) -> Dict:
         g, tree = self.source
@@ -572,7 +560,7 @@ class XELK(ElkTransformer):
         ), f"Expected only a single parent for `{node}` not {len(predecesors)}"
         for pred in tree.predecessors(node):
             return self.closest_visible(pred)
-        raise ValueError(f"Unable to find visible ancestor for `{node}`")
+        raise ElkHierarchyError(f"Unable to find visible ancestor for `{node}`")
 
     @lru_cache()
     def closest_common_visible(self, nodes: Tuple[Hashable]) -> Hashable:

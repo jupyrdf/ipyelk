@@ -10,6 +10,7 @@ import traitlets as T
 from .diagram import ElkDiagram, ElkLabel, ElkNode, ElkPort
 from .diagram.elk_model import ElkGraphElement
 from .diagram.elk_text_sizer import ElkTextSizer, size_labels
+from .exceptions import ElkDuplicateIDError, ElkRegistryError
 from .schema import ElkSchemaValidator
 from .trait_types import Schema
 
@@ -44,6 +45,7 @@ PortMap = Dict[Hashable, Port]
 class ElkTransformer(W.Widget):
     """ Transform data into the form required by the ElkDiagram. """
 
+    ELK_ROOT_ID = "root"
     _nodes: Optional[Dict[Hashable, ElkNode]] = None
     source = T.Dict()
     value = Schema(ElkSchemaValidator)
@@ -70,7 +72,7 @@ class ElkTransformer(W.Widget):
 
     @T.default("value")
     def _default_value(self):
-        return {"id": "root"}
+        return {"id": self.ELK_ROOT_ID}
 
     async def _refresh(self):
         root_node = await self.transform()
@@ -98,15 +100,17 @@ class ElkTransformer(W.Widget):
         """Use the elk identifiers to find original objects"""
         try:
             return self._elk_to_item[element_id]
-        except KeyError:
-            raise ValueError(f"Element id `{element_id}` not in elk id registry.")
+        except KeyError as E:
+            raise ElkRegistryError(
+                f"Element id `{element_id}` not in elk id registry."
+            ) from E
 
     def to_id(self, item: Hashable) -> str:
         """Use original objects to find elk id"""
         try:
             return self._item_to_elk[item]
-        except KeyError:
-            raise ValueError(f"Item `{item}` not in elk id registry.")
+        except KeyError as E:
+            raise ElkRegistryError(f"Item `{item}` not in elk id registry.") from E
 
     def connect(self, view: ElkDiagram) -> T.link:
         """Connect the output value of this transformer to a diagram"""
@@ -130,11 +134,9 @@ class ElkTransformer(W.Widget):
         self._elk_to_item[_id] = item
         self._item_to_elk[item] = _id
 
-
-class ElkDuplicateIDError(Exception):
-    """Elk Ids must be unique"""
-
-    pass
+    def clear_registry(self):
+        self._elk_to_item: Dict[str, Hashable] = {}
+        self._item_to_elk: Dict[Hashable, str] = {}
 
 
 def merge(d1: Optional[Dict], d2: Optional[Dict]) -> Optional[Dict]:
