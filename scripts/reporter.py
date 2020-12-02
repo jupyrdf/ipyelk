@@ -14,7 +14,7 @@ from doit.reporter import ConsoleReporter
 from . import project as P
 
 START = "::group::" if P.INSTALL_ARTIFACT else ""
-END = "::endgroup::" if P.INSTALL_ARTIFACT else ""
+END = "\n::endgroup::" if P.INSTALL_ARTIFACT else ""
 
 TIMEFMT = "%H:%M:%S"
 SKIP = "        "
