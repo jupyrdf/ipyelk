@@ -91,6 +91,7 @@ env_specs:
   _utest:
     description: unit test environment. not actually created.
     packages:
+      - ansi2html
       - hypothesis-jsonschema
       - pytest-asyncio
       - pytest-cov
