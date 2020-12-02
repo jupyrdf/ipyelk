@@ -10,6 +10,7 @@
 # Copyright (c) 2020 Dane Freeman.
 # Distributed under the terms of the Modified BSD License.
 
+import json
 import os
 import subprocess
 from hashlib import sha256
@@ -291,14 +292,27 @@ def task_test():
     for nb in P.EXAMPLE_IPYNB:
         yield _nb_test(nb)
 
+    utest_args = [*P.APR_DEFAULT, *P.PYM, "pytest"]
+
+    if P.UTEST_PROCESSES:
+        utest_args += ["-n", P.UTEST_PROCESSES]
+
+    pytest_args = os.environ.get("PYTEST_ARGS", "").strip()
+
+    if pytest_args:
+        try:
+            utest_args += json.loads(pytest_args)
+        except Exception as err:
+            print(err)
+
     yield dict(
         name="utest",
         doc="run unit tests with pytest",
         uptodate=[config_changed(COMMIT)],
-        file_dep=[*P.ALL_PY_SRC, P.SETUP_CFG],
+        file_dep=[*P.ALL_PY_SRC, P.SETUP_CFG, P.OK_PIP_INSTALL],
         targets=[P.HTMLCOV_INDEX, P.PYTEST_HTML],
         actions=[
-            [*P.APR_DEFAULT, *P.PYM, "pytest"],
+            utest_args,
             lambda: U.strip_timestamps(
                 *P.HTMLCOV.rglob("*.html"), P.PYTEST_HTML, slug=COMMIT
             ),

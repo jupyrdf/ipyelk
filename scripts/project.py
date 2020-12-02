@@ -31,6 +31,9 @@ FORCE_SERIAL_ENV_PREP = bool(
 )
 # one of: None, wheel or sdist
 INSTALL_ARTIFACT = os.environ.get("INSTALL_ARTIFACT")
+UTEST_PROCESSES = os.environ.get(
+    "UTEST_PROCESSES", os.environ.get("ATEST_PROCESSES", "")
+)
 
 # find root
 SCRIPTS = Path(__file__).parent.resolve()
