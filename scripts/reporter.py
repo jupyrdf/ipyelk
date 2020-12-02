@@ -1,3 +1,12 @@
+# Copyright (c) 2020 Dane Freeman.
+# Distributed under the terms of the Modified BSD License.
+#
+# from https://github.com/robots-from-jupyter/robotframework-jupyterlibrary
+#
+# Copyright (c) 2020 Robots from Jupyter
+# Distributed under the terms of the Modified BSD License.
+
+
 from datetime import datetime
 
 from doit.reporter import ConsoleReporter
