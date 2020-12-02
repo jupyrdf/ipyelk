@@ -18,6 +18,7 @@ from hashlib import sha256
 from doit.action import CmdAction
 from doit.tools import PythonInteractiveAction, config_changed
 from scripts import project as P
+from scripts import reporter
 from scripts import utils as U
 
 os.environ["PYTHONIOENCODING"] = "utf-8"
@@ -27,6 +28,7 @@ DOIT_CONFIG = {
     "verbosity": 2,
     "par_type": "thread",
     "default_tasks": ["binder"],
+    "reporter": reporter.GithubActionsReporter,
 }
 
 COMMIT = subprocess.check_output(["git", "rev-parse", "HEAD"]).decode("utf-8").strip()
