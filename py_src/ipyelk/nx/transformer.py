@@ -19,17 +19,17 @@ from ..diagram.elk_model import (
     ElkRoot,
 )
 from ..diagram.elk_text_sizer import ElkTextSizer, size_labels
-from ..transform import ElkTransformer
-from .nx import (
+from ..transform import (
     Edge,
     EdgeMap,
+    ElkTransformer,
     NodeMap,
     Port,
     PortMap,
-    compact,
-    get_ports,
-    lowest_common_ancestor,
+    collect_labels,
+    merge,
 )
+from .nx import build_hierarchy, compact, get_ports, is_hidden, lowest_common_ancestor
 
 
 class XELK(ElkTransformer):
@@ -49,11 +49,13 @@ class XELK(ElkTransformer):
     label_key = T.Unicode(default_value="labels")
     port_key = T.Unicode(default_value="ports")
 
-    text_sizer: ElkTextSizer = T.Instance(ElkTextSizer, kw={}, allow_none=True)
-
     @T.default("source")
     def _default_source(self):
         return (nx.Graph(), None)
+
+    @T.default("text_sizer")
+    def _default_text_sizer(self):
+        return ElkTextSizer()
 
     @T.default("layouts")
     def _default_layouts(self):
@@ -175,7 +177,7 @@ class XELK(ElkTransformer):
             #     self.register(label, port)
 
         # bulk calculate label sizes
-        await size_labels(self.text_sizer, self.collect_labels(elknodes))
+        await size_labels(self.text_sizer, collect_labels([top]))
         # link children to parents
         self._nodes = elknodes
 
@@ -444,29 +446,6 @@ class XELK(ElkTransformer):
                 ports[elkport.id] = Port(node=node, elkport=elkport)
         return ports
 
-    def collect_labels(self, nodes: NodeMap) -> Tuple[ElkLabel]:
-        """Iterate over the map of ElkNodes and pluck labels from:
-            * node
-            * node.ports
-            * node.edges
-
-        :param nodes: [description]
-        :type nodes: NodeMap
-        :return: [description]
-        :rtype: Tuple[ElkLabel]
-        """
-        labels = []
-        for elknode in nodes.values():
-            for label in listed(elknode.labels):
-                labels.append(label)
-            for elkport in listed(elknode.ports):
-                for label in listed(elkport.labels):
-                    labels.append(label)
-            for elkedge in listed(elknode.edges):
-                for label in listed(elkedge.labels):
-                    labels.append(label)
-        return tuple(labels)
-
     async def make_labels(self, node: Hashable) -> Optional[List[ElkLabel]]:
         labels = []
         g = self.source[0]
@@ -602,113 +581,3 @@ class XELK(ElkTransformer):
             return ElkRoot
         result = lowest_common_ancestor(tree, [self.closest_visible(n) for n in nodes])
         return result
-
-    def from_id(self, element_id: str) -> Hashable:
-        """Use the elk identifiers to find original objects"""
-        try:
-            return self._elk_to_item[element_id]
-        except KeyError:
-            raise ValueError(f"Element id `{element_id}` not in elk id registry.")
-
-    def to_id(self, item: Hashable) -> str:
-        """Use original objects to find elk id"""
-        try:
-            return self._item_to_elk[item]
-        except KeyError:
-            raise ValueError(f"Item `{item}` not in elk id registry.")
-
-
-def is_hidden(tree: nx.DiGraph, node: Hashable, attr: str) -> bool:
-    """Iterate  on the node ancestors and determine if it is hidden along the chain"""
-    if tree and node in tree:
-        if tree.nodes[node].get(attr, False):
-            return True
-        for ancestor in nx.ancestors(tree, node):
-            if tree.nodes[ancestor].get(attr, False):
-                return True
-    return False
-
-
-def merge(d1: Optional[Dict], d2: Optional[Dict]) -> Optional[Dict]:
-    """Merge two dictionaries while first testing if either are `None`.
-    The first dictionary's keys take precedence over the second dictionary.
-    If the final merged dictionary is empty `None` is returned.
-
-    :param d1: primary dictionary
-    :type d1: Optional[Dict]
-    :param d2: secondary dictionary
-    :type d2: Optional[Dict]
-    :return: merged dictionary
-    :rtype: Dict
-    """
-    if d1 is None:
-        d1 = {}
-    if d2 is None:
-        d2 = {}
-
-    cl1 = d1.get("cssClasses", "")
-    cl2 = d2.get("cssClasses", "")
-    cl = " ".join(sorted(set([*cl1.split(), *cl2.split()]))).strip()
-
-    value = {**d2, **d1}  # right most wins if duplicated keys
-
-    # if either had cssClasses, update that
-    if cl:
-        value["cssClasses"] = cl
-
-    if value:
-        return value
-
-
-def listed(values: Optional[List]) -> List:
-    """Checks if incoming `values` is None then either returns a new list or
-    original value.
-
-    :param values: List of values
-    :type values: Optional[List]
-    :return: List of values or empty list
-    :rtype: List
-    """
-    if values is None:
-        return []
-    return values
-
-
-def build_hierarchy(
-    g: nx.Graph, tree: nx.DiGraph, elknodes: NodeMap, HIDDEN_ATTR: str
-) -> List[ElkNode]:
-    """The Elk JSON is hierarchical. This method iterates through the build
-    elknodes and links children to parents if the incoming source includes a
-    hierarcichal networkx diagraph tree.
-
-    :param g: [description]
-    :type g: nx.Graph
-    :param tree: [description]
-    :type tree: nx.DiGraph
-    :param elknodes: mapping of networkx nodes to their elknode representations
-    :type elknodes: NodeMap
-    :param HIDDEN_ATTR: [description]
-    :type HIDDEN_ATTR: str
-    :return: Top level ElkNodes to put as children under the ElkRoot
-    :rtype: List[ElkNode]
-    """
-    if tree:
-        # roots of the tree
-        roots = [n for n, d in tree.in_degree() if d == 0]
-        for n, elknode in elknodes.items():
-            if n in tree:
-                elknode.children = [
-                    elknodes[c]
-                    for c in tree.neighbors(n)
-                    if not is_hidden(tree, c, HIDDEN_ATTR)
-                ]
-            else:
-                # nodes that are not in the tree
-                roots.append(n)
-    else:
-        # only flat graph provided
-        roots = []
-        for n, elknode in elknodes.items():
-            if not is_hidden(tree, n, HIDDEN_ATTR):
-                roots.append(n)
-    return [elknodes[n] for n in roots]

@@ -1,15 +1,44 @@
 # Copyright (c) 2020 Dane Freeman.
 # Distributed under the terms of the Modified BSD License.
 import asyncio
-from typing import Dict, Hashable, Optional, Union
+from dataclasses import dataclass
+from typing import Dict, Hashable, List, Optional, Union
 
 import ipywidgets as W
 import traitlets as T
 
-from .diagram import ElkDiagram, ElkLabel, ElkNode
+from .diagram import ElkDiagram, ElkLabel, ElkNode, ElkPort
 from .diagram.elk_model import ElkGraphElement
+from .diagram.elk_text_sizer import ElkTextSizer, size_labels
 from .schema import ElkSchemaValidator
 from .trait_types import Schema
+
+
+@dataclass(frozen=True)
+class Edge:
+    source: Hashable
+    source_port: Optional[Hashable]
+    target: Hashable
+    target_port: Optional[Hashable]
+    owner: Hashable
+    data: Optional[Dict]
+
+    def __hash__(self):
+        return hash((self.source, self.source_port, self.target, self.target_port))
+
+
+@dataclass(frozen=True)
+class Port:
+    node: Hashable
+    elkport: ElkPort
+
+    def __hash__(self):
+        return hash(tuple([hash(self.node), hash(self.elkport.id)]))
+
+
+NodeMap = Dict[Hashable, ElkNode]
+EdgeMap = Dict[Hashable, List[Edge]]
+PortMap = Dict[Hashable, Port]
 
 
 class ElkTransformer(W.Widget):
@@ -25,6 +54,8 @@ class ElkTransformer(W.Widget):
     _elk_to_item: Dict[str, Hashable] = None
     _item_to_elk: Dict[Hashable, str] = None
 
+    text_sizer: ElkTextSizer = T.Instance(ElkTextSizer, allow_none=True)
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
@@ -32,7 +63,10 @@ class ElkTransformer(W.Widget):
 
     async def transform(self) -> ElkNode:
         """Generate elk json"""
-        return ElkNode(**self.source)
+        top = ElkNode(**self.source)
+        # bulk calculate label sizes
+        await size_labels(self.text_sizer, collect_labels([top]))
+        return top
 
     @T.default("value")
     def _default_value(self):
@@ -62,11 +96,17 @@ class ElkTransformer(W.Widget):
 
     def from_id(self, element_id: str) -> Hashable:
         """Use the elk identifiers to find original objects"""
-        return element_id
+        try:
+            return self._elk_to_item[element_id]
+        except KeyError:
+            raise ValueError(f"Element id `{element_id}` not in elk id registry.")
 
     def to_id(self, item: Hashable) -> str:
         """Use original objects to find elk id"""
-        return item
+        try:
+            return self._item_to_elk[item]
+        except KeyError:
+            raise ValueError(f"Item `{item}` not in elk id registry.")
 
     def connect(self, view: ElkDiagram) -> T.link:
         """Connect the output value of this transformer to a diagram"""
@@ -95,3 +135,75 @@ class ElkDuplicateIDError(Exception):
     """Elk Ids must be unique"""
 
     pass
+
+
+def merge(d1: Optional[Dict], d2: Optional[Dict]) -> Optional[Dict]:
+    """Merge two dictionaries while first testing if either are `None`.
+    The first dictionary's keys take precedence over the second dictionary.
+    If the final merged dictionary is empty `None` is returned.
+
+    :param d1: primary dictionary
+    :type d1: Optional[Dict]
+    :param d2: secondary dictionary
+    :type d2: Optional[Dict]
+    :return: merged dictionary
+    :rtype: Dict
+    """
+    if d1 is None:
+        d1 = {}
+    if d2 is None:
+        d2 = {}
+
+    cl1 = d1.get("cssClasses", "")
+    cl2 = d2.get("cssClasses", "")
+    cl = " ".join(sorted(set([*cl1.split(), *cl2.split()]))).strip()
+
+    value = {**d2, **d1}  # right most wins if duplicated keys
+
+    # if either had cssClasses, update that
+    if cl:
+        value["cssClasses"] = cl
+
+    if value:
+        return value
+
+
+def listed(values: Optional[List]) -> List:
+    """Checks if incoming `values` is None then either returns a new list or
+    original value.
+
+    :param values: List of values
+    :type values: Optional[List]
+    :return: List of values or empty list
+    :rtype: List
+    """
+    if values is None:
+        return []
+    return values
+
+
+def collect_labels(nodes: List[ElkNode], recurse: bool = True) -> List[ElkLabel]:
+    """Iterate over the map of ElkNodes and pluck labels from:
+        * node
+        * node.ports
+        * node.edges
+    If recuse is True then labels from each child will be included
+
+    :param nodes: [description]
+    :type nodes: List[ElkNode]
+    :return: [description]
+    :rtype: List[ElkLabel]
+    """
+    labels = []
+    for elknode in nodes:
+        for label in listed(elknode.labels):
+            labels.append(label)
+        for elkport in listed(elknode.ports):
+            for label in listed(elkport.labels):
+                labels.append(label)
+        for elkedge in listed(elknode.edges):
+            for label in listed(elkedge.labels):
+                labels.append(label)
+        if recurse:
+            labels.extend(collect_labels(listed(elknode.children)))
+    return labels
