@@ -144,7 +144,7 @@ class XELK(ElkTransformer):
         elknodes = {node: await self.make_elknode(node) for node in visible_nodes}
         elknodes[ElkRoot] = top = ElkNode(
             id=self.ELK_ROOT_ID,
-            children=self.build_hierarchy(elknodes),
+            children=build_hierarchy(g, tree, elknodes, self.HIDDEN_ATTR),
             layoutOptions=self.get_layout(ElkRoot, "parents"),
         )
 
