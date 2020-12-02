@@ -223,8 +223,11 @@ class XELK(ElkTransformer):
         return top  # returns top level node
 
     async def make_elknode(self, node) -> ElkNode:
-        layout = self.get_layout(node, ElkNode)
-
+        # merge layout options defined on the node data with default layout options
+        layout = merge(
+            self.get_node_data(node).get("layoutOptions", {}),
+            self.get_layout(node, ElkNode),
+        )
         labels = await self.make_labels(node)
 
         # update port map with declared ports in the networkx node data

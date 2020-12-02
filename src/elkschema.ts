@@ -9,7 +9,6 @@ import * as ELK from 'elkjs';
 
 export interface ElkProperties {
   cssClasses?: string;
-  LayoutOptions?: object;
 }
 
 export type AnyElkLabelWithProperties = ELK.ElkLabel & { properties?: ElkProperties };

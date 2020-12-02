@@ -7,7 +7,10 @@
 
 ## ipyelk 0.2.1
 
-- update Elk schema to allow for properties on edge labels and port labels ([#48][])
+- update Elk schema to allow for properties (and c) on edge labels and port labels
+  ([#48][])
+- Merge layout options if specified in a given node's data with default layout options
+  ([#48][])
 
 [#46]: https://github.com/jupyrdf/ipyelk/pull/46
 [#48]: https://github.com/jupyrdf/ipyelk/pull/48
