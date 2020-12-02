@@ -184,8 +184,11 @@ class XELK(ElkTransformer):
         return top
 
     async def make_elknode(self, node) -> ElkNode:
-        layout = self.get_layout(node, ElkNode)
-
+        # merge layout options defined on the node data with default layout options
+        layout = merge(
+            self.get_node_data(node).get("layoutOptions", {}),
+            self.get_layout(node, ElkNode),
+        )
         labels = await self.make_labels(node)
 
         # update port map with declared ports in the networkx node data
@@ -581,7 +584,7 @@ class XELK(ElkTransformer):
         attr = self.HIDDEN_ATTR
         g, tree = self.source
         if node not in tree:
-            return None
+            return node
         if not is_hidden(tree, node, attr):
             return node
         predecesors = list(tree.predecessors(node))
