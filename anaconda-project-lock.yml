@@ -23,7 +23,7 @@ env_specs:
     locked: false
   default:
     locked: true
-    env_spec_hash: 5f887baaf3a5f05ec60c86ab9e2114025f7eda1f
+    env_spec_hash: 2798233e12fb799b609a8684e2f23d01affa2e4b
     platforms:
       - linux-64
       - osx-64
@@ -48,6 +48,8 @@ env_specs:
         - entrypoints=0.3=pyhd8ed1ab_1003
         - execnet=1.7.1=py_0
         - flake8=3.8.4=py_0
+        - hypothesis-jsonschema=0.18.2=pyhd8ed1ab_0
+        - hypothesis=5.41.4=pyhd8ed1ab_0
         - idna=2.10=pyh9f0ad1d_0
         - importlib-metadata=3.1.1=pyhd8ed1ab_0
         - importlib_metadata=3.1.1=hd8ed1ab_0
@@ -100,6 +102,7 @@ env_specs:
         - rfc3986=1.4.0=pyh9f0ad1d_0
         - send2trash=1.5.0=py_0
         - six=1.15.0=pyh9f0ad1d_0
+        - sortedcontainers=2.3.0=pyhd8ed1ab_0
         - testpath=0.4.4=py_0
         - toml=0.10.2=pyhd8ed1ab_0
         - tqdm=4.54.0=pyhd8ed1ab_0
