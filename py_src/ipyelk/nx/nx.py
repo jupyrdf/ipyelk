@@ -147,18 +147,19 @@ def map_visible(g: nx.Graph, tree: nx.DiGraph, attr: str) -> Dict[Hashable, Hash
     :rtype: Dict[Hashable, Hashable]
     """
     mapping = {}
-    for n in nx.algorithms.topological_sort(tree):
-        if n in mapping:
-            break  # go to next node in the sorting
-        if not is_hidden(tree, n, attr):
-            mapping[n] = n
-        else:
-            predecesors = list(tree.predecessors(n))
-            assert len(predecesors) <= 1
-            for last_visible in predecesors:
-                mapping[n] = last_visible
-                for d in nx.algorithms.dag.descendants(tree, n):
-                    mapping[d] = last_visible
+    if tree:
+        for n in nx.algorithms.topological_sort(tree):
+            if n in mapping:
+                break  # go to next node in the sorting
+            if not is_hidden(tree, n, attr):
+                mapping[n] = n
+            else:
+                predecesors = list(tree.predecessors(n))
+                assert len(predecesors) <= 1
+                for last_visible in predecesors:
+                    mapping[n] = last_visible
+                    for d in nx.algorithms.dag.descendants(tree, n):
+                        mapping[d] = last_visible
 
     # creating mapping entries for those nodes not in the tree
     for n in g.nodes():
