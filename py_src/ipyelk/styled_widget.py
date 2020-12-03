@@ -51,7 +51,7 @@ class StyledWidget(W.Box):
             style.append(f"{selector}{{{css_attributes}}}")
         self.namespaced_css = "".join(style)
         self.raw_css = raw_css
-        self._css_widget.value = f"<style>{self.style}</style>"
+        self._css_widget.value = f"<style>{self.namespaced_css}</style>"
 
     @property
     def _css_class(self) -> str:
