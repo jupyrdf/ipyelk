@@ -56,3 +56,9 @@
   box-shadow: inherit;
   color: var(--jp-warn-color0);
 }
+
+.jp-ElkSizer {
+  visibility: hidden;
+  z-index: -9999;
+  pointer-events: none;
+}
