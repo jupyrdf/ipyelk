@@ -19,7 +19,6 @@ from ..diagram.elk_model import (
     ElkRoot,
 )
 from ..diagram.elk_text_sizer import ElkTextSizer, size_labels
-from ..exceptions import ElkHierarchyError
 from ..transform import (
     Edge,
     EdgeMap,
@@ -30,7 +29,14 @@ from ..transform import (
     collect_labels,
     merge,
 )
-from .nx import build_hierarchy, compact, get_ports, is_hidden, lowest_common_ancestor, map_visible
+from .nx import (
+    build_hierarchy,
+    compact,
+    get_ports,
+    is_hidden,
+    lowest_common_ancestor,
+    map_visible,
+)
 
 
 class XELK(ElkTransformer):
@@ -112,15 +118,6 @@ class XELK(ElkTransformer):
             edge.source, edge.source_port, edge.target, edge.target_port
         )
 
-    def clear_cached(self):
-        # clear old cached info is starting at the top level transform
-
-        # TODO: look into ways to remove the need to have a cache like this
-        # NOTE: this is caused by a series of side effects
-        self.log.debug("Clearing cached elk info")
-        self.clear_registry()
-        self.closest_common_visible.cache_clear()
-
     async def transform(self) -> ElkNode:
         """Generate ELK dictionary structure
         :return: Root Elk node
@@ -128,7 +125,7 @@ class XELK(ElkTransformer):
         """
         # TODO decide behavior for nodes that exist in the tree but not g
         g, tree = self.source
-        self.clear_cached()
+        self.clear_registry()
         visible_edges, hidden_edges = self.collect_edges()
 
         # Process visible networkx nodes into elknodes
@@ -172,7 +169,7 @@ class XELK(ElkTransformer):
             owner = port.node
             elkport = port.elkport
             if owner not in elknodes:
-                #TODO skip generating port to begin with
+                # TODO skip generating port to begin with
                 break
             elknode = elknodes[owner]
             if elknode.ports is None:
@@ -497,6 +494,13 @@ class XELK(ElkTransformer):
 
         closest_visible = map_visible(g, tree, attr)
 
+        @lru_cache()
+        def closest_common_visible(nodes: Tuple[Hashable]) -> Hashable:
+            if tree is None:
+                return ElkRoot
+            result = lowest_common_ancestor(tree, nodes)
+            return result
+
         for source, target, edge_data in g.edges(data=True):
             source_port, target_port = get_ports(edge_data)
             vis_source = closest_visible[source]
@@ -504,7 +508,8 @@ class XELK(ElkTransformer):
             shidden = vis_source != source
             thidden = vis_target != target
 
-            owner = self.closest_common_visible((vis_source, vis_target))
+            owner = closest_common_visible((vis_source, vis_target))
+
             if shidden or thidden:
                 # create new slack ports if source or target is remapped
                 if vis_source != source:
@@ -535,11 +540,3 @@ class XELK(ElkTransformer):
                     )
                 )
         return visible, hidden
-
-    @lru_cache()
-    def closest_common_visible(self, nodes: Tuple[Hashable]) -> Hashable:
-        g, tree = self.source
-        if tree is None:
-            return ElkRoot
-        result = lowest_common_ancestor(tree, nodes)
-        return result

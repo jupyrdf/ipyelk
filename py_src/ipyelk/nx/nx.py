@@ -133,7 +133,7 @@ def build_hierarchy(
     return [elknodes[n] for n in roots]
 
 
-def map_visible(g:nx.Graph, tree:nx.DiGraph, attr:str)->Dict[Hashable, Hashable]:
+def map_visible(g: nx.Graph, tree: nx.DiGraph, attr: str) -> Dict[Hashable, Hashable]:
     """Build mapping of nodes to their closest visible node.
     If the node is not hidden then it would map to itself.
 

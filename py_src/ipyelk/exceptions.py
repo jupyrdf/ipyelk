@@ -4,7 +4,3 @@ class ElkDuplicateIDError(Exception):
 
 class ElkRegistryError(Exception):
     """Transformer mark registry missing key"""
-
-
-class ElkHierarchyError(Exception):
-    """[summary]"""
