@@ -30,7 +30,7 @@ from ..transform import (
     collect_labels,
     merge,
 )
-from .nx import build_hierarchy, compact, get_ports, is_hidden, lowest_common_ancestor
+from .nx import build_hierarchy, compact, get_ports, is_hidden, lowest_common_ancestor, map_visible
 
 
 class XELK(ElkTransformer):
@@ -120,7 +120,6 @@ class XELK(ElkTransformer):
         self.log.debug("Clearing cached elk info")
         self.clear_registry()
         self.closest_common_visible.cache_clear()
-        self.closest_visible.cache_clear()
 
     async def transform(self) -> ElkNode:
         """Generate ELK dictionary structure
@@ -172,6 +171,9 @@ class XELK(ElkTransformer):
         for port_id, port in ports.items():
             owner = port.node
             elkport = port.elkport
+            if owner not in elknodes:
+                #TODO skip generating port to begin with
+                break
             elknode = elknodes[owner]
             if elknode.ports is None:
                 elknode.ports = []
@@ -493,25 +495,23 @@ class XELK(ElkTransformer):
             list
         )  # will index edges by nx.lowest_common_ancestor
 
+        closest_visible = map_visible(g, tree, attr)
+
         for source, target, edge_data in g.edges(data=True):
-            shidden = is_hidden(tree, source, attr)
-            thidden = is_hidden(tree, target, attr)
-
             source_port, target_port = get_ports(edge_data)
+            vis_source = closest_visible[source]
+            vis_target = closest_visible[target]
+            shidden = vis_source != source
+            thidden = vis_target != target
 
+            owner = self.closest_common_visible((vis_source, vis_target))
             if shidden or thidden:
-                try:
-                    vis_source = self.closest_visible(source)
-                    vis_target = self.closest_visible(target)
-                    owner = self.closest_common_visible((vis_source, vis_target))
+                # create new slack ports if source or target is remapped
+                if vis_source != source:
+                    source_port = (source, source_port)
+                if vis_target != target:
+                    target_port = (target, target_port)
 
-                    # create new slack ports if source or target is remapped
-                    if vis_source != source:
-                        source_port = (source, source_port)
-                    if vis_target != target:
-                        target_port = (target, target_port)
-                except ValueError:
-                    continue  # bail if no possible target or source
                 if vis_source != vis_target:
                     hidden[owner].append(
                         Edge(
@@ -524,7 +524,6 @@ class XELK(ElkTransformer):
                         )
                     )
             else:
-                owner = self.closest_common_visible((source, target))
                 visible[owner].append(
                     Edge(
                         source=source,
@@ -538,34 +537,9 @@ class XELK(ElkTransformer):
         return visible, hidden
 
     @lru_cache()
-    def closest_visible(self, node: Hashable):
-        """Crawl through the given NetworkX `tree` looking for an ancestor of
-        `node` that is not hidden
-
-        :param node: [description] Node to identify a visible ancestor
-        :type node: Hashable
-        :raises ValueError: [description]
-        :return: [description]
-        :rtype: [type]
-        """
-        attr = self.HIDDEN_ATTR
-        g, tree = self.source
-        if node not in tree:
-            return node
-        if not is_hidden(tree, node, attr):
-            return node
-        predecesors = list(tree.predecessors(node))
-        assert (
-            len(predecesors) <= 1
-        ), f"Expected only a single parent for `{node}` not {len(predecesors)}"
-        for pred in tree.predecessors(node):
-            return self.closest_visible(pred)
-        raise ElkHierarchyError(f"Unable to find visible ancestor for `{node}`")
-
-    @lru_cache()
     def closest_common_visible(self, nodes: Tuple[Hashable]) -> Hashable:
         g, tree = self.source
         if tree is None:
             return ElkRoot
-        result = lowest_common_ancestor(tree, [self.closest_visible(n) for n in nodes])
+        result = lowest_common_ancestor(tree, nodes)
         return result

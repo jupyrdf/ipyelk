@@ -131,3 +131,37 @@ def build_hierarchy(
             if not is_hidden(tree, n, HIDDEN_ATTR):
                 roots.append(n)
     return [elknodes[n] for n in roots]
+
+
+def map_visible(g:nx.Graph, tree:nx.DiGraph, attr:str)->Dict[Hashable, Hashable]:
+    """Build mapping of nodes to their closest visible node.
+    If the node is not hidden then it would map to itself.
+
+    :param g: [description]
+    :type g: nx.Graph
+    :param tree: [description]
+    :type tree: nx.DiGraph
+    :param attr: [description]
+    :type attr: str
+    :return: [description]
+    :rtype: Dict[Hashable, Hashable]
+    """
+    mapping = {}
+    for n in nx.algorithms.topological_sort(tree):
+        if n in mapping:
+            break  # go to next node in the sorting
+        if not is_hidden(tree, n, attr):
+            mapping[n] = n
+        else:
+            predecesors = list(tree.predecessors(n))
+            assert len(predecesors) <= 1
+            for last_visible in predecesors:
+                mapping[n] = last_visible
+                for d in nx.algorithms.dag.descendants(tree, n):
+                    mapping[d] = last_visible
+
+    # creating mapping entries for those nodes not in the tree
+    for n in g.nodes():
+        if n not in mapping:
+            mapping[n] = n
+    return mapping
