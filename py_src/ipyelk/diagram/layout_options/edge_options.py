@@ -52,6 +52,14 @@ EDGE_ROUTING_OPTIONS = {
     "Splines": "SPLINES",
 }
 
+DIRECTION_OPTIONS = {
+    "Undefined": "UNDEFINED",
+    "Right": "RIGHT",
+    "Left": "LEFT",
+    "Down": "DOWN",
+    "Up": "UP",
+}
+
 
 class InlineEdgeLabels(LayoutOptionWidget):
     """If true, an edge label is placed directly on its edge. May only apply to
@@ -395,3 +403,22 @@ class MergeHierarchyCrossingEdges(LayoutOptionWidget):
     @T.observe("merge")
     def _update_value(self, change: T.Bunch = None):
         self.value = "true" if self.merge else "false"
+
+
+class Direction(LayoutOptionWidget):
+    """Overall direction of edges: horizontal (right / left) or vertical (down / up).
+
+    https://www.eclipse.org/elk/reference/options/org-eclipse-elk-direction.html
+    """
+
+    identifier = "org.eclipse.elk.direction"
+    metadata_provider = "core.options.CoreOptions"
+    applies_to = ["parents"]
+
+    value = T.Enum(values=list(DIRECTION_OPTIONS.values()), default_value="UNDEFINED")
+
+    def _ui(self) -> List[W.Widget]:
+        dropdown = W.Dropdown(options=list(DIRECTION_OPTIONS.items()))
+        T.link((self, "value"), (dropdown, "value"))
+
+        return [dropdown]

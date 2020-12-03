@@ -5,6 +5,7 @@ https://www.eclipse.org/elk/reference/options.html
 # Distributed under the terms of the Modified BSD License.
 
 from .edge_options import (
+    Direction,
     EadesRepulsion,
     EdgeCenterLabelPlacementStrategy,
     EdgeEdgeLayerSpacing,
@@ -57,6 +58,7 @@ __all__ = [
     "CommentCommentSpacing",
     "CommentNodeSpacing",
     "ComponentsSpacing",
+    "Direction",
     "EadesRepulsion",
     "EdgeCenterLabelPlacementStrategy" "EdgeEdgeLayerSpacing",
     "EdgeCenterLabelPlacementStrategy",

@@ -9,9 +9,9 @@ from typing import Dict, List, Union
 
 import traitlets as T
 from async_lru import alru_cache
-from ipywidgets import DOMWidget
 
 from .._version import EXTENSION_NAME, EXTENSION_SPEC_VERSION
+from ..styled_widget import StyledWidget
 from .elk_model import ElkLabel
 
 
@@ -43,7 +43,7 @@ class SizingRequest:
         return {"value": self.text.text, "cssClasses": css_classes, "id": self.id}
 
 
-class ElkTextSizer(DOMWidget):
+class ElkTextSizer(StyledWidget):
     """Jupyterlab widget for getting rendered text sizes from the DOM"""
 
     _model_name = T.Unicode("ELKTextSizerModel").tag(sync=True)
@@ -56,7 +56,6 @@ class ElkTextSizer(DOMWidget):
     _request_queue: asyncio.Queue = None
     _response_queue: asyncio.Queue = None
 
-    custom_css = T.List()
     timeout = T.Float(default_value=0.1, min=0)
     max_size = T.Int(default_value=100)
 
@@ -71,9 +70,9 @@ class ElkTextSizer(DOMWidget):
         asyncio.create_task(self._process_requests())
         asyncio.create_task(self._process_responses())
 
-    @T.observe("custom_css")
+    @T.observe("style")
     def _bust_futures_cache(self, change=None):
-        pass
+        self.measure.cache_clear()
 
     def _handle_response(self, _, content, buffers):
         """Method to process messages back from the browser and resolve measurements"""

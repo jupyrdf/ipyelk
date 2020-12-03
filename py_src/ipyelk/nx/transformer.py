@@ -50,7 +50,7 @@ class XELK(ElkTransformer):
     css_classes = T.Dict()
 
     port_scale = T.Int(default_value=5)
-    label_key = T.Unicode(default_value="label")
+    label_key = T.Unicode(default_value="labels")
     port_key = T.Unicode(default_value="ports")
 
     text_sizer: ElkTextSizer = T.Instance(ElkTextSizer, kw={}, allow_none=True)
@@ -133,6 +133,7 @@ class XELK(ElkTransformer):
         :return: Root Elk node
         :rtype: ElkNode
         """
+        # TODO decide behavior for nodes that exist in the tree but not g
         g, tree = self.source
         self.clear_cached()
         ports: PortMap = self._ports
@@ -222,8 +223,11 @@ class XELK(ElkTransformer):
         return top  # returns top level node
 
     async def make_elknode(self, node) -> ElkNode:
-        layout = self.get_layout(node, ElkNode)
-
+        # merge layout options defined on the node data with default layout options
+        layout = merge(
+            self.get_node_data(node).get("layoutOptions", {}),
+            self.get_layout(node, ElkNode),
+        )
         labels = await self.make_labels(node)
 
         # update port map with declared ports in the networkx node data
@@ -382,10 +386,9 @@ class XELK(ElkTransformer):
         """
 
         labels = []
-
         properties = self.get_properties(edge, styles) or None
 
-        for i, label in enumerate(edge.data.get("labels", [])):
+        for i, label in enumerate(edge.data.get(self.label_key, [])):
             layout_options = self.get_layout(
                 edge.owner, ElkLabel
             )  # TODO add edgelabel type?
@@ -659,7 +662,7 @@ class XELK(ElkTransformer):
         attr = self.HIDDEN_ATTR
         g, tree = self.source
         if node not in tree:
-            return None
+            return node
         if not is_hidden(tree, node, attr):
             return node
         predecesors = list(tree.predecessors(node))

@@ -9,6 +9,7 @@ import traitlets as T
 class StyledWidget(W.Box):
     style = T.Dict(kw={})
     raw_css = T.Tuple().tag(sync=True)
+    namespaced_css = T.Unicode().tag(sync=True)
     _css_widget = T.Instance(W.HTML, kw={"layout": {"display": "None"}})
 
     def __init__(self, *args, **kwargs):
@@ -48,8 +49,9 @@ class StyledWidget(W.Box):
                     attributes.append(f"{key} {{{''.join(steps)}}}")
                 css_attributes = "\n".join(attributes)
             style.append(f"{selector}{{{css_attributes}}}")
+        self.namespaced_css = "".join(style)
         self.raw_css = raw_css
-        self._css_widget.value = f"<style>{''.join(style)}</style>"
+        self._css_widget.value = f"<style>{self.style}</style>"
 
     @property
     def _css_class(self) -> str:
