@@ -20,8 +20,21 @@ ${SCREENS}        ${SCREENS ROOT}${/}notebook-experiments
     Linked Elk Output Counts Should Be    &{SIMPLE COUNTS}
 
 101_text_sizer
+    [Tags]    gh:48
     Example Should Restart-and-Run-All    ${TEXT SIZER}
     # not worth counting anything, doesn't put any elks on page
+    Click Element    xpath://button[contains(text(), 'Re-Calculate Size')]
+    ${sel} =    Set Variable    xpath://div[contains(@class, 'widget-label')][contains(text(), 'width:')]
+    Wait Until Page Contains Element    ${sel}
+    ${original} =    SeleniumLibrary.Get Element Attribute    ${sel}    textContent
+    Drag And Drop by Offset    css:.ui-slider-handle    100    0
+    Sleep    0.5s
+    ${size changed} =    SeleniumLibrary.Get Element Attribute    ${sel}    textContent
+    Select From List By Label    css:.widget-select select    monospace
+    Sleep    0.5s
+    ${font changed} =    SeleniumLibrary.Get Element Attribute    ${sel}    textContent
+    Should Not Be Equal as Strings    ${original}    ${size changed}
+    Should Not Be Equal as Strings    ${size changed}    ${font changed}
 
 102_layout_options
     [Tags]    data:simple.json

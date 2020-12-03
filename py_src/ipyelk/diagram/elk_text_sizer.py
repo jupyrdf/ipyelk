@@ -72,8 +72,7 @@ class ElkTextSizer(StyledWidget):
 
     @T.observe("style")
     def _bust_futures_cache(self, change=None):
-        # TODO handle cache clearing
-        pass
+        self.measure.cache_clear()
 
     def _handle_response(self, _, content, buffers):
         """Method to process messages back from the browser and resolve measurements"""

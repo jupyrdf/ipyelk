@@ -39,9 +39,17 @@ export class ELKTextSizerModel extends DOMWidgetModel {
   }
 
   make_container(): HTMLElement {
-    let el: HTMLElement = document.body.appendChild(document.createElement('div'));
-    el.classList.add('p-Widget', ELK_CSS.widget_class, ELK_CSS.sizer_class);
-    let raw_css: string = this.get('raw_css').join(''); //TODO should this `raw_css` string be escaped?
+    const el: HTMLElement = document.createElement('div');
+    const styledClass = this.get('_dom_classes').filter(
+      (dc: string) => dc.indexOf('styled-widget-') === 0
+    )[0];
+    el.classList.add(
+      'p-Widget',
+      ELK_CSS.widget_class,
+      ELK_CSS.sizer_class,
+      styledClass
+    );
+    const raw_css: string = this.get('namespaced_css'); //TODO should this `raw_css` string be escaped?
     el.innerHTML = `<div class="sprotty"><style>${raw_css}</style><svg class="sprotty-graph"><g></g></svg></div>`;
     return el;
   }
@@ -70,10 +78,10 @@ export class ELKTextSizerModel extends DOMWidgetModel {
    */
   measure(content: IELKTextSizeRequest) {
     ELK_DEBUG && console.warn('ELK Text Sizer Measure', content);
-    let el: HTMLElement = this.make_container();
-    let view: SVGElement = el.getElementsByTagName('g')[0];
+    const el: HTMLElement = this.make_container();
+    const view: SVGElement = el.getElementsByTagName('g')[0];
 
-    let new_g: SVGElement = createSVGElement('g');
+    const new_g: SVGElement = createSVGElement('g');
     content.texts.forEach(text => {
       new_g.appendChild(this.make_label(text));
     });
@@ -82,13 +90,15 @@ export class ELKTextSizerModel extends DOMWidgetModel {
     ELK_DEBUG && console.warn('ELK Text Sizer to add node', new_g);
     ELK_DEBUG && console.warn('ELK Text Sizer node', view);
 
+    document.body.prepend(el);
+
     let elements: SVGElement[] = Array.from(new_g.getElementsByTagName('text'));
 
-    el = document.body.appendChild(el);
     ELK_DEBUG && console.warn('Sized Text');
+
     // Callback to take measurements and remove element from DOM
     window.requestAnimationFrame(() => {
-      let response: IELKTextSizeResponse = {
+      const response: IELKTextSizeResponse = {
         event: 'measurement',
         measurements: this.read_sizes(content.texts, elements)
       };
