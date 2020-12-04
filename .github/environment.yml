@@ -1,5 +1,3 @@
-name: _ipyelk_ci_
-
 channels:
   - https://conda.anaconda.org/conda-forge
   - https://conda.anaconda.org/anaconda

@@ -73,7 +73,7 @@ jobs:
         shell: bash -l {0}
         run: |
           source /usr/share/miniconda/bin/deactivate
-          source /usr/share/miniconda/bin/activate /usr/share/miniconda/envs/_ipyelk_ci_
+          source /usr/share/miniconda/bin/activate /usr/share/miniconda/envs/test
           INSTALL_ARTIFACT=sdist doit -n4 all || doit all || exit 1
 
       - name: build (macos)
@@ -81,7 +81,7 @@ jobs:
         shell: bash -l {0}
         run: |
           source /usr/local/miniconda/bin/deactivate
-          source /usr/local/miniconda/bin/activate /usr/local/miniconda/envs/_ipyelk_ci_
+          source /usr/local/miniconda/bin/activate /usr/local/miniconda/envs/test
           doit -n4 all || doit all || exit 1
 
       - name: build (windows)
@@ -92,7 +92,7 @@ jobs:
           WIN_CI: 1
         run: |
           call C:\Miniconda\Scripts\deactivate
-          call C:\Miniconda\Scripts\activate C:\Miniconda\envs\_ipyelk_ci_
+          call C:\Miniconda\Scripts\activate C:\Miniconda\envs\test
           doit all || doit all || exit 1
 
       - name: publish (linux)
