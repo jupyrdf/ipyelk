@@ -26,6 +26,13 @@ jobs:
           - ubuntu
           - macos
           - windows
+        include:
+          - os: ubuntu
+            miniforge-url: Linux-x86_64.sh
+          - os: macos
+            miniforge: MacOSX-x86_64.sh
+          - os: windows
+            miniforge: Windows-x86_64.exe
     steps:
       - name: configure line endings
         run: |
@@ -58,6 +65,8 @@ jobs:
         with:
           environment-file: .ci/environment.yml
           use-only-tar-bz2: true
+          installer-url: |
+            https://github.com/conda-forge/miniforge/releases/download/4.9.2-0/Miniforge3-4.9.2-0-${{ matrix.miniforge }}
 
       - name: build (linux)
         if: ${{ contains(matrix.os, 'ubuntu') }}
