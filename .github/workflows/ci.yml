@@ -28,7 +28,7 @@ jobs:
           - windows
         include:
           - os: ubuntu
-            miniforge-url: Linux-x86_64.sh
+            miniforge: Linux-x86_64.sh
           - os: macos
             miniforge: MacOSX-x86_64.sh
           - os: windows
