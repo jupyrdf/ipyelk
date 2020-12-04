@@ -363,17 +363,12 @@ def task_lint():
 
     yield _ok(
         dict(
-            name="isort",
-            file_dep=[*P.ALL_PY, P.OK_ENV["default"]],
-            actions=[[*P.APR_DEFAULT, "isort", "-rc", *P.ALL_PY]],
-        ),
-        P.OK_ISORT,
-    )
-    yield _ok(
-        dict(
             name="black",
-            file_dep=[*P.ALL_PY, P.OK_ISORT],
-            actions=[[*P.APR_DEFAULT, "black", "--quiet", *P.ALL_PY]],
+            file_dep=[*P.ALL_PY, P.OK_ENV["default"]],
+            actions=[
+                [*P.APR_DEFAULT, "isort", "-rc", *P.ALL_PY],
+                [*P.APR_DEFAULT, "black", "--quiet", *P.ALL_PY],
+            ],
         ),
         P.OK_BLACK,
     )
@@ -469,7 +464,6 @@ def task_lint():
             file_dep=[
                 P.OK_BLACK,
                 P.OK_FLAKE8,
-                P.OK_ISORT,
                 P.OK_PRETTIER,
                 P.OK_PYFLAKES,
                 P.OK_ROBOT_LINT,

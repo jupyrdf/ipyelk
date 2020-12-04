@@ -1,3 +1,5 @@
+name: test
+
 channels:
   - https://conda.anaconda.org/conda-forge
   - https://conda.anaconda.org/anaconda
