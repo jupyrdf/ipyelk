@@ -45,6 +45,12 @@ SETUP_CFG = ROOT / "setup.cfg"
 NODE_MODULES = ROOT / "node_modules"
 PACKAGE_JSON = ROOT / "package.json"
 JS_PACKAGE_DATA = json.loads(PACKAGE_JSON.read_text(encoding="utf-8"))
+JS_NEEDS_INSTALL_KEYS = [
+    "dependencies",
+    "devDependencies",
+    "peerDependencies",
+    "version",
+]
 JS_PKG = JS_PACKAGE_DATA["name"]
 JS_VERSION = JS_PACKAGE_DATA["version"]
 JS_VERSION_MANGLED = re.sub(r"([ab])(\d+)", "-\\1\\2", JS_VERSION)

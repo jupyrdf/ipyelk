@@ -179,7 +179,16 @@ def task_setup():
 
     yield dict(
         name="js",
-        file_dep=[P.YARN_LOCK, P.PACKAGE_JSON, P.OK_ENV["default"]],
+        file_dep=[P.YARN_LOCK, P.OK_ENV["default"]],
+        uptodate=[
+            config_changed(
+                {
+                    k: v
+                    for k, v in P.JS_PACKAGE_DATA.items()
+                    if k in P.JS_NEEDS_INSTALL_KEYS
+                }
+            )
+        ],
         actions=[[*P.APR_DEFAULT, *P.JLPM_INSTALL]],
         targets=[P.YARN_INTEGRITY],
     )
@@ -387,6 +396,14 @@ def task_lint():
     yield _ok(
         dict(
             name="prettier",
+            uptodate=[
+                config_changed(
+                    dict(
+                        conf=P.JS_PACKAGE_DATA["prettier"],
+                        script=P.JS_PACKAGE_DATA["scripts"]["lint:prettier"],
+                    )
+                )
+            ],
             file_dep=[P.YARN_INTEGRITY, *P.ALL_PRETTIER, P.OK_ENV["default"]],
             actions=[[*P.APR_DEFAULT, "npm", "run", "lint:prettier"]],
         ),

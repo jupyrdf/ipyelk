@@ -46,7 +46,7 @@ jobs:
         with:
           path: ~/conda_pkgs_dir
           key:
-            ${{ runner.os }}-conda-${{ hashFiles('.ci/environment.yml',
+            ${{ runner.os }}-conda-${{ hashFiles('.github/environment.yml',
             'anaconda-project-lock.yml') }}
           restore-keys: |
             ${{ runner.os }}-conda-
@@ -63,7 +63,7 @@ jobs:
       - name: env (conda)
         uses: conda-incubator/setup-miniconda@v2
         with:
-          environment-file: .ci/environment.yml
+          environment-file: .github/environment.yml
           use-only-tar-bz2: true
           installer-url: |
             https://github.com/conda-forge/miniforge/releases/download/4.9.2-0/Miniforge3-4.9.2-0-${{ matrix.miniforge }}
