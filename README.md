@@ -82,7 +82,7 @@ derived from [other works][copyright].
 [ci]: https://github.com/jupyrdf/ipyelk/actions?query=workflow%3ACI+branch%3Amaster
 [binder-badge]: https://mybinder.org/badge_logo.svg
 [binder]:
-  https://mybinder.org/v2/gh/jupyrdf/ipyelk/master?urlpath=lab%2Ftree%2Fexamples%2F_index_.ipynb
+  https://mybinder.org/v2/gh/jupyrdf/ipyelk/master?urlpath=lab%2Ftree%2Fexamples%2F_index.ipynb
 [elk-json]:
   https://www.eclipse.org/elk/documentation/tooldevelopers/graphdatastructure/jsonformat.html
 [elk]: https://github.com/kieler/elkjs
