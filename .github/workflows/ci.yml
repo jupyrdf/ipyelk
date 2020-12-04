@@ -18,7 +18,7 @@ env:
 
 jobs:
   ci:
-    runs-on: ${{ matrix.os }}-latest
+    runs-on: ${{ matrix.vm }}
     strategy:
       fail-fast: false
       matrix:
@@ -29,10 +29,13 @@ jobs:
         include:
           - os: ubuntu
             miniforge: Linux-x86_64.sh
+            vm: ubuntu-20.04
           - os: macos
             miniforge: MacOSX-x86_64.sh
+            vm: macos-latest
           - os: windows
             miniforge: Windows-x86_64.exe
+            vm: windows-latest
     steps:
       - name: configure line endings
         run: |
