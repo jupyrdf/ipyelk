@@ -71,18 +71,12 @@ jobs:
       - name: build (linux)
         if: ${{ contains(matrix.os, 'ubuntu') }}
         shell: bash -l {0}
-        run: |
-          source /usr/share/miniconda/bin/deactivate
-          source /usr/share/miniconda/bin/activate /usr/share/miniconda/envs/test
-          INSTALL_ARTIFACT=sdist doit -n4 all || doit all || exit 1
+        run: INSTALL_ARTIFACT=sdist doit -n4 all || doit all || exit 1
 
       - name: build (macos)
         if: ${{ contains(matrix.os, 'macos') }}
         shell: bash -l {0}
-        run: |
-          source /usr/local/miniconda/bin/deactivate
-          source /usr/local/miniconda/bin/activate /usr/local/miniconda/envs/test
-          doit -n4 all || doit all || exit 1
+        run: doit -n4 all || doit all || exit 1
 
       - name: build (windows)
         if: ${{ contains(matrix.os, 'windows') }}
@@ -90,10 +84,7 @@ jobs:
         env:
           ATEST_PROCESSES: 1
           WIN_CI: 1
-        run: |
-          call C:\Miniconda\Scripts\deactivate
-          call C:\Miniconda\Scripts\activate C:\Miniconda\envs\test
-          doit all || doit all || exit 1
+        run: doit all || doit all || exit 1
 
       - name: publish (linux)
         if: ${{ contains(matrix.os, 'ubuntu') }}
