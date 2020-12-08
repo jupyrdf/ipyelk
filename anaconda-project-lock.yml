@@ -72,12 +72,12 @@ env_specs:
         - nbformat=5.0.8=py_0
         - nest-asyncio=1.4.3=pyhd8ed1ab_0
         - networkx=2.5=py_0
-        - packaging=20.4=pyh9f0ad1d_0
+        - packaging=20.7=pyhd3deb0d_0
         - pandocfilters=1.4.2=py_1
         - parso=0.7.1=pyh9f0ad1d_0
         - pathspec=0.8.1=pyhd3deb0d_0
         - pickleshare=0.7.5=py_1003
-        - pip=20.3=pyhd8ed1ab_0
+        - pip=20.3.1=pyhd8ed1ab_0
         - pkginfo=1.6.1=pyh9f0ad1d_0
         - prometheus_client=0.9.0=pyhd3deb0d_0
         - prompt-toolkit=3.0.8=pyha770c72_0
@@ -90,7 +90,7 @@ env_specs:
         - pyparsing=2.4.7=pyh9f0ad1d_0
         - pytest-cov=2.10.1=pyh9f0ad1d_0
         - pytest-forked=1.2.0=pyh9f0ad1d_0
-        - pytest-html=3.0.0=pyhd8ed1ab_0
+        - pytest-html=3.1.0=pyhd8ed1ab_0
         - pytest-metadata=1.11.0=pyhd3deb0d_0
         - pytest-xdist=2.1.0=py_0
         - python-dateutil=2.8.1=py_0
@@ -112,7 +112,7 @@ env_specs:
         - urllib3=1.25.11=py_0
         - wcwidth=0.2.5=pyh9f0ad1d_2
         - webencodings=0.5.1=py_1
-        - wheel=0.36.0=pyhd3deb0d_0
+        - wheel=0.36.1=pyhd3deb0d_0
         - zipp=3.4.0=py_0
       unix:
         - libblas=3.9.0=3_openblas
@@ -319,7 +319,7 @@ env_specs:
     packages:
       all:
         - idna=2.10=pyh9f0ad1d_0
-        - pip=20.3=pyhd8ed1ab_0
+        - pip=20.3.1=pyhd8ed1ab_0
         - pycparser=2.20=pyh9f0ad1d_2
         - pyopenssl=20.0.0=pyhd8ed1ab_0
         - python_abi=3.7=1_cp37m
@@ -330,7 +330,7 @@ env_specs:
         - robotframework=3.2.2=pyh9f0ad1d_0
         - six=1.15.0=pyh9f0ad1d_0
         - urllib3=1.26.2=pyhd8ed1ab_0
-        - wheel=0.36.0=pyhd3deb0d_0
+        - wheel=0.36.1=pyhd3deb0d_0
       linux-64:
         - _libgcc_mutex=0.1=conda_forge
         - _openmp_mutex=4.5=1_gnu
