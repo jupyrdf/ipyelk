@@ -1,5 +1,11 @@
 # Changelog
 
+## @jupyrdf/jupyter-elk 0.3.0
+
+## ipyelk 0.3.0
+
+---
+
 ## @jupyrdf/jupyter-elk 0.2.1
 
 - fix `ElkTransformer` handling of custom properties ([#46][])

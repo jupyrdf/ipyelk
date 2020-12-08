@@ -18,7 +18,7 @@ env:
 
 jobs:
   ci:
-    runs-on: ${{ matrix.os }}-latest
+    runs-on: ${{ matrix.vm }}
     strategy:
       fail-fast: false
       matrix:
@@ -26,6 +26,16 @@ jobs:
           - ubuntu
           - macos
           - windows
+        include:
+          - os: ubuntu
+            miniforge: Linux-x86_64.sh
+            vm: ubuntu-20.04
+          - os: macos
+            miniforge: MacOSX-x86_64.sh
+            vm: macos-latest
+          - os: windows
+            miniforge: Windows-x86_64.exe
+            vm: windows-latest
     steps:
       - name: configure line endings
         run: |
@@ -39,7 +49,7 @@ jobs:
         with:
           path: ~/conda_pkgs_dir
           key:
-            ${{ runner.os }}-conda-${{ hashFiles('.ci/environment.yml',
+            ${{ runner.os }}-conda-${{ hashFiles('.github/environment.yml',
             'anaconda-project-lock.yml') }}
           restore-keys: |
             ${{ runner.os }}-conda-
@@ -56,24 +66,20 @@ jobs:
       - name: env (conda)
         uses: conda-incubator/setup-miniconda@v2
         with:
-          environment-file: .ci/environment.yml
+          environment-file: .github/environment.yml
           use-only-tar-bz2: true
+          installer-url: |
+            https://github.com/conda-forge/miniforge/releases/download/4.9.2-0/Miniforge3-4.9.2-0-${{ matrix.miniforge }}
 
       - name: build (linux)
         if: ${{ contains(matrix.os, 'ubuntu') }}
         shell: bash -l {0}
-        run: |
-          source /usr/share/miniconda/bin/deactivate
-          source /usr/share/miniconda/bin/activate /usr/share/miniconda/envs/_ipyelk_ci_
-          INSTALL_ARTIFACT=sdist doit -n4 all || doit all || exit 1
+        run: INSTALL_ARTIFACT=sdist doit -n4 all || doit all || exit 1
 
       - name: build (macos)
         if: ${{ contains(matrix.os, 'macos') }}
         shell: bash -l {0}
-        run: |
-          source /usr/local/miniconda/bin/deactivate
-          source /usr/local/miniconda/bin/activate /usr/local/miniconda/envs/_ipyelk_ci_
-          doit -n4 all || doit all || exit 1
+        run: doit -n4 all || doit all || exit 1
 
       - name: build (windows)
         if: ${{ contains(matrix.os, 'windows') }}
@@ -81,10 +87,7 @@ jobs:
         env:
           ATEST_PROCESSES: 1
           WIN_CI: 1
-        run: |
-          call C:\Miniconda\Scripts\deactivate
-          call C:\Miniconda\Scripts\activate C:\Miniconda\envs\_ipyelk_ci_
-          doit all || doit all || exit 1
+        run: doit all || doit all || exit 1
 
       - name: publish (linux)
         if: ${{ contains(matrix.os, 'ubuntu') }}
