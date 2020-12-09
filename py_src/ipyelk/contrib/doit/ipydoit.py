@@ -190,7 +190,9 @@ class DoElk(W.VBox):
                 else:
                     # file dependency outside of doit
                     graph.add_node(dep_id, properties={"cssClasses": "dodo_file"})
-                    graph.add_edge(dep_id, task_id, targetPort=dep_id)
+                    graph.add_edge(
+                        dep_id, task_id, sourcePort="exists", targetPort=dep_id
+                    )
 
             for f in relative(t.targets, self.root):
                 dep_id = f

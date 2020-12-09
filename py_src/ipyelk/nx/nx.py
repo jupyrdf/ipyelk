@@ -166,3 +166,22 @@ def map_visible(g: nx.Graph, tree: nx.DiGraph, attr: str) -> Dict[Hashable, Hash
         if n not in mapping:
             mapping[n] = n
     return mapping
+
+
+def stats(g:nx.Graph):
+    """Utility function get get some high level graph metrics
+
+    :param g: Input networkx graph
+    :type g: nx.Graph
+    :return: dict of metrics
+    :rtype: Dict
+    """
+    num_ports = 0
+    for n, data in g.nodes(data=True):
+        ports = data.get("ports", [])
+        num_ports += len(ports)
+    return {
+        "nodes": len(g),
+        "edges": len(g.edges),
+        "ports": num_ports,
+    }
