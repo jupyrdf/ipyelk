@@ -17,6 +17,7 @@ from hashlib import sha256
 
 from doit.action import CmdAction
 from doit.tools import PythonInteractiveAction, config_changed
+
 from scripts import project as P
 from scripts import reporter
 from scripts import utils as U

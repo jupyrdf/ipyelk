@@ -5,7 +5,7 @@
 import asyncio
 import uuid
 from dataclasses import dataclass
-from typing import Dict, List, Union
+from typing import Dict, List, Optional, Union
 
 import traitlets as T
 from async_lru import alru_cache
@@ -141,3 +141,26 @@ class ElkTextSizer(StyledWidget):
                 )
             )
             self._response_queue.task_done()
+
+
+async def size_labels(text_sizer: Optional[ElkTextSizer], labels: List[ElkLabel]):
+    """Run a list of ElkLabels through to the TextSizer measurer
+
+    :param labels: [description]
+    :type labels: List[ElkLabel]
+    :return: Updated Labels
+    """
+    if text_sizer:
+        sizes = await text_sizer.measure(tuple(labels))
+    else:
+        sizes = [
+            TextSize(
+                width=10 * len(label.text),
+                height=10,  # TODO add height default
+            )
+            for label in labels
+        ]
+
+    for size, label in zip(sizes, labels):
+        label.width = size.width
+        label.height = size.height
