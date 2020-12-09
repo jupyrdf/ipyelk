@@ -1,4 +1,4 @@
-name: _ipyelk_ci_
+name: test
 
 channels:
   - https://conda.anaconda.org/conda-forge
