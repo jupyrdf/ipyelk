@@ -62,6 +62,7 @@ export class ELKModel extends DOMWidgetModel {
       _view_name: ELKView.view_name,
       _view_module_version: VERSION,
       value: DEFAULT_VALUE,
+      defs: {},
       _mark_layout: {}
     };
     return defaults;
@@ -71,6 +72,7 @@ export class ELKModel extends DOMWidgetModel {
     super.initialize(attributes, options);
     this.on('change:value', this.value_changed, this);
     this.on('change:_view_count', this.view_count_changed, this);
+
     if (this.get('_view_count') == null) {
       this.set('_view_count', 0);
     }
@@ -180,6 +182,7 @@ export class ELKView extends DOMWidgetView {
     this.model.on('change:hovered', this.updateHover, this);
     this.model.on('change:interaction', this.interaction_mode_changed, this);
     this.model.on('msg:custom', this.handleMessage, this);
+    this.model.on('change:defs', this.diagramLayout, this);
     this.touch(); //to sync back the diagram state
 
     // Register Action Handlers
@@ -283,7 +286,8 @@ export class ELKView extends DOMWidgetView {
 
   async diagramLayout() {
     let layout = this.model.get('_mark_layout');
-    await this.source.updateLayout(layout);
+    let defs = this.model.get('defs');
+    await this.source.updateLayout(layout, defs, this.div_id);
     this.model.layoutUpdated.emit();
   }
 

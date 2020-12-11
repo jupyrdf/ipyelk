@@ -20,11 +20,16 @@ import {
   Point,
   toDegrees,
   angleOfPoint,
-  getSubType,
+  getSubType
 } from 'sprotty';
 import { ElkJunction } from '../sprotty-model';
 
 const JSX = { createElement: snabbdom.svg };
+
+class SElkEdge extends SEdge {
+  start?: string;
+  end?: string;
+}
 
 @injectable()
 export class JunctionView extends CircularNodeView {
@@ -45,7 +50,7 @@ export class JunctionView extends CircularNodeView {
 @injectable()
 export class ElkEdgeView extends PolylineEdgeView {
   protected renderLine(
-    edge: SEdge,
+    edge: SElkEdge,
     segments: Point[],
     context: RenderingContext
   ): VNode {
@@ -55,27 +60,52 @@ export class ElkEdgeView extends PolylineEdgeView {
       const p = segments[i];
       path += ` L ${p.x},${p.y}`;
     }
-    console.log('ElkEdge subtype', getSubType(edge))
+    console.log('ElkEdge subtype-2', getSubType(edge));
     return <path class-elkedge={true} d={path} />;
   }
 
   protected renderAdditionals(
-    edge: SEdge,
+    edge: SElkEdge,
     segments: Point[],
     context: RenderingContext
   ): VNode[] {
-    const p1 = segments[segments.length - 2];
-    const p2 = segments[segments.length - 1];
-    return [
-      <path
+
+    console.warn("render additionals", edge, segments, context);
+
+    let connectors:VNode[] = [];
+    let href: string;
+    if (edge.start){
+      console.log("angle", angleOfPoint)
+      const p1 = segments[1];
+      const p2 = segments[0];
+      href = `#${edge.start}`
+      connectors.push(
+      <use
+        href={href}
         class-edge={true}
         class-arrow={true}
-        d="M 0,0 L 8,-3 L 8,3 Z"
         transform={`rotate(${toDegrees(
           angleOfPoint({ x: p1.x - p2.x, y: p1.y - p2.y })
         )} ${p2.x} ${p2.y}) translate(${p2.x} ${p2.y})`}
       />
-    ];
+      );
+    };
+    if (edge.end){
+      href = `#${edge.end}`
+      const p1 = segments[segments.length - 2];
+      const p2 = segments[segments.length - 1];
+      connectors.push(
+      <use
+        href={href}
+        class-edge={true}
+        class-arrow={true}
+        transform={`rotate(${toDegrees(
+          angleOfPoint({ x: p1.x - p2.x, y: p1.y - p2.y })
+        )} ${p2.x} ${p2.y}) translate(${p2.x} ${p2.y})`}
+      />
+      );
+    };
+    return connectors;
   }
 }
 
@@ -96,7 +126,7 @@ export class SpecializationEdgeView extends PolylineEdgeView {
     path += ` L ${lastPoint.x}, ${
       lastPoint.y > firstPoint.y ? lastPoint.y - 10 : lastPoint.y + 10
     }`;
-    return <path class-sprotty-edge={true} class-specializes={true} d={path} />;
+    return <path class-elkedge={true} class-specializes={true} d={path} />;
   }
 }
 
@@ -120,7 +150,7 @@ export class RestrictsEdgeView extends PolylineEdgeView {
 }
 
 @injectable()
-export class CompositionEdgeView extends PolylineEdgeView {
+export class CompositionEdgeView extends ElkEdgeView {
   protected renderAdditionals(
     edge: SEdge,
     segments: Point[],
@@ -129,18 +159,17 @@ export class CompositionEdgeView extends PolylineEdgeView {
     const p1 = segments[0];
     const p2 = segments[1];
     const r = 6;
-    const rhombStr = `M 0,0 l${r},${r / 2} l${r},-${r / 2} l-${r},-${
-      r / 2
-    } l-${r},${r / 2} Z`;
+    const rhombStr = `M 0,0 l${r},${r / 2} l${r},-${r / 2} l-${r},-${r / 2} l-${r},${r /
+      2} Z`;
     return [
       <path
-        class-sprotty-edge={true}
+        class-elkedge={true}
         class-composition={true}
         d={rhombStr}
-        transform={`rotate(${angle(p1, p2)} ${p1.x} ${p1.y}) translate(${
-          p1.x
-        } ${p1.y})`}
-      />,
+        transform={`rotate(${angle(p1, p2)} ${p1.x} ${p1.y}) translate(${p1.x} ${
+          p1.y
+        })`}
+      />
     ];
   }
 
@@ -167,9 +196,7 @@ export class StandardEdgeView extends PolylineEdgeView {
     const secondLastPoint = segments[segments.length - 2];
     const lastPoint = segments[segments.length - 1];
     const isDownArrow = lastPoint.y > secondLastPoint.y;
-    path += ` L ${lastPoint.x}, ${
-      isDownArrow ? lastPoint.y - 10 : lastPoint.y + 10
-    }`;
+    path += ` L ${lastPoint.x}, ${isDownArrow ? lastPoint.y - 10 : lastPoint.y + 10}`;
     return <path class-sprotty-edge={true} d={path} />;
   }
 }
@@ -189,9 +216,7 @@ export class RelationshipEdgeView extends PolylineEdgeView {
     }
     const lastPoint = segments[segments.length - 1];
     path += ` L ${lastPoint.x}, ${lastPoint.y}`;
-    return (
-      <path class-sprotty-edge={true} class-relationship={true} d={path} />
-    );
+    return <path class-sprotty-edge={true} class-relationship={true} d={path} />;
   }
 }
 
@@ -208,10 +233,10 @@ export class ImportEdgeView extends SpecializationEdgeView {
       <path
         class-sprotty-edge={true}
         d="M 10,-4 L 0,0 L 10,4"
-        transform={`rotate(${angle(p2, p1)} ${p2.x} ${p2.y}) translate(${
-          p2.x
-        } ${p2.y})`}
-      />,
+        transform={`rotate(${angle(p2, p1)} ${p2.x} ${p2.y}) translate(${p2.x} ${
+          p2.y
+        })`}
+      />
     ];
   }
 
@@ -235,10 +260,10 @@ export class ArrowEdgeView extends StandardEdgeView {
       <polygon
         class-sprotty-edge={true}
         points="10,-4 0,0 10,4"
-        transform={`rotate(${angle(p2, p1)} ${p2.x} ${p2.y}) translate(${
-          p2.x
-        } ${p2.y})`}
-      />,
+        transform={`rotate(${angle(p2, p1)} ${p2.x} ${p2.y}) translate(${p2.x} ${
+          p2.y
+        })`}
+      />
     ];
   }
 
@@ -263,10 +288,10 @@ export class RelationshipArrowEdgeView extends RelationshipEdgeView {
         class-sprotty-edge={true}
         class-relationship={true}
         d="M 10,-4 L 0,0 L 10,4"
-        transform={`rotate(${angle(p2, p1)} ${p2.x} ${p2.y}) translate(${
-          p2.x
-        } ${p2.y})`}
-      />,
+        transform={`rotate(${angle(p2, p1)} ${p2.x} ${p2.y}) translate(${p2.x} ${
+          p2.y
+        })`}
+      />
     ];
   }
 
@@ -291,10 +316,10 @@ export class RestrictsArrowEdgeView extends RestrictsEdgeView {
         class-sprotty-edge={true}
         class-restriction={true}
         d="M 10,-4 L 0,0 L 10,4"
-        transform={`rotate(${angle(p2, p1)} ${p2.x} ${p2.y}) translate(${
-          p2.x
-        } ${p2.y})`}
-      />,
+        transform={`rotate(${angle(p2, p1)} ${p2.x} ${p2.y}) translate(${p2.x} ${
+          p2.y
+        })`}
+      />
     ];
   }
 
@@ -319,10 +344,10 @@ export class SpecializationArrowEdgeView extends SpecializationEdgeView {
         class-sprotty-edge={true}
         class-specializes={true}
         points="10,-4 0,0 10,4"
-        transform={`rotate(${angle(p2, p1)} ${p2.x} ${p2.y}) translate(${
-          p2.x
-        } ${p2.y})`}
-      />,
+        transform={`rotate(${angle(p2, p1)} ${p2.x} ${p2.y}) translate(${p2.x} ${
+          p2.y
+        })`}
+      />
     ];
   }
 

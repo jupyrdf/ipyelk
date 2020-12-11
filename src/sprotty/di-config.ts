@@ -31,7 +31,6 @@ import {
   SvgExporter,
   configureModelElement,
   SGraph,
-  SGraphFactory,
   SLabel,
   edgeEditModule,
   undoRedoModule,
@@ -56,9 +55,20 @@ import {
   ElkPortView,
   ElkEdgeView,
   ElkLabelView,
-  JunctionView
+  DefNodeView,
+  DefsNodeView,
+  JunctionView,
+  DefPathView
 } from './views';
-import { ElkNode, ElkPort, ElkEdge, ElkJunction } from './sprotty-model';
+import {
+  ElkNode,
+  ElkPort,
+  ElkEdge,
+  ElkJunction,
+  DefNode,
+  DefsNode,
+  DefPath
+} from './sprotty-model';
 // import { NodeSelectTool } from '../tools/select';
 import { toolFeedbackModule } from '../tools/feedback';
 import viewportModule from './viewportModule';
@@ -83,9 +93,6 @@ export default (containerId: string, view: DOMWidgetView) => {
       .to(ConsoleLogger)
       .inSingletonScope();
     rebind(TYPES.LogLevel).toConstantValue(LogLevel.warn);
-    rebind(TYPES.IModelFactory)
-      .to(SGraphFactory)
-      .inSingletonScope();
     rebind(TYPES.SvgExporter)
       .to(FilteringSvgExporter)
       .inSingletonScope();
@@ -103,6 +110,11 @@ export default (containerId: string, view: DOMWidgetView) => {
       needsClientLayout: false,
       baseDiv: containerId
     });
+
+    // Model elements for defs
+    configureModelElement(context, 'defs', DefsNode, DefsNodeView);
+    configureModelElement(context, 'def', DefNode, DefNodeView);
+    configureModelElement(context, 'path', DefPath, DefPathView);
 
     // Hover
     configureCommand(context, HoverFeedbackCommand);

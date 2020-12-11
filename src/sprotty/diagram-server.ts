@@ -16,8 +16,8 @@ import { ElkGraphJsonToSprotty } from './json/elkgraph-to-sprotty';
 
 @injectable()
 export class JLModelSource extends LocalModelSource {
-  async updateLayout(layout) {
-    let sGraph = new ElkGraphJsonToSprotty().transform(layout);
+  async updateLayout(layout, defs, idPrefix:string) {
+    let sGraph = new ElkGraphJsonToSprotty().transform(layout, defs, idPrefix);
     await this.updateModel(sGraph);
     // TODO this promise resolves before ModelViewer rendering is done. need to hook into postprocessing
   }

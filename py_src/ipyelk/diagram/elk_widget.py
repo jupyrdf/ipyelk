@@ -13,6 +13,7 @@ from ipywidgets import CallbackDispatcher, DOMWidget
 from .._version import EXTENSION_NAME, EXTENSION_SPEC_VERSION
 from ..schema import ElkSchemaValidator
 from ..trait_types import Schema
+from . import svg
 
 
 class Interactions(enum.Enum):
@@ -31,6 +32,9 @@ class ElkDiagram(DOMWidget):
     _view_module_version = T.Unicode(EXTENSION_SPEC_VERSION).tag(sync=True)
 
     value = Schema(ElkSchemaValidator).tag(sync=True)
+    defs = T.Dict(value_trait=T.Instance(svg.Def), kw={}).tag(
+        sync=True, to_json=svg.defs_to_json
+    )
     _mark_layout = T.Dict().tag(sync=True)
     selected = T.Tuple().tag(sync=True)
     hovered = T.Unicode(allow_none=True, default_value=None).tag(sync=True)
@@ -39,9 +43,13 @@ class ElkDiagram(DOMWidget):
     def __init__(self, *value, **kwargs):
         if value:
             kwargs["value"] = value[0]
+        defs = kwargs.pop("defs", {})
         super().__init__(**kwargs)
         self._click_handlers = CallbackDispatcher()
         self.on_msg(self._handle_click_msg)
+        # defs are using the model_id to serialize so need the rest of the
+        # widget to initialize before setting the `defs` trait
+        self.defs = defs
 
     @T.default("value")
     def _default_value(self):

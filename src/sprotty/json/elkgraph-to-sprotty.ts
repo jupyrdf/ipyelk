@@ -16,7 +16,8 @@ import {
   SLabelSchema,
   SGraphSchema,
   Point,
-  Dimension
+  Dimension,
+  SModelElementSchema
 } from 'sprotty';
 import {
   ElkShape,
@@ -29,9 +30,18 @@ import {
   isExtended
 } from './elkgraph-json';
 
+import { IElkDef, IElkDefs } from './defs';
+
 function getClasses(element: ElkGraphElement) {
   let classes = (element.properties?.cssClasses || '').trim();
   return classes ? classes.split(' ') : [];
+}
+
+interface SDefsSchema extends SModelElementSchema {}
+
+interface SElkEdgeSchema extends SEdgeSchema {
+  start: string;
+  end: string;
 }
 
 export class ElkGraphJsonToSprotty {
@@ -40,12 +50,21 @@ export class ElkGraphJsonToSprotty {
   private portIds: Set<string> = new Set();
   private labelIds: Set<string> = new Set();
   private sectionIds: Set<string> = new Set();
+  private defsIds: Map<string, string> = new Map();
 
-  public transform(elkGraph: ElkNode): SGraphSchema {
+  hrefID(id:string):string|undefined{
+    if (id){
+      return this.defsIds[id]
+    }
+  }
+
+  public transform(elkGraph: ElkNode, defs: IElkDefs, idPrefix: string): SGraphSchema {
+    console.log('elkgraph defs:', defs);
+
     const sGraph = <SGraphSchema>{
       type: 'graph',
       id: elkGraph.id || 'root',
-      children: [],
+      children: [this.transformDefs(defs, idPrefix)],
       cssClasses: getClasses(elkGraph)
     };
 
@@ -61,6 +80,39 @@ export class ElkGraphJsonToSprotty {
     return sGraph;
   }
 
+  /**
+   * Build up the Sprotty model objects for the SVG Defs
+   * @param defs
+   */
+  private transformDefs(defs: IElkDefs, idPrefix: string): SDefsSchema {
+    let children = [];
+    for (const key in defs) {
+      console.log(key);
+      this.defsIds[key]= `${idPrefix}_${key}`;
+      console.log("gessing id", `${idPrefix}_${key}`, key)
+      children.push(this.transformDef(key, defs[key]));
+    }
+
+    const sDefs = <SDefsSchema>{
+      type: 'defs',
+      id: 'test_defs',
+      children: children
+    };
+
+    return sDefs;
+  }
+
+  private transformDef(id: string, def: IElkDef): SModelElementSchema {
+    console.log('transformin def', def);
+    let children = def.children.map(e => <SModelElementSchema>e);
+
+    return <SModelElementSchema>{
+      type: 'def',
+      id: id,
+      children: children
+    };
+  }
+
   private transformElkNode(elkNode: ElkNode): SNodeSchema {
     this.checkAndRememberId(elkNode, this.nodeIds);
 
@@ -70,7 +122,8 @@ export class ElkGraphJsonToSprotty {
       position: this.pos(elkNode),
       size: this.size(elkNode),
       children: [],
-      cssClasses: getClasses(elkNode)
+      cssClasses: getClasses(elkNode),
+      use: this.hrefID(elkNode?.properties?.use),
     };
     // children
     if (elkNode.children) {
@@ -126,17 +179,19 @@ export class ElkGraphJsonToSprotty {
     };
   }
 
-  private transformElkEdge(elkEdge: ElkEdge): SEdgeSchema {
+  private transformElkEdge(elkEdge: ElkEdge): SElkEdgeSchema {
     this.checkAndRememberId(elkEdge, this.edgeIds);
 
-    const sEdge = <SEdgeSchema>{
+    const sEdge = <SElkEdgeSchema>{
       type: 'edge',
       id: elkEdge.id,
       sourceId: '',
       targetId: '',
       routingPoints: [],
       children: [],
-      cssClasses: getClasses(elkEdge)
+      cssClasses: getClasses(elkEdge),
+      start: this.hrefID(elkEdge?.properties?.start),
+      end: this.hrefID(elkEdge?.properties?.end)
     };
     if (isPrimitive(elkEdge)) {
       sEdge.sourceId = elkEdge.source;

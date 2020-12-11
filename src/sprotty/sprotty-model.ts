@@ -11,7 +11,8 @@ import {
   selectFeature,
   hoverFeedbackFeature,
   SEdge,
-  editFeature
+  editFeature,
+  Point
 } from 'sprotty';
 
 export class ElkNode extends RectangularNode {
@@ -43,6 +44,30 @@ export class ElkJunction extends SNode {
       feature === hoverFeedbackFeature
     )
       return false;
+    else return super.hasFeature(feature);
+  }
+}
+
+export class DefNode extends SNode {
+  hasFeature(feature: symbol): boolean {
+    if (feature === moveFeature) return false;
+    else return super.hasFeature(feature);
+  }
+}
+
+export class DefsNode extends SNode {
+  hasFeature(feature: symbol): boolean {
+    if (feature === moveFeature) return false;
+    else return super.hasFeature(feature);
+  }
+}
+
+export class DefPath extends SNode {
+  segments: Point[];
+  closed: boolean;
+
+  hasFeature(feature: symbol): boolean {
+    if (feature === moveFeature) return false;
     else return super.hasFeature(feature);
   }
 }

@@ -311,7 +311,6 @@ class XELK(ElkTransformer):
         for owner, edge_list in edges.items():
             edge_css = self.get_css(owner, ElkEdge, edge_style)
             port_css = self.get_css(owner, ElkPort, port_style)
-            layout_options = self.get_layout(owner, ElkEdge)
             for edge in edge_list:
                 elknode = nodes[owner]
                 if elknode.edges is None:
@@ -329,11 +328,11 @@ class XELK(ElkTransformer):
                             edge.target, edge.target_port, port_css
                         )
 
-                elknode.edges += [await self.make_edge(edge, edge_css, layout_options)]
+                elknode.edges += [await self.make_edge(edge, edge_css)]
         return nodes, ports
 
     async def make_edge(
-        self, edge: Edge, styles: Optional[Set[str]] = None, layout_options: Dict = None
+        self, edge: Edge, styles: Optional[Set[str]] = None
     ) -> ElkExtendedEdge:
         """Make the associated Elk edge for the given Edge
 
@@ -347,18 +346,20 @@ class XELK(ElkTransformer):
 
         labels = []
         properties = self.get_properties(edge, styles) or None
+        label_layout_options = self.get_layout(
+            edge.owner, ElkLabel
+        )  # TODO add edgelabel type?
+        edge_layout_options = self.get_layout(edge.owner, ElkEdge)
 
         for i, label in enumerate(edge.data.get(self.label_key, [])):
-            layout_options = self.get_layout(
-                edge.owner, ElkLabel
-            )  # TODO add edgelabel type?
+
             if isinstance(label, ElkLabel):
                 label = label.to_dict()  # used to create copy of label
             if isinstance(label, dict):
                 label = ElkLabel.from_dict(label)
             if isinstance(label, str):
                 label = ElkLabel(id=f"{edge.owner}_label_{i}_{label}", text=label)
-            label.layoutOptions = merge(label.layoutOptions, layout_options)
+            label.layoutOptions = merge(label.layoutOptions, label_layout_options)
             labels.append(label)
         for label in labels:
             self.register(label, edge)
@@ -367,7 +368,7 @@ class XELK(ElkTransformer):
             sources=[self.port_id(edge.source, edge.source_port)],
             targets=[self.port_id(edge.target, edge.target_port)],
             properties=properties,
-            layoutOptions=self.get_layout(edge.owner, ElkEdge),
+            layoutOptions=merge(edge.data.get("layoutOptions"), edge_layout_options),
             labels=compact(labels),
         )
         self.register(elk_edge, edge)

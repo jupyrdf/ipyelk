@@ -16,12 +16,16 @@ export interface ElkPoint {
 
 export interface ElkProperties {
   cssClasses?: string;
+  use?: string;
+  start?: string;
+  end?: string;
 }
 
 export interface ElkGraphElement {
   id: string;
   labels?: ElkLabel[];
   properties?: ElkProperties;
+  layoutOptions?: object;
 }
 
 export interface ElkShape extends ElkGraphElement {
