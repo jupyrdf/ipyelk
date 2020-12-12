@@ -13,7 +13,6 @@ class Point:
 @dataclass
 class Dataclass:
     type: str = None
-    position: Point = Point()
     children: Tuple["SVGElement"] = ()
     # cssClasses: Tuple[str] = ()
 
@@ -30,8 +29,7 @@ class Dataclass:
 
 @dataclass
 class SVGElement(Dataclass):
-    x: float = 0  # help="origin x coordinate").tag(sync=True)
-    y: float = 0  # (help="origin y coordinate").tag(sync=True)
+    position: Point = Point()
 
 
 @dataclass
@@ -53,12 +51,13 @@ class Path(SVGElement):
 
 @dataclass
 class Def(Dataclass):
-    pass
+    position: Point = Point()
 
 
 @dataclass
 class ConnectorDef(Def):
-    offset: Tuple[float, float] = (0, 0)
+    offset: Point = Point()
+    correction: Point = Point()
 
 
 def defs_to_json(defs: Dict[str, Def], widget: DOMWidget):

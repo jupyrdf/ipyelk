@@ -1,4 +1,4 @@
-import { SModelElementSchema } from 'sprotty';
+import { SModelElementSchema, Point } from 'sprotty';
 // import { Circle, Path, Rect } from '../views/def_views';
 
 type Constructor<T> = new (...args: any[]) => T;
@@ -23,4 +23,9 @@ export interface IConnectorDef extends IElkDef {
 
 export interface IElkDefs {
   [key: string]: IElkDef;
+}
+
+export interface SElkConnectorDef extends IElkDef{
+  offset: Point;
+  correction: Point;
 }

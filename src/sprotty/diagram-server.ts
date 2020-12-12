@@ -4,20 +4,25 @@
  */
 import { injectable } from 'inversify';
 import {
+  Bounds,
   CenterAction,
   FitToScreenAction,
-  LocalModelSource,
-  Viewport,
-  Bounds,
   GetViewportAction,
-  InitializeCanvasBoundsAction
+  InitializeCanvasBoundsAction,
+  LocalModelSource,
+  SGraphSchema,
+  Viewport,
 } from 'sprotty';
 import { ElkGraphJsonToSprotty } from './json/elkgraph-to-sprotty';
 
 @injectable()
 export class JLModelSource extends LocalModelSource {
+  elkToSprotty: ElkGraphJsonToSprotty;
+
   async updateLayout(layout, defs, idPrefix:string) {
-    let sGraph = new ElkGraphJsonToSprotty().transform(layout, defs, idPrefix);
+    this.elkToSprotty = new ElkGraphJsonToSprotty()
+    let sGraph:SGraphSchema = this.elkToSprotty.transform(layout, defs, idPrefix);
+    console.warn("update layout");
     await this.updateModel(sGraph);
     // TODO this promise resolves before ModelViewer rendering is done. need to hook into postprocessing
   }

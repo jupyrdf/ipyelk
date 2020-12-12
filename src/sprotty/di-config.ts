@@ -44,9 +44,14 @@ import {
   // EnableDefaultToolsAction,
   // configureActionHandler,
   HoverFeedbackCommand,
-  configureCommand
+  configureCommand,
   // HoverFeedbackAction
   // LocalModelSource,
+  //
+  // ModelRenderer,
+  RenderingTargetKind,
+  IVNodePostprocessor,
+  ViewRegistry,
 } from 'sprotty';
 
 import { JLModelSource } from './diagram-server';
@@ -67,11 +72,13 @@ import {
   ElkJunction,
   DefNode,
   DefsNode,
-  DefPath
+  DefPath,
+  ElkModelRenderer,
 } from './sprotty-model';
 // import { NodeSelectTool } from '../tools/select';
 import { toolFeedbackModule } from '../tools/feedback';
 import viewportModule from './viewportModule';
+// import {SElkConnectorDef} from './json/defs';
 
 class FilteringSvgExporter extends SvgExporter {
   protected isExported(styleSheet: CSSStyleSheet): boolean {
@@ -111,15 +118,27 @@ export default (containerId: string, view: DOMWidgetView) => {
       baseDiv: containerId
     });
 
+    // Hover
+    configureCommand(context, HoverFeedbackCommand);
+
     // Model elements for defs
     configureModelElement(context, 'defs', DefsNode, DefsNodeView);
     configureModelElement(context, 'def', DefNode, DefNodeView);
     configureModelElement(context, 'path', DefPath, DefPathView);
 
-    // Hover
-    configureCommand(context, HoverFeedbackCommand);
 
-    // bind(TYPES.IActionHandlerInitializer).to(MyActionHandlerInitializer)
+    // Expose extracted path and connector offset to the rendering context
+    rebind(TYPES.ModelRendererFactory).toFactory<ElkModelRenderer>(ctx => {
+      console.log("how do i put the modelsource in here?");
+      return (
+        targetKind: RenderingTargetKind,
+        processors: IVNodePostprocessor[]) => {
+          const viewRegistry = ctx.container.get<ViewRegistry>(TYPES.ViewRegistry);
+          const modelSource = ctx.container.get<JLModelSource>(TYPES.ModelSource);
+          return new ElkModelRenderer(viewRegistry, targetKind, processors, modelSource);
+      };
+    });
+
   });
   const container = new Container();
 

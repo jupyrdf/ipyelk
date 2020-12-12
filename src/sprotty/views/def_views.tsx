@@ -29,7 +29,6 @@ export class Rect extends DefElement {}
 @injectable()
 export class DefNodeView implements IView {
   render(def: DefNode, context: RenderingContext): VNode {
-    console.log('defnodeview', def);
     return (
       // this is what needs to have the proper element id
       <g>{context.renderChildren(def)}</g>
@@ -40,13 +39,32 @@ export class DefNodeView implements IView {
 @injectable()
 export class DefsNodeView implements IView {
   render(def: DefNode, context: RenderingContext): VNode {
-    console.log(def);
     return <defs>{context.renderChildren(def)}</defs>;
   }
 }
 
 @injectable()
 export class DefPathView implements IView {
+  render(def: DefPath, context: RenderingContext): VNode {
+    console.log('defpathview', def);
+    let segments = def.segments;
+    const firstPoint = segments[0];
+    let path = `M ${firstPoint.x},${firstPoint.y}`;
+    for (let i = 1; i < segments.length; i++) {
+      const p = segments[i];
+      path += ` L ${p.x},${p.y}`;
+    }
+    if (def.closed){
+      path += `Z`;
+    }
+
+
+    return <path d={path} />;
+  }
+}
+
+@injectable()
+export class DefCircleView implements IView {
   render(def: DefPath, context: RenderingContext): VNode {
     console.log('defpathview', def);
     let segments = def.segments;

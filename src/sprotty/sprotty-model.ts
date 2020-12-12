@@ -12,10 +12,38 @@ import {
   hoverFeedbackFeature,
   SEdge,
   editFeature,
-  Point
+  Point,
+  ViewRegistry,
+  ModelRenderer,
+  // RenderingContext,
+  IVNodePostprocessor,
+  RenderingTargetKind,
 } from 'sprotty';
 
+import {JLModelSource} from "./diagram-server";
+import {SElkConnectorDef} from "./json/defs";
+
+export class ElkModelRenderer extends ModelRenderer{
+  source: JLModelSource;
+
+  constructor(readonly viewRegistry: ViewRegistry,
+    readonly targetKind: RenderingTargetKind,
+    postprocessors: IVNodePostprocessor[],
+    source:JLModelSource) {
+      super(viewRegistry, targetKind, postprocessors);
+      this.source = source;
+}
+
+getConnector(id):SElkConnectorDef{
+  let connector:SElkConnectorDef = this.source.elkToSprotty?.connectors[id];
+  return connector
+}
+
+}
+
 export class ElkNode extends RectangularNode {
+  use?: string;
+
   hasFeature(feature: symbol): boolean {
     if (feature === moveFeature) return false;
     else return super.hasFeature(feature);
@@ -65,6 +93,15 @@ export class DefsNode extends SNode {
 export class DefPath extends SNode {
   segments: Point[];
   closed: boolean;
+
+  hasFeature(feature: symbol): boolean {
+    if (feature === moveFeature) return false;
+    else return super.hasFeature(feature);
+  }
+}
+
+export class DefCircle extends SNode {
+  radius: number;
 
   hasFeature(feature: symbol): boolean {
     if (feature === moveFeature) return false;

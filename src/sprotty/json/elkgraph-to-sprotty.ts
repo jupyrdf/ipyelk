@@ -30,7 +30,7 @@ import {
   isExtended
 } from './elkgraph-json';
 
-import { IElkDef, IElkDefs } from './defs';
+import { IElkDef, IElkDefs, SElkConnectorDef } from './defs';
 
 function getClasses(element: ElkGraphElement) {
   let classes = (element.properties?.cssClasses || '').trim();
@@ -51,6 +51,7 @@ export class ElkGraphJsonToSprotty {
   private labelIds: Set<string> = new Set();
   private sectionIds: Set<string> = new Set();
   private defsIds: Map<string, string> = new Map();
+  connectors: Map<string, SElkConnectorDef> = new Map();
 
   hrefID(id:string):string|undefined{
     if (id){
@@ -59,8 +60,6 @@ export class ElkGraphJsonToSprotty {
   }
 
   public transform(elkGraph: ElkNode, defs: IElkDefs, idPrefix: string): SGraphSchema {
-    console.log('elkgraph defs:', defs);
-
     const sGraph = <SGraphSchema>{
       type: 'graph',
       id: elkGraph.id || 'root',
@@ -87,10 +86,7 @@ export class ElkGraphJsonToSprotty {
   private transformDefs(defs: IElkDefs, idPrefix: string): SDefsSchema {
     let children = [];
     for (const key in defs) {
-      console.log(key);
-      this.defsIds[key]= `${idPrefix}_${key}`;
-      console.log("gessing id", `${idPrefix}_${key}`, key)
-      children.push(this.transformDef(key, defs[key]));
+      children.push(this.transformDef(key, defs[key], idPrefix));
     }
 
     const sDefs = <SDefsSchema>{
@@ -102,15 +98,25 @@ export class ElkGraphJsonToSprotty {
     return sDefs;
   }
 
-  private transformDef(id: string, def: IElkDef): SModelElementSchema {
-    console.log('transformin def', def);
-    let children = def.children.map(e => <SModelElementSchema>e);
+  private transformDef(id: string, def: IElkDef, idPrefix: string): SModelElementSchema {
+    let children = def.children.map(this.transformDefElement, this);
+    this.defsIds[id]= `${idPrefix}_${id}`;
+    if (def.type == "connectordef"){
+      console.warn("transform def::",id, def)
+      this.connectors[this.defsIds[id]] = <SElkConnectorDef>def;
+    }
 
     return <SModelElementSchema>{
       type: 'def',
       id: id,
       children: children
     };
+  }
+
+  private transformDefElement(e):SModelElementSchema{
+    // elementSchema = {}
+    console.log(e)
+    return <SModelElementSchema>e
   }
 
   private transformElkNode(elkNode: ElkNode): SNodeSchema {

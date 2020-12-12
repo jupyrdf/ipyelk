@@ -22,7 +22,7 @@ import {
   isMoveable,
   Viewport,
   isViewport,
-  SetViewportAction
+  SetViewportAction,
 } from 'sprotty';
 import { ContainerModule, inject } from 'inversify';
 import { JLModelSource } from './diagram-server';

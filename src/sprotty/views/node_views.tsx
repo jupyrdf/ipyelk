@@ -14,23 +14,38 @@ import { injectable } from 'inversify';
 import { VNode } from 'snabbdom/vnode';
 import { RenderingContext, IView, RectangularNodeView, SLabel } from 'sprotty';
 import { ElkNode, ElkPort } from '../sprotty-model';
+// import { useCallback } from 'react';
 
 const JSX = { createElement: snabbdom.svg };
 
 @injectable()
 export class ElkNodeView extends RectangularNodeView {
   render(node: ElkNode, context: RenderingContext): VNode {
+    let mark: VNode;
+    if (node.use){
+
+      let href = `#${node.use}`;
+      mark = <use
+        class-elknode={true}
+        class-mouseover={node.hoverFeedback}
+        class-selected={node.selected}
+        href={href}
+      />
+    }
+    else {
+      mark = <rect
+        class-elknode={true}
+        class-mouseover={node.hoverFeedback}
+        class-selected={node.selected}
+        x="0"
+        y="0"
+        width={node.bounds.width}
+        height={node.bounds.height}
+      ></rect>
+    }
     return (
       <g>
-        <rect
-          class-elknode={true}
-          class-mouseover={node.hoverFeedback}
-          class-selected={node.selected}
-          x="0"
-          y="0"
-          width={node.bounds.width}
-          height={node.bounds.height}
-        ></rect>
+        {mark}
         {context.renderChildren(node)}
       </g>
     );
