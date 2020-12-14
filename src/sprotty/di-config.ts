@@ -51,7 +51,7 @@ import {
   // ModelRenderer,
   RenderingTargetKind,
   IVNodePostprocessor,
-  ViewRegistry,
+  ViewRegistry
 } from 'sprotty';
 
 import { JLModelSource } from './diagram-server';
@@ -63,7 +63,11 @@ import {
   DefNodeView,
   DefsNodeView,
   JunctionView,
-  DefPathView
+  DefPathView,
+  DefCircleView,
+  DefEllipseView,
+  DefRectView,
+  DefRawSVGView,
 } from './views';
 import {
   ElkNode,
@@ -73,7 +77,11 @@ import {
   DefNode,
   DefsNode,
   DefPath,
-  ElkModelRenderer,
+  DefCircle,
+  DefRect,
+  DefEllipse,
+  DefRawSVG,
+  ElkModelRenderer
 } from './sprotty-model';
 // import { NodeSelectTool } from '../tools/select';
 import { toolFeedbackModule } from '../tools/feedback';
@@ -125,20 +133,19 @@ export default (containerId: string, view: DOMWidgetView) => {
     configureModelElement(context, 'defs', DefsNode, DefsNodeView);
     configureModelElement(context, 'def', DefNode, DefNodeView);
     configureModelElement(context, 'path', DefPath, DefPathView);
-
+    configureModelElement(context, 'rect', DefRect, DefRectView);
+    configureModelElement(context, 'circle', DefCircle, DefCircleView);
+    configureModelElement(context, 'ellipse', DefEllipse, DefEllipseView);
+    configureModelElement(context, 'rawsvg', DefRawSVG, DefRawSVGView);
 
     // Expose extracted path and connector offset to the rendering context
     rebind(TYPES.ModelRendererFactory).toFactory<ElkModelRenderer>(ctx => {
-      console.log("how do i put the modelsource in here?");
-      return (
-        targetKind: RenderingTargetKind,
-        processors: IVNodePostprocessor[]) => {
-          const viewRegistry = ctx.container.get<ViewRegistry>(TYPES.ViewRegistry);
-          const modelSource = ctx.container.get<JLModelSource>(TYPES.ModelSource);
-          return new ElkModelRenderer(viewRegistry, targetKind, processors, modelSource);
+      return (targetKind: RenderingTargetKind, processors: IVNodePostprocessor[]) => {
+        const viewRegistry = ctx.container.get<ViewRegistry>(TYPES.ViewRegistry);
+        const modelSource = ctx.container.get<JLModelSource>(TYPES.ModelSource);
+        return new ElkModelRenderer(viewRegistry, targetKind, processors, modelSource);
       };
     });
-
   });
   const container = new Container();
 

@@ -11,7 +11,7 @@ import {
   InitializeCanvasBoundsAction,
   LocalModelSource,
   SGraphSchema,
-  Viewport,
+  Viewport
 } from 'sprotty';
 import { ElkGraphJsonToSprotty } from './json/elkgraph-to-sprotty';
 
@@ -19,10 +19,10 @@ import { ElkGraphJsonToSprotty } from './json/elkgraph-to-sprotty';
 export class JLModelSource extends LocalModelSource {
   elkToSprotty: ElkGraphJsonToSprotty;
 
-  async updateLayout(layout, defs, idPrefix:string) {
-    this.elkToSprotty = new ElkGraphJsonToSprotty()
-    let sGraph:SGraphSchema = this.elkToSprotty.transform(layout, defs, idPrefix);
-    console.warn("update layout");
+  async updateLayout(layout, defs, idPrefix: string) {
+    this.elkToSprotty = new ElkGraphJsonToSprotty();
+    let sGraph: SGraphSchema = this.elkToSprotty.transform(layout, defs, idPrefix);
+    console.warn('update layout');
     await this.updateModel(sGraph);
     // TODO this promise resolves before ModelViewer rendering is done. need to hook into postprocessing
   }

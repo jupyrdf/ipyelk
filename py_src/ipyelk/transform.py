@@ -197,15 +197,22 @@ def collect_labels(nodes: List[ElkNode], recurse: bool = True) -> List[ElkLabel]
     :rtype: List[ElkLabel]
     """
     labels = []
+
+    def sized(label):
+        return bool(label.width or label.height)
+
     for elknode in nodes:
         for label in listed(elknode.labels):
-            labels.append(label)
+            if not sized(label):
+                labels.append(label)
         for elkport in listed(elknode.ports):
             for label in listed(elkport.labels):
-                labels.append(label)
+                if not sized(label):
+                    labels.append(label)
         for elkedge in listed(elknode.edges):
             for label in listed(elkedge.labels):
-                labels.append(label)
+                if not sized(label):
+                    labels.append(label)
         if recurse:
             labels.extend(collect_labels(listed(elknode.children)))
     return labels

@@ -12,33 +12,41 @@ import {
   hoverFeedbackFeature,
   SEdge,
   editFeature,
+  SLabel,
   Point,
   ViewRegistry,
   ModelRenderer,
   // RenderingContext,
   IVNodePostprocessor,
-  RenderingTargetKind,
+  RenderingTargetKind
 } from 'sprotty';
 
-import {JLModelSource} from "./diagram-server";
-import {SElkConnectorDef} from "./json/defs";
+import { JLModelSource } from './diagram-server';
+import { SElkConnectorDef } from './json/defs';
 
-export class ElkModelRenderer extends ModelRenderer{
+export class ElkModelRenderer extends ModelRenderer {
   source: JLModelSource;
 
-  constructor(readonly viewRegistry: ViewRegistry,
+  constructor(
+    readonly viewRegistry: ViewRegistry,
     readonly targetKind: RenderingTargetKind,
     postprocessors: IVNodePostprocessor[],
-    source:JLModelSource) {
-      super(viewRegistry, targetKind, postprocessors);
-      this.source = source;
-}
+    source: JLModelSource
+  ) {
+    super(viewRegistry, targetKind, postprocessors);
+    this.source = source;
+  }
 
-getConnector(id):SElkConnectorDef{
-  let connector:SElkConnectorDef = this.source.elkToSprotty?.connectors[id];
-  return connector
-}
+  getConnector(id): SElkConnectorDef {
+    let connector: SElkConnectorDef = this.source.elkToSprotty?.connectors[id];
+    return connector;
+  }
 
+  hrefID(id: string): string | undefined {
+    if (id) {
+      return this.source.elkToSprotty.defsIds[id];
+    }
+  }
 }
 
 export class ElkNode extends RectangularNode {
@@ -51,6 +59,8 @@ export class ElkNode extends RectangularNode {
 }
 
 export class ElkPort extends RectangularPort {
+  use?: string;
+
   hasFeature(feature: symbol): boolean {
     if (feature === moveFeature) return false;
     else return super.hasFeature(feature);
@@ -74,6 +84,10 @@ export class ElkJunction extends SNode {
       return false;
     else return super.hasFeature(feature);
   }
+}
+
+export class ElkLabel extends SLabel {
+  use?: string;
 }
 
 export class DefNode extends SNode {
@@ -102,6 +116,35 @@ export class DefPath extends SNode {
 
 export class DefCircle extends SNode {
   radius: number;
+
+  hasFeature(feature: symbol): boolean {
+    if (feature === moveFeature) return false;
+    else return super.hasFeature(feature);
+  }
+}
+
+export class DefEllipse extends SNode {
+  rx: number;
+  ry: number;
+
+  hasFeature(feature: symbol): boolean {
+    if (feature === moveFeature) return false;
+    else return super.hasFeature(feature);
+  }
+}
+
+export class DefRect extends SNode {
+  width: number;
+  height: number;
+
+  hasFeature(feature: symbol): boolean {
+    if (feature === moveFeature) return false;
+    else return super.hasFeature(feature);
+  }
+}
+
+export class DefRawSVG extends SNode {
+  value: string;
 
   hasFeature(feature: symbol): boolean {
     if (feature === moveFeature) return false;

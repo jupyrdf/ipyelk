@@ -25,7 +25,7 @@ export interface IElkDefs {
   [key: string]: IElkDef;
 }
 
-export interface SElkConnectorDef extends IElkDef{
+export interface SElkConnectorDef extends IElkDef {
   offset: Point;
   correction: Point;
 }

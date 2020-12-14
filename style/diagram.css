@@ -54,8 +54,13 @@
   stroke-width: var(--jp-elk-stroke-width);
 }
 
-.jp-ElkView .sprotty .edge.arrow {
+.jp-ElkView .edge.arrow {
   fill: var(--jp-elk-edge-stroke);
+}
+
+.jp-ElkView use.arrow {
+  stroke: var(--jp-elk-edge-stroke);
+  stroke-width: var(--jp-elk-stroke-width);
 }
 
 .jp-ElkView .sprotty .elklabel {
@@ -73,7 +78,7 @@
 }
 
 /* stable states */
-.jp-ElkView .sprotty rect.selected,
+.jp-ElkView .sprotty .elknode.selected,
 .jp-ElkView .sprotty .sprotty-edge.selected .elkedge {
   stroke: var(--jp-elk-color-selected);
   stroke-width: var(--jp-elk-stroke-width-selected);
@@ -91,7 +96,7 @@
 }
 
 /* interactive states: elklabel does not have a mouseover selector/ancestor */
-.jp-ElkView .sprotty rect.mouseover,
+.jp-ElkView .sprotty .elknode.mouseover,
 .jp-ElkView .sprotty .sprotty-edge.mouseover .elkedge {
   stroke: var(--jp-elk-stroke-hover);
   stroke-width: var(--jp-elk-stroke-width-hover);
@@ -103,7 +108,7 @@
   transition: fill var(--jp-elk-transition);
 }
 
-.jp-ElkView .sprotty rect.selected.mouseover,
+.jp-ElkView .sprotty .elknode.selected.mouseover,
 .jp-ElkView .sprotty .sprotty-edge.selected.mouseover .elkedge {
   stroke-width: var(--jp-elk-stroke-width-hover);
   stroke: var(--jp-elk-stroke-hover-selected);

@@ -9,13 +9,13 @@ import * as ELK from 'elkjs';
 
 export interface ElkProperties {
   cssClasses?: string;
-  use: string;
+  use?: string;
 }
 
 export interface ElkEdgeProperties {
   cssClasses?: string;
-  start: string;
-  end: string;
+  start?: string;
+  end?: string;
 }
 
 export type AnyElkLabelWithProperties = ELK.ElkLabel & { properties?: ElkProperties };

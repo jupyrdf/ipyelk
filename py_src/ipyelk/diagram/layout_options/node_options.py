@@ -232,7 +232,7 @@ class NodeLabelPlacement(LayoutOptionWidget):
     horizontal = T.Enum(values=["left", "center", "right"], default_value="left")
     h_priority = T.Bool(allow_none=True)
     vertical = T.Enum(values=["top", "center", "bottom"], default_value="top")
-    inside = T.Enum(values=["inside", "outside"], default_value="inside")
+    inside = T.Bool(default_value=True)
 
     def _ui(self) -> List[W.Widget]:
         horizontal_options = W.RadioButtons(
@@ -257,16 +257,7 @@ class NodeLabelPlacement(LayoutOptionWidget):
         T.link((self, "horizontal"), (horizontal_options, "value"))
         T.link((self, "vertical"), (vertical_options, "value"))
         T.link((self, "h_priority"), (horizontal_priority_options, "value"))
-
-        def _handle_inside_option_change(change):
-            self.inside = "inside" if inside_options.value is True else "outside"
-
-        def _update_inside_option(change=None):
-            inside_options.value = self.inside == "inside"
-
-        inside_options.observe(_handle_inside_option_change, "value")
-        self.observe(_update_inside_option, "inside")
-        _update_inside_option()
+        T.link((self, "inside"), (inside_options, "value"))
 
         return [
             horizontal_options,
@@ -285,7 +276,9 @@ class NodeLabelPlacement(LayoutOptionWidget):
         is_centered = self.horizontal == "center" and self.vertical == "center"
         inside = "inside" if is_centered else self.inside
         if inside:
-            options.append(inside.upper())
+            options.append("INSIDE")
+        else:
+            options.append("OUTSIDE")
         if self.h_priority:
             options.append("H_PRIORITY")
         if options:

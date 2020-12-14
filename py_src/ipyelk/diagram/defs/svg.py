@@ -39,8 +39,14 @@ class Circle(SVGElement):
 
 @dataclass
 class Rect(SVGElement):
-    length: float = 0
+    height: float = 0
     width: float = 0
+
+
+@dataclass
+class Ellipse(SVGElement):
+    rx: float = 0
+    ry: float = 0
 
 
 @dataclass
@@ -52,6 +58,11 @@ class Path(SVGElement):
 @dataclass
 class Def(Dataclass):
     position: Point = Point()
+
+
+@dataclass
+class RawSVG(SVGElement):
+    value: str = ""
 
 
 @dataclass

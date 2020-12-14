@@ -27,10 +27,11 @@ import {
   ElkEdge,
   ElkGraphElement,
   isPrimitive,
-  isExtended
+  isExtended,
+
 } from './elkgraph-json';
 
-import { IElkDef, IElkDefs, SElkConnectorDef } from './defs';
+import { IElkDef, IElkDefs, SElkConnectorDef} from './defs';
 
 function getClasses(element: ElkGraphElement) {
   let classes = (element.properties?.cssClasses || '').trim();
@@ -50,14 +51,8 @@ export class ElkGraphJsonToSprotty {
   private portIds: Set<string> = new Set();
   private labelIds: Set<string> = new Set();
   private sectionIds: Set<string> = new Set();
-  private defsIds: Map<string, string> = new Map();
+  defsIds: Map<string, string> = new Map();
   connectors: Map<string, SElkConnectorDef> = new Map();
-
-  hrefID(id:string):string|undefined{
-    if (id){
-      return this.defsIds[id]
-    }
-  }
 
   public transform(elkGraph: ElkNode, defs: IElkDefs, idPrefix: string): SGraphSchema {
     const sGraph = <SGraphSchema>{
@@ -98,12 +93,15 @@ export class ElkGraphJsonToSprotty {
     return sDefs;
   }
 
-  private transformDef(id: string, def: IElkDef, idPrefix: string): SModelElementSchema {
+  private transformDef(
+    id: string,
+    def: IElkDef,
+    idPrefix: string
+  ): SModelElementSchema {
     let children = def.children.map(this.transformDefElement, this);
-    this.defsIds[id]= `${idPrefix}_${id}`;
-    if (def.type == "connectordef"){
-      console.warn("transform def::",id, def)
-      this.connectors[this.defsIds[id]] = <SElkConnectorDef>def;
+    this.defsIds[id] = `${idPrefix}_${id}`;
+    if (def.type == 'connectordef') {
+      this.connectors[id] = <SElkConnectorDef>def;
     }
 
     return <SModelElementSchema>{
@@ -113,10 +111,9 @@ export class ElkGraphJsonToSprotty {
     };
   }
 
-  private transformDefElement(e):SModelElementSchema{
+  private transformDefElement(e): SModelElementSchema {
     // elementSchema = {}
-    console.log(e)
-    return <SModelElementSchema>e
+    return <SModelElementSchema>e;
   }
 
   private transformElkNode(elkNode: ElkNode): SNodeSchema {
@@ -129,7 +126,7 @@ export class ElkGraphJsonToSprotty {
       size: this.size(elkNode),
       children: [],
       cssClasses: getClasses(elkNode),
-      use: this.hrefID(elkNode?.properties?.use),
+      use: elkNode?.properties?.use
     };
     // children
     if (elkNode.children) {
@@ -162,7 +159,8 @@ export class ElkGraphJsonToSprotty {
       position: this.pos(elkPort),
       size: this.size(elkPort),
       children: [],
-      cssClasses: getClasses(elkPort)
+      cssClasses: getClasses(elkPort),
+      use: elkPort?.properties?.use
     };
     // labels
     if (elkPort.labels) {
@@ -181,7 +179,8 @@ export class ElkGraphJsonToSprotty {
       text: elkLabel.text,
       position: this.pos(elkLabel),
       size: this.size(elkLabel),
-      cssClasses: getClasses(elkLabel)
+      cssClasses: getClasses(elkLabel),
+      use: elkLabel?.properties?.use
     };
   }
 
@@ -196,8 +195,8 @@ export class ElkGraphJsonToSprotty {
       routingPoints: [],
       children: [],
       cssClasses: getClasses(elkEdge),
-      start: this.hrefID(elkEdge?.properties?.start),
-      end: this.hrefID(elkEdge?.properties?.end)
+      start: elkEdge?.properties?.start,
+      end: elkEdge?.properties?.end
     };
     if (isPrimitive(elkEdge)) {
       sEdge.sourceId = elkEdge.source;

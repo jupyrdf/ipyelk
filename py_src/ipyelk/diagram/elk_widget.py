@@ -13,7 +13,7 @@ from ipywidgets import CallbackDispatcher, DOMWidget
 from .._version import EXTENSION_NAME, EXTENSION_SPEC_VERSION
 from ..schema import ElkSchemaValidator
 from ..trait_types import Schema
-from . import svg
+from .defs import svg
 
 
 class Interactions(enum.Enum):

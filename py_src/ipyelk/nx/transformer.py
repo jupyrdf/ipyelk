@@ -187,9 +187,11 @@ class XELK(ElkTransformer):
         return top
 
     async def make_elknode(self, node) -> Tuple[ElkNode, PortMap]:
-        # merge layout options defined on the node data with default layout options
+        # merge layout options defined on the node data with default layout
+        # options
+        node_data = self.get_node_data(node)
         layout = merge(
-            self.get_node_data(node).get("layoutOptions", {}),
+            node_data.get("layoutOptions", {}),
             self.get_layout(node, ElkNode),
         )
         labels = await self.make_labels(node)
@@ -204,6 +206,8 @@ class XELK(ElkTransformer):
             labels=labels,
             layoutOptions=layout,
             properties=properties,
+            width=node_data.get("width", None),
+            height=node_data.get("height", None),
         )
         return elk_node, node_ports
 
@@ -440,7 +444,10 @@ class XELK(ElkTransformer):
         data = g.nodes.get(node, {})
         values = data.get(self.label_key, [data.get("_id", f"{node}")])
 
-        properties = self.get_properties(node, self.get_css(node, ElkLabel))
+        properties = {}
+        css_classes = self.get_css(node, ElkLabel)
+        if css_classes:
+            properties["cssClasses"] = " ".join(css_classes)
 
         if isinstance(values, (str, ElkLabel)):
             values = [values]
