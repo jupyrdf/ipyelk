@@ -6,6 +6,6 @@ export {
   DefCircleView,
   DefRectView,
   DefEllipseView,
-  DefRawSVGView,
+  DefRawSVGView
 } from './def_views';
 export { ElkEdgeView, JunctionView } from './edge_views';

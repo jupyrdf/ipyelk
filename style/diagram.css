@@ -5,7 +5,7 @@
 
 /*
   CSS for in-DOM or standalone viewing: all selectors should tolerate having
-  `.jp-ElkView .sprotty` stripped.
+  `.jp-ElkView` stripped.
 */
 :root {
   --jp-elk-stroke-width: 1;
@@ -36,34 +36,25 @@
   --jp-elk-transition: 0.1s ease-in;
 }
 
-.jp-ElkView .sprotty .elknode {
+.jp-ElkView .elknode {
   stroke: var(--jp-elk-node-stroke);
   stroke-width: var(--jp-elk-stroke-width);
   fill: var(--jp-elk-node-fill);
 }
 
-.jp-ElkView .sprotty .elkport {
+.jp-ElkView .elkport {
   stroke: var(--jp-elk-port-stroke);
   stroke-width: var(--jp-elk-stroke-width);
   fill: var(--jp-elk-port-fill);
 }
 
-.jp-ElkView .sprotty .elkedge {
+.jp-ElkView .elkedge {
   fill: none;
   stroke: var(--jp-elk-edge-stroke);
   stroke-width: var(--jp-elk-stroke-width);
 }
 
-.jp-ElkView .edge.arrow {
-  fill: var(--jp-elk-edge-stroke);
-}
-
-.jp-ElkView use.arrow {
-  stroke: var(--jp-elk-edge-stroke);
-  stroke-width: var(--jp-elk-stroke-width);
-}
-
-.jp-ElkView .sprotty .elklabel {
+.jp-ElkView .elklabel {
   stroke-width: 0;
   stroke: var(--jp-elk-label-color);
   fill: var(--jp-elk-label-color);
@@ -72,50 +63,40 @@
   dominant-baseline: hanging;
 }
 
-.jp-ElkView .sprotty .elkjunction {
+.jp-ElkView .elkjunction {
   stroke: none;
   fill: var(--jp-elk-edge-stroke);
 }
 
 /* stable states */
-.jp-ElkView .sprotty .elknode.selected,
-.jp-ElkView .sprotty .sprotty-edge.selected .elkedge {
+.jp-ElkView .elknode.selected,
+.jp-ElkView .elkport.selected,
+.jp-ElkView .elkedge.selected,
+.jp-ElkView .elkedge.selected .elkarrow {
   stroke: var(--jp-elk-color-selected);
   stroke-width: var(--jp-elk-stroke-width-selected);
   transition: stroke stroke-width var(--jp-elk-transition);
 }
 
-.jp-ElkView .sprotty .sprotty-edge.selected .arrow {
-  fill: var(--jp-elk-color-selected);
-  transition: fill stroke var(--jp-elk-transition);
-}
-
-.jp-ElkView .sprotty .elklabel.selected {
+.jp-ElkView .elklabel.selected {
   fill: var(--jp-elk-color-selected);
   transition: fill var(--jp-elk-transition);
 }
 
 /* interactive states: elklabel does not have a mouseover selector/ancestor */
-.jp-ElkView .sprotty .elknode.mouseover,
-.jp-ElkView .sprotty .sprotty-edge.mouseover .elkedge {
+.jp-ElkView .elknode.mouseover,
+.jp-ElkView .elkport.mouseover,
+.jp-ElkView .elkedge.mouseover {
   stroke: var(--jp-elk-stroke-hover);
   stroke-width: var(--jp-elk-stroke-width-hover);
   transition: stroke stroke-width var(--jp-elk-transition);
 }
 
-.jp-ElkView .sprotty .sprotty-edge.mouseover .arrow {
-  fill: var(--jp-elk-stroke-hover);
-  transition: fill var(--jp-elk-transition);
-}
-
-.jp-ElkView .sprotty .elknode.selected.mouseover,
-.jp-ElkView .sprotty .sprotty-edge.selected.mouseover .elkedge {
+.jp-ElkView .elknode.selected.mouseover,
+.jp-ElkView .elkport.selected.mouseover,
+.jp-ElkView .elkedge.selected.mouseover,
+.jp-ElkView .elkedge.selected.mouseover .elkarrow {
   stroke-width: var(--jp-elk-stroke-width-hover);
   stroke: var(--jp-elk-stroke-hover-selected);
-  transition: fill stroke var(--jp-elk-transition);
-}
-
-.jp-ElkView .sprotty .sprotty-edge.mouseover.selected .arrow {
-  fill: var(--jp-elk-stroke-hover-selected);
   transition: fill stroke var(--jp-elk-transition);
 }

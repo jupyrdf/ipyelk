@@ -27,11 +27,10 @@ import {
   ElkEdge,
   ElkGraphElement,
   isPrimitive,
-  isExtended,
-
+  isExtended
 } from './elkgraph-json';
 
-import { IElkDef, IElkDefs, SElkConnectorDef} from './defs';
+import { IElkDef, IElkDefs, SElkConnectorDef } from './defs';
 
 function getClasses(element: ElkGraphElement) {
   let classes = (element.properties?.cssClasses || '').trim();

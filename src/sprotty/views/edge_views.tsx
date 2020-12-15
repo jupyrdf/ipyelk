@@ -49,6 +49,30 @@ export class JunctionView extends CircularNodeView {
 
 @injectable()
 export class ElkEdgeView extends PolylineEdgeView {
+  render(edge: Readonly<SEdge>, context: ElkModelRenderer): VNode | undefined {
+    const router = this.edgeRouterRegistry.get(edge.routerKind);
+    const route = router.route(edge);
+    if (route.length === 0) {
+      return this.renderDanglingEdge('Cannot compute route', edge, context);
+    }
+    if (!this.isVisible(edge, route, context)) {
+      if (edge.children.length === 0) {
+        return undefined;
+      }
+      // The children of an edge are not necessarily inside the bounding box of the route,
+      // so we need to render a group to ensure the children have a chance to be rendered.
+      return <g>{context.renderChildren(edge, { route })}</g>;
+    }
+
+    return (
+      <g class-elkedge={true} class-mouseover={edge.hoverFeedback}>
+        {this.renderLine(edge, route, context)}
+        {this.renderAdditionals(edge, route, context)}
+        {context.renderChildren(edge, { route })}
+      </g>
+    );
+  }
+
   protected renderLine(
     edge: SElkEdge,
     segments: Point[],
@@ -73,7 +97,7 @@ export class ElkEdgeView extends PolylineEdgeView {
     }
     const lastPoint = segments[segments.length - 1];
     path += ` L ${lastPoint.x - end.x}, ${lastPoint.y - end.y}`;
-    return <path class-elkedge={true} d={path} />;
+    return <path d={path} />;
   }
 
   protected getAnchorCorrection(
@@ -130,9 +154,8 @@ export class ElkEdgeView extends PolylineEdgeView {
       vnode = (
         <use
           href={'#' + href}
-          class-edge={true}
-          class-edgestart={true}
-          class-arrow={true}
+          class-elkedge-start={true}
+          class-elkarrow={true}
           transform={`rotate(${toDegrees(r)} ${x} ${y}) translate(${x} ${y})`}
         />
       );
@@ -151,9 +174,8 @@ export class ElkEdgeView extends PolylineEdgeView {
       vnode = (
         <use
           href={'#' + href}
-          class-edge={true}
-          class-edgeend={true}
-          class-arrow={true}
+          class-elkedge-end={true}
+          class-elkarrow={true}
           transform={`rotate(${toDegrees(r)} ${x} ${y}) translate(${x} ${y})`}
         />
       );

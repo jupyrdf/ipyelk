@@ -10,7 +10,7 @@ import {
   ElkModelRenderer,
   DefEllipse,
   DefRect,
-  DefRawSVG,
+  DefRawSVG
 } from '../sprotty-model';
 
 const JSX = { createElement: snabbdom.svg };
@@ -75,9 +75,8 @@ export class DefRawSVGView implements IView {
   render(def: DefRawSVG, context: ElkModelRenderer): VNode {
     // let vnode: VNode = <g innerHTML={def.value}></g>;
     // let vnode: VNode = h("g", {props:{innerHTML: def.value}});
-    let vnode: VNode = JSX.createElement("g", {props:{innerHTML: def.value}}, []);
+    let vnode: VNode = JSX.createElement('g', { props: { innerHTML: def.value } }, []);
     setClass(vnode, def.id, true);
     return vnode;
   }
 }
-

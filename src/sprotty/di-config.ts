@@ -67,7 +67,7 @@ import {
   DefCircleView,
   DefEllipseView,
   DefRectView,
-  DefRawSVGView,
+  DefRawSVGView
 } from './views';
 import {
   ElkNode,

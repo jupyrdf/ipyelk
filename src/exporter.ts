@@ -22,7 +22,7 @@ const STANDALONE_CSS = `
   ${elkRawCSS}
 `
   .replace(/\/\*(.|\n)*?\*\//gm, ' ')
-  .replace(/.jp-ElkView .sprotty /g, '')
+  .replace(/.jp-ElkView /g, '')
   .replace(/\n/g, ' ')
   .replace(/\s+/g, ' ')
   .replace(/\}/g, '}\n');
