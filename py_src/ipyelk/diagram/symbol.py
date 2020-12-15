@@ -4,7 +4,7 @@ from abc import ABC
 from typing import Hashable
 from uuid import uuid4
 
-from .defs import Def
+from .svg import Def
 
 
 class Symbol(ABC):
