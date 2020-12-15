@@ -1,3 +1,6 @@
+# Copyright (c) 2020 Dane Freeman.
+# Distributed under the terms of the Modified BSD License.
+
 from dataclasses import asdict, dataclass
 from typing import Dict, Tuple
 
