@@ -16,7 +16,6 @@ class Point:
 @dataclass
 class Dataclass:
     type: str = None
-    children: Tuple["SVGElement"] = ()
     # cssClasses: Tuple[str] = ()
 
     @property
@@ -59,13 +58,14 @@ class Path(SVGElement):
 
 
 @dataclass
-class Def(Dataclass):
-    position: Point = Point()
+class RawSVG(SVGElement):
+    value: str = ""
 
 
 @dataclass
-class RawSVG(SVGElement):
-    value: str = ""
+class Def(Dataclass):
+    position: Point = Point()
+    children: Tuple[SVGElement] = ()
 
 
 @dataclass
@@ -85,3 +85,6 @@ def defs_to_json(defs: Dict[str, Def], widget: DOMWidget):
     :rtype: [type]
     """
     return {f"{k}": asdict(v) for k, v in defs.items()}
+
+
+def_serialization = {"to_json": defs_to_json}

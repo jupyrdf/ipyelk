@@ -12,7 +12,7 @@
 import * as snabbdom from 'snabbdom-jsx';
 import { injectable } from 'inversify';
 import { VNode } from 'snabbdom/vnode';
-import { IView, RectangularNodeView, setClass } from 'sprotty';
+import { IView, RectangularNodeView, setClass, getSubType } from 'sprotty';
 import { ElkNode, ElkPort, ElkModelRenderer, ElkLabel } from '../sprotty-model';
 // import { useCallback } from 'react';
 
@@ -21,37 +21,42 @@ const JSX = { createElement: snabbdom.svg };
 @injectable()
 export class ElkNodeView extends RectangularNodeView {
   render(node: ElkNode, context: ElkModelRenderer): VNode {
-    let mark: VNode;
-    let href = context.hrefID(node.use);
-    if (href) {
-      mark = (
-        <use
-          class-elknode={true}
-          class-mouseover={node.hoverFeedback}
-          class-selected={node.selected}
-          href={'#' + href}
-        />
-      );
-      setClass(mark, node.use, true);
-    } else {
-      mark = (
-        <rect
-          class-elknode={true}
-          class-mouseover={node.hoverFeedback}
-          class-selected={node.selected}
-          x="0"
-          y="0"
-          width={node.bounds.width}
-          height={node.bounds.height}
-        ></rect>
-      );
-    }
+    let subtype = getSubType(node);
+
+    console.log(subtype);
+
+    let mark = this.renderMark(node, context);
+    setClass(mark, 'elknode', true);
+    setClass(mark, 'mouseover', node.hoverFeedback);
+    setClass(mark, 'selected', node.selected);
     return (
       <g>
         {mark}
-        {context.renderChildren(node)}
+        {this.renderChildren(node, context)}
       </g>
     );
+  }
+
+  renderMark(node: ElkNode, context: ElkModelRenderer): VNode {
+    let mark: VNode = (
+      <rect x="0" y="0" width={node.bounds.width} height={node.bounds.height}></rect>
+    );
+    return mark;
+  }
+
+  renderChildren(node: ElkNode, context: ElkModelRenderer): VNode[] {
+    return context.renderChildren(node);
+  }
+}
+
+@injectable()
+export class ElkUseNodeView extends ElkNodeView {
+  renderMark(node: ElkNode, context: ElkModelRenderer): VNode {
+    let use = node?.properties?.shape?.use;
+    let href = context.hrefID(use);
+    let mark: VNode = <use href={'#' + href} />;
+    setClass(mark, use, true);
+    return mark;
   }
 }
 
@@ -59,7 +64,8 @@ export class ElkNodeView extends RectangularNodeView {
 export class ElkPortView extends RectangularNodeView {
   render(port: ElkPort, context: ElkModelRenderer): VNode {
     let mark: VNode;
-    let href = context.hrefID(port.use);
+    let use = port?.properties?.shape?.use;
+    let href = context.hrefID(use);
     if (href) {
       mark = (
         <use
@@ -69,7 +75,7 @@ export class ElkPortView extends RectangularNodeView {
           href={'#' + href}
         />
       );
-      setClass(mark, port.use, true);
+      setClass(mark, use, true);
     } else {
       mark = (
         <rect
@@ -97,12 +103,13 @@ export class ElkPortView extends RectangularNodeView {
 export class ElkLabelView implements IView {
   render(label: ElkLabel, context: ElkModelRenderer): VNode {
     let mark: VNode;
-    let href = context.hrefID(label.use);
+    let use = label?.properties?.shape?.use;
+    let href = context.hrefID(use);
     if (href) {
       console.warn('elklabel href', label);
 
       mark = <use class-elklabel={true} href={'#' + href} />;
-      setClass(mark, label.use, true);
+      setClass(mark, use, true);
     } else {
       mark = <text class-elklabel={true}>{label.text}</text>;
     }

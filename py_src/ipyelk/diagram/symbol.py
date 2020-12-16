@@ -4,7 +4,9 @@ from abc import ABC
 from typing import Hashable
 from uuid import uuid4
 
-from .defs.svg import Def
+import networkx as nx
+
+from .defs import Def
 
 
 class Symbol(ABC):
@@ -29,3 +31,6 @@ class Symbol(ABC):
     def data():
         """Returns a valid elk node dictionary"""
         pass
+
+    def add_to(self, g: nx.Graph):
+        g.add_node(self.id, **self.data)

@@ -6,17 +6,7 @@
  * this exists for generating a complete JSON schema
  */
 import * as ELK from 'elkjs';
-
-export interface ElkProperties {
-  cssClasses?: string;
-  use?: string;
-}
-
-export interface ElkEdgeProperties {
-  cssClasses?: string;
-  start?: string;
-  end?: string;
-}
+import { ElkProperties } from './elkgraph-json';
 
 export type AnyElkLabelWithProperties = ELK.ElkLabel & { properties?: ElkProperties };
 
@@ -37,7 +27,7 @@ export type AnyElkEdge =
   | ELK.ElkPrimitiveEdge
   | LazyElkEdge;
 
-export type AnyElkEdgeWithProperties = AnyElkEdge & { properties?: ElkEdgeProperties };
+export type AnyElkEdgeWithProperties = AnyElkEdge & { properties?: ElkProperties };
 
 export interface AnyElkNode extends ELK.ElkNode {
   children?: AnyElkNode[];

@@ -13,7 +13,7 @@ from ipywidgets import CallbackDispatcher, DOMWidget
 from .._version import EXTENSION_NAME, EXTENSION_SPEC_VERSION
 from ..schema import ElkSchemaValidator
 from ..trait_types import Schema
-from .defs import svg
+from .defs import Def, def_serialization
 
 
 class Interactions(enum.Enum):
@@ -32,8 +32,8 @@ class ElkDiagram(DOMWidget):
     _view_module_version = T.Unicode(EXTENSION_SPEC_VERSION).tag(sync=True)
 
     value = Schema(ElkSchemaValidator).tag(sync=True)
-    defs = T.Dict(value_trait=T.Instance(svg.Def), kw={}).tag(
-        sync=True, to_json=svg.defs_to_json
+    defs = T.Dict(value_trait=T.Instance(Def), kw={}).tag(
+        sync=True, **def_serialization
     )
     _mark_layout = T.Dict().tag(sync=True)
     selected = T.Tuple().tag(sync=True)

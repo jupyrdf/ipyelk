@@ -25,6 +25,12 @@ import {
   // MouseTool,
   exportModule,
   SGraphView,
+  // DiamondNodeView,
+  // RectangularNodeView,
+  // CircularNodeView,
+  // SCompartmentView,
+  // ForeignObjectView,
+  // HtmlRootView,
   ConsoleLogger,
   LogLevel,
   configureViewerOptions,
@@ -38,6 +44,7 @@ import {
   routingModule,
   modelSourceModule,
   labelEditModule,
+
   // ICommandStack,
   // ToolManager, DefaultToolsEnablingKeyListener, ToolManagerActionHandler,
   // EnableToolsAction,
@@ -57,6 +64,7 @@ import {
 import { JLModelSource } from './diagram-server';
 import {
   ElkNodeView,
+  ElkUseNodeView,
   ElkPortView,
   ElkEdgeView,
   ElkLabelView,
@@ -117,6 +125,7 @@ export default (containerId: string, view: DOMWidgetView) => {
     // Initialize model element views
     configureModelElement(context, 'graph', SGraph, SGraphView);
     configureModelElement(context, 'node', ElkNode, ElkNodeView);
+    configureModelElement(context, 'node:use', ElkNode, ElkUseNodeView);
     configureModelElement(context, 'port', ElkPort, ElkPortView);
     configureModelElement(context, 'edge', ElkEdge, ElkEdgeView);
     configureModelElement(context, 'label', SLabel, ElkLabelView);

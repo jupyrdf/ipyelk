@@ -107,7 +107,7 @@ VERSION_PY = PY_SRC / "_version.py"
 JS_LIB = ROOT / "lib"
 TSBUILDINFO = JS_LIB / ".tsbuildinfo"
 TS_SRC = ROOT / "src"
-TS_SCHEMA = TS_SRC / "elkschema.ts"
+TS_SCHEMA = TS_SRC / "sprotty" / "json" / "elkschema.ts"
 STYLE = ROOT / "style"
 
 # lab stuff

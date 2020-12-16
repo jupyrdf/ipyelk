@@ -8,7 +8,7 @@ Based on https://upload.wikimedia.org/wikipedia/commons/c/cb/Circuit_elements.sv
 
 from ...diagram import Symbol
 from ...diagram import layout_options as opt
-from ...diagram.defs.svg import Def, Point, RawSVG
+from ...diagram.defs import Def, Point, RawSVG
 
 
 class Gate(Symbol):
@@ -18,7 +18,10 @@ class Gate(Symbol):
     def data(self):
         return {
             "properties": {
-                "use": self.identifier,
+                "type": "node:use",
+                "shape": {
+                    "use": self.identifier,
+                },
             },
             "width": self.width,
             "height": self.height,

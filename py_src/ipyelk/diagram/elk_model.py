@@ -42,8 +42,9 @@ def from_union(fs, x):
     for f in fs:
         try:
             return f(x)
-        except:
-            pass
+        except Exception as E:
+            if x is not None:
+                raise E
     assert False
 
 
@@ -65,7 +66,10 @@ def to_float(x: Any) -> float:
 
 
 def to_class(c: Type[T], x: Any) -> dict:
-    assert isinstance(x, c)
+    if not isinstance(x, c):
+        # can we make it?
+        x = c.from_dict(x)
+    assert isinstance(x, c), f"Expected to be type of {c} received {type(c)}"
     return cast(Any, x).to_dict()
 
 
@@ -91,6 +95,39 @@ class Elk:
     def to_dict(self) -> dict:
         result: dict = {}
         return result
+
+
+@dataclass
+class ElkProperties:
+    cssClasses: Optional[str] = None
+    type: Optional[str] = None
+    shape: Optional[Dict[str, str]] = None
+
+    @staticmethod
+    def from_dict(obj: Any) -> "ElkProperties":
+        assert isinstance(obj, dict)
+        cssClasses = from_union([from_str, from_none], obj.get("cssClasses"))
+        type = from_union(
+            [from_str, from_none],
+            obj.get("type"),
+        )
+        shape = from_union(
+            [lambda x: from_dict(from_str, x), from_none], obj.get("shape")
+        )
+        return ElkProperties(
+            cssClasses=cssClasses,
+            type=type,
+            shape=shape,
+        )
+
+    def to_dict(self) -> dict:
+        result: dict = {}
+        result["cssClasses"] = from_union([from_str, from_none], self.cssClasses)
+        result["type"] = from_union([from_str, from_none], self.type)
+        result["shape"] = from_union(
+            [lambda x: from_dict(from_str, x), from_none], self.shape
+        )
+        return strip_none(result)
 
 
 @dataclass
@@ -259,7 +296,7 @@ class ElkLabel(ElkShape):
     width: Optional[float] = None
     x: Optional[float] = None
     y: Optional[float] = None
-    properties: Optional[Dict[str, str]] = None
+    properties: Optional[ElkProperties] = None
 
     @staticmethod
     def from_dict(obj: Any) -> "ElkLabel":
@@ -277,7 +314,7 @@ class ElkLabel(ElkShape):
         x = from_union([from_float, from_none], obj.get("x"))
         y = from_union([from_float, from_none], obj.get("y"))
         properties = from_union(
-            [lambda x: from_dict(from_str, x), from_none], obj.get("properties")
+            [ElkProperties.from_dict, from_none], obj.get("properties")
         )
         return ElkLabel(
             id=id,
@@ -307,7 +344,7 @@ class ElkLabel(ElkShape):
         result["x"] = from_union([to_float, from_none], self.x)
         result["y"] = from_union([to_float, from_none], self.y)
         result["properties"] = from_union(
-            [lambda x: from_dict(from_str, x), from_none], self.properties
+            [lambda x: to_class(ElkProperties, x), from_none], self.properties
         )
         return strip_none(result)
 
@@ -454,7 +491,7 @@ class ElkExtendedEdge(ElkEdge):
     junctionPoints: Optional[List[ElkPoint]] = None
     labels: Optional[List[ElkLabel]] = None
     layoutOptions: Optional[Dict[str, str]] = None
-    properties: Optional[Dict[str, str]] = None
+    properties: Optional[ElkProperties] = None
 
     @staticmethod
     def from_dict(obj: Any) -> "ElkExtendedEdge":
@@ -474,7 +511,7 @@ class ElkExtendedEdge(ElkEdge):
             [lambda x: from_dict(from_str, x), from_none], obj.get("layoutOptions")
         )
         properties = from_union(
-            [lambda x: from_dict(from_str, x), from_none], obj.get("properties")
+            [ElkProperties.from_dict, from_none], obj.get("properties")
         )
         return ElkExtendedEdge(
             id=id,
@@ -508,7 +545,7 @@ class ElkExtendedEdge(ElkEdge):
             [lambda x: from_dict(from_str, x), from_none], self.layoutOptions
         )
         result["properties"] = from_union(
-            [lambda x: from_dict(from_str, x), from_none], self.properties
+            [lambda x: to_class(ElkProperties, x), from_none], self.properties
         )
         return strip_none(result)
 
@@ -522,7 +559,7 @@ class ElkPort(ElkShape):
     width: Optional[float] = None
     x: Optional[float] = None
     y: Optional[float] = None
-    properties: Optional[Dict[str, str]] = None
+    properties: Optional[ElkProperties] = None
 
     @staticmethod
     def from_dict(obj: Any) -> "ElkPort":
@@ -536,7 +573,7 @@ class ElkPort(ElkShape):
             [lambda x: from_dict(from_str, x), from_none], obj.get("layoutOptions")
         )
         properties = from_union(
-            [lambda x: from_dict(from_str, x), from_none], obj.get("properties")
+            [ElkProperties.from_dict, from_none], obj.get("properties")
         )
         width = from_union([from_float, from_none], obj.get("width"))
         x = from_union([from_float, from_none], obj.get("x"))
@@ -564,7 +601,7 @@ class ElkPort(ElkShape):
             [lambda x: from_dict(from_str, x), from_none], self.layoutOptions
         )
         result["properties"] = from_union(
-            [lambda x: from_dict(from_str, x), from_none], self.properties
+            [lambda x: to_class(ElkProperties, x), from_none], self.properties
         )
         result["width"] = from_union([to_float, from_none], self.width)
         result["x"] = from_union([to_float, from_none], self.x)
@@ -584,7 +621,7 @@ class ElkNode(ElkShape):
     width: Optional[float] = None
     x: Optional[float] = None
     y: Optional[float] = None
-    properties: Optional[Dict[str, str]] = None
+    properties: Optional[ElkProperties] = None
 
     @staticmethod
     def from_dict(obj: Any) -> "ElkNode":
@@ -604,7 +641,7 @@ class ElkNode(ElkShape):
             [lambda x: from_dict(from_str, x), from_none], obj.get("layoutOptions")
         )
         properties = from_union(
-            [lambda x: from_dict(from_str, x), from_none], obj.get("properties")
+            [ElkProperties.from_dict, from_none], obj.get("properties")
         )
         ports = from_union(
             [lambda x: from_list(ElkPort.from_dict, x), from_none], obj.get("ports")
@@ -646,7 +683,7 @@ class ElkNode(ElkShape):
             [lambda x: from_dict(from_str, x), from_none], self.layoutOptions
         )
         result["properties"] = from_union(
-            [lambda x: from_dict(from_str, x), from_none], self.properties
+            [lambda x: to_class(ElkProperties, x), from_none], self.properties
         )
         result["ports"] = from_union(
             [lambda x: from_list(lambda x: to_class(ElkPort, x), x), from_none],
@@ -671,7 +708,7 @@ class ElkPrimitiveEdge(ElkEdge):
     sourcePort: Optional[str] = None
     targetPoint: Optional[ElkPoint] = None
     targetPort: Optional[str] = None
-    properties: Optional[Dict[str, str]] = None
+    properties: Optional[ElkProperties] = None
 
     @staticmethod
     def from_dict(obj: Any) -> "ElkPrimitiveEdge":
@@ -702,7 +739,7 @@ class ElkPrimitiveEdge(ElkEdge):
         )
         targetPort = from_union([from_str, from_none], obj.get("targetPort"))
         properties = from_union(
-            [lambda x: from_dict(from_str, x), from_none], obj.get("properties")
+            [ElkProperties.from_dict, from_none], obj.get("properties")
         )
         return ElkPrimitiveEdge(
             id=id,
@@ -748,6 +785,6 @@ class ElkPrimitiveEdge(ElkEdge):
         )
         result["targetPort"] = from_union([from_str, from_none], self.targetPort)
         result["properties"] = from_union(
-            [lambda x: from_dict(from_str, x), from_none], self.properties
+            [lambda x: to_class(ElkProperties, x), from_none], self.properties
         )
         return strip_none(result)

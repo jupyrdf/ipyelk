@@ -41,9 +41,62 @@ import { ToolTYPES } from './tools/types';
 import { ELKTextSizerModel, ELKTextSizerView } from './measure_text';
 export { ELKTextSizerModel, ELKTextSizerView };
 import { PromiseDelegate } from '@phosphor/coreutils';
+import { ElkNode } from './sprotty/json/elkgraph-json';
 
 const DEFAULT_VALUE = { id: 'root' };
 const POLL = 300;
+
+function collectProperties(node: ElkNode) {
+  let props: Map<string, any> = new Map();
+
+  function strip(node) {
+    props[node.id] = node.properties;
+    delete node['properties'];
+    // children
+    if (node.children) {
+      node.children.map(strip);
+    }
+    // ports
+    if (node.ports) {
+      node.ports.map(strip);
+    }
+    // labels
+    if (node.labels) {
+      node.labels.map(strip);
+    }
+    // edges
+    if (node.edges) {
+      node.edges.map(strip);
+    }
+  }
+  strip(node);
+  return props;
+}
+
+function applyProperties(node: ElkNode, props: Map<string, any>) {
+  function apply(node) {
+    node.properties = props[node.id];
+
+    // children
+    if (node.children) {
+      node.children.map(apply);
+    }
+    // ports
+    if (node.ports) {
+      node.ports.map(apply);
+    }
+    // labels
+    if (node.labels) {
+      node.labels.map(apply);
+    }
+    // edges
+    if (node.edges) {
+      node.edges.map(apply);
+    }
+  }
+  apply(node);
+  return node;
+}
 
 export class ELKModel extends DOMWidgetModel {
   static model_name = 'ELKModel';
@@ -118,9 +171,18 @@ export class ELKModel extends DOMWidgetModel {
       return;
     }
 
-    const value = this.get('value');
+    let rootNode = this.get('value');
+    // There looks like a bug with how elkjs failing to process edge properties
+    // if they are anything more than simple strings. Elkjs doesnt need to operate
+    // on the information passed in `properties` from ipyelk to sprotty so this
+    // will strip them before calling elk and then reapply after
+    let propmap = collectProperties(rootNode);
+    // strip properties out o
     this.ensureElk();
-    this.set('_mark_layout', await this._elk.layout(value));
+    let result = await this._elk.layout(rootNode);
+    // reapply properties
+    applyProperties(result, propmap);
+    this.set('_mark_layout', result);
   }
 }
 

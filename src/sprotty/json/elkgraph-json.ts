@@ -14,11 +14,15 @@ export interface ElkPoint {
   y: number;
 }
 
-export interface ElkProperties {
-  cssClasses?: string;
+export interface Shape {
   use?: string;
   start?: string;
   end?: string;
+}
+export interface ElkProperties {
+  cssClasses?: string;
+  type?: string;
+  shape?: Shape;
 }
 
 export interface ElkGraphElement {

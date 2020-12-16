@@ -23,6 +23,7 @@ import {
 
 import { JLModelSource } from './diagram-server';
 import { SElkConnectorDef } from './json/defs';
+import { ElkProperties } from './json/elkgraph-json';
 
 export class ElkModelRenderer extends ModelRenderer {
   source: JLModelSource;
@@ -50,7 +51,7 @@ export class ElkModelRenderer extends ModelRenderer {
 }
 
 export class ElkNode extends RectangularNode {
-  use?: string;
+  properties: ElkProperties;
 
   hasFeature(feature: symbol): boolean {
     if (feature === moveFeature) return false;
@@ -59,7 +60,7 @@ export class ElkNode extends RectangularNode {
 }
 
 export class ElkPort extends RectangularPort {
-  use?: string;
+  properties: ElkProperties;
 
   hasFeature(feature: symbol): boolean {
     if (feature === moveFeature) return false;
@@ -68,6 +69,8 @@ export class ElkPort extends RectangularPort {
 }
 
 export class ElkEdge extends SEdge {
+  properties: ElkProperties;
+
   hasFeature(feature: symbol): boolean {
     if (feature === editFeature) return false;
     else return super.hasFeature(feature);
@@ -87,7 +90,7 @@ export class ElkJunction extends SNode {
 }
 
 export class ElkLabel extends SLabel {
-  use?: string;
+  properties: ElkProperties;
 }
 
 export class DefNode extends SNode {

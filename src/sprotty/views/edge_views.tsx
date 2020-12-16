@@ -13,8 +13,6 @@ import * as snabbdom from 'snabbdom-jsx';
 import { injectable } from 'inversify';
 import { VNode } from 'snabbdom/vnode';
 import {
-  // RenderingContext,
-  SEdge,
   PolylineEdgeView,
   CircularNodeView,
   Point,
@@ -22,14 +20,9 @@ import {
   setClass,
   angleOfPoint
 } from 'sprotty';
-import { ElkJunction, ElkModelRenderer } from '../sprotty-model';
+import { ElkJunction, ElkModelRenderer, ElkEdge } from '../sprotty-model';
 
 const JSX = { createElement: snabbdom.svg };
-
-class SElkEdge extends SEdge {
-  start?: string;
-  end?: string;
-}
 
 @injectable()
 export class JunctionView extends CircularNodeView {
@@ -49,7 +42,7 @@ export class JunctionView extends CircularNodeView {
 
 @injectable()
 export class ElkEdgeView extends PolylineEdgeView {
-  render(edge: Readonly<SEdge>, context: ElkModelRenderer): VNode | undefined {
+  render(edge: Readonly<ElkEdge>, context: ElkModelRenderer): VNode | undefined {
     const router = this.edgeRouterRegistry.get(edge.routerKind);
     const route = router.route(edge);
     if (route.length === 0) {
@@ -74,7 +67,7 @@ export class ElkEdgeView extends PolylineEdgeView {
   }
 
   protected renderLine(
-    edge: SElkEdge,
+    edge: ElkEdge,
     segments: Point[],
     context: ElkModelRenderer
   ): VNode {
@@ -86,8 +79,8 @@ export class ElkEdgeView extends PolylineEdgeView {
     const p2_e = segments[segments.length - 1];
     let r2 = angleOfPoint({ x: p1_e.x - p2_e.x, y: p1_e.y - p2_e.y });
 
-    let start = this.getPathOffset(edge.start, context, r);
-    let end = this.getPathOffset(edge.end, context, r2);
+    let start = this.getPathOffset(edge?.properties?.shape?.start, context, r);
+    let end = this.getPathOffset(edge?.properties?.shape?.end, context, r2);
 
     const firstPoint = segments[0];
     let path = `M ${firstPoint.x - start.x},${firstPoint.y - start.y}`;
@@ -134,7 +127,7 @@ export class ElkEdgeView extends PolylineEdgeView {
   }
 
   protected renderAdditionals(
-    edge: SElkEdge,
+    edge: ElkEdge,
     segments: Point[],
     context: ElkModelRenderer
   ): VNode[] {
@@ -142,15 +135,18 @@ export class ElkEdgeView extends PolylineEdgeView {
     let href: string;
     let correction: Point;
     let vnode: VNode;
-    if (edge.start) {
+    let start = edge?.properties?.shape?.start;
+    let end = edge?.properties?.shape?.end;
+    if (start) {
       const p1 = segments[1];
       const p2 = segments[0];
       let r = angleOfPoint({ x: p1.x - p2.x, y: p1.y - p2.y });
-      correction = this.getAnchorCorrection(edge.start, context, r);
+
+      correction = this.getAnchorCorrection(start, context, r);
 
       let x = p2.x - correction.x;
       let y = p2.y - correction.y;
-      href = context.hrefID(edge.start);
+      href = context.hrefID(start);
       vnode = (
         <use
           href={'#' + href}
@@ -159,18 +155,18 @@ export class ElkEdgeView extends PolylineEdgeView {
           transform={`rotate(${toDegrees(r)} ${x} ${y}) translate(${x} ${y})`}
         />
       );
-      setClass(vnode, edge.start, true);
+      setClass(vnode, start, true);
       connectors.push(vnode);
     }
-    if (edge.end) {
+    if (end) {
       const p1 = segments[segments.length - 2];
       const p2 = segments[segments.length - 1];
       let r = angleOfPoint({ x: p1.x - p2.x, y: p1.y - p2.y });
-      correction = this.getAnchorCorrection(edge.end, context, r);
+      correction = this.getAnchorCorrection(end, context, r);
 
       let x = p2.x - correction.x;
       let y = p2.y - correction.y;
-      href = context.hrefID(edge.end);
+      href = context.hrefID(end);
       vnode = (
         <use
           href={'#' + href}
@@ -179,7 +175,7 @@ export class ElkEdgeView extends PolylineEdgeView {
           transform={`rotate(${toDegrees(r)} ${x} ${y}) translate(${x} ${y})`}
         />
       );
-      setClass(vnode, edge.end, true);
+      setClass(vnode, end, true);
       connectors.push(vnode);
     }
     return connectors;
