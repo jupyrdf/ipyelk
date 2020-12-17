@@ -62,21 +62,7 @@ import {
 } from 'sprotty';
 
 import { JLModelSource } from './diagram-server';
-import {
-  ElkNodeView,
-  ElkUseNodeView,
-  ElkPortView,
-  ElkEdgeView,
-  ElkLabelView,
-  DefNodeView,
-  DefsNodeView,
-  JunctionView,
-  DefPathView,
-  DefCircleView,
-  DefEllipseView,
-  DefRectView,
-  DefRawSVGView
-} from './views';
+import * as v from './views';
 import {
   ElkNode,
   ElkPort,
@@ -124,12 +110,22 @@ export default (containerId: string, view: DOMWidgetView) => {
 
     // Initialize model element views
     configureModelElement(context, 'graph', SGraph, SGraphView);
-    configureModelElement(context, 'node', ElkNode, ElkNodeView);
-    configureModelElement(context, 'node:use', ElkNode, ElkUseNodeView);
-    configureModelElement(context, 'port', ElkPort, ElkPortView);
-    configureModelElement(context, 'edge', ElkEdge, ElkEdgeView);
-    configureModelElement(context, 'label', SLabel, ElkLabelView);
-    configureModelElement(context, 'junction', ElkJunction, JunctionView);
+    configureModelElement(context, 'node', ElkNode, v.ElkNodeView);
+    configureModelElement(context, 'node:use', ElkNode, v.ElkUseNodeView);
+    configureModelElement(context, 'node:diamond', ElkNode, v.ElkDiamondNodeView);
+    configureModelElement(context, 'node:round', ElkNode, v.ElkRoundNodeView);
+    configureModelElement(context, 'node:image', ElkNode, v.ElkImageNodeView);
+    configureModelElement(context, 'node:comment', ElkNode, v.ElkCommentNodeView);
+    configureModelElement(context, 'node:path', ElkNode, v.ElkPathNodeView);
+    configureModelElement(context, 'node:raw', ElkNode, v.ElkRawNodeView);
+    configureModelElement(context, 'node:compartment', ElkNode, v.ElkCompartmentNodeView);
+    configureModelElement(context, 'node:foreignobject', ElkNode, v.ElkForeignObjectNodeView);
+
+
+    configureModelElement(context, 'port', ElkPort, v.ElkPortView);
+    configureModelElement(context, 'edge', ElkEdge, v.ElkEdgeView);
+    configureModelElement(context, 'label', SLabel, v.ElkLabelView);
+    configureModelElement(context, 'junction', ElkJunction, v.JunctionView);
     configureViewerOptions(context, {
       needsClientLayout: false,
       baseDiv: containerId
@@ -139,13 +135,13 @@ export default (containerId: string, view: DOMWidgetView) => {
     configureCommand(context, HoverFeedbackCommand);
 
     // Model elements for defs
-    configureModelElement(context, 'defs', DefsNode, DefsNodeView);
-    configureModelElement(context, 'def', DefNode, DefNodeView);
-    configureModelElement(context, 'path', DefPath, DefPathView);
-    configureModelElement(context, 'rect', DefRect, DefRectView);
-    configureModelElement(context, 'circle', DefCircle, DefCircleView);
-    configureModelElement(context, 'ellipse', DefEllipse, DefEllipseView);
-    configureModelElement(context, 'rawsvg', DefRawSVG, DefRawSVGView);
+    configureModelElement(context, 'defs', DefsNode, v.DefsNodeView);
+    configureModelElement(context, 'def', DefNode, v.DefNodeView);
+    configureModelElement(context, 'path', DefPath, v.DefPathView);
+    configureModelElement(context, 'rect', DefRect, v.DefRectView);
+    configureModelElement(context, 'circle', DefCircle, v.DefCircleView);
+    configureModelElement(context, 'ellipse', DefEllipse, v.DefEllipseView);
+    configureModelElement(context, 'rawsvg', DefRawSVG, v.DefRawSVGView);
 
     // Expose extracted path and connector offset to the rendering context
     rebind(TYPES.ModelRendererFactory).toFactory<ElkModelRenderer>(ctx => {

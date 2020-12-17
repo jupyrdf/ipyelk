@@ -55,6 +55,15 @@ class ELKLayered(Algorithm):
     metadata_provider = "options.LayeredMetaDataProvider"
     title = "ELK Layered"
 
+class ELKRectanglePacking(Algorithm):
+    """
+    https://www.eclipse.org/elk/reference/algorithms/org-eclipse-elk-rectpacking.html
+    """
+
+    identifier = "org.eclipse.elk.rectpacking"
+    metadata_provider = "options.RectPackingMetaDataProvider"
+    title = "Elk Rectangle Packing"
+
 
 ALGORITHM_OPTIONS = {_cls.identifier: _cls for _cls in Algorithm.__subclasses__()}
 

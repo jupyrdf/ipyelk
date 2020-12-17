@@ -122,3 +122,4 @@ class LabelSpacing(SpacingOptionWidget):
 
     spacing = T.Float(default_value=0, min=0)
     _slider_description = "Label Spacing"
+
