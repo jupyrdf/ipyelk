@@ -70,11 +70,6 @@ import {
   ElkJunction,
   DefNode,
   DefsNode,
-  DefPath,
-  DefCircle,
-  DefRect,
-  DefEllipse,
-  DefRawSVG,
   ElkModelRenderer
 } from './sprotty-model';
 // import { NodeSelectTool } from '../tools/select';
@@ -118,9 +113,18 @@ export default (containerId: string, view: DOMWidgetView) => {
     configureModelElement(context, 'node:comment', ElkNode, v.ElkCommentNodeView);
     configureModelElement(context, 'node:path', ElkNode, v.ElkPathNodeView);
     configureModelElement(context, 'node:raw', ElkNode, v.ElkRawNodeView);
-    configureModelElement(context, 'node:compartment', ElkNode, v.ElkCompartmentNodeView);
-    configureModelElement(context, 'node:foreignobject', ElkNode, v.ElkForeignObjectNodeView);
-
+    configureModelElement(
+      context,
+      'node:compartment',
+      ElkNode,
+      v.ElkCompartmentNodeView
+    );
+    configureModelElement(
+      context,
+      'node:foreignobject',
+      ElkNode,
+      v.ElkForeignObjectNodeView
+    );
 
     configureModelElement(context, 'port', ElkPort, v.ElkPortView);
     configureModelElement(context, 'edge', ElkEdge, v.ElkEdgeView);
@@ -137,11 +141,6 @@ export default (containerId: string, view: DOMWidgetView) => {
     // Model elements for defs
     configureModelElement(context, 'defs', DefsNode, v.DefsNodeView);
     configureModelElement(context, 'def', DefNode, v.DefNodeView);
-    configureModelElement(context, 'path', DefPath, v.DefPathView);
-    configureModelElement(context, 'rect', DefRect, v.DefRectView);
-    configureModelElement(context, 'circle', DefCircle, v.DefCircleView);
-    configureModelElement(context, 'ellipse', DefEllipse, v.DefEllipseView);
-    configureModelElement(context, 'rawsvg', DefRawSVG, v.DefRawSVGView);
 
     // Expose extracted path and connector offset to the rendering context
     rebind(TYPES.ModelRendererFactory).toFactory<ElkModelRenderer>(ctx => {

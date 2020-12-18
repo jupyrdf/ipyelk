@@ -23,6 +23,7 @@ export interface ElkProperties {
   cssClasses?: string;
   type?: string;
   shape?: Shape;
+  isDef?: boolean;
 }
 
 export interface ElkGraphElement {

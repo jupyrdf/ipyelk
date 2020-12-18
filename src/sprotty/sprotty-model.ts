@@ -13,10 +13,8 @@ import {
   SEdge,
   editFeature,
   SLabel,
-  Point,
   ViewRegistry,
   ModelRenderer,
-  // RenderingContext,
   IVNodePostprocessor,
   RenderingTargetKind
 } from 'sprotty';
@@ -101,54 +99,6 @@ export class DefNode extends SNode {
 }
 
 export class DefsNode extends SNode {
-  hasFeature(feature: symbol): boolean {
-    if (feature === moveFeature) return false;
-    else return super.hasFeature(feature);
-  }
-}
-
-export class DefPath extends SNode {
-  segments: Point[];
-  closed: boolean;
-
-  hasFeature(feature: symbol): boolean {
-    if (feature === moveFeature) return false;
-    else return super.hasFeature(feature);
-  }
-}
-
-export class DefCircle extends SNode {
-  radius: number;
-
-  hasFeature(feature: symbol): boolean {
-    if (feature === moveFeature) return false;
-    else return super.hasFeature(feature);
-  }
-}
-
-export class DefEllipse extends SNode {
-  rx: number;
-  ry: number;
-
-  hasFeature(feature: symbol): boolean {
-    if (feature === moveFeature) return false;
-    else return super.hasFeature(feature);
-  }
-}
-
-export class DefRect extends SNode {
-  width: number;
-  height: number;
-
-  hasFeature(feature: symbol): boolean {
-    if (feature === moveFeature) return false;
-    else return super.hasFeature(feature);
-  }
-}
-
-export class DefRawSVG extends SNode {
-  value: string;
-
   hasFeature(feature: symbol): boolean {
     if (feature === moveFeature) return false;
     else return super.hasFeature(feature);

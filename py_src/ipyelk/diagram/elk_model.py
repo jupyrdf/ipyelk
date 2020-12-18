@@ -206,7 +206,7 @@ class ElkPoint:
 
 @dataclass
 class ElkGraphElement:
-    id: str
+    id: str = None
     labels: Optional[List] = None
     layoutOptions: Optional[Dict[str, str]] = None
 
@@ -237,7 +237,7 @@ class ElkGraphElement:
 
 @dataclass
 class ElkShape(ElkGraphElement):
-    id: str
+    id: str = None
     height: Optional[float] = None
     labels: Optional[List] = None
     layoutOptions: Optional[Dict[str, str]] = None
@@ -288,7 +288,7 @@ class ElkShape(ElkGraphElement):
 
 @dataclass
 class ElkLabel(ElkShape):
-    id: str
+    id: str = None
     text: str = ""
     height: Optional[float] = None
     labels: Optional[List["ElkLabel"]] = None
@@ -367,7 +367,7 @@ class ElkLabel(ElkShape):
 
 @dataclass
 class ElkEdge(ElkGraphElement):
-    id: str
+    id: str = None
     junctionPoints: Optional[List[ElkPoint]] = None
     labels: Optional[List[ElkLabel]] = None
     layoutOptions: Optional[Dict[str, str]] = None
@@ -407,7 +407,7 @@ class ElkEdge(ElkGraphElement):
 
 @dataclass
 class ElkEdgeSection(ElkGraphElement):
-    id: str
+    id: str = None
     endPoint: ElkPoint = None
     startPoint: ElkPoint = None
     bendPoints: Optional[List[ElkPoint]] = None
@@ -484,7 +484,7 @@ class ElkEdgeSection(ElkGraphElement):
 
 @dataclass
 class ElkExtendedEdge(ElkEdge):
-    id: str
+    id: str = None
     sections: Optional[List[ElkEdgeSection]] = None
     sources: Optional[List[str]] = None
     targets: Optional[List[str]] = None
@@ -552,7 +552,7 @@ class ElkExtendedEdge(ElkEdge):
 
 @dataclass
 class ElkPort(ElkShape):
-    id: str
+    id: str = None
     height: Optional[float] = None
     labels: Optional[List[ElkLabel]] = None
     layoutOptions: Optional[Dict[str, str]] = None
@@ -611,7 +611,7 @@ class ElkPort(ElkShape):
 
 @dataclass
 class ElkNode(ElkShape):
-    id: str
+    id: str = None
     children: Optional[List["ElkNode"]] = None
     edges: Optional[List[ElkEdge]] = None
     height: Optional[float] = None
@@ -697,7 +697,7 @@ class ElkNode(ElkShape):
 
 @dataclass
 class ElkPrimitiveEdge(ElkEdge):
-    id: str
+    id: str = None
     source: str = ""
     target: str = ""
     bendPoints: Optional[List[ElkPoint]] = None

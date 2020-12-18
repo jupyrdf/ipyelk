@@ -160,7 +160,18 @@ export class ELKModel extends DOMWidgetModel {
         workerFactory: () => {
           ELK_DEBUG && console.warn('ELK Worker created');
           return new (Worker as any)();
-        }
+        },
+        algorithms: [
+          'layered',
+          'stress',
+          'mrtree',
+          'radial',
+          'force',
+          'disco',
+          'sporeOverlap',
+          'sporeCompaction',
+          'rectpacking'
+        ]
       } as any);
     }
   }

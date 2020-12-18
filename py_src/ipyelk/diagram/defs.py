@@ -1,77 +1,42 @@
 # Copyright (c) 2020 Dane Freeman.
 # Distributed under the terms of the Modified BSD License.
 
-from dataclasses import asdict, dataclass
-from typing import Dict, Tuple
+from dataclasses import asdict, dataclass, is_dataclass
+from typing import Dict
 
 from ipywidgets import DOMWidget
 
-
-@dataclass
-class Point:
-    x: float = 0
-    y: float = 0
+# from .elk_model import ElkNode
+from .symbol import Point, Symbol
 
 
 @dataclass
-class Dataclass:
-    type: str = None
-    # cssClasses: Tuple[str] = ()
-
-    @property
-    def type(self) -> str:
-        """Returns the name of the class"""
-        return self.__class__.__name__.lower()
-
-    @type.setter
-    def type(self, value):
-        """Setter is required to get the dataclass to work but is only as passthrough"""
-        pass
-
-
-@dataclass
-class SVGElement(Dataclass):
-    position: Point = Point()
-
-
-@dataclass
-class Circle(SVGElement):
-    radius: float = 0
-
-
-@dataclass
-class Rect(SVGElement):
-    height: float = 0
-    width: float = 0
-
-
-@dataclass
-class Ellipse(SVGElement):
-    rx: float = 0
-    ry: float = 0
-
-
-@dataclass
-class Path(SVGElement):
-    segments: Tuple[Point] = tuple()
-    closed: bool = False
-
-
-@dataclass
-class RawSVG(SVGElement):
-    value: str = ""
-
-
-@dataclass
-class Def(Dataclass):
-    position: Point = Point()
-    children: Tuple[SVGElement] = ()
+class Def(Symbol):
+    type = "def"
+    # TODO should def strip `id` out of the `to_json` result?
 
 
 @dataclass
 class ConnectorDef(Def):
+    type = "connectordef"
     offset: Point = Point()
     correction: Point = Point()
+
+    def to_json(self):
+        data = super().to_json()
+        offset = asdict(self.offset) if is_dataclass(self.offset) else self.offset
+        correction = (
+            asdict(self.correction)
+            if is_dataclass(self.correction)
+            else self.correction
+        )
+        data.update(
+            {
+                "offset": offset,
+                "correction": correction,
+            }
+        )
+        return data
 
 
 def defs_to_json(defs: Dict[str, Def], widget: DOMWidget):
@@ -84,7 +49,7 @@ def defs_to_json(defs: Dict[str, Def], widget: DOMWidget):
     :return: [description]
     :rtype: [type]
     """
-    return {f"{k}": asdict(v) for k, v in defs.items()}
+    return {f"{k}": v.to_json() for k, v in defs.items()}
 
 
 def_serialization = {"to_json": defs_to_json}

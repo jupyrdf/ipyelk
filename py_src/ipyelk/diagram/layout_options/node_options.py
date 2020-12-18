@@ -32,6 +32,7 @@ MODEL_ORDER_OPTIONS = {
     "Prefer Edges": "PREFER_EDGES",
 }
 
+
 class NodeSizeConstraints(LayoutOptionWidget):
     """What should be taken into account when calculating a node’s size. Empty
     size constraints specify that a node’s size is already fixed and should not
@@ -432,6 +433,7 @@ class Padding(LayoutOptionWidget):
         padding = ",".join([f"{t}={getattr(self, t)}" for t in self._traits])
         self.value = f"[{padding}]"
 
+
 class ConsiderModelOrder(LayoutOptionWidget):
     """Preserves the order of nodes and edges in the model file if this does not
     lead to edge crossings or conflicts between the ordering or edges and nodes.
@@ -441,9 +443,7 @@ class ConsiderModelOrder(LayoutOptionWidget):
     metadata_provider = "options.LayeredMetaDataProvider"
     applies_to = ["parents", "nodes"]
 
-    value = T.Enum(
-        values=list(MODEL_ORDER_OPTIONS.values()), default_value="NONE"
-    )
+    value = T.Enum(values=list(MODEL_ORDER_OPTIONS.values()), default_value="NONE")
 
     def _ui(self) -> List[W.Widget]:
         dropdown = W.Dropdown(options=list(MODEL_ORDER_OPTIONS.items()))
@@ -489,7 +489,7 @@ class AspectRatio(LayoutOptionWidget):
     ratio = T.Float(min_value=0, default=0.1)
 
     def _ui(self) -> List[W.Widget]:
-        slider = W.FloatSlider(description=f"Aspect Ratio")
+        slider = W.FloatSlider(description="Aspect Ratio")
         T.link((self, "ratio"), (slider, "value"))
         return [slider]
 

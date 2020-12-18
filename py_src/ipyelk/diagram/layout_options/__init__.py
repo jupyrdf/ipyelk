@@ -80,7 +80,7 @@ __all__ = [
     "EdgeSpacing",
     "EdgeThickness",
     "EdgeType",
-    "ExpandNodes"
+    "ExpandNodes",
     "FeedbackEdges",
     "HierarchyHandling",
     "LabelNodeSpacing",

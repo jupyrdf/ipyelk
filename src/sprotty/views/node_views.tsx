@@ -13,7 +13,7 @@ import * as snabbdom from 'snabbdom-jsx';
 import { injectable } from 'inversify';
 import { h } from 'snabbdom';
 import { VNode } from 'snabbdom/vnode';
-import { IView, RectangularNodeView, SCompartmentView, setClass, getSubType, Point } from 'sprotty';
+import { IView, RectangularNodeView, SCompartmentView, setClass, Point } from 'sprotty';
 import { ElkNode, ElkPort, ElkModelRenderer, ElkLabel } from '../sprotty-model';
 // import { useCallback } from 'react';
 
@@ -24,27 +24,25 @@ function svgStr(point: Point) {
   return `${point.x},${point.y}`;
 }
 
-
 @injectable()
 export class ElkNodeView extends RectangularNodeView {
-  render(node: ElkNode, context: ElkModelRenderer): VNode {
-    let subtype = getSubType(node);
-
-    console.log(subtype);
-
+  render(node: ElkNode, context: ElkModelRenderer): VNode | undefined {
+    if (!this.isDef(node) && !this.isVisible(node, context)) {
+      return;
+    }
     let mark = this.renderMark(node, context);
-    setClass(mark, 'elknode', true);
-    setClass(mark, 'mouseover', node.hoverFeedback);
-    setClass(mark, 'selected', node.selected);
+    if (!this.isDef(node)) {
+      // skip marking extra classes on def nodes
+      setClass(mark, 'elknode', true);
+      setClass(mark, 'mouseover', node.hoverFeedback);
+      setClass(mark, 'selected', node.selected);
+    }
+
     setClass(mark, node.type, true);
     return (
       <g>
         {mark}
-        <g
-          class-elkchildren={true}
-        >
-        {this.renderChildren(node, context)}
-        </g>
+        <g class-elkchildren={true}>{this.renderChildren(node, context)}</g>
       </g>
     );
   }
@@ -59,6 +57,14 @@ export class ElkNodeView extends RectangularNodeView {
   renderChildren(node: ElkNode, context: ElkModelRenderer): VNode[] {
     return context.renderChildren(node);
   }
+
+  /**
+   *
+   * @param node
+   */
+  isDef(node: ElkNode): boolean {
+    return node?.properties?.isDef == true;
+  }
 }
 
 @injectable()
@@ -69,28 +75,26 @@ export class ElkDiamondNodeView extends ElkNodeView {
 
     const top: Point = {
       x: width / 2,
-      y: 0,
-    }
+      y: 0
+    };
 
     const right: Point = {
       x: width,
-      y: height / 2,
-    }
+      y: height / 2
+    };
 
     const left: Point = {
       x: 0,
-      y: height / 2,
-    }
+      y: height / 2
+    };
 
     const bottom: Point = {
       x: width / 2,
-      y: height,
-    }
+      y: height
+    };
 
     const points = `${svgStr(top)} ${svgStr(right)} ${svgStr(bottom)} ${svgStr(left)}`;
-    return <polygon
-      points={points}
-     />;
+    return <polygon points={points} />;
   }
 }
 
@@ -99,12 +103,7 @@ export class ElkRoundNodeView extends ElkNodeView {
   renderMark(node: ElkNode, context: ElkModelRenderer): VNode {
     let width = node.size.width;
     let height = node.size.height;
-    return <ellipse
-      cx={width/2}
-      cy={height/2}
-      rx={width/2}
-      ry={height/2}
-     />;
+    return <ellipse rx={width / 2} ry={height / 2} />;
   }
 }
 
@@ -113,31 +112,27 @@ export class ElkImageNodeView extends ElkNodeView {
   renderMark(node: ElkNode, context: ElkModelRenderer): VNode {
     let width = node.size.width;
     let height = node.size.height;
-    return <image
-      width={width}
-      height={height}
-      href={node.properties?.shape?.use}
-     />;
+    return <image width={width} height={height} href={node.properties?.shape?.use} />;
   }
 }
 
 @injectable()
 export class ElkCommentNodeView extends ElkNodeView {
   renderMark(node: ElkNode, context: ElkModelRenderer): VNode {
-    let tabSize = 15;
+    let tabSize = Number(node?.properties?.shape?.use) || 15;
     let width = node.size.width;
     let height = node.size.height;
     const points = [
-      {x:0, y:0},
-      {x:width - tabSize, y:0},
-      {x:width, y:tabSize},
-      {x:width, y:height},
-      {x:0, y:height},
-    ].map(svgStr).join(" ")
+      { x: 0, y: 0 },
+      { x: width - tabSize, y: 0 },
+      { x: width, y: tabSize },
+      { x: width, y: height },
+      { x: 0, y: height }
+    ]
+      .map(svgStr)
+      .join(' ');
 
-    return <polygon
-      points={points}
-     />;
+    return <polygon points={points} />;
   }
 }
 
@@ -146,13 +141,9 @@ export class ElkPathNodeView extends ElkNodeView {
   renderMark(node: ElkNode, context: ElkModelRenderer): VNode {
     let segments = node?.properties?.shape?.use;
 
-    return <path
-      d={segments}
-     />;
+    return <path d={segments} />;
   }
 }
-
-
 
 @injectable()
 export class ElkUseNodeView extends ElkNodeView {
@@ -168,43 +159,56 @@ export class ElkUseNodeView extends ElkNodeView {
 @injectable()
 export class ElkRawNodeView extends ElkNodeView {
   renderMark(node: ElkNode, context: ElkModelRenderer): VNode {
-    return JSX.createElement('g', { props: { innerHTML: node?.properties?.shape?.use } }, []);
+    return JSX.createElement(
+      'g',
+      { props: { innerHTML: node?.properties?.shape?.use } },
+      []
+    );
   }
 }
-
 
 @injectable()
 export class ElkHTMLNodeView extends ElkNodeView {
   renderMark(node: ElkNode, context: ElkModelRenderer): VNode {
     //TODO investigate snabbdom-virtualize in place of innerHTML
-    return JSX.createElement('g', { props: { innerHTML: node?.properties?.shape?.use } }, []);
+    return JSX.createElement(
+      'g',
+      { props: { innerHTML: node?.properties?.shape?.use } },
+      []
+    );
   }
 }
 
-
 @injectable()
 export class ElkCompartmentNodeView extends ElkNodeView {
-  renderMark(node: ElkNode, context:ElkModelRenderer): VNode{
-    if (node.parent.type == node.type){
+  renderMark(node: ElkNode, context: ElkModelRenderer): VNode {
+    if (node.parent.type == node.type) {
       const parentSize = (node.parent as any).size;
-      return <rect x="0" y="0" width={parentSize.width} height={node.size.height}></rect>
+      return (
+        <rect x="0" y="0" width={parentSize.width} height={node.size.height}></rect>
+      );
     }
-    return super.renderMark(node, context)
+    return super.renderMark(node, context);
   }
 }
 
 @injectable()
 export class ElkForeignObjectNodeView extends ElkNodeView {
-    renderMark(node: ElkNode, context: ElkModelRenderer): VNode {
-      let contents = h('div', {props: { innerHTML: node?.properties?.shape?.use }}, []);
-        return <foreignObject requiredFeatures='http://www.w3.org/TR/SVG11/feature#Extensibility'
-                height={node.bounds.height} width={node.bounds.width} x={0} y={0}>
-                {contents}
-            </foreignObject>
-    }
+  renderMark(node: ElkNode, context: ElkModelRenderer): VNode {
+    let contents = h('div', { props: { innerHTML: node?.properties?.shape?.use } }, []);
+    return (
+      <foreignObject
+        requiredFeatures="http://www.w3.org/TR/SVG11/feature#Extensibility"
+        height={node.bounds.height}
+        width={node.bounds.width}
+        x={0}
+        y={0}
+      >
+        {contents}
+      </foreignObject>
+    );
+  }
 }
-
-
 
 @injectable()
 export class ElkPortView extends RectangularNodeView {
@@ -252,8 +256,6 @@ export class ElkLabelView implements IView {
     let use = label?.properties?.shape?.use;
     let href = context.hrefID(use);
     if (href) {
-      console.warn('elklabel href', label);
-
       mark = <use class-elklabel={true} href={'#' + href} />;
       setClass(mark, use, true);
     } else {

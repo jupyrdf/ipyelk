@@ -18,8 +18,6 @@ import {
   Point,
   Dimension,
   SModelElementSchema
-  // SModelElement
-  // getSubType,
 } from 'sprotty';
 import {
   ElkShape,
@@ -32,7 +30,7 @@ import {
   isExtended
 } from './elkgraph-json';
 
-import { IElkDef, IElkDefs, SElkConnectorDef } from './defs';
+import { IElkDefs, SElkConnectorDef } from './defs';
 
 /**
  * Checks the given type string and potentially returns the default type
@@ -50,11 +48,6 @@ function getClasses(element: ElkGraphElement) {
 }
 
 interface SDefsSchema extends SModelElementSchema {}
-
-// interface SElkEdgeSchema extends SEdgeSchema {
-//   start: string;
-//   end: string;
-// }
 
 export class ElkGraphJsonToSprotty {
   private nodeIds: Set<string> = new Set();
@@ -106,12 +99,12 @@ export class ElkGraphJsonToSprotty {
 
   private transformDef(
     id: string,
-    def: IElkDef,
+    def: ElkNode,
     idPrefix: string
   ): SModelElementSchema {
     let children = def.children.map(this.transformDefElement, this);
     this.defsIds[id] = `${idPrefix}_${id}`;
-    if (def.type == 'connectordef') {
+    if (def?.properties?.type == 'connectordef') {
       this.connectors[id] = <SElkConnectorDef>def;
     }
 
@@ -122,9 +115,17 @@ export class ElkGraphJsonToSprotty {
     };
   }
 
-  private transformDefElement(e): SModelElementSchema {
-    // elementSchema = {}
-    return <SModelElementSchema>e;
+  private transformDefElement(elkNode: ElkNode): SNodeSchema {
+    elkNode.properties.isDef = true;
+    let element = <SNodeSchema>{
+      id: elkNode.id,
+      position: this.pos(elkNode),
+      size: this.size(elkNode),
+      // children: elkNode.children,
+      properties: elkNode.properties,
+      type: elkNode.properties?.type
+    };
+    return element;
   }
 
   private transformElkNode(elkNode: ElkNode): SNodeSchema {
