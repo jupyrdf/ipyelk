@@ -5,7 +5,6 @@ from dataclasses import dataclass, field
 from typing import ClassVar, Dict, Hashable, List, Optional
 from uuid import uuid4
 
-import networkx as nx
 
 from ipyelk.diagram.elk_model import strip_none
 
@@ -75,9 +74,6 @@ class Symbol(ABC):
             properties["shape"] = shape_data
         # TODO css classes?
         return properties
-
-    def add_to(self, g: nx.Graph):
-        g.add_node(self.id, **self.to_json())
 
     def get_shape_props(self) -> Optional[Dict]:
         return None
@@ -173,3 +169,11 @@ class Rect(Symbol):
 class Point:
     x: float = 0
     y: float = 0
+
+@dataclass
+class Image(Symbol):
+    type: "node:image"
+    value: str = None
+
+    def get_shape_props(self):
+        return {"use": self.value}

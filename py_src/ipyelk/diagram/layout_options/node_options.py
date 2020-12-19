@@ -486,7 +486,7 @@ class AspectRatio(LayoutOptionWidget):
     metadata_provider = "core.options.CoreOptions"
     applies_to = ["parents"]
 
-    ratio = T.Float(min_value=0, default=0.1)
+    ratio = T.Float(min_value=0, default_value=0.01)
 
     def _ui(self) -> List[W.Widget]:
         slider = W.FloatSlider(description="Aspect Ratio")

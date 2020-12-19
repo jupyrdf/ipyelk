@@ -11,7 +11,8 @@ import { Signal } from '@phosphor/signaling';
 
 import { DOMWidgetModel, DOMWidgetView } from '@jupyter-widgets/base';
 
-import Worker from '!!worker-loader!elkjs/lib/elk-worker.min.js';
+// import Worker from '!!worker-loader!elkjs/lib/elk-worker.min.js';
+import Worker from '!!worker-loader!elkjs/lib/elk-worker.js';
 import * as ELK from 'elkjs/lib/elk-api';
 
 import {
@@ -161,17 +162,6 @@ export class ELKModel extends DOMWidgetModel {
           ELK_DEBUG && console.warn('ELK Worker created');
           return new (Worker as any)();
         },
-        algorithms: [
-          'layered',
-          'stress',
-          'mrtree',
-          'radial',
-          'force',
-          'disco',
-          'sporeOverlap',
-          'sporeCompaction',
-          'rectpacking'
-        ]
       } as any);
     }
   }
