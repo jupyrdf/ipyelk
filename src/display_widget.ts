@@ -11,10 +11,6 @@ import { Signal } from '@phosphor/signaling';
 
 import { DOMWidgetModel, DOMWidgetView } from '@jupyter-widgets/base';
 
-// import Worker from '!!worker-loader!elkjs/lib/elk-worker.min.js';
-import Worker from '!!worker-loader!elkjs/lib/elk-worker.js';
-import * as ELK from 'elkjs/lib/elk-api';
-
 import {
   Action,
   ActionDispatcher,
@@ -27,7 +23,7 @@ import {
   TYPES
 } from 'sprotty';
 
-import { NAME, VERSION, ELK_DEBUG, TAnyELKMessage, ELK_CSS } from '.';
+import { NAME, VERSION, TAnyELKMessage, ELK_CSS } from '.';
 
 import createContainer from './sprotty/di-config';
 import { JLModelSource } from './sprotty/diagram-server';
@@ -39,85 +35,29 @@ import {
   FeedbackActionDispatcher
 } from './tools/feedback/feedback-action-dispatcher';
 import { ToolTYPES } from './tools/types';
-import { ELKTextSizerModel, ELKTextSizerView } from './measure_text';
-export { ELKTextSizerModel, ELKTextSizerView };
 import { PromiseDelegate } from '@phosphor/coreutils';
-import { ElkNode } from './sprotty/json/elkgraph-json';
 
 const DEFAULT_VALUE = { id: 'root' };
 const POLL = 300;
 
-function collectProperties(node: ElkNode) {
-  let props: Map<string, any> = new Map();
-
-  function strip(node) {
-    props[node.id] = node.properties;
-    delete node['properties'];
-    // children
-    if (node.children) {
-      node.children.map(strip);
-    }
-    // ports
-    if (node.ports) {
-      node.ports.map(strip);
-    }
-    // labels
-    if (node.labels) {
-      node.labels.map(strip);
-    }
-    // edges
-    if (node.edges) {
-      node.edges.map(strip);
-    }
-  }
-  strip(node);
-  return props;
-}
-
-function applyProperties(node: ElkNode, props: Map<string, any>) {
-  function apply(node) {
-    node.properties = props[node.id];
-
-    // children
-    if (node.children) {
-      node.children.map(apply);
-    }
-    // ports
-    if (node.ports) {
-      node.ports.map(apply);
-    }
-    // labels
-    if (node.labels) {
-      node.labels.map(apply);
-    }
-    // edges
-    if (node.edges) {
-      node.edges.map(apply);
-    }
-  }
-  apply(node);
-  return node;
-}
-
-export class ELKModel extends DOMWidgetModel {
+export class ELKDiagramModel extends DOMWidgetModel {
   static model_name = 'ELKModel';
 
-  protected _elk: ELK.ELK;
-
-  layoutUpdated = new Signal<ELKModel, void>(this);
+  layoutUpdated = new Signal<ELKDiagramModel, void>(this);
 
   defaults() {
     let defaults = {
       ...super.defaults(),
 
-      _model_name: ELKModel.model_name,
+      _model_name: ELKDiagramModel.model_name,
       _model_module_version: VERSION,
       _view_module: NAME,
-      _view_name: ELKView.view_name,
+      _view_name: ELKDiagramView.view_name,
       _view_module_version: VERSION,
       value: DEFAULT_VALUE,
       defs: {},
-      _mark_layout: {}
+      mark_layout: {},
+      layouter: {}
     };
     return defaults;
   }
@@ -125,72 +65,34 @@ export class ELKModel extends DOMWidgetModel {
   initialize(attributes: any, options: any) {
     super.initialize(attributes, options);
     this.on('change:value', this.value_changed, this);
-    this.on('change:_view_count', this.view_count_changed, this);
 
-    if (this.get('_view_count') == null) {
-      this.set('_view_count', 0);
-    }
     this.value_changed().catch(err => console.error(err));
   }
 
-  async view_count_changed() {
-    const viewCount: number = this.get('_view_count') || 0;
-    ELK_DEBUG && console.warn('ELK model', this.cid, 'has', viewCount, 'views');
-    const elk: any = this._elk;
-    if (viewCount && elk == null) {
-      await this.value_changed();
-    } else if (viewCount <= 0 && elk) {
-      this.cullElk();
-    }
-  }
-
-  protected cullElk() {
-    const elk: any = this._elk;
-    if (elk != null) {
-      ELK_DEBUG && console.warn('ELK worker culling for', this.cid);
-      elk.worker?.terminate();
-    } else {
-      ELK_DEBUG && console.warn('ELK was already culled for', this.cid);
-    }
-    this._elk = null;
-  }
-
-  protected ensureElk() {
-    if (this._elk == null) {
-      this._elk = new ELK.default({
-        workerFactory: () => {
-          ELK_DEBUG && console.warn('ELK Worker created');
-          return new (Worker as any)();
-        }
-      } as any);
-    }
-  }
-
   async value_changed() {
-    if ((this.get('_view_count') || 0) <= 0) {
-      this.cullElk();
-      return;
-    }
-
     let rootNode = this.get('value');
-    // There looks like a bug with how elkjs failing to process edge properties
-    // if they are anything more than simple strings. Elkjs doesnt need to operate
-    // on the information passed in `properties` from ipyelk to sprotty so this
-    // will strip them before calling elk and then reapply after
-    let propmap = collectProperties(rootNode);
-    // strip properties out o
-    this.ensureElk();
-    let result = await this._elk.layout(rootNode);
-    // reapply properties
-    applyProperties(result, propmap);
-    this.set('_mark_layout', result);
+    console.warn('layouting', rootNode);
+    let layoutEngine: any = await this.layoutEngine(); // TODO need layoutEngine interface
+    let result;
+    console.log('layout engine', layoutEngine); //TODO how to get instance of layout widget?
+    if (layoutEngine) {
+      result = await layoutEngine.layout(rootNode);
+    } else {
+      result = rootNode;
+    }
+    this.set('mark_layout', result);
+  }
+
+  async layoutEngine() {
+    let mid = this.get('layouter').replace('IPY_MODEL_', '');
+    return await this.widget_manager.get_model(mid);
   }
 }
 
-export class ELKView extends DOMWidgetView {
-  static view_name = 'ELKView';
+export class ELKDiagramView extends DOMWidgetView {
+  static view_name = 'ELKDiagramView';
 
-  model: ELKModel;
+  model: ELKDiagramModel;
   source: JLModelSource;
   container: any;
   private div_id: string;
@@ -240,7 +142,7 @@ export class ELKView extends DOMWidgetView {
     this.feedbackDispatcher = container.get<FeedbackActionDispatcher>(
       ToolTYPES.IFeedbackActionDispatcher
     );
-    this.model.on('change:_mark_layout', this.diagramLayout, this);
+    this.model.on('change:mark_layout', this.diagramLayout, this);
     this.model.on('change:selected', this.updateSelected, this);
     this.model.on('change:hovered', this.updateHover, this);
     this.model.on('change:interaction', this.interaction_mode_changed, this);
@@ -348,7 +250,7 @@ export class ELKView extends DOMWidgetView {
   }
 
   async diagramLayout() {
-    let layout = this.model.get('_mark_layout');
+    let layout = this.model.get('mark_layout');
     let defs = this.model.get('defs');
     await this.source.updateLayout(layout, defs, this.div_id);
     this.model.layoutUpdated.emit();

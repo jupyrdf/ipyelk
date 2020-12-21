@@ -5,41 +5,44 @@
 :return: [description]
 :rtype: [type]
 """
-from dataclasses import dataclass, field
-from typing import ClassVar, List
-import networkx as nx
-from ..diagram import Symbol
+# from dataclasses import dataclass, field
+# from typing import ClassVar, List
 
-    def add_to(self, g: nx.Graph)->'Symbol':
-        if self.id is None:
-            self.id = str(uuid4())
+# import networkx as nx
 
-        g.add_node(self.id, **self.to_json())
-        return self
+# from ..diagram import Symbol
 
 
-@dataclass
-class Element:
-    shape: Symbol
+# def add_to(self, g: nx.Graph) -> "Symbol":
+#     if self.id is None:
+#         self.id = str(uuid4())
 
-@dataclass
-class Node(Element):
-
-    _ports: Dict[Port] = field(default_factory=dict)
-
-    def __init__():
+#     g.add_node(self.id, **self.to_json())
+#     return self
 
 
-        pass
-
-    def __setattr__(self, key, value):
-        if isinstance(value, Port):
-            self._ports[key] = value
-
-        else:
-            super().__setattr__(key, value)
+# @dataclass
+# class Element:
+#     shape: Symbol
 
 
-@dataclass
-class Port(Element):
-    pass
+# @dataclass
+# class Node(Element):
+
+#     _ports: Dict[Port] = field(default_factory=dict)
+
+#     def __init__():
+
+#         pass
+
+#     def __setattr__(self, key, value):
+#         if isinstance(value, Port):
+#             self._ports[key] = value
+
+#         else:
+#             super().__setattr__(key, value)
+
+
+# @dataclass
+# class Port(Element):
+#     pass

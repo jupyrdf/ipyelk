@@ -3,6 +3,6 @@
 
 from ._version import __version__
 from .app import Elk
-from .diagram import ElkDiagram
+from .diagram import ElkDiagram, ElkJS
 
-__all__ = ["__version__", "Elk", "ElkDiagram"]
+__all__ = ["__version__", "Elk", "ElkDiagram", "ElkJS"]

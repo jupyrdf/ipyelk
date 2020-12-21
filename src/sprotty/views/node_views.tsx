@@ -13,7 +13,14 @@ import * as snabbdom from 'snabbdom-jsx';
 import { injectable } from 'inversify';
 import { h } from 'snabbdom';
 import { VNode } from 'snabbdom/vnode';
-import { IView, RectangularNodeView, SCompartmentView, setClass, Point } from 'sprotty';
+import {
+  ShapeView,
+  RectangularNodeView,
+  SCompartmentView,
+  setClass,
+  Point,
+  ViewportRootElement
+} from 'sprotty';
 import { ElkNode, ElkPort, ElkModelRenderer, ElkLabel } from '../sprotty-model';
 // import { useCallback } from 'react';
 
@@ -212,7 +219,7 @@ export class ElkForeignObjectNodeView extends ElkNodeView {
 
 @injectable()
 export class ElkPortView extends RectangularNodeView {
-  render(port: ElkPort, context: ElkModelRenderer): VNode {
+  render(port: ElkPort, context: ElkModelRenderer): VNode | undefined {
     let mark: VNode;
     let use = port?.properties?.shape?.use;
     let href = context.hrefID(use);
@@ -250,8 +257,12 @@ export class ElkPortView extends RectangularNodeView {
 }
 
 @injectable()
-export class ElkLabelView implements IView {
-  render(label: ElkLabel, context: ElkModelRenderer): VNode {
+export class ElkLabelView extends ShapeView {
+  render(label: ElkLabel, context: ElkModelRenderer): VNode | undefined {
+    // label.root.zoom
+    if (!this.isVisible(label, context)) {
+      return undefined;
+    }
     let mark: VNode;
     let use = label?.properties?.shape?.use;
     let href = context.hrefID(use);
@@ -263,5 +274,22 @@ export class ElkLabelView implements IView {
     }
 
     return mark;
+  }
+
+  isVisible(label: ElkLabel, context: ElkModelRenderer): boolean {
+    // check first if label is within bounding box of view
+    let inView = super.isVisible(label, context);
+    if (!inView) {
+      return false;
+    }
+    // check if label should be rendered due to zoom level and min size
+    let zoom = (label.root as ViewportRootElement).zoom;
+    let heightLOD: boolean;
+    if (label.size.height) {
+      heightLOD = zoom * label.size.height > 3;
+    } else {
+      heightLOD = true;
+    }
+    return heightLOD;
   }
 }

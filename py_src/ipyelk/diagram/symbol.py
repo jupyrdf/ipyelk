@@ -5,7 +5,6 @@ from dataclasses import dataclass, field
 from typing import ClassVar, Dict, Hashable, List, Optional
 from uuid import uuid4
 
-
 from ipyelk.diagram.elk_model import strip_none
 
 
@@ -170,9 +169,10 @@ class Point:
     x: float = 0
     y: float = 0
 
+
 @dataclass
 class Image(Symbol):
-    type: "node:image"
+    type = "node:image"
     value: str = None
 
     def get_shape_props(self):
