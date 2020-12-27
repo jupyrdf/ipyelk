@@ -17,10 +17,24 @@
   user-select: none;
 }
 
-.jp-ElkView .sprotty > svg.sprotty-graph {
+.jp-ElkView .sprotty-root {
+  flex: 1;
+  display: flex;
+}
+.jp-ElkView .sprotty > .sprotty-root > svg.sprotty-graph {
   width: 100%;
   height: 100%;
   flex: 1;
+}
+
+.jp-ElkView .sprotty > .sprotty-root > div.sprotty-overlay {
+  width: 100%;
+  height: 100%;
+  flex: 1;
+  position: absolute;
+  top: 0;
+  left: 0;
+  transform-origin: top left;
 }
 
 /* Toolbar Styling */

@@ -104,7 +104,8 @@ export default (containerId: string, view: DOMWidgetView) => {
     const context = { bind, unbind, isBound, rebind };
 
     // Initialize model element views
-    configureModelElement(context, 'graph', SGraph, SGraphView);
+    console.log(SGraphView);
+    configureModelElement(context, 'graph', SGraph, v.SGraphView);
     configureModelElement(context, 'node', ElkNode, v.ElkNodeView);
     configureModelElement(context, 'node:use', ElkNode, v.ElkUseNodeView);
     configureModelElement(context, 'node:diamond', ElkNode, v.ElkDiamondNodeView);
@@ -113,6 +114,8 @@ export default (containerId: string, view: DOMWidgetView) => {
     configureModelElement(context, 'node:comment', ElkNode, v.ElkCommentNodeView);
     configureModelElement(context, 'node:path', ElkNode, v.ElkPathNodeView);
     configureModelElement(context, 'node:raw', ElkNode, v.ElkRawNodeView);
+    configureModelElement(context, 'node:html', ElkNode, v.ElkHTMLNodeView);
+    configureModelElement(context, 'node:widget', ElkNode, v.ElkHTMLNodeView);
     configureModelElement(
       context,
       'node:compartment',

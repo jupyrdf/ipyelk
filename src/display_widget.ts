@@ -10,6 +10,8 @@ import { Widget } from '@phosphor/widgets';
 import { Signal } from '@phosphor/signaling';
 
 import { DOMWidgetModel, DOMWidgetView } from '@jupyter-widgets/base';
+// import { WidgetManager } from '@jupyter-widgets/jupyterlab-manager';
+// import { ManagerBase } from '@jupyter-widgets/base';
 
 import {
   Action,
@@ -135,6 +137,7 @@ export class ELKDiagramView extends DOMWidgetView {
     const container = createContainer(this.div_id, this);
     this.container = container;
     this.source = container.get<JLModelSource>(TYPES.ModelSource);
+    this.source.widget_manager = this.model.widget_manager as any;
     this.elementRegistry = container.get(TYPES.SModelRegistry);
     this.toolManager = container.get<ToolManager>(TYPES.IToolManager);
     this.registry = container.get<ActionHandlerRegistry>(ActionHandlerRegistry);

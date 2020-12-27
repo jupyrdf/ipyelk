@@ -11,20 +11,26 @@
  *******************************************************************************/
 import * as snabbdom from 'snabbdom-jsx';
 import { injectable } from 'inversify';
-import { h } from 'snabbdom';
+import { svg, html } from 'snabbdom-jsx';
 import { VNode } from 'snabbdom/vnode';
 import {
   ShapeView,
   RectangularNodeView,
-  SCompartmentView,
   setClass,
   Point,
-  ViewportRootElement
+  ViewportRootElement,
+  // HtmlRootView,
+  // PreRenderedElement,
+  // PreRenderedView,
+  // ExpandButtonView,
+  // IssueMarkerView,
+  // RoutableView,
+  getSubType
+  // IView
 } from 'sprotty';
 import { ElkNode, ElkPort, ElkModelRenderer, ElkLabel } from '../sprotty-model';
 // import { useCallback } from 'react';
 
-console.log(SCompartmentView);
 const JSX = { createElement: snabbdom.svg };
 
 function svgStr(point: Point) {
@@ -175,18 +181,6 @@ export class ElkRawNodeView extends ElkNodeView {
 }
 
 @injectable()
-export class ElkHTMLNodeView extends ElkNodeView {
-  renderMark(node: ElkNode, context: ElkModelRenderer): VNode {
-    //TODO investigate snabbdom-virtualize in place of innerHTML
-    return JSX.createElement(
-      'g',
-      { props: { innerHTML: node?.properties?.shape?.use } },
-      []
-    );
-  }
-}
-
-@injectable()
 export class ElkCompartmentNodeView extends ElkNodeView {
   renderMark(node: ElkNode, context: ElkModelRenderer): VNode {
     if (node.parent.type == node.type) {
@@ -202,7 +196,11 @@ export class ElkCompartmentNodeView extends ElkNodeView {
 @injectable()
 export class ElkForeignObjectNodeView extends ElkNodeView {
   renderMark(node: ElkNode, context: ElkModelRenderer): VNode {
-    let contents = h('div', { props: { innerHTML: node?.properties?.shape?.use } }, []);
+    let contents = html(
+      'div',
+      { props: { innerHTML: node?.properties?.shape?.use } },
+      []
+    );
     return (
       <foreignObject
         requiredFeatures="http://www.w3.org/TR/SVG11/feature#Extensibility"
@@ -214,6 +212,47 @@ export class ElkForeignObjectNodeView extends ElkNodeView {
         {contents}
       </foreignObject>
     );
+  }
+}
+
+@injectable()
+export class ElkHTMLNodeView extends ElkNodeView {
+  renderMark(node: ElkNode, context: ElkModelRenderer): VNode {
+    const root = svg(
+      'rect',
+      {
+        attrs: {
+          width: node.size.width,
+          height: node.size.height
+        },
+        // props: { innerHTML: node?.properties?.shape?.use },
+        hook: {
+          insert: vnode => this.insertHook(vnode, node, context),
+          // create: vnode => this.createHook(vnode, node, context),
+          destroy: vnode => this.destroyHook(vnode, node, context),
+          update: (oldnode, vnode) => this.updateHook(oldnode, vnode, node, context)
+        }
+      },
+      []
+    );
+    return root;
+  }
+  insertHook(vnode: VNode | undefined, node: ElkNode, context: ElkModelRenderer) {
+    if (getSubType(node) == 'widget') {
+      context.registerWidget(vnode, node);
+    }
+    console.log('HTML insert hook', vnode, node, context);
+  }
+  createHook(vnode: VNode | undefined, node: ElkNode, context: ElkModelRenderer) {
+    console.log('HTML create hook', vnode, node, context);
+    context.registerWidget(vnode, node);
+  }
+  updateHook(oldvnode: VNode, vnode: VNode | undefined, node: ElkNode, context: ElkModelRenderer) {
+    console.log('HTML update hook', vnode, node, context);
+    context.registerWidget(vnode, node);
+  }
+  destroyHook(vnode: VNode | undefined, node: ElkNode, context: ElkModelRenderer) {
+    console.log('HTML delete hook', vnode, node, context);
   }
 }
 

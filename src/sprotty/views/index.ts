@@ -6,3 +6,4 @@
 export * from './node_views';
 export * from './def_views';
 export * from './edge_views';
+export * from './graph_views';

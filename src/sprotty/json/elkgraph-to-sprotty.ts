@@ -18,6 +18,7 @@ import {
   Point,
   Dimension,
   SModelElementSchema
+  // PopupModelViewer
 } from 'sprotty';
 import {
   ElkShape,

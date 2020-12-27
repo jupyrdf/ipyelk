@@ -14,10 +14,14 @@ import {
   Viewport
 } from 'sprotty';
 import { ElkGraphJsonToSprotty } from './json/elkgraph-to-sprotty';
-
+import { ManagerBase } from '@jupyter-widgets/base';
+import { Widget } from '@phosphor/widgets';
+// import { WidgetManager } from '@jupyter-widgets/jupyterlab-manager';
 @injectable()
 export class JLModelSource extends LocalModelSource {
   elkToSprotty: ElkGraphJsonToSprotty;
+  widget_manager: ManagerBase<Widget>;
+  // widget_manager: WidgetManager;
 
   async updateLayout(layout, defs, idPrefix: string) {
     this.elkToSprotty = new ElkGraphJsonToSprotty();
