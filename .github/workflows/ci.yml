@@ -55,8 +55,6 @@ jobs:
       - name: build
         shell: bash -l {0}
         run: |
-          source /usr/share/miniconda/bin/deactivate
-          source /usr/share/miniconda/bin/activate /usr/share/miniconda/envs/_ipyelk_ci_
           doit -n4 lint release || doit lint release || exit 1
 
       - name: publish dists
