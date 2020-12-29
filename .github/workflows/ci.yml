@@ -34,10 +34,10 @@ jobs:
         with:
           path: ~/conda_pkgs_dir
           key:
-            ${{ runner.os }}-conda-build-${{ hashFiles('.github/environment.yml',
+            ${{ runner.os }}-conda-${{ hashFiles('.github/environment.yml',
             'anaconda-project-lock.yml') }}
           restore-keys: |
-            ${{ runner.os }}-conda-build-
+            ${{ runner.os }}-conda-
 
       - name: cache (yarn)
         uses: actions/cache@v1
