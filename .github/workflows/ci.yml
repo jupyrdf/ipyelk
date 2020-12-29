@@ -65,8 +65,9 @@ jobs:
           name: ipyelk dist ${{ github.run_number }}
           path: ./dist
 
-  ci:
+  test:
     runs-on: ${{ matrix.vm }}
+    needs: [build]
     strategy:
       fail-fast: false
       matrix:
