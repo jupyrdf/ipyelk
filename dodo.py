@@ -193,7 +193,7 @@ def task_setup():
             dict(
                 name="labext",
                 actions=[[*P.APR_DEFAULT, *P.LAB_EXT, "develop", "--overwrite", "."]],
-                file_dep=[P.NPM_TGZ],
+                file_dep=[P.NPM_TGZ, P.OK_PIP_INSTALL],
             ),
             P.OK_LABEXT,
         )
