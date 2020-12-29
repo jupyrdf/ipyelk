@@ -5,9 +5,9 @@
 import 'reflect-metadata';
 import difference from 'lodash/difference';
 
-import { Message } from '@phosphor/messaging';
-import { Widget } from '@phosphor/widgets';
-import { Signal } from '@phosphor/signaling';
+import { Message } from '@lumino/messaging';
+import { Widget } from '@lumino/widgets';
+import { Signal } from '@lumino/signaling';
 
 import { DOMWidgetModel, DOMWidgetView } from '@jupyter-widgets/base';
 
@@ -40,7 +40,7 @@ import {
 import { ToolTYPES } from './tools/types';
 import { ELKTextSizerModel, ELKTextSizerView } from './measure_text';
 export { ELKTextSizerModel, ELKTextSizerView };
-import { PromiseDelegate } from '@phosphor/coreutils';
+import { PromiseDelegate } from '@lumino/coreutils';
 
 const DEFAULT_VALUE = { id: 'root' };
 const POLL = 300;
