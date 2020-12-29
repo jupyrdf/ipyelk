@@ -12,6 +12,8 @@ env:
   PYTHONIOENCODING: utf-8
   PYTHONUNBUFFERED: '1'
   PIP_DISABLE_PIP_VERSION_CHECK: '1'
+  # until have mamabforge...
+  CONDA_EXE: mamba
   # our stuff
   SKIP_CONDA_PREFLIGHT: 'true'
 
@@ -22,9 +24,6 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu]
-    env:
-      CONDA_EXE: mamba
-
     steps:
       - name: git checkout
         uses: actions/checkout@v2
@@ -89,7 +88,6 @@ jobs:
       INSTALL_ARTIFACT: wheel
       TESTING_IN_CI: 'true'
       ATEST_RETRIES: '2'
-      CONDA_EXE: mamba
     steps:
       - name: configure line endings
         run: |
