@@ -3,6 +3,14 @@
 ## ipyelk 0.3.0
 
 - support JupyterLab 3 ([#6][])
+  - `@jupyrdf/jupyter-elk` is now bundled in the `pip`/`conda` package, and no
+    `jupyter lab build` is required
+
+## @jupyrdf/jupyter-elk 0.3.0
+
+- uses newer `@lumino` and `@jupyter-widgets` packages
+- packages will continue to be released on npmjs.org, and _might_ even install from the
+  extension manager, but this is _no longer be tested_
 
 [#6]: https://github.com/jupyrdf/ipyelk/issues/6
 
