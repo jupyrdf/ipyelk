@@ -9,12 +9,11 @@ on:
       - master
 
 env:
-  ATEST_RETRIES: 2
-  INSTALL_ARTIFACT: wheel
-  PIP_DISABLE_PIP_VERSION_CHECK: 1
   PYTHONIOENCODING: utf-8
-  PYTHONUNBUFFERED: 1
-  SKIP_CONDA_PREFLIGHT: 1
+  PYTHONUNBUFFERED: '1'
+  PIP_DISABLE_PIP_VERSION_CHECK: '1'
+  # our stuff
+  SKIP_CONDA_PREFLIGHT: 'true'
 
 jobs:
   build:
@@ -87,7 +86,9 @@ jobs:
             miniforge: Windows-x86_64.exe
             vm: windows-latest
     env:
-      TESTING_IN_CI: 1
+      INSTALL_ARTIFACT: wheel
+      TESTING_IN_CI: 'true'
+      ATEST_RETRIES: '2'
     steps:
       - name: configure line endings
         run: |

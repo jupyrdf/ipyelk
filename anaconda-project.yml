@@ -1,8 +1,5 @@
 name: ipyelk
 
-variables:
-  PYTHONIOENCODING: utf-8
-
 commands:
   postBuild:
     description: do what binder does
@@ -83,7 +80,7 @@ env_specs:
     description: linting/formatting environment. not actually created.
     packages:
       - black
-      - isort <5
+      - isort
       - pyflakes
       - flake8
 

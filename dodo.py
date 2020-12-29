@@ -17,6 +17,7 @@ from hashlib import sha256
 
 from doit.action import CmdAction
 from doit.tools import PythonInteractiveAction, config_changed
+
 from scripts import project as P
 from scripts import reporter
 from scripts import utils as U
@@ -41,12 +42,12 @@ def task_all():
         *P.EXAMPLE_HTML,
         P.ATEST_CANARY,
         P.HTMLCOV_INDEX,
-        P.OK_RELEASE,
         P.PYTEST_HTML,
     ]
 
     if not P.TESTING_IN_CI:
         file_dep += [
+            P.OK_RELEASE,
             P.SHA256SUMS,
         ]
 
@@ -145,26 +146,35 @@ def task_setup():
 
     _install = ["--no-deps", "--ignore-installed", "-vv"]
 
-    if P.INSTALL_ARTIFACT == "wheel":
-        _install += [P.WHEEL]
-    elif P.INSTALL_ARTIFACT == "sdist":
-        _install += [P.SDIST]
+    if P.TESTING_IN_CI:
+        if P.INSTALL_ARTIFACT == "wheel":
+            _install += [P.WHEEL]
+        elif P.INSTALL_ARTIFACT == "sdist":
+            _install += [P.SDIST]
+        else:
+            raise RuntimeError(f"Don't know how to install {P.INSTALL_ARTIFACT}")
     else:
         _install += ["-e", "."]
+
+    file_dep = [
+        P.NPM_TGZ,
+        P.OK_ENV["default"],
+        P.SDIST,
+        P.WHEEL,
+    ]
+
+    if not P.TESTING_IN_CI:
+        file_dep += [
+            P.PY_SCHEMA,
+            P.SETUP_CFG,
+            P.SETUP_PY,
+        ]
 
     py_task = _ok(
         dict(
             name="py",
             uptodate=[config_changed({"artifact": P.INSTALL_ARTIFACT})],
-            file_dep=[
-                P.NPM_TGZ,
-                P.OK_ENV["default"],
-                P.PY_SCHEMA,
-                P.SDIST,
-                P.SETUP_CFG,
-                P.SETUP_PY,
-                P.WHEEL,
-            ],
+            file_dep=file_dep,
             actions=[
                 [*P.APR_DEFAULT, *P.PIP, "install", *_install],
                 [*P.APR_DEFAULT, *P.PIP, "check"],
@@ -173,7 +183,7 @@ def task_setup():
         P.OK_PIP_INSTALL,
     )
 
-    if P.INSTALL_ARTIFACT:
+    if P.TESTING_IN_CI and P.INSTALL_ARTIFACT:
         py_task["targets"] += [P.OK_LABEXT]
 
     yield py_task
@@ -288,18 +298,24 @@ def task_test():
             ]
             return CmdAction(args, env=env, shell=False)
 
+        file_dep = [
+            *P.ALL_PY_SRC,
+            *P.EXAMPLE_IPYNB,
+            *P.EXAMPLE_JSON,
+            P.OK_ENV["default"],
+            P.OK_PIP_INSTALL,
+            P.OK_PREFLIGHT_KERNEL,
+            *([] if P.TESTING_IN_CI else [P.OK_NBLINT[nb.name]]),
+        ]
+
+        if not P.TESTING_IN_CI:
+            file_dep += [
+                P.PY_SCHEMA,
+            ]
+
         return dict(
             name=f"nb:{nb.name}".replace(" ", "_").replace(".ipynb", ""),
-            file_dep=[
-                *P.ALL_PY_SRC,
-                *P.EXAMPLE_IPYNB,
-                *P.EXAMPLE_JSON,
-                P.OK_ENV["default"],
-                P.OK_PIP_INSTALL,
-                P.OK_PREFLIGHT_KERNEL,
-                P.PY_SCHEMA,
-                *([] if P.TESTING_IN_CI else [P.OK_NBLINT[nb.name]]),
-            ],
+            file_dep=file_dep,
             actions=[_test()],
             targets=[P.BUILD_NBHTML / nb.name.replace(".ipynb", ".html")],
         )
@@ -348,10 +364,11 @@ def task_test():
     yield dict(
         name="atest",
         file_dep=[
-            *P.ALL_ROBOT,
             *P.ALL_PY_SRC,
+            *P.ALL_ROBOT,
             *P.EXAMPLE_IPYNB,
             *P.EXAMPLE_JSON,
+            P.OK_PIP_INSTALL,
             P.SCRIPTS / "atest.py",
             *([] if P.TESTING_IN_CI else [P.OK_ROBOT_LINT, *P.OK_NBLINT.values()]),
         ],
@@ -363,12 +380,13 @@ def task_test():
 if not P.TESTING_IN_CI:
     def task_lint():
         """format all source files"""
+
         yield _ok(
             dict(
                 name="black",
                 file_dep=[*P.ALL_PY, P.OK_ENV["default"]],
                 actions=[
-                    [*P.APR_DEFAULT, "isort", "-rc", *P.ALL_PY],
+                    [*P.APR_DEFAULT, "isort", "--quiet", "--ac", *P.ALL_PY],
                     [*P.APR_DEFAULT, "black", "--quiet", *P.ALL_PY],
                 ],
             ),
