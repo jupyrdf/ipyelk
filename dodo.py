@@ -21,7 +21,10 @@ from scripts import project as P
 from scripts import reporter
 from scripts import utils as U
 
-os.environ["PYTHONIOENCODING"] = "utf-8"
+os.environ.update(
+    PYTHONIOENCODING="utf-8",
+    CONDARC=str(P.CONDARC)
+)
 
 DOIT_CONFIG = {
     "backend": "sqlite3",

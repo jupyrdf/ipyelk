@@ -16,7 +16,9 @@ MAMBA = shutil.which("mamba")
 
 
 def lock():
-    env = dict(os.environ, CONDARC=str(CONDARC))
+    env = dict(os.environ)
+    if "CONDARC" not in env:
+        env["CONDARC"] = str(CONDARC)
     if MAMBA:
         env["CONDA_EXE"] = MAMBA
 

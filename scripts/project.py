@@ -63,6 +63,7 @@ DIST = ROOT / "dist"
 ENVS = ROOT / "envs"
 PROJ_LOCK = ROOT / "anaconda-project-lock.yml"
 CHANGELOG = ROOT / "CHANGELOG.md"
+CONDARC = CI / ".condarc"
 
 # tools
 PY = ["python"]
