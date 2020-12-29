@@ -14,7 +14,7 @@
 - `python >=3.7`
 - `jupyterlab >=3`
 
-> _Note: `ipyelk 0.2.x` supports `jupyterlab=1`, and requires `nodejs`
+> \_Note: `ipyelk 0.2.x` supports `jupyterlab=1`, and requires `nodejs`
 
 ## Install
 

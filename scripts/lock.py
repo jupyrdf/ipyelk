@@ -1,7 +1,11 @@
-import sys
-import subprocess
+"""helper for anaconda-project with mamba and a 'clean' condarc"""
+# Copyright (c) 2020 Dane Freeman.
+# Distributed under the terms of the Modified BSD License.
+
 import os
 import shutil
+import subprocess
+import sys
 from pathlib import Path
 
 HERE = Path(__file__).parent
