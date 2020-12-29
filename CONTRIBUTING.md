@@ -13,7 +13,7 @@ conda install anaconda-project=0.8.4 doit=0.32
 To have an environment _similar_ to what's on CI:
 
 ```bash
-CONDA_EXE=$(which mamba) CONDARC=.github/.condarc conda env update --file .ci/environment.yml
+CONDA_EXE=$(which mamba) CONDARC=.github/.condarc conda env update --file .github/environment.yml
 ```
 
 ## Get Started
