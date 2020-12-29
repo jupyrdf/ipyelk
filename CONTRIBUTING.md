@@ -140,7 +140,7 @@ anaconda-project run twine upload where-you-expanded-the-archive/ipyelk-*
 - Run:
 
 ```bash
-anaconda-project update
+python scripts/lock.py
 doit lint
 ```
 

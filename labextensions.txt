@@ -1,5 +1,4 @@
-# these versions are pinned for lab 1.x
-@jupyter-widgets/jupyterlab-manager@1.1.0
-@jupyterlab/toc@2.0.0
+# third-party extensions for demo/testing
+# - none right now!
 
 # local packages are installed separately
