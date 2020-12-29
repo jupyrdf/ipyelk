@@ -100,6 +100,7 @@ def task_binder():
         file_dep=[
             P.OK_PIP_INSTALL,
             P.OK_PREFLIGHT_KERNEL,
+            P.OK_LABEXT,
         ],
         actions=[_echo_ok("ready to run JupyterLab with:\n\n\tdoit lab\n")],
     )
@@ -188,11 +189,13 @@ def task_setup():
     )
 
     if P.INSTALL_ARTIFACT is None:
-        yield dict(
-            name="labext",
-            actions=[["jupyter", "labextension", "develop", "--overwrite", "."]],
-            file_dep=[P.NPM_TGZ],
-            targets=[P.OK_LABEXT],
+        yield _ok(
+            dict(
+                name="labext",
+                actions=[[*P.APR_DEFAULT, *P.LAB_EXT, "develop", "--overwrite", "."]],
+                file_dep=[P.NPM_TGZ],
+            ),
+            P.OK_LABEXT,
         )
 
 
@@ -401,7 +404,13 @@ def task_lint():
                     )
                 )
             ],
-            file_dep=[P.YARN_INTEGRITY, *P.ALL_PRETTIER, P.OK_ENV["default"]],
+            file_dep=[
+                *P.ALL_PRETTIER,
+                P.OK_ENV["default"],
+                P.PRETTIER_IGNORE,
+                P.PRETTIER_RC,
+                P.YARN_INTEGRITY,
+            ],
             actions=[[*P.APR_DEFAULT, "npm", "run", "lint:prettier"]],
         ),
         P.OK_PRETTIER,

@@ -159,6 +159,7 @@ py_src/ipyelk/labextension/*.tgz
 
 # generated files
 py_src/ipyelk/schema/*.json
+py_src/ipyelk/labextension/
 
 # editors
 .idea/
