@@ -55,11 +55,17 @@ Create Notebok Server Config
     Copy File    ${FIXTURES}${/}${NBSERVER CONF}    ${home}${/}${NBSERVER CONF}
 
 Initialize User Settings
+    [Documentation]    Configure the settings directory, and modify settings that make tests less reproducible
     Set Suite Variable    ${SETTINGS DIR}    ${OUTPUT DIR}${/}user-settings    children=${True}
-    Create File    ${SETTINGS DIR}${/}@jupyterlab${/}codemirror-extension${/}commands.jupyterlab-settings
+    Create File
+    ...    ${SETTINGS DIR}${/}@jupyterlab${/}codemirror-extension${/}commands.jupyterlab-settings
     ...    {"styleActiveLine": true}
-    Create File    ${SETTINGS DIR}${/}@jupyterlab${/}extensionmanager-extension${/}plugin.jupyterlab-settings
+    Create File
+    ...    ${SETTINGS DIR}${/}@jupyterlab${/}extensionmanager-extension${/}plugin.jupyterlab-settings
     ...    {"enabled": false}
+    Create File
+    ...    ${SETTINGS DIR}${/}@jupyterlab${/}apputils-extension${/}palette.jupyterlab-settings
+    ...    {"modal": false}
 
 Tear Down Everything
     Close All Browsers

@@ -33,10 +33,10 @@ jobs:
         with:
           path: ~/conda_pkgs_dir
           key:
-            ${{ runner.os }}-conda-${{ hashFiles('.github/environment.yml',
+            ${{ runner.os }}-conda-build-${{ hashFiles('.ci/environment.yml',
             'anaconda-project-lock.yml') }}
           restore-keys: |
-            ${{ runner.os }}-conda-
+            ${{ runner.os }}-conda-build-
 
       - name: cache (yarn)
         uses: actions/cache@v1
@@ -58,7 +58,7 @@ jobs:
         run: |
           source /usr/share/miniconda/bin/deactivate
           source /usr/share/miniconda/bin/activate /usr/share/miniconda/envs/_ipyelk_ci_
-          doit -n4 build || doit build || exit 1
+          doit -n4 lint release || doit lint release || exit 1
 
       - name: publish dists
         uses: actions/upload-artifact@v2
@@ -86,7 +86,8 @@ jobs:
           - os: windows
             miniforge: Windows-x86_64.exe
             vm: windows-latest
-
+    env:
+      TESTING_IN_CI: 1
     steps:
       - name: configure line endings
         run: |
@@ -112,6 +113,15 @@ jobs:
           use-only-tar-bz2: true
           installer-url: |
             https://github.com/conda-forge/miniforge/releases/download/4.9.2-0/Miniforge3-4.9.2-0-${{ matrix.miniforge }}
+
+      - name: cache (yarn)
+        uses: actions/cache@v1
+        with:
+          path: .yarn-packages
+          key: yarn-${{ runner.os }}-${{ hashFiles('yarn.lock', '.yarnrc') }}
+          restore-keys: |
+            yarn-${{ runner.os }}-
+            yarn-
 
       - uses: actions/download-artifact@v2
         with:

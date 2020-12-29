@@ -173,7 +173,7 @@ Close JupyterLab
 
 Open Command Palette
     Press Keys    id:main    ${ACCEL}+SHIFT+c
-    Wait Until Page Contains Element    ${CMD PALETTE INPUT}
+    Wait Until Element is Visible    ${CMD PALETTE INPUT}
     Wait Until Keyword Succeeds    3x    1s    Click Element    ${CMD PALETTE INPUT}
 
 Enter Command Name
