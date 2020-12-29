@@ -18,14 +18,17 @@ def watch():
     """after preparing, start watchers"""
     print("watching src...", flush=True)
     ts = subprocess.Popen([JLPM, "watch"], cwd=str(ROOT))
+    ext = subprocess.Popen(["jupyter", "labextension", "watch", "."])
 
     def stop():
         print("stopping watchers...", flush=True)
+        ext.terminate()
         ts.terminate()
         ts.wait()
+        ext.wait()
         print("...watchers stopped!", flush=True)
 
-    print("Built, starting lab...", flush=True)
+    print("Starting lab...", flush=True)
 
     lab = subprocess.Popen(
         ["jupyter", "lab", "--no-browser", "--debug"],

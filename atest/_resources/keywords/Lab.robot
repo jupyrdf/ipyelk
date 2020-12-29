@@ -78,7 +78,7 @@ Open Context Menu for File
     [Arguments]    ${file}
     Ensure File Browser is Open
     Click Element    css:button[title="Refresh File List"]
-    ${selector} =    Set Variable    xpath://span[@class='jp-DirListing-itemText']\[text() = '${file}']
+    ${selector} =    Set Variable    xpath://span[@class='jp-DirListing-itemText']//span\[text() = '${file}']
     Wait Until Page Contains Element    ${selector}
     Open Context Menu    ${selector}
 
