@@ -14,7 +14,7 @@ ${SCREENS}        ${SCREENS ROOT}${/}notebook-examples
 #    in this directory.
 #    - common keywords, variables should move into `../_resources/*/IPyElk.robot`
 00_Introduction
-    [Tags]    data:simple.json
+    [Tags]    data:simple.json    gh:6
     Example Should Restart-and-Run-All    ${INTRODUCTION}
     Elk Counts Should Be    &{SIMPLE COUNTS}
     Linked Elk Output Counts Should Be    &{SIMPLE COUNTS}
