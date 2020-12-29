@@ -49,14 +49,13 @@ env_specs:
     description: binder environment
     channels:
       - https://conda.anaconda.org/conda-forge
-      - https://conda.anaconda.org/anaconda
-      - https://conda.anaconda.org/msys2
+      - nodefaults
     packages:
       - async-lru >=1,<2
       - importnb
       - ipython >=7
       - ipywidgets >=7.5.1
-      - jupyterlab >=1.2,<1.3.0a0
+      - jupyterlab >=3,<4
       - networkx
       - nodejs >=14,<15
       - pandas
@@ -70,8 +69,7 @@ env_specs:
       - win-64
     channels:
       - https://conda.anaconda.org/conda-forge
-      - https://conda.anaconda.org/anaconda
-      - https://conda.anaconda.org/msys2
+      - nodefaults
     packages:
       - firefox
       - geckodriver

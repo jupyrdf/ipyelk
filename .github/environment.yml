@@ -2,12 +2,11 @@ name: test
 
 channels:
   - https://conda.anaconda.org/conda-forge
-  - https://conda.anaconda.org/anaconda
-  - https://conda.anaconda.org/msys2
+  - nodefaults
 
 dependencies:
   - anaconda-project =0.8.4
-  - conda =4.8.3
+  - conda =4.9.2
   - doit ==0.32
   - pip
   - python >=3.7,<3.8
