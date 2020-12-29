@@ -7,6 +7,8 @@ from pathlib import Path
 import setuptools
 
 HERE = Path(__file__).parent
+EXT = HERE / "py_src" / "labextension"
+EXT_NAME = "@jupyrdf/jupyter-elk"
 
 if __name__ == "__main__":
     setuptools.setup(
@@ -15,6 +17,10 @@ if __name__ == "__main__":
             (HERE / "py_src/ipyelk/_version.py").read_text(encoding="utf-8"),
         )[0],
         data_files = [
-            ("", ["third-party/epl-v10.html", "COPYRIGHT.md"])
+            ("", ["third-party/epl-v10.html", "COPYRIGHT.md"]),
+            (f"share/jupyter/labextensions/{EXT_NAME}", ["install.json"] + [
+                str(p.relative_to(EXT).as_posix())
+                for p in EXT.rglob("*")
+            ])
         ]
     )
