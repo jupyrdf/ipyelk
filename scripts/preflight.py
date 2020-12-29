@@ -99,7 +99,7 @@ def preflight_conda():
     if errors:
         pprint(errors)
 
-    print("Conda look ok!")
+    print(">>> OK conda!")
 
     return len(errors)
 
@@ -126,8 +126,25 @@ def preflight_kernel():
         print(f"The {DEFAULT_KERNEL_NAME} does not use {sys.executable}!")
         return 2
 
-    print("Kernels look ok!")
+    print(">>> OK kernel!")
     return 0
+
+
+def preflight_lab():
+    proc = subprocess.Popen(
+        ["jupyter", "labextension", "list"],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+    )
+    out, err = proc.communicate()
+    name = P.JS_PACKAGE_DATA["name"]
+
+    for line in out.decode("utf-8") + err.decode("utf-8").splitlines():
+        if name in line and "OK" in line and "enabled" in line:
+            print(">>> OK lab")
+            return 0
+    print("The labextension is not enabled")
+    return 1
 
 
 def preflight_release():
@@ -178,6 +195,8 @@ def preflight(stage):
         return preflight_conda()
     elif stage == "kernel":
         return preflight_kernel()
+    elif stage == "lab":
+        return preflight_lab()
     elif stage == "release":
         return preflight_release()
 

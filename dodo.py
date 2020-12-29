@@ -86,6 +86,15 @@ def task_preflight():
 
     yield _ok(
         dict(
+            name="lab",
+            file_dep=[*file_dep, P.OK_LABEXT],
+            actions=[[*P.APR_DEFAULT, *P.PREFLIGHT, "lab"]],
+        ),
+        P.OK_PREFLIGHT_LAB,
+    )
+
+    yield _ok(
+        dict(
             name="release",
             file_dep=[
                 P.CHANGELOG,
@@ -107,7 +116,7 @@ def task_binder():
         file_dep=[
             P.OK_PIP_INSTALL,
             P.OK_PREFLIGHT_KERNEL,
-            P.OK_LABEXT,
+            P.OK_PREFLIGHT_LAB,
         ],
         actions=[_echo_ok("ready to run JupyterLab with:\n\n\tdoit lab\n")],
     )
@@ -220,11 +229,11 @@ if not P.TESTING_IN_CI:
         yield dict(
             name="ts",
             file_dep=[
-                P.YARN_INTEGRITY,
                 *P.ALL_TS,
                 P.OK_ENV["default"],
+                P.OK_PRETTIER,
                 P.PY_SCHEMA,
-                P.OK_LINT,
+                P.YARN_INTEGRITY,
             ],
             actions=[[*P.APR_DEFAULT, *P.JLPM, "build"]],
             targets=[P.TSBUILDINFO],
@@ -369,6 +378,7 @@ def task_test():
             *P.EXAMPLE_IPYNB,
             *P.EXAMPLE_JSON,
             P.OK_PIP_INSTALL,
+            P.OK_PREFLIGHT_LAB,
             P.SCRIPTS / "atest.py",
             *([] if P.TESTING_IN_CI else [P.OK_ROBOT_LINT, *P.OK_NBLINT.values()]),
         ],
@@ -547,7 +557,7 @@ if not P.TESTING_IN_CI:
 
         return dict(
             uptodate=[lambda: False],
-            file_dep=[P.OK_PIP_INSTALL],
+            file_dep=[P.OK_PREFLIGHT_LAB],
             actions=[PythonInteractiveAction(_watch)],
         )
 
