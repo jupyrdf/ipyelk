@@ -145,17 +145,18 @@ def task_setup():
     else:
         _install += ["-e", "."]
 
-    yield _ok(
+    py_task = _ok(
         dict(
             name="py",
             uptodate=[config_changed({"artifact": P.INSTALL_ARTIFACT})],
             file_dep=[
-                P.SETUP_PY,
-                P.SETUP_CFG,
+                P.NPM_TGZ,
                 P.OK_ENV["default"],
                 P.PY_SCHEMA,
-                P.WHEEL,
                 P.SDIST,
+                P.SETUP_CFG,
+                P.SETUP_PY,
+                P.WHEEL,
             ],
             actions=[
                 [*P.APR_DEFAULT, *P.PIP, "install", *_install],
@@ -164,6 +165,11 @@ def task_setup():
         ),
         P.OK_PIP_INSTALL,
     )
+
+    if P.INSTALL_ARTIFACT:
+        py_task["targets"] += [P.OK_LABEXT]
+
+    yield py_task
 
     yield dict(
         name="js",
@@ -180,6 +186,14 @@ def task_setup():
         actions=[[*P.APR_DEFAULT, *P.JLPM_INSTALL]],
         targets=[P.YARN_INTEGRITY],
     )
+
+    if P.INSTALL_ARTIFACT is None:
+        yield dict(
+            name="labext",
+            actions=[["jupyter", "labextension", "develop", "--overwrite", "."]],
+            file_dep=[P.NPM_TGZ],
+            targets=[P.OK_LABEXT],
+        )
 
 
 def task_build():
@@ -221,6 +235,7 @@ def task_build():
             P.OK_LINT,
             P.OK_ENV["default"],
             P.PY_SCHEMA,
+            P.NPM_TGZ,
         ],
         actions=[
             [*P.APR_DEFAULT, *P.PY, "setup.py", "sdist"],

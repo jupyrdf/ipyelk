@@ -144,7 +144,8 @@ OK_PYFLAKES = BUILD / "pyflakes.ok"
 OK_NBLINT = {nb.name: BUILD / f"nblint.{nb.name}.ok" for nb in EXAMPLE_IPYNB}
 OK_PIP_INSTALL = BUILD / "pip_install.ok"
 OK_PRETTIER = BUILD / "prettier.ok"
-OK_INDEX = BUILD / "index.ox"
+OK_INDEX = BUILD / "index.ok"
+OK_LABEXT = BUILD / "labext.ok"
 
 HTMLCOV = BUILD / "htmlcov"
 HTMLCOV_INDEX = HTMLCOV / "index.html"
