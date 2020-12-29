@@ -42,7 +42,6 @@ def task_all():
             *P.EXAMPLE_HTML,
             P.ATEST_CANARY,
             P.HTMLCOV_INDEX,
-            P.OK_PREFLIGHT_LAB,
             P.OK_RELEASE,
             P.PYTEST_HTML,
             P.SHA256SUMS,
@@ -80,15 +79,6 @@ def task_preflight():
 
     yield _ok(
         dict(
-            name="lab",
-            file_dep=[*file_dep, P.LAB_INDEX, P.OK_ENV["default"]],
-            actions=[[*P.APR_DEFAULT, *P.PREFLIGHT, "lab"]],
-        ),
-        P.OK_PREFLIGHT_LAB,
-    )
-
-    yield _ok(
-        dict(
             name="release",
             file_dep=[
                 P.CHANGELOG,
@@ -108,10 +98,8 @@ def task_binder():
     """get to a minimal interactive environment"""
     return dict(
         file_dep=[
-            P.LAB_INDEX,
             P.OK_PIP_INSTALL,
             P.OK_PREFLIGHT_KERNEL,
-            P.OK_PREFLIGHT_LAB,
         ],
         actions=[_echo_ok("ready to run JupyterLab with:\n\n\tdoit lab\n")],
     )
@@ -349,7 +337,6 @@ def task_test():
             *P.EXAMPLE_IPYNB,
             *P.EXAMPLE_JSON,
             P.OK_ROBOT_LINT,
-            P.OK_PREFLIGHT_LAB,
             P.SCRIPTS / "atest.py",
             *([] if P.WIN_CI else P.OK_NBLINT.values()),
         ],
@@ -474,39 +461,6 @@ def task_lint():
     )
 
 
-def task_lab_build():
-    """do a "production" build of lab"""
-    exts = [
-        line.strip()
-        for line in P.EXTENSIONS.read_text(encoding="utf-8").strip().splitlines()
-        if line and not line.startswith("#")
-    ]
-
-    def _clean():
-        _call([*P.APR_DEFAULT, "jlpm", "cache", "clean"])
-        _call([*P.APR_DEFAULT, *P.LAB, "clean"])
-
-        return True
-
-    install = [*P.APR_DEFAULT, *P.LAB_EXT, "install", "--debug", "--no-build"]
-    list_ext = [*P.APR_DEFAULT, *P.LAB_EXT, "list"]
-
-    yield dict(
-        name="extensions",
-        file_dep=[P.EXTENSIONS, P.NPM_TGZ],
-        actions=[
-            _clean,
-            [*install, *exts],
-            list_ext,
-            [*install, P.NPM_TGZ],
-            list_ext,
-            [*P.APR_DEFAULT, "lab:build"],
-            list_ext,
-        ],
-        targets=[P.LAB_INDEX],
-    )
-
-
 def task_lab():
     """run JupyterLab "normally" (not watching sources)"""
 
@@ -527,7 +481,7 @@ def task_lab():
 
     return dict(
         uptodate=[lambda: False],
-        file_dep=[P.LAB_INDEX, P.OK_PIP_INSTALL, P.OK_PREFLIGHT_LAB],
+        file_dep=[P.OK_PIP_INSTALL],
         actions=[PythonInteractiveAction(lab)],
     )
 

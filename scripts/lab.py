@@ -6,92 +6,24 @@
 import shutil
 import subprocess
 import sys
-import time
 from pathlib import Path
-
-from jupyterlab.commands import get_app_dir
 
 HERE = Path(__file__).parent
 ROOT = HERE.parent
 
 JLPM = shutil.which("jlpm")
-APP_DIR = Path(get_app_dir())
-STAGING = APP_DIR / "staging"
-STATIC = APP_DIR / "static"
-INDEX = STATIC / "index.html"
-EXTENSIONS = ROOT / "labextensions.txt"
-LAB_EXT = ["jupyter", "labextension"]
-
-INTERVAL = 10
-
-
-def build(args=None):
-    args = (
-        args if args is not None else ["--debug", "--minimize=True", "--devBuild=False"]
-    )
-    subprocess.check_call(["jupyter", "lab", "build"], cwd=str(ROOT))
-    return 0
-
-
-def prep():
-    """do a normal build of lab, install missing watch dependencies, and then
-    clean out static
-    """
-    exts = [
-        line.strip()
-        for line in EXTENSIONS.read_text(encoding="utf-8").strip().splitlines()
-        if line and not line.startswith("#")
-    ]
-
-    print("installing third-party extensions...", flush=True)
-    subprocess.check_call(
-        [*LAB_EXT, "install", "--no-build", "--debug", *exts],
-        cwd=str(ROOT),
-    )
-    print("building extension...", flush=True)
-    subprocess.check_call([JLPM, "build"])
-    print("linking extension...", flush=True)
-    subprocess.check_call(
-        [*LAB_EXT, "link", ".", "--no-build", "--debug"],
-        cwd=str(ROOT),
-    )
-    print("pre-building lab...", flush=True)
-    build(["--debug"])
-    print("adding missing deps...", flush=True)
-    subprocess.check_call(
-        [JLPM, "add", "--dev", "chokidar", "watchpack-chokidar2", "--ignore-optional"],
-        cwd=str(STAGING),
-    )
-    print("cleaning lab...", flush=True)
-    shutil.rmtree(STATIC)
 
 
 def watch():
     """after preparing, start watchers"""
-    prep()
     print("watching src...", flush=True)
     ts = subprocess.Popen([JLPM, "watch"], cwd=str(ROOT))
-    print("watching webpack...", flush=True)
-    webpack = subprocess.Popen([JLPM, "watch"], cwd=str(STAGING))
 
     def stop():
         print("stopping watchers...", flush=True)
         ts.terminate()
-        webpack.terminate()
         ts.wait()
-        webpack.wait()
         print("...watchers stopped!", flush=True)
-
-    timeout = 120
-    while timeout > 0 and not INDEX.exists():
-        print(f"Lab not ready yet, will wait {timeout}s...", flush=True)
-        time.sleep(INTERVAL)
-        timeout -= INTERVAL
-
-    if timeout <= 0:
-        print(INDEX, "not created, giving up!", flush=True)
-        stop()
-        return 1
 
     print("Built, starting lab...", flush=True)
 
@@ -119,7 +51,5 @@ def watch():
 
 
 if __name__ == "__main__":
-    if "build" in sys.argv:
-        sys.exit(build())
     if "watch" in sys.argv:
         sys.exit(watch())

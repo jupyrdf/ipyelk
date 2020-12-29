@@ -33,9 +33,11 @@
     "printWidth": 88
   },
   "scripts": {
-    "bootstrap": "jlpm --ignore-optional --ignore-scripts && jlpm clean && jlpm schema && jlpm lint && jlpm build",
-    "build": "tsc -b",
-    "clean": "rimraf lib ./py_src/ipyelk/schema/elkschema.json",
+    "bootstrap": "jlpm --prefer-offline --ignore-optional --ignore-scripts && jlpm clean && jlpm schema && jlpm lint && jlpm build",
+    "build": "jlpm build:ts && jlpm build:ext",
+    "build:ts": "tsc -b",
+    "build:ext": "jupyter labextension build .",
+    "clean": "rimraf ./lib ./py_src/ipyelk/schema/elkschema.json ./py_src/ipyelk/labextension",
     "watch": "jlpm build -w --preserveWatchOutput",
     "schema": "ts-json-schema-generator --tsconfig tsconfig.json --path ./src/elkschema.ts -o ./py_src/ipyelk/schema/elkschema.json",
     "lint": "jlpm lint:prettier",

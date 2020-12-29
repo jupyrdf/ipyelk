@@ -1,4 +1,0 @@
-# third-party extensions for demo/testing
-# - none right now!
-
-# local packages are installed separately

@@ -56,7 +56,6 @@ JS_VERSION = JS_PACKAGE_DATA["version"]
 JS_VERSION_MANGLED = re.sub(r"([ab])(\d+)", "-\\1\\2", JS_VERSION)
 YARN_INTEGRITY = NODE_MODULES / ".yarn-integrity"
 YARN_LOCK = ROOT / "yarn.lock"
-EXTENSIONS = ROOT / "labextensions.txt"
 CI = ROOT / ".github"
 DODO = ROOT / "dodo.py"
 BUILD = ROOT / "build"
@@ -110,13 +109,6 @@ TS_SRC = ROOT / "src"
 TS_SCHEMA = TS_SRC / "elkschema.ts"
 STYLE = ROOT / "style"
 
-# lab stuff
-LAB_APP_DIR = ENVS / "default/share/jupyter/lab"
-LAB_STAGING = LAB_APP_DIR / "staging"
-LAB_LOCK = LAB_STAGING / "yarn.lock"
-LAB_STATIC = LAB_APP_DIR / "static"
-LAB_INDEX = LAB_STATIC / "index.html"
-
 # tests
 EXAMPLES = ROOT / "examples"
 EXAMPLE_IPYNB = [
@@ -143,7 +135,6 @@ ALL_PRETTIER = [*ALL_YML, *ALL_JSON, *ALL_MD, *ALL_TS, *ALL_CSS]
 OK_RELEASE = BUILD / "release.ok"
 OK_PREFLIGHT_CONDA = BUILD / "preflight.conda.ok"
 OK_PREFLIGHT_KERNEL = BUILD / "preflight.kernel.ok"
-OK_PREFLIGHT_LAB = BUILD / "preflight.lab.ok"
 OK_PREFLIGHT_RELEASE = BUILD / "preflight.release.ok"
 OK_BLACK = BUILD / "black.ok"
 OK_FLAKE8 = BUILD / "flake8.ok"

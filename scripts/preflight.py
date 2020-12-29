@@ -130,19 +130,6 @@ def preflight_kernel():
     return 0
 
 
-def preflight_lab():
-    """this should only run from the `dev` env"""
-    print("Checking lab build status...", flush=True)
-    raw = subprocess.check_output(["jupyter", "labextension", "list"]).decode("utf-8")
-    if "Build recommended" in raw:
-        print(f"Something is not right with the lab build: {raw}")
-        return 1
-
-    print("Lab looks ready to start!")
-
-    return 0
-
-
 def preflight_release():
     problems = []
     changelog = P.CHANGELOG.read_text(encoding="utf-8")
@@ -191,8 +178,6 @@ def preflight(stage):
         return preflight_conda()
     elif stage == "kernel":
         return preflight_kernel()
-    elif stage == "lab":
-        return preflight_lab()
     elif stage == "release":
         return preflight_release()
 
