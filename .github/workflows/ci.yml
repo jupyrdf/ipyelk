@@ -128,6 +128,7 @@ jobs:
       - uses: actions/download-artifact@v2
         with:
           name: ipyelk dist ${{ github.run_number }}
+          path: ./dist
 
       - name: test (linux)
         if: ${{ contains(matrix.os, 'ubuntu') }}
