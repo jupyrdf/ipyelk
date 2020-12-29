@@ -6,8 +6,9 @@ channels:
 
 dependencies:
   - anaconda-project =0.8.4
-  - conda =4.9.2
+  - conda =4.9
   - doit ==0.32
+  - mamba =0.7
   - pip
   - python >=3.7,<3.8
   - twine
