@@ -193,7 +193,7 @@ def task_setup():
     )
 
     if P.TESTING_IN_CI and P.INSTALL_ARTIFACT:
-        py_task["targets"] += [P.OK_LABEXT]
+        py_task = _ok(py_task, P.OK_LABEXT)
 
     yield py_task
 

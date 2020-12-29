@@ -139,7 +139,7 @@ def preflight_lab():
     out, err = proc.communicate()
     name = P.JS_PACKAGE_DATA["name"]
 
-    for line in out.decode("utf-8") + err.decode("utf-8").splitlines():
+    for line in (out + err).decode("utf-8").splitlines():
         if name in line and "OK" in line and "enabled" in line:
             print(">>> OK lab")
             return 0
