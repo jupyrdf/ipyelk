@@ -132,7 +132,6 @@ ALL_JSON = [*ROOT.glob("*.json"), *EXAMPLE_JSON, PY_SCHEMA]
 ALL_MD = [*ROOT.glob("*.md")]
 ALL_TS = [*TS_SRC.rglob("*.ts")]
 ALL_CSS = [*STYLE.rglob("*.css")]
-PRETTIER_RC = ROOT / ".prettierrc"
 PRETTIER_IGNORE = ROOT / ".prettierignore"
 ALL_PRETTIER = [*ALL_YML, *ALL_JSON, *ALL_MD, *ALL_TS, *ALL_CSS]
 

@@ -388,6 +388,7 @@ def task_test():
 
 
 if not P.TESTING_IN_CI:
+
     def task_lint():
         """format all source files"""
 
@@ -433,7 +434,6 @@ if not P.TESTING_IN_CI:
                     *P.ALL_PRETTIER,
                     P.OK_ENV["default"],
                     P.PRETTIER_IGNORE,
-                    P.PRETTIER_RC,
                     P.YARN_INTEGRITY,
                 ],
                 actions=[[*P.APR_DEFAULT, "npm", "run", "lint:prettier"]],
