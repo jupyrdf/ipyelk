@@ -1,8 +1,11 @@
 # Changelog
 
-## @jupyrdf/jupyter-elk 0.3.0
-
 ## ipyelk 0.3.0
+- support JupyterLab 3 ([#6][])
+
+[#6]: https://github.com/jupyrdf/ipyelk/issues/6
+
+## @jupyrdf/jupyter-elk 0.3.0
 
 ---
 

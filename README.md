@@ -12,8 +12,9 @@
 ## Prerequisites
 
 - `python >=3.7`
-- `jupyterlab >=1,<2` _JupyterLab 2+ compatibility coming soon!_
-- `nodejs >=10,<14`
+- `jupyterlab >=3`
+
+> _Note: `ipyelk 0.2.x` supports `jupyterlab=1`, and requires `nodejs`
 
 ## Install
 
@@ -21,10 +22,8 @@
 
 ### `ipyelk` with `conda` (recommended)
 
-`conda` can also install `nodejs`.
-
 ```bash
-conda install -c conda-forge ipyelk jupyterlab=1 nodejs
+conda install -c conda-forge ipyelk jupyterlab=3
 ```
 
 ### `ipyelk` with `pip`
@@ -32,16 +31,7 @@ conda install -c conda-forge ipyelk jupyterlab=1 nodejs
 install `nodejs` with a [package manager][package-manager]
 
 ```bash
-pip install ipyelk jupyterlab=1
-```
-
-### `@jupyrdf/jupyter-elk` with `jupyter labextension install`
-
-`@jupyrdf/jupyter-elk` is distributed on [npm][], and relies on
-`@jupyter-widgets/jupyterlab-manager`.
-
-```bash
-jupyter labextension install @jupyter-widgets/jupyterlab-manager @jupyrdf/jupyter-elk
+pip install ipyelk jupyterlab=3
 ```
 
 ### Developing
@@ -65,7 +55,6 @@ In the browser, `@jupyrdf/jupyter-elk`:
 
 ```bash
 pip uninstall ipyelk
-jupyter labextension uninstall @jupyrdf/jupyter-elk
 ```
 
 ## Open Source
