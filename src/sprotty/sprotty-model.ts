@@ -35,6 +35,7 @@ interface JLSprottyWidget {
   vnode: VNode;
   node: ElkNode;
   widget: WidgetModel;
+  visible: boolean;
 }
 
 function stopPropagation(ev) {
@@ -68,6 +69,9 @@ export class ElkModelRenderer extends ModelRenderer {
   }
 
   widgetContainer(jlsw: Readonly<JLSprottyWidget>, args?: object): VNode | undefined {
+    if (!jlsw.visible){
+      return
+    }
     let bounds = jlsw.node.bounds;
     let position = getPosition(jlsw.node);
     let style = {
@@ -80,6 +84,7 @@ export class ElkModelRenderer extends ModelRenderer {
     return html(
       'div',
       {
+        key: jlsw.node.id,
         class: {
           elkcontainer: true,
         },
@@ -101,11 +106,11 @@ export class ElkModelRenderer extends ModelRenderer {
     Widget.attach(view.pWidget, vnode.elm as HTMLElement);
   }
 
-  async registerWidget(vnode: VNode | undefined, node: ElkNode) {
+  async overlayContent(vnode: VNode | undefined, node: ElkNode, visible: boolean) {
     let id = node.properties?.shape?.use;
     if (id) {
       let widget = await this.source.widget_manager.get_model(id);
-      this.widgets[node.id] = { vnode: vnode, node: node, widget: widget };
+      this.widgets[node.id] = { vnode: vnode, node: node, widget: widget, visible:visible};
     }
   }
 
@@ -186,7 +191,6 @@ function getPosition(element: SModelElement & BoundsAware & SChildElement):Point
     x = x + (element.bounds?.x || 0);
     y = y + (element.bounds?.y || 0);
     element = element?.parent as SModelElement & BoundsAware & SChildElement;
-    console.log(element);
   }
 
   return {

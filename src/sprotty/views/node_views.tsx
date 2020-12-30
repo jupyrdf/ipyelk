@@ -25,7 +25,7 @@ import {
   // ExpandButtonView,
   // IssueMarkerView,
   // RoutableView,
-  getSubType
+  // getSubType
   // IView
 } from 'sprotty';
 import { ElkNode, ElkPort, ElkModelRenderer, ElkLabel } from '../sprotty-model';
@@ -217,47 +217,33 @@ export class ElkForeignObjectNodeView extends ElkNodeView {
 
 @injectable()
 export class ElkHTMLNodeView extends ElkNodeView {
-  renderMark(node: ElkNode, context: ElkModelRenderer): VNode {
-    const root = svg(
-      'rect',
+  render(node: ElkNode, context: ElkModelRenderer): VNode | undefined {
+    if (!this.isDef(node) && !this.isVisible(node, context)) {
+      return;
+    }
+    let mark = this.renderMark(node, context);
+    if (!this.isDef(node)) {
+      // skip marking extra classes on def nodes
+      setClass(mark, 'elknode', true);
+      setClass(mark, 'mouseover', node.hoverFeedback);
+      setClass(mark, 'selected', node.selected);
+    }
+
+    setClass(mark, node.type, true);
+    return svg(
+      "g",
       {
-        attrs: {
-          width: node.size.width,
-          height: node.size.height
-        },
-        // props: { innerHTML: node?.properties?.shape?.use },
         hook: {
-          insert: vnode => this.insertHook(vnode, node, context),
-          // create: vnode => this.createHook(vnode, node, context),
-          destroy: vnode => this.destroyHook(vnode, node, context),
-          update: (oldnode, vnode) => this.updateHook(oldnode, vnode, node, context)
+          insert: vnode => context.overlayContent(vnode, node, true),
+          destroy: vnode => context.overlayContent(vnode, node, false),
+          update: (oldnode, vnode) => context.overlayContent(vnode, node, this.isVisible(node, context)),
         }
       },
-      []
-    );
-    return root;
-  }
-  insertHook(vnode: VNode | undefined, node: ElkNode, context: ElkModelRenderer) {
-    if (getSubType(node) == 'widget') {
-      context.registerWidget(vnode, node);
-    }
-    console.log('HTML insert hook', vnode, node, context);
-  }
-  createHook(vnode: VNode | undefined, node: ElkNode, context: ElkModelRenderer) {
-    console.log('HTML create hook', vnode, node, context);
-    context.registerWidget(vnode, node);
-  }
-  updateHook(
-    oldvnode: VNode,
-    vnode: VNode | undefined,
-    node: ElkNode,
-    context: ElkModelRenderer
-  ) {
-    console.log('HTML update hook', vnode, node, context);
-    context.registerWidget(vnode, node);
-  }
-  destroyHook(vnode: VNode | undefined, node: ElkNode, context: ElkModelRenderer) {
-    console.log('HTML delete hook', vnode, node, context);
+      [
+        mark,
+        <g class-elkchildren={true}>{this.renderChildren(node, context)}</g>
+      ]
+    )
   }
 }
 
