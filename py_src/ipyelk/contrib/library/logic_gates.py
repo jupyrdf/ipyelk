@@ -27,7 +27,7 @@ class Gate(Symbol):
             "use": self.identifier,
         }
 
-    def get_labels(self) -> List:
+    def get_labels(self, id=None) -> List:
         return [
             {
                 "id": f"{uuid4()}",
@@ -42,10 +42,10 @@ class Gate(Symbol):
             },
         ]
 
-    def get_ports(self) -> List:
+    def get_ports(self, id=None) -> List:
         return [
             {
-                "id": f"{self.id}.{key}",
+                "id": f"{id}.{key}",
                 "width": 0.1,
                 "height": 0.1,
                 "layoutOptions": opt.OptionsWidget(

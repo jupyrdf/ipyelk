@@ -30,15 +30,15 @@ class Symbol(ABC):
         """Simple hashing function to make it easier to use as a networkx node"""
         return hash(self.id)
 
-    def to_json(self):
+    def to_json(self, id=None):
         """Returns a valid elk node dictionary"""
         data = {
-            # "id": self.id or id,  # maybe need flag to strip id
-            "children": [c.to_json() for c in getattr(self, "children", [])],
+            "id": id,
+            "children": [c() for c in getattr(self, "children", [])],
             "properties": self.get_properties(),
-            "labels": self.get_labels(),
+            "labels": self.get_labels(id=id),
             "layoutOptions": self.get_layoutOptions(),
-            "ports": self.get_ports(),
+            "ports": self.get_ports(id=id),
             **self.bounds(),
             **self.position(),
         }
@@ -56,13 +56,13 @@ class Symbol(ABC):
             "height": self.height or 0,
         }
 
-    def get_labels(self) -> List:
+    def get_labels(self, id=None) -> List:
         return []
 
     def get_layoutOptions(self) -> Dict:
         return {}
 
-    def get_ports(self) -> List:
+    def get_ports(self, id=None) -> List:
         return []
 
     def get_properties(self) -> Dict:
@@ -82,7 +82,7 @@ class Symbol(ABC):
     def __call__(self, id=None):
         if id is None:
             id = str(uuid4())
-        return {"id":id, **self.to_json()}
+        return self.to_json(id)
 
 
 @dataclass
