@@ -60,8 +60,10 @@ export class ElkModelRenderer extends ModelRenderer {
   renderWidgets(args?: object): VNode[] {
     let vnodes: VNode[] = [];
     for (let key in this.widgets) {
-      let vnode = this.widgetContainer(this.widgets[key], args);
+      let jlsw:JLSprottyWidget = this.widgets[key]
+      let vnode = this.widgetContainer(jlsw, args);
       if (vnode !== undefined) {
+        this.decorate(vnode, jlsw.node);
         vnodes.push(vnode);
       }
     }
