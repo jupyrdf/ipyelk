@@ -16,7 +16,11 @@ import {
   ViewRegistry,
   ModelRenderer,
   IVNodePostprocessor,
-  RenderingTargetKind
+  RenderingTargetKind,
+  SModelElement,
+  Point,
+  SChildElement,
+  BoundsAware,
 } from 'sprotty';
 
 import { JLModelSource } from './diagram-server';
@@ -33,7 +37,7 @@ interface JLSprottyWidget {
   widget: WidgetModel;
 }
 
-function stopPropagation(ev){
+function stopPropagation(ev) {
   ev.preventDefault();
   ev.stopPropagation();
 }
@@ -55,7 +59,6 @@ export class ElkModelRenderer extends ModelRenderer {
   renderWidgets(args?: object): VNode[] {
     let vnodes: VNode[] = [];
     for (let key in this.widgets) {
-
       let vnode = this.widgetContainer(this.widgets[key], args);
       if (vnode !== undefined) {
         vnodes.push(vnode);
@@ -66,8 +69,9 @@ export class ElkModelRenderer extends ModelRenderer {
 
   widgetContainer(jlsw: Readonly<JLSprottyWidget>, args?: object): VNode | undefined {
     let bounds = jlsw.node.bounds;
+    let position = getPosition(jlsw.node);
     let style = {
-      transform: `translate(${bounds.x}px, ${bounds.y}px)`,
+      transform: `translate(${position.x}px, ${position.y}px)`,
       width: `${bounds.width}px`,
       height: `${bounds.height}px`,
       background: '#9dd8d857'
@@ -76,6 +80,9 @@ export class ElkModelRenderer extends ModelRenderer {
     return html(
       'div',
       {
+        class: {
+          elkcontainer: true,
+        },
         style: style,
         hook: {
           insert: vnode => this.renderWidget(vnode, jlsw)
@@ -90,8 +97,8 @@ export class ElkModelRenderer extends ModelRenderer {
 
   async renderWidget(vnode: VNode, jlsw: JLSprottyWidget, args?: object) {
     let widget = jlsw.widget;
-    let view:DOMWidgetView = await this.source.widget_manager.create_view(widget, {});
-    Widget.attach(view.pWidget, vnode.elm as HTMLElement)
+    let view: DOMWidgetView = await this.source.widget_manager.create_view(widget, {});
+    Widget.attach(view.pWidget, vnode.elm as HTMLElement);
   }
 
   async registerWidget(vnode: VNode | undefined, node: ElkNode) {
@@ -168,5 +175,22 @@ export class DefsNode extends SNode {
   hasFeature(feature: symbol): boolean {
     if (feature === moveFeature) return false;
     else return super.hasFeature(feature);
+  }
+}
+
+
+function getPosition(element: SModelElement & BoundsAware & SChildElement):Point{
+  let x = 0;
+  let y = 0;
+  while (element !== undefined){
+    x = x + (element.bounds?.x || 0);
+    y = y + (element.bounds?.y || 0);
+    element = element?.parent as SModelElement & BoundsAware & SChildElement;
+    console.log(element);
+  }
+
+  return {
+    x:x,
+    y:y,
   }
 }

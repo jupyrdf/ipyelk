@@ -8,6 +8,7 @@ Based on https://upload.wikimedia.org/wikipedia/commons/c/cb/Circuit_elements.sv
 
 from dataclasses import dataclass
 from typing import ClassVar, Dict, List
+from uuid import uuid4
 
 from ...diagram import layout_options as opt
 from ...diagram.defs import Def
@@ -29,8 +30,8 @@ class Gate(Symbol):
     def get_labels(self) -> List:
         return [
             {
-                "id": f"{self.id}_label_0",
-                "text": f"{self.id}",
+                "id": f"{uuid4()}",
+                "text": f"{self.__class__.__name__}",
                 "layoutOptions": opt.OptionsWidget(
                     options=[
                         opt.NodeLabelPlacement(

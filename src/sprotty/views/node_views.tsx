@@ -247,7 +247,12 @@ export class ElkHTMLNodeView extends ElkNodeView {
     console.log('HTML create hook', vnode, node, context);
     context.registerWidget(vnode, node);
   }
-  updateHook(oldvnode: VNode, vnode: VNode | undefined, node: ElkNode, context: ElkModelRenderer) {
+  updateHook(
+    oldvnode: VNode,
+    vnode: VNode | undefined,
+    node: ElkNode,
+    context: ElkModelRenderer
+  ) {
     console.log('HTML update hook', vnode, node, context);
     context.registerWidget(vnode, node);
   }

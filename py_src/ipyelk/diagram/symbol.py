@@ -2,8 +2,10 @@
 # Distributed under the terms of the Modified BSD License.
 from abc import ABC
 from dataclasses import dataclass, field
-from typing import ClassVar, Dict, Hashable, List, Optional
+from typing import ClassVar, Dict, Hashable, List, Optional, Type
 from uuid import uuid4
+
+from ipywidgets import DOMWidget
 
 from ipyelk.diagram.elk_model import strip_none
 
@@ -16,7 +18,7 @@ def make_id():
 class Symbol(ABC):
     identifier: ClassVar[str] = None
     type: ClassVar[str] = None
-    id: Optional[Hashable] = None
+    # id: Optional[Hashable] = None
 
     width: Optional[float] = None
     height: Optional[float] = None
@@ -31,7 +33,7 @@ class Symbol(ABC):
     def to_json(self):
         """Returns a valid elk node dictionary"""
         data = {
-            "id": self.id,  # maybe need flag to strip id
+            # "id": self.id or id,  # maybe need flag to strip id
             "children": [c.to_json() for c in getattr(self, "children", [])],
             "properties": self.get_properties(),
             "labels": self.get_labels(),
@@ -76,6 +78,11 @@ class Symbol(ABC):
 
     def get_shape_props(self) -> Optional[Dict]:
         return None
+
+    def __call__(self, id=None):
+        if id is None:
+            id = str(uuid4())
+        return {"id":id, **self.to_json()}
 
 
 @dataclass
@@ -177,3 +184,13 @@ class Image(Symbol):
 
     def get_shape_props(self):
         return {"use": self.value}
+
+
+@dataclass
+class Widget(Symbol):
+    type = "node:widget"
+    widget: Type[DOMWidget] = None
+
+    def get_shape_props(self):
+        if isinstance(self.widget, DOMWidget):
+            return {"use": self.widget.model_id}

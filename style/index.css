@@ -17,6 +17,7 @@
   user-select: none;
 }
 
+/* Root View */
 .jp-ElkView .sprotty-root {
   flex: 1;
   display: flex;
@@ -35,6 +36,11 @@
   top: 0;
   left: 0;
   transform-origin: top left;
+  pointer-events: none;
+}
+.jp-ElkView .sprotty > .sprotty-root > div.sprotty-overlay > div.elkcontainer {
+  pointer-events: all;
+  position: absolute;
 }
 
 /* Toolbar Styling */
