@@ -18,7 +18,7 @@ import {
   RectangularNodeView,
   setClass,
   Point,
-  ViewportRootElement,
+  ViewportRootElement
   // HtmlRootView,
   // PreRenderedElement,
   // PreRenderedView,
@@ -231,19 +231,17 @@ export class ElkHTMLNodeView extends ElkNodeView {
 
     setClass(mark, node.type, true);
     return svg(
-      "g",
+      'g',
       {
         hook: {
           insert: vnode => context.overlayContent(vnode, node, true),
           destroy: vnode => context.overlayContent(vnode, node, false),
-          update: (oldnode, vnode) => context.overlayContent(vnode, node, this.isVisible(node, context)),
+          update: (oldnode, vnode) =>
+            context.overlayContent(vnode, node, this.isVisible(node, context))
         }
       },
-      [
-        mark,
-        <g class-elkchildren={true}>{this.renderChildren(node, context)}</g>
-      ]
-    )
+      [mark, <g class-elkchildren={true}>{this.renderChildren(node, context)}</g>]
+    );
   }
 }
 

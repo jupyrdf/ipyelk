@@ -22,7 +22,7 @@ import {
   isMoveable,
   Viewport,
   isViewport,
-  SetViewportAction,
+  SetViewportAction
 } from 'sprotty';
 import { ContainerModule, inject } from 'inversify';
 import { JLModelSource } from './diagram-server';
@@ -39,11 +39,10 @@ class ModScrollMouseListener extends ScrollMouseListener {
   mouseDown(target: SModelElement, event: MouseEvent): Action[] {
     const moveable = findParentByFeature(target, isMoveable);
     if (moveable == null && !(target instanceof SRoutingHandle)) {
-      if (target.type == "node:widget"){
+      if (target.type == 'node:widget') {
         // disable scrolling if mouse down on a widget node.
         this.lastScrollPosition = undefined;
-      }
-      else {
+      } else {
         const viewport = findParentByFeature(target, isViewport);
         if (viewport) {
           this.lastScrollPosition = {
@@ -54,7 +53,6 @@ class ModScrollMouseListener extends ScrollMouseListener {
           this.lastScrollPosition = undefined;
         }
       }
-
     }
     return [];
   }

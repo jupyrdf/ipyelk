@@ -20,7 +20,7 @@ import {
   SModelElement,
   Point,
   SChildElement,
-  BoundsAware,
+  BoundsAware
 } from 'sprotty';
 
 import { JLModelSource } from './diagram-server';
@@ -60,7 +60,7 @@ export class ElkModelRenderer extends ModelRenderer {
   renderWidgets(args?: object): VNode[] {
     let vnodes: VNode[] = [];
     for (let key in this.widgets) {
-      let jlsw:JLSprottyWidget = this.widgets[key]
+      let jlsw: JLSprottyWidget = this.widgets[key];
       let vnode = this.widgetContainer(jlsw, args);
       if (vnode !== undefined) {
         this.decorate(vnode, jlsw.node);
@@ -71,8 +71,8 @@ export class ElkModelRenderer extends ModelRenderer {
   }
 
   widgetContainer(jlsw: Readonly<JLSprottyWidget>, args?: object): VNode | undefined {
-    if (!jlsw.visible){
-      return
+    if (!jlsw.visible) {
+      return;
     }
     let bounds = jlsw.node.bounds;
     let position = getPosition(jlsw.node);
@@ -88,7 +88,7 @@ export class ElkModelRenderer extends ModelRenderer {
       {
         key: jlsw.node.id,
         class: {
-          elkcontainer: true,
+          elkcontainer: true
         },
         style: style,
         hook: {
@@ -112,7 +112,12 @@ export class ElkModelRenderer extends ModelRenderer {
     let id = node.properties?.shape?.use;
     if (id) {
       let widget = await this.source.widget_manager.get_model(id);
-      this.widgets[node.id] = { vnode: vnode, node: node, widget: widget, visible:visible};
+      this.widgets[node.id] = {
+        vnode: vnode,
+        node: node,
+        widget: widget,
+        visible: visible
+      };
     }
   }
 
@@ -185,18 +190,17 @@ export class DefsNode extends SNode {
   }
 }
 
-
-function getPosition(element: SModelElement & BoundsAware & SChildElement):Point{
+function getPosition(element: SModelElement & BoundsAware & SChildElement): Point {
   let x = 0;
   let y = 0;
-  while (element !== undefined){
+  while (element !== undefined) {
     x = x + (element.bounds?.x || 0);
     y = y + (element.bounds?.y || 0);
     element = element?.parent as SModelElement & BoundsAware & SChildElement;
   }
 
   return {
-    x:x,
-    y:y,
-  }
+    x: x,
+    y: y
+  };
 }

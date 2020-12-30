@@ -2,7 +2,7 @@
 # Distributed under the terms of the Modified BSD License.
 from abc import ABC
 from dataclasses import dataclass, field
-from typing import ClassVar, Dict, Hashable, List, Optional, Type
+from typing import ClassVar, Dict, List, Optional, Type
 from uuid import uuid4
 
 from ipywidgets import DOMWidget
@@ -18,7 +18,6 @@ def make_id():
 class Symbol(ABC):
     identifier: ClassVar[str] = None
     type: ClassVar[str] = None
-    # id: Optional[Hashable] = None
 
     width: Optional[float] = None
     height: Optional[float] = None
