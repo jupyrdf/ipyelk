@@ -2,9 +2,7 @@ import { injectable } from 'inversify';
 import { svg, html } from 'snabbdom-jsx';
 import { VNode } from 'snabbdom/vnode';
 import { SGraph, IView } from 'sprotty';
-import { ElkModelRenderer } from '../sprotty-model';
-// import {} from "snabbdom-style";
-// import * as snabbdom from "snabbdom-jsx";
+import { ElkModelRenderer } from '../renderer';
 const JSX = { createElement: html };
 
 /**

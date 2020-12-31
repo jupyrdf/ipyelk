@@ -28,7 +28,8 @@ import {
   // getSubType
   // IView
 } from 'sprotty';
-import { ElkNode, ElkPort, ElkModelRenderer, ElkLabel } from '../sprotty-model';
+import { ElkNode, ElkPort, ElkLabel } from '../sprotty-model';
+import { ElkModelRenderer } from '../renderer';
 // import { useCallback } from 'react';
 
 const JSX = { createElement: snabbdom.svg };
@@ -114,9 +115,15 @@ export class ElkDiamondNodeView extends ElkNodeView {
 @injectable()
 export class ElkRoundNodeView extends ElkNodeView {
   renderMark(node: ElkNode, context: ElkModelRenderer): VNode {
-    let width = node.size.width;
-    let height = node.size.height;
-    return <ellipse rx={width / 2} ry={height / 2} />;
+    let rx = node.size.width / 2;
+    let ry = node.size.height / 2;
+    let x = node.properties?.shape?.x ;
+    if (x == undefined)
+      x = rx
+    let y = node.properties?.shape?.y
+    if (y == undefined)
+      y = ry;
+    return <ellipse rx={rx} ry={ry} cx={x} cy={y} />;
   }
 }
 
@@ -170,7 +177,7 @@ export class ElkUseNodeView extends ElkNodeView {
 }
 
 @injectable()
-export class ElkRawNodeView extends ElkNodeView {
+export class ElkSVGNodeView extends ElkNodeView {
   renderMark(node: ElkNode, context: ElkModelRenderer): VNode {
     return JSX.createElement(
       'g',

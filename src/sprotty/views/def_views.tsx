@@ -3,7 +3,8 @@ import { injectable } from 'inversify';
 import { VNode } from 'snabbdom/vnode';
 // import { h } from 'snabbdom';
 import { IView, setClass } from 'sprotty';
-import { DefNode, ElkModelRenderer } from '../sprotty-model';
+import { DefNode } from '../sprotty-model';
+import { ElkModelRenderer } from '../renderer';
 
 const JSX = { createElement: snabbdom.svg };
 

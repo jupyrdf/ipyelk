@@ -24,6 +24,14 @@ export interface IELKLayoutResponse {
   payload: ELK.ElkNode;
 }
 
+const TheElk = new ELK.default({
+  workerFactory: () => {
+    ELK_DEBUG && console.warn('ELK Worker created');
+    return new (Worker as any)();
+  }
+} as any);
+
+
 function collectProperties(node: ElkNode) {
   let props: Map<string, any> = new Map();
 
@@ -100,12 +108,7 @@ export class ELKLayoutModel extends DOMWidgetModel {
 
   protected ensureElk() {
     if (this._elk == null) {
-      this._elk = new ELK.default({
-        workerFactory: () => {
-          ELK_DEBUG && console.warn('ELK Worker created');
-          return new (Worker as any)();
-        }
-      } as any);
+      this._elk = TheElk;
     }
   }
 

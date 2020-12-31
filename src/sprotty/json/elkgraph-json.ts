@@ -18,6 +18,8 @@ export interface Shape {
   use?: string;
   start?: string;
   end?: string;
+  x?: number;
+  y?: number;
 }
 export interface ElkProperties {
   cssClasses?: string;

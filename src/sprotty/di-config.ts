@@ -69,9 +69,9 @@ import {
   ElkEdge,
   ElkJunction,
   DefNode,
-  DefsNode,
-  ElkModelRenderer
+  DefsNode
 } from './sprotty-model';
+import { ElkModelRenderer } from './renderer';
 // import { NodeSelectTool } from '../tools/select';
 import { toolFeedbackModule } from '../tools/feedback';
 import viewportModule from './viewportModule';
@@ -113,7 +113,7 @@ export default (containerId: string, view: DOMWidgetView) => {
     configureModelElement(context, 'node:image', ElkNode, v.ElkImageNodeView);
     configureModelElement(context, 'node:comment', ElkNode, v.ElkCommentNodeView);
     configureModelElement(context, 'node:path', ElkNode, v.ElkPathNodeView);
-    configureModelElement(context, 'node:raw', ElkNode, v.ElkRawNodeView);
+    configureModelElement(context, 'node:svg', ElkNode, v.ElkSVGNodeView);
     configureModelElement(context, 'node:html', ElkNode, v.ElkHTMLNodeView);
     configureModelElement(context, 'node:widget', ElkNode, v.ElkHTMLNodeView);
     configureModelElement(

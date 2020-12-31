@@ -39,12 +39,13 @@ def from_none(x: Any) -> Any:
 
 
 def from_union(fs, x):
+    exceptions = []
     for f in fs:
         try:
             return f(x)
         except Exception as E:
             if x is not None:
-                raise E
+                exceptions.append(E)
     assert False
 
 
@@ -101,7 +102,7 @@ class Elk:
 class ElkProperties:
     cssClasses: Optional[str] = None
     type: Optional[str] = None
-    shape: Optional[Dict[str, str]] = None
+    shape: Optional[Dict[str, str or float]] = None
 
     @staticmethod
     def from_dict(obj: Any) -> "ElkProperties":
@@ -112,7 +113,13 @@ class ElkProperties:
             obj.get("type"),
         )
         shape = from_union(
-            [lambda x: from_dict(from_str, x), from_none], obj.get("shape")
+            [
+                lambda x: from_dict(
+                    lambda x: from_union([from_str, from_float, from_none], x), x
+                ),
+                from_none,
+            ],
+            obj.get("shape"),
         )
         return ElkProperties(
             cssClasses=cssClasses,
@@ -125,7 +132,13 @@ class ElkProperties:
         result["cssClasses"] = from_union([from_str, from_none], self.cssClasses)
         result["type"] = from_union([from_str, from_none], self.type)
         result["shape"] = from_union(
-            [lambda x: from_dict(from_str, x), from_none], self.shape
+            [
+                lambda x: from_dict(
+                    lambda x: from_union([from_str, from_float, from_none], x), x
+                ),
+                from_none,
+            ],
+            self.shape,
         )
         return strip_none(result)
 

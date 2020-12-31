@@ -20,7 +20,8 @@ import {
   setClass,
   angleOfPoint
 } from 'sprotty';
-import { ElkJunction, ElkModelRenderer, ElkEdge } from '../sprotty-model';
+import { ElkJunction, ElkEdge } from '../sprotty-model';
+import { ElkModelRenderer } from '../renderer';
 
 const JSX = { createElement: snabbdom.svg };
 

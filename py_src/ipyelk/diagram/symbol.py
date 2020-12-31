@@ -39,15 +39,16 @@ class Symbol(ABC):
             "layoutOptions": self.get_layoutOptions(),
             "ports": self.get_ports(id=id),
             **self.bounds(),
-            **self.position(),
         }
         return strip_none(data)
 
     def position(self):
-        return {
-            "x": self.x or 0,
-            "y": self.y or 0,
-        }
+        pos = {}
+        if self.x is not None:
+            pos["x"] = x
+        if self.y is not None:
+            pos["y"] = y
+        return pos
 
     def bounds(self) -> Dict:
         return {
@@ -76,7 +77,7 @@ class Symbol(ABC):
         return properties
 
     def get_shape_props(self) -> Optional[Dict]:
-        return None
+        return self.position()
 
     def __call__(self, id=None):
         if id is None:
@@ -86,18 +87,19 @@ class Symbol(ABC):
 
 @dataclass
 class Path(Symbol):
-    shape: str = ""
+    value: str = ""
     type = "node:path"
 
     def get_shape_props(self):
-        return {"use": self.shape}
+        if self.value:
+            return {"use": str(self.value)}
 
     @classmethod
     def from_list(cls, segments, closed=False):
         d = "M" + "L".join([f"{x},{y}" for x, y in segments])
         if closed:
             d += "Z"
-        return Path(shape=d)
+        return Path(value=d)
 
 
 @dataclass
@@ -120,15 +122,13 @@ class Circle(Symbol):
 
 
 @dataclass
-class RawSVG(Symbol):
+class SVG(Symbol):
     value: str = ""
-
-    type = "node:raw"
+    type = "node:svg"
 
     def get_shape_props(self):
-        return {
-            "use": self.value,
-        }
+        if self.value:
+            return {"use": str(self.value)}
 
 
 @dataclass
@@ -162,7 +162,7 @@ class Comment(Symbol):
     size: float = 15
 
     def get_shape_props(self):
-        return {"use": self.size}  # size of comment notch
+        return {"use": str(self.size)}  # size of comment notch
 
 
 @dataclass
@@ -182,7 +182,18 @@ class Image(Symbol):
     value: str = None
 
     def get_shape_props(self):
-        return {"use": self.value}
+        if self.value:
+            return {"use": self.value}
+
+
+@dataclass
+class ForeignObject(Symbol):
+    type = "node:foreignobject"
+    value: str = ""
+
+    def get_shape_props(self):
+        if self.value:
+            return {"use": str(self.value)}
 
 
 @dataclass
@@ -193,3 +204,13 @@ class Widget(Symbol):
     def get_shape_props(self):
         if isinstance(self.widget, DOMWidget):
             return {"use": self.widget.model_id}
+
+
+@dataclass
+class HTML(Symbol):
+    type = "node:html"
+    value: str = ""
+
+    def get_shape_props(self):
+        if self.value:
+            return {"use": str(self.value)}
