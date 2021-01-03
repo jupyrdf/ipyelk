@@ -94,7 +94,7 @@ class XELK(ElkTransformer):
         if node is ElkRoot:
             return self.ELK_ROOT_ID
         elif node in g:
-            return g.nodes.get(node, {}).get("_id", f"{node}")
+            return g.nodes.get(node, {}).get("id", f"{node}")
         return f"{node}"
 
     def port_id(self, node: Hashable, port: Optional[Hashable] = None) -> str:
@@ -254,12 +254,11 @@ class XELK(ElkTransformer):
 
         properties = []
 
-        if isinstance(element, str):
-            if g and element in g:
-                g_props = g.nodes[element].get("properties", {})
-                if g_props:
-                    properties += [g_props]
-        elif hasattr(element, "data"):
+        if g and element in g:
+            g_props = g.nodes[element].get("properties", {})
+            if g_props:
+                properties += [g_props]
+        if hasattr(element, "data"):
             properties += [element.data.get("properties", {})]
         elif isinstance(element, dict):
             properties += [element.get("properties", {})]

@@ -2,16 +2,11 @@
 # Distributed under the terms of the Modified BSD License.
 from abc import ABC
 from dataclasses import dataclass, field
-from typing import ClassVar, Dict, List, Optional, Type
 from uuid import uuid4
 
 from ipywidgets import DOMWidget
 
 from ipyelk.diagram.elk_model import strip_none
-
-
-def make_id():
-    return str(uuid4())
 
 
 @dataclass
@@ -45,9 +40,9 @@ class Symbol(ABC):
     def position(self):
         pos = {}
         if self.x is not None:
-            pos["x"] = x
+            pos["x"] = self.x
         if self.y is not None:
-            pos["y"] = y
+            pos["y"] = self.y
         return pos
 
     def bounds(self) -> Dict:
@@ -91,8 +86,10 @@ class Path(Symbol):
     type = "node:path"
 
     def get_shape_props(self):
+        props = super().get_shape_props()
         if self.value:
-            return {"use": str(self.value)}
+            props.update({"use": str(self.value)})
+        return props
 
     @classmethod
     def from_list(cls, segments, closed=False):
@@ -127,8 +124,10 @@ class SVG(Symbol):
     type = "node:svg"
 
     def get_shape_props(self):
+        props = super().get_shape_props()
         if self.value:
-            return {"use": str(self.value)}
+            props.update({"use": str(self.value)})
+        return props
 
 
 @dataclass
@@ -144,12 +143,6 @@ class Ellipse(Symbol):
             "height": self.ry * 2,
         }
 
-    def position(self):
-        return {
-            "x": self.rx if self.x is None else self.x,
-            "y": self.ry if self.y is None else self.y,
-        }
-
 
 @dataclass
 class Diamond(Symbol):
@@ -162,7 +155,9 @@ class Comment(Symbol):
     size: float = 15
 
     def get_shape_props(self):
-        return {"use": str(self.size)}  # size of comment notch
+        props = super().get_shape_props()
+        props.update({"use": str(self.size)})  # size of comment notch
+        return props
 
 
 @dataclass
@@ -182,8 +177,10 @@ class Image(Symbol):
     value: str = None
 
     def get_shape_props(self):
+        props = super().get_shape_props()
         if self.value:
-            return {"use": self.value}
+            props.update({"use": self.value})
+        return props
 
 
 @dataclass
@@ -192,8 +189,10 @@ class ForeignObject(Symbol):
     value: str = ""
 
     def get_shape_props(self):
+        props = super().get_shape_props()
         if self.value:
-            return {"use": str(self.value)}
+            props = {"use": str(self.value)}
+        return props
 
 
 @dataclass
@@ -202,8 +201,10 @@ class Widget(Symbol):
     widget: Type[DOMWidget] = None
 
     def get_shape_props(self):
+        props = super().get_shape_props()
         if isinstance(self.widget, DOMWidget):
-            return {"use": self.widget.model_id}
+            props.update({"use": self.widget.model_id})
+        return props
 
 
 @dataclass
@@ -212,5 +213,7 @@ class HTML(Symbol):
     value: str = ""
 
     def get_shape_props(self):
+        props = super().get_shape_props()
         if self.value:
-            return {"use": str(self.value)}
+            props.update({"use": str(self.value)})
+        return props

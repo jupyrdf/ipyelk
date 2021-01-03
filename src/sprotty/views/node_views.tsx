@@ -117,12 +117,10 @@ export class ElkRoundNodeView extends ElkNodeView {
   renderMark(node: ElkNode, context: ElkModelRenderer): VNode {
     let rx = node.size.width / 2;
     let ry = node.size.height / 2;
-    let x = node.properties?.shape?.x ;
-    if (x == undefined)
-      x = rx
-    let y = node.properties?.shape?.y
-    if (y == undefined)
-      y = ry;
+    let x = node.properties?.shape?.x;
+    if (x == undefined) x = rx;
+    let y = node.properties?.shape?.y;
+    if (y == undefined) y = ry;
     return <ellipse rx={rx} ry={ry} cx={x} cy={y} />;
   }
 }
@@ -179,9 +177,14 @@ export class ElkUseNodeView extends ElkNodeView {
 @injectable()
 export class ElkSVGNodeView extends ElkNodeView {
   renderMark(node: ElkNode, context: ElkModelRenderer): VNode {
+    let x = node.properties?.shape?.x;
+    let y = node.properties?.shape?.y;
     return JSX.createElement(
       'g',
-      { props: { innerHTML: node?.properties?.shape?.use } },
+      {
+        props: { innerHTML: node?.properties?.shape?.use },
+        transform: `translate(${x} ${y})`,
+      },
       []
     );
   }

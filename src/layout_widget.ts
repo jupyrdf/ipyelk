@@ -31,7 +31,6 @@ const TheElk = new ELK.default({
   }
 } as any);
 
-
 function collectProperties(node: ElkNode) {
   let props: Map<string, any> = new Map();
 
