@@ -70,16 +70,24 @@ class Node(Element):
             port_parent(self, port)
 
     def __getattr__(self, key):
-
         if key in self.ports:
             return self.ports.get(key)
+        shape_ports = getattr(self.shape, "ports", {})
+        if key in shape_ports:
+            return self.add_port(key, Port())
         # TODO decide on bad magic to create a port if it doesn't exist?
         raise AttributeError
 
     def to_json(self):
         data = super().to_json()
-        ports = data["ports"] = data.get("ports", [])
-        ports.extend([p.to_json() for p in self.ports.values()])
+        shape_ports = {p["id"].split('.')[-1]:p for p in data.get("ports", [])}
+        ports = []
+
+        for key, port in shape_ports.items():
+            if key in self.ports:
+                port = merge(self.ports[key].to_json(), port)
+            ports.append(port)
+        data["ports"] = ports
         return strip_none(data)
 
     def add_child(self, child: "Node"):
