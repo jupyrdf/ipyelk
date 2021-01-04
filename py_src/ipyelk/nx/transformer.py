@@ -367,7 +367,7 @@ class XELK(ElkTransformer):
         for label in labels:
             self.register(label, edge)
         elk_edge = ElkExtendedEdge(
-            id=self.edge_id(edge),
+            id=edge.data.get('id', self.edge_id(edge)),
             sources=[self.port_id(edge.source, edge.source_port)],
             targets=[self.port_id(edge.target, edge.target_port)],
             properties=properties,
@@ -514,8 +514,12 @@ class XELK(ElkTransformer):
             vis_target = closest_visible[target]
             shidden = vis_source != source
             thidden = vis_target != target
-
             owner = closest_common_visible((vis_source, vis_target))
+            if source == target and source == owner:
+                if owner in tree:
+                    for p in tree.predecessors(owner):
+                        # need to make this edge's owner to it's parent
+                        owner = p
 
             if shidden or thidden:
                 # create new slack ports if source or target is remapped
