@@ -80,6 +80,20 @@ class Symbol(ABC):
             id = str(uuid4())
         return self.to_json(id)
 
+    @classmethod
+    def make_defs(cls, classes:List[Type["Symbol"]]=None)->Dict:
+        """Take a list of classes and return the def dictionary
+
+        :param classes: Subclasses of Symbol. If `None` use the subclasses of
+        the current class.
+        :type classes: List[Type["Symbol"]]
+        :return: Def Dictionary
+        :rtype: Dict
+        """
+        if classes is None:
+            classes = cls.__subclasses__()
+        return {c.identifier: c.shape for c in classes}
+
 
 @dataclass
 class Path(Symbol):

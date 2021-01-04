@@ -59,6 +59,8 @@ class Gate(Symbol):
         return opt.OptionsWidget(
             options=[
                 opt.PortConstraints(value="FIXED_SIDE"),
+                opt.NodeSizeConstraints(node_labels=False, ports=False, port_labels=False, minimun_size=True),
+                opt.NodeSizeMinimum(width = int(self.width), height=int(self.height))
             ]
         ).value
 
