@@ -1,7 +1,8 @@
-# Copyright (c) 2020 Dane Freeman.
+# Copyright (c) 2021 Dane Freeman.
 # Distributed under the terms of the Modified BSD License.
 from abc import ABC
 from dataclasses import dataclass, field
+from typing import ClassVar, Dict, List, Optional, Type
 from uuid import uuid4
 
 from ipywidgets import DOMWidget

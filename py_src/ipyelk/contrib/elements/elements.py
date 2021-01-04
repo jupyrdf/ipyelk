@@ -1,7 +1,7 @@
-# Copyright (c) 2020 Dane Freeman.
+# Copyright (c) 2021 Dane Freeman.
 # Distributed under the terms of the Modified BSD License.
 from dataclasses import dataclass, field
-from typing import ClassVar, Dict, List, Optional, Tuple, Union
+from typing import Dict, List, Optional
 
 from ...diagram.elk_model import strip_none
 from ...diagram.symbol import Symbol
@@ -22,7 +22,7 @@ class Element:
         else:
             data = {"id": Registry.get_id(self)}
         labels = data["labels"] = data.get("labels", [])
-        labels.extend([l.to_json() for l in self.labels])
+        labels.extend([label.to_json() for label in self.labels])
         data["properties"] = merge(self.properties, data.get("properties", {}))
         data["layoutOptions"] = merge(self.layoutOptions, data.get("layoutOptions", {}))
 

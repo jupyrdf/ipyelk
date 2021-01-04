@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2020 Dane Freeman.
+ * Copyright (c) 2021 Dane Freeman.
  * Distributed under the terms of the Modified BSD License.
  */
 /*******************************************************************************
@@ -183,7 +183,7 @@ export class ElkSVGNodeView extends ElkNodeView {
       'g',
       {
         props: { innerHTML: node?.properties?.shape?.use },
-        transform: `translate(${x} ${y})`,
+        transform: `translate(${x} ${y})`
       },
       []
     );

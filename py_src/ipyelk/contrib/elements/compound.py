@@ -1,12 +1,12 @@
-# Copyright (c) 2020 Dane Freeman.
+# Copyright (c) 2021 Dane Freeman.
 # Distributed under the terms of the Modified BSD License.
 from dataclasses import dataclass, field
-from typing import ClassVar, Dict, List, Optional, Tuple, Union
+from typing import Tuple, Union
 
 import networkx as nx
 
 from ...diagram.symbol import Symbol
-from .elements import Label, Node, Port
+from .elements import Node, Port
 from .registry import Registry
 
 
@@ -60,7 +60,6 @@ class Compound(Symbol):
             self.nodes.add(node)
 
     def source(self, *, context: Registry = None) -> Tuple[nx.MultiDiGraph, nx.DiGraph]:
-        id_map = dict()
         g = nx.MultiDiGraph()
         tree = nx.DiGraph()
 

@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2020 Dane Freeman.
+ * Copyright (c) 2021 Dane Freeman.
  * Distributed under the terms of the Modified BSD License.
  */
 import { WidgetModel, WidgetView } from '@jupyter-widgets/base';

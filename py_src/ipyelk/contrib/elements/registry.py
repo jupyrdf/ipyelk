@@ -1,4 +1,4 @@
-# Copyright (c) 2020 Dane Freeman.
+# Copyright (c) 2021 Dane Freeman.
 # Distributed under the terms of the Modified BSD License.
 from collections import defaultdict
 from dataclasses import dataclass, field
@@ -28,7 +28,7 @@ class Registry:
     def get_context(cls, error_if_none=True) -> Optional:
         try:
             return cls.get_contexts()[-1]
-        except IndexError as e:
+        except IndexError:
             if error_if_none:
                 raise TypeError("No %s on context stack" % str(cls))
             return None
