@@ -367,7 +367,7 @@ class XELK(ElkTransformer):
         for label in labels:
             self.register(label, edge)
         elk_edge = ElkExtendedEdge(
-            id=edge.data.get('id', self.edge_id(edge)),
+            id=edge.data.get("id", self.edge_id(edge)),
             sources=[self.port_id(edge.source, edge.source_port)],
             targets=[self.port_id(edge.target, edge.target_port)],
             properties=properties,

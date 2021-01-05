@@ -10,11 +10,14 @@ import {
   SChildElement,
   BoundsAware,
   Point,
-  getSubType
+  getSubType,
+  SModelFactory,
+  SModelRoot,
 } from 'sprotty';
 
 import { JLModelSource } from './diagram-server';
 import { SElkConnectorDef } from './json/defs';
+import { SDefGraphSchema } from './json/elkgraph-to-sprotty';
 import { ElkNode } from './sprotty-model';
 import { VNode } from 'snabbdom/vnode';
 import { WidgetModel, DOMWidgetView } from '@jupyter-widgets/base';
@@ -148,4 +151,19 @@ function getPosition(element: BoundsAware & SChildElement): Point {
     x: x,
     y: y
   };
+}
+
+export class SDefModelFactory extends SModelFactory{
+
+
+  protected initializeRoot(root: SModelRoot, schema: SDefGraphSchema): SModelRoot {
+    root = super.initializeRoot(root, schema);
+
+    if ((root as any)?.defs){
+      (root as any).defs.children = schema.defs.children.map(childSchema => this.createElement(childSchema, root));
+    }
+
+    return root;
+  }
+
 }

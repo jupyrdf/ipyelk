@@ -10,10 +10,9 @@ import {
   GetViewportAction,
   InitializeCanvasBoundsAction,
   LocalModelSource,
-  SGraphSchema,
   Viewport
 } from 'sprotty';
-import { ElkGraphJsonToSprotty } from './json/elkgraph-to-sprotty';
+import { ElkGraphJsonToSprotty, SDefGraphSchema } from './json/elkgraph-to-sprotty';
 import { ManagerBase } from '@jupyter-widgets/base';
 import { Widget } from '@phosphor/widgets';
 // import { WidgetManager } from '@jupyter-widgets/jupyterlab-manager';
@@ -25,7 +24,7 @@ export class JLModelSource extends LocalModelSource {
 
   async updateLayout(layout, defs, idPrefix: string) {
     this.elkToSprotty = new ElkGraphJsonToSprotty();
-    let sGraph: SGraphSchema = this.elkToSprotty.transform(layout, defs, idPrefix);
+    let sGraph: SDefGraphSchema = this.elkToSprotty.transform(layout, defs, idPrefix);
     console.warn('update layout');
     await this.updateModel(sGraph);
     // TODO this promise resolves before ModelViewer rendering is done. need to hook into postprocessing
@@ -69,7 +68,6 @@ export class JLModelSource extends LocalModelSource {
    */
   async getViewport(): Promise<Viewport & { canvasBounds: Bounds }> {
     const res = await this.actionDispatcher.request(GetViewportAction.create());
-    // console.log("get viewpoint")
     return {
       scroll: res.viewport.scroll,
       zoom: res.viewport.zoom,

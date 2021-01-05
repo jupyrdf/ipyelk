@@ -59,8 +59,10 @@ class Gate(Symbol):
         return opt.OptionsWidget(
             options=[
                 opt.PortConstraints(value="FIXED_SIDE"),
-                opt.NodeSizeConstraints(node_labels=False, ports=False, port_labels=False, minimun_size=True),
-                opt.NodeSizeMinimum(width = int(self.width), height=int(self.height))
+                opt.NodeSizeConstraints(
+                    node_labels=False, ports=False, port_labels=False, minimun_size=True
+                ),
+                opt.NodeSizeMinimum(width=int(self.width), height=int(self.height)),
             ]
         ).value
 
@@ -88,7 +90,9 @@ class XOR_Gate(Gate):
                 x=-219.5,
                 y=-180,
             ),
-        ]
+        ],
+        width = 36,
+        height = 26,
     )
 
 
@@ -103,7 +107,9 @@ class And_Gate(Gate):
                 x=-291.5,
                 y=-319.7,
             )
-        ]
+        ],
+        width = 36,
+        height = 26,
     )
     width = 36
     height = 26
@@ -121,7 +127,9 @@ class Or_Gate(Gate):
                 x=-292.25,
                 y=-405,
             )
-        ]
+        ],
+        width = 29,
+        height = 26,
     )
     width = 29
     height = 26
@@ -148,7 +156,9 @@ class Nor_Gate(Gate):
                 x=-292,
                 y=-447,
             ),
-        ]
+        ],
+        width = 35.3,
+        height = 26,
     )
     width = 35.3
     height = 26
@@ -172,7 +182,9 @@ class Nand_Gate(Gate):
                 x=-209,
                 y=-221.5,
             ),
-        ]
+        ],
+        width = 45.4,
+        height = 26,
     )
     width = 45.4
     height = 26
@@ -186,18 +198,22 @@ class Not_Gate(Gate):
                 value="""<path xmlns="http://www.w3.org/2000/svg" d="M
                 291.48301,543.49359 L 291.48301,528.99086 L 315.53386,542.87663
                 L 291.49576,556.85361 z"/>""",
-                x=-291,
-                y=-530,
+                # x=-291,
+                # y=-530,
             ),
             SVG(
                 value="""<path xmlns="http://www.w3.org/2000/svg" d="M 254.10886
                 234.75238 A 4.7229962 4.7229962 0 1 1  244.66287,234.75238 A
                 4.7229962 4.7229962 0 1 1  254.10886 234.75238 z"
                 transform="translate(71.734249,308.16985)"/>""",
-                x=-291,
-                y=-530,
+                # x=-291,
+                # y=-530,
             ),
-        ]
+        ],
+        x=291,
+        y=530,
+        width = 35,
+        height = 26,
     )
     width = 35
     height = 26

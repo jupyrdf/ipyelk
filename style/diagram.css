@@ -36,6 +36,10 @@
   --jp-elk-transition: 0.1s ease-in;
 }
 
+.jp-ElkView .elkdefs > symbol{
+  overflow: visible;
+}
+
 .jp-ElkView .elknode {
   stroke: var(--jp-elk-node-stroke);
   stroke-width: var(--jp-elk-stroke-width);

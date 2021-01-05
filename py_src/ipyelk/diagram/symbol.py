@@ -15,11 +15,11 @@ class Symbol(ABC):
     identifier: ClassVar[str] = None
     type: ClassVar[str] = None
 
+    x: Optional[float] = None
+    y: Optional[float] = None
     width: Optional[float] = None
     height: Optional[float] = None
     children: List["Symbol"] = field(default_factory=list)
-    x: Optional[float] = None
-    y: Optional[float] = None
 
     def __hash__(self):
         """Simple hashing function to make it easier to use as a networkx node"""
@@ -29,11 +29,11 @@ class Symbol(ABC):
         """Returns a valid elk node dictionary"""
         data = {
             "id": id,
-            "children": [c() for c in getattr(self, "children", [])],
+            "children": self.get_children(id=id) or None,
             "properties": self.get_properties(),
             "labels": self.get_labels(id=id),
             "layoutOptions": self.get_layoutOptions(),
-            "ports": self.get_ports(id=id),
+            "ports": self.get_ports(id=id) or None,
             **self.bounds(),
         }
         return strip_none(data)
@@ -61,6 +61,9 @@ class Symbol(ABC):
     def get_ports(self, id=None) -> List:
         return []
 
+    def get_children(self, id=None) -> List:
+        return [c() for c in getattr(self, "children", [])]
+
     def get_properties(self) -> Dict:
         properties = {}
         typed = self.type
@@ -81,7 +84,7 @@ class Symbol(ABC):
         return self.to_json(id)
 
     @classmethod
-    def make_defs(cls, classes:List[Type["Symbol"]]=None)->Dict:
+    def make_defs(cls, classes: List[Type["Symbol"]] = None) -> Dict:
         """Take a list of classes and return the def dictionary
 
         :param classes: Subclasses of Symbol. If `None` use the subclasses of
@@ -225,6 +228,17 @@ class Widget(Symbol):
 @dataclass
 class HTML(Symbol):
     type = "node:html"
+    value: str = ""
+
+    def get_shape_props(self):
+        props = super().get_shape_props()
+        if self.value:
+            props.update({"use": str(self.value)})
+        return props
+
+@dataclass
+class Icon(Symbol):
+    type = "label:icon"
     value: str = ""
 
     def get_shape_props(self):

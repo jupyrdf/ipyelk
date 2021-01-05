@@ -48,7 +48,10 @@ function getClasses(element: ElkGraphElement) {
   return classes ? classes.split(' ') : [];
 }
 
-interface SDefsSchema extends SModelElementSchema {}
+export interface SDefsSchema extends SModelElementSchema {}
+export interface SDefGraphSchema extends SGraphSchema{
+  defs: SDefsSchema;
+}
 
 export class ElkGraphJsonToSprotty {
   private nodeIds: Set<string> = new Set();
@@ -59,12 +62,13 @@ export class ElkGraphJsonToSprotty {
   defsIds: Map<string, string> = new Map();
   connectors: Map<string, SElkConnectorDef> = new Map();
 
-  public transform(elkGraph: ElkNode, defs: IElkDefs, idPrefix: string): SGraphSchema {
-    const sGraph = <SGraphSchema>{
+  public transform(elkGraph: ElkNode, defs: IElkDefs, idPrefix: string): SDefGraphSchema {
+    const sGraph = <SDefGraphSchema>{
       type: 'graph',
       id: elkGraph.id || 'root',
-      children: [this.transformDefs(defs, idPrefix)],
-      cssClasses: getClasses(elkGraph)
+      children: [],
+      cssClasses: getClasses(elkGraph),
+      defs:this.transformDefs(defs, idPrefix),
     };
 
     if (elkGraph.children) {
@@ -90,8 +94,6 @@ export class ElkGraphJsonToSprotty {
     }
 
     const sDefs = <SDefsSchema>{
-      type: 'defs',
-      id: 'test_defs',
       children: children
     };
 
@@ -103,7 +105,7 @@ export class ElkGraphJsonToSprotty {
     def: ElkNode,
     idPrefix: string
   ): SModelElementSchema {
-    let children = def.children.map(this.transformDefElement, this);
+    let children = def?.children?.map(this.transformDefElement, this) || [];
     this.defsIds[id] = `${idPrefix}_${id}`;
     if (def?.properties?.type == 'connectordef') {
       this.connectors[id] = <SElkConnectorDef>def;
@@ -112,7 +114,10 @@ export class ElkGraphJsonToSprotty {
     return <SModelElementSchema>{
       type: 'def',
       id: id,
-      children: children
+      children: children,
+      position: this.pos(def),
+      size: this.size(def),
+      properties: def.properties,
     };
   }
 
@@ -122,7 +127,7 @@ export class ElkGraphJsonToSprotty {
       id: elkNode.id,
       position: this.pos(elkNode),
       size: this.size(elkNode),
-      // children: elkNode.children,
+      children: [],
       properties: elkNode.properties,
       type: elkNode.properties?.type
     };

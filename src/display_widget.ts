@@ -76,7 +76,6 @@ export class ELKDiagramModel extends DOMWidgetModel {
     console.warn('layouting', rootNode);
     let layoutEngine: any = await this.layoutEngine(); // TODO need layoutEngine interface
     let result;
-    console.log('layout engine', layoutEngine); //TODO how to get instance of layout widget?
     if (layoutEngine) {
       result = await layoutEngine.layout(rootNode);
     } else {

@@ -1,7 +1,7 @@
 # Copyright (c) 2021 Dane Freeman.
 # Distributed under the terms of the Modified BSD License.
 from dataclasses import dataclass, field
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Union, Type
 
 from ...diagram.elk_model import strip_none
 from ...diagram.symbol import Symbol
@@ -11,10 +11,50 @@ from .registry import Registry
 
 @dataclass
 class Element:
-    shape: Optional[Symbol] = None
     labels: List["Label"] = field(default_factory=list)
     properties: Dict = field(default_factory=dict)
     layoutOptions: Dict = field(default_factory=dict)
+
+    def to_json(self):
+        raise NotImplementedError("Subclasses should implement")
+
+    def __hash__(self):
+        return id(self)
+
+
+@dataclass
+class Edge(Element):
+    shape_end: Optional[Symbol] = None
+    shape_start: Optional[Symbol] = None
+
+    source: Union["Node", "Port"] = None
+    target: Union["Node", "Port"] = None
+
+    def to_json(self):
+        data = {
+            "id": Registry.get_id(self),
+            "properties": {},
+            "layoutOptions": {},
+            "labels": [],
+        }
+        if isinstance(self.source, Port):
+            data["sourcePort"] = Registry.get_id(self.source)
+        if isinstance(self.target, Port):
+            data["targetPort"] = Registry.get_id(self.target)
+        return data
+
+    def points(self):
+        u = self.source if isinstance(self.source, Node) else self.source._parent
+        v = self.target if isinstance(self.target, Node) else self.target._parent
+        return u, v
+
+    def __hash__(self):
+        return id(self)
+
+
+@dataclass
+class ShapeElement(Element):
+    shape: Optional[Symbol] = None
 
     def to_json(self):
         if isinstance(self.shape, Symbol):
@@ -33,8 +73,8 @@ class Element:
 
 
 @dataclass
-class Port(Element):
-    _parent: Optional["Node"] = None
+class Port(ShapeElement):
+    _parent: Optional["Node"] = field(init=False, repr=False, default=None)
 
     def to_json(self):
         data = super().to_json()
@@ -48,8 +88,8 @@ class Port(Element):
 
 
 @dataclass
-class Label(Element):
-    text: str = ""
+class Label(ShapeElement):
+    text: str = " " # if this is a completely empty string the label isn't included in node sizing
 
     def to_json(self):
         data = super().to_json()
@@ -61,9 +101,11 @@ class Label(Element):
 
 
 @dataclass
-class Node(Element):
+class Node(ShapeElement):
     ports: Dict[str, Port] = field(default_factory=dict)
     children: List["Node"] = field(default_factory=list)
+
+    _edges: set = field(init=False, repr=False, default_factory=set)  # could be a set?
 
     def __post_init__(self, **kwargs):
         for key, port in self.ports.items():
@@ -80,7 +122,7 @@ class Node(Element):
 
     def to_json(self):
         data = super().to_json()
-        shape_ports = {p["id"].split('.')[-1]:p for p in data.get("ports", [])}
+        shape_ports = {p["id"].split(".")[-1]: p for p in data.get("ports", [])}
         ports = []
 
         for key, port in shape_ports.items():
@@ -90,8 +132,16 @@ class Node(Element):
         data["ports"] = ports
         return strip_none(data)
 
-    def add_child(self, child: "Node"):
+    def add_child(self, child: "Node")->"Node":
         self.children.append(child)
+        return child
+
+    def add_edge(self, source:Union["Node", Port], target:Union["Node", Port], cls:Type[Edge]=Edge)->Edge:
+        # for elk to layout correctly, edges must be owned by some common ancestor of the two endpoints
+        # the actual owner of the edge will be calculated later
+        edge = cls(source=source, target=target)
+        self._edges.add(edge)
+        return edge
 
     def __setattr__(self, key, value):
         if isinstance(value, Port):

@@ -14,7 +14,7 @@ def id_factory():
 class Registry:
     """Context Manager to generate and maintain a lookup of objects to identifiers"""
 
-    _ids: defaultdict = field(default_factory=id_factory)
+    _ids: defaultdict = field(repr=False, default_factory=id_factory)
     _stack: ClassVar[List] = []
 
     def __enter__(self):

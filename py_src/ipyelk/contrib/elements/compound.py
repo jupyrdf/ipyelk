@@ -9,81 +9,52 @@ from ...diagram.symbol import Symbol
 from .elements import Node, Port
 from .registry import Registry
 
+def nx_wrap(node: Node, context: Registry) -> Tuple[str, Node]:
+    """Wrap the given node in another tuple so it can be used multiple times as
+    a networkx node.
+
+    :param node: Incomming Node Element to wrap
+    :type node: Node
+    :return: Tuple that describes this current node and context to be used in a
+    networkx graph.
+    :rtype: Tuple[str, Node]
+    """
+    return (context, node)
+
+def get_children(node: Node):
+    return getattr(node, "children", [])
 
 @dataclass
-class Connection:
-    source: Union[Node, Port]
-    target: Union[Node, Port]
-
-    def to_json(self):
-        data = {
-            "id": Registry.get_id(self),
-            "properties": {},
-            "layoutOptions": {},
-            "labels": [],
-        }
-        if isinstance(self.source, Port):
-            data["sourcePort"] = Registry.get_id(self.source)
-        if isinstance(self.target, Port):
-            data["targetPort"] = Registry.get_id(self.target)
-        return data
-
-    def points(self):
-        u = self.source if isinstance(self.source, Node) else self.source._parent
-        v = self.target if isinstance(self.target, Node) else self.target._parent
-        return u, v
-
-    def __hash__(self):
-        return id(self)
-
-
-@dataclass
-class Compound(Symbol):
-    # TODO not sure how to compose these yet and if they are a kind of symbol
+class Compound():
     registry: Registry = field(default_factory=Registry)
 
-    nodes: set = field(default_factory=set)  # could be a set?
-    edges: set = field(default_factory=set)  # could be a set?
-    hierachical_edges: set = field(default_factory=set)  # could be a set?
+    def _add(self, node, g, tree):
+        context = self.registry
+        with context:
+            nx_node = nx_wrap(node, context)
+            if nx_node not in g:
+                g.add_node(nx_node, **node.to_json())
 
-    def connect(self, source, target, cls=Connection):
-        self.add_node(source)
-        self.add_node(target)
-        c = cls(source, target)
-        self.edges.add(c)
-        return c
+            for edge in getattr(node, "_edges", []):
+                endpts = edge.points()
+                nx_u, nx_v = map(lambda n: nx_wrap(n, context), endpts)
+                for nx_pt, pt in zip([nx_u, nx_v],endpts):
+                    if nx_pt not in g:
+                        g.add_node(nx_pt, **pt.to_json())
 
-    def add_node(self, node: Union[Node, Port]):
-        if isinstance(node, Port):
-            self.nodes.add(node._parent)
-        else:
-            self.nodes.add(node)
+                g.add_edge(nx_u, nx_v, **edge.to_json())
 
-    def source(self, *, context: Registry = None) -> Tuple[nx.MultiDiGraph, nx.DiGraph]:
+            for child in get_children(node):
+                nx_child = self._add(child, g, tree)
+                tree.add_edge(nx_node, nx_child)
+            return nx_node
+
+    def __call__(self, *nodes):
         g = nx.MultiDiGraph()
         tree = nx.DiGraph()
-
-        if not isinstance(context, Registry):
-            context = self.registry
-        with context:
-            for node in self:
-                data = node.to_json()
-                nx_node = nx_wrap(node, context)
-                g.add_node(nx_node, **data)
-
-                for child in get_children(node):
-                    tree.add_edge(nx_node, nx_wrap(child, context))
-
-            for edge in self.edges:
-                # wrap the edge endpoints to be able to uniquely address the
-                # node elements
-                nx_u, nx_v = map(lambda n: nx_wrap(n, context), edge.points())
-                g.add_edge(nx_u, nx_v, **edge.to_json())
+        for node in nodes:
+            self._add(node, g, tree)
         return (g, tree)
-
-    def __iter__(self):
-        """Iterate over the nodes and their children"""
-        return get_nodes(self.nodes)
 
 
 def get_nodes(nodes):

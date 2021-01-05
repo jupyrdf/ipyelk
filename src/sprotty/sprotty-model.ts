@@ -66,10 +66,3 @@ export class DefNode extends SNode {
     else return super.hasFeature(feature);
   }
 }
-
-export class DefsNode extends SNode {
-  hasFeature(feature: symbol): boolean {
-    if (feature === moveFeature) return false;
-    else return super.hasFeature(feature);
-  }
-}

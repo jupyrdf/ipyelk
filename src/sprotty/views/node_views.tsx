@@ -63,7 +63,7 @@ export class ElkNodeView extends RectangularNodeView {
 
   renderMark(node: ElkNode, context: ElkModelRenderer): VNode {
     let mark: VNode = (
-      <rect x="0" y="0" width={node.bounds.width} height={node.bounds.height}></rect>
+      <rect x="0" y="0" width={node.size.width} height={node.size.height}></rect>
     );
     return mark;
   }
@@ -168,7 +168,7 @@ export class ElkUseNodeView extends ElkNodeView {
   renderMark(node: ElkNode, context: ElkModelRenderer): VNode {
     let use = node?.properties?.shape?.use;
     let href = context.hrefID(use);
-    let mark: VNode = <use href={'#' + href} />;
+    let mark: VNode = <use href={'#' + href} width={node.size.width} height={node.size.height}/>;
     setClass(mark, use, true);
     return mark;
   }
@@ -214,8 +214,8 @@ export class ElkForeignObjectNodeView extends ElkNodeView {
     return (
       <foreignObject
         requiredFeatures="http://www.w3.org/TR/SVG11/feature#Extensibility"
-        height={node.bounds.height}
-        width={node.bounds.width}
+        height={node.size.height}
+        width={node.size.width}
         x={0}
         y={0}
       >
@@ -280,8 +280,8 @@ export class ElkPortView extends RectangularNodeView {
           // className={port.properties.classes}
           x="0"
           y="0"
-          width={port.bounds.width}
-          height={port.bounds.height}
+          width={port.size.width}
+          height={port.size.height}
         ></rect>
       );
     }
@@ -305,7 +305,7 @@ export class ElkLabelView extends ShapeView {
     let use = label?.properties?.shape?.use;
     let href = context.hrefID(use);
     if (href) {
-      mark = <use class-elklabel={true} href={'#' + href} />;
+      mark = <use class-elklabel={true} href={'#' + href} width={label.size.width} height={label.size.height}/>;
       setClass(mark, use, true);
     } else {
       mark = <text class-elklabel={true}>{label.text}</text>;

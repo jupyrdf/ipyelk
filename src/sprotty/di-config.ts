@@ -24,7 +24,7 @@ import {
   // Tool,
   // MouseTool,
   exportModule,
-  SGraphView,
+  // SGraphView,
   // DiamondNodeView,
   // RectangularNodeView,
   // CircularNodeView,
@@ -58,7 +58,7 @@ import {
   // ModelRenderer,
   RenderingTargetKind,
   IVNodePostprocessor,
-  ViewRegistry
+  ViewRegistry,
 } from 'sprotty';
 
 import { JLModelSource } from './diagram-server';
@@ -69,9 +69,8 @@ import {
   ElkEdge,
   ElkJunction,
   DefNode,
-  DefsNode
 } from './sprotty-model';
-import { ElkModelRenderer } from './renderer';
+import { ElkModelRenderer, SDefModelFactory } from './renderer';
 // import { NodeSelectTool } from '../tools/select';
 import { toolFeedbackModule } from '../tools/feedback';
 import viewportModule from './viewportModule';
@@ -104,7 +103,6 @@ export default (containerId: string, view: DOMWidgetView) => {
     const context = { bind, unbind, isBound, rebind };
 
     // Initialize model element views
-    console.log(SGraphView);
     configureModelElement(context, 'graph', SGraph, v.SGraphView);
     configureModelElement(context, 'node', ElkNode, v.ElkNodeView);
     configureModelElement(context, 'node:use', ElkNode, v.ElkUseNodeView);
@@ -132,6 +130,7 @@ export default (containerId: string, view: DOMWidgetView) => {
     configureModelElement(context, 'port', ElkPort, v.ElkPortView);
     configureModelElement(context, 'edge', ElkEdge, v.ElkEdgeView);
     configureModelElement(context, 'label', SLabel, v.ElkLabelView);
+    configureModelElement(context, 'label:icon', SLabel, v.ElkLabelView);
     configureModelElement(context, 'junction', ElkJunction, v.JunctionView);
     configureViewerOptions(context, {
       needsClientLayout: false,
@@ -142,7 +141,6 @@ export default (containerId: string, view: DOMWidgetView) => {
     configureCommand(context, HoverFeedbackCommand);
 
     // Model elements for defs
-    configureModelElement(context, 'defs', DefsNode, v.DefsNodeView);
     configureModelElement(context, 'def', DefNode, v.DefNodeView);
 
     // Expose extracted path and connector offset to the rendering context
@@ -153,6 +151,9 @@ export default (containerId: string, view: DOMWidgetView) => {
         return new ElkModelRenderer(viewRegistry, targetKind, processors, modelSource);
       };
     });
+
+    rebind(TYPES.IModelFactory).to(SDefModelFactory).inSingletonScope();
+
   });
   const container = new Container();
 
