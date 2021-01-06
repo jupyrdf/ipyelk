@@ -153,8 +153,12 @@ def merge(d1: Optional[Dict], d2: Optional[Dict]) -> Optional[Dict]:
     """
     if d1 is None:
         d1 = {}
+    elif not isinstance(d1, dict):
+        d1 = d1.to_dict()
     if d2 is None:
         d2 = {}
+    elif not isinstance(d2, dict):
+        d2 = d2.to_dict()
 
     cl1 = d1.get("cssClasses", "")
     cl2 = d2.get("cssClasses", "")
@@ -184,7 +188,9 @@ def listed(values: Optional[List]) -> List:
     return values
 
 
-def collect_labels(nodes: List[ElkNode], recurse: bool = True) -> List[ElkLabel]:
+def collect_labels(
+    nodes: List[ElkNode], recurse: bool = True, include_sized: bool = False
+) -> List[ElkLabel]:
     """Iterate over the map of ElkNodes and pluck labels from:
         * node
         * node.ports
@@ -193,26 +199,34 @@ def collect_labels(nodes: List[ElkNode], recurse: bool = True) -> List[ElkLabel]
 
     :param nodes: [description]
     :type nodes: List[ElkNode]
+    :param included_sized: Flag to include labels that have already been sized
+    :type included_sized: bool
     :return: [description]
     :rtype: List[ElkLabel]
     """
     labels = []
 
-    def sized(label):
-        return bool(label.width or label.height)
+    def include(label):
+        return include_sized or not bool(label.width or label.height)
 
     for elknode in nodes:
         for label in listed(elknode.labels):
-            if not sized(label):
-                labels.append(label)
+            if include(label):
+                add_label(labels, label)
         for elkport in listed(elknode.ports):
             for label in listed(elkport.labels):
-                if not sized(label):
-                    labels.append(label)
+                if include(label):
+                    add_label(labels, label)
         for elkedge in listed(elknode.edges):
             for label in listed(elkedge.labels):
-                if not sized(label):
-                    labels.append(label)
+                if include(label):
+                    add_label(labels, label)
         if recurse:
             labels.extend(collect_labels(listed(elknode.children)))
     return labels
+
+
+def add_label(labels: List[ElkLabel], label: Union[Dict, ElkLabel]):
+    if not isinstance(label, ElkLabel):
+        label = ElkLabel.from_dict(label)
+    labels.append(label)

@@ -16,6 +16,7 @@ from ..diagram.elk_model import (
     ElkLabel,
     ElkNode,
     ElkPort,
+    ElkProperties,
     ElkRoot,
 )
 from ..diagram.elk_text_sizer import ElkTextSizer, size_labels
@@ -461,13 +462,16 @@ class XELK(ElkTransformer):
                 # prevent mutating original label in the node data
                 label = label.to_dict()
             if isinstance(label, dict):
-                label = ElkLabel(**label)
+                label = ElkLabel.from_dict(label)
 
             # add css classes and layout options
             label.layoutOptions = merge(
                 label.layoutOptions, self.get_layout(node, ElkLabel)
             )
-            label.properties = merge(label.properties, properties)
+            merged_props = merge(label.properties, properties)
+            if merged_props is not None:
+                merged_props = ElkProperties.from_dict(merged_props)
+            label.properties = merged_props
 
             labels.append(label)
             self.register(label, node)

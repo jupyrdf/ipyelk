@@ -19,7 +19,7 @@ import {
   setClass,
   Point,
   ViewportRootElement,
-  Dimension,
+  Dimension
   // HtmlRootView,
   // PreRenderedElement,
   // PreRenderedView,
@@ -28,7 +28,6 @@ import {
   // RoutableView,
   // getSubType
   // IView
-
 } from 'sprotty';
 import { ElkNode, ElkPort, ElkLabel } from '../sprotty-model';
 import { ElkModelRenderer } from '../renderer';
@@ -332,43 +331,38 @@ export class ElkLabelView extends ShapeView {
 
       let iconDims = this.dimension(icon);
       let labelDims = this.dimension(label);
-      let iconPos:Point = {
-        x:0+icon.position.x,
-        y:(height - iconDims.height) / 2 + icon.position.x,
-      }
-      let opts = icon?.layoutOptions || {}
+      let iconPos: Point = {
+        x: 0 + icon.position.x,
+        y: (height - iconDims.height) / 2 + icon.position.x
+      };
+      let opts = icon?.layoutOptions || {};
 
-      let spacing = Number(opts["org.eclipse.elk.spacing.labelLabel"]) || 0
-      let labelPos:Point = {
-        x:iconDims.width + spacing,
-        y:(height - labelDims.height) / 2,
-      }
+      let spacing = Number(opts['org.eclipse.elk.spacing.labelLabel']) || 0;
+      let labelPos: Point = {
+        x: iconDims.width + spacing,
+        y: (height - labelDims.height) / 2
+      };
       mark = (
         <g>
           <use
-            transform= {`translate(${iconPos.x} ${iconPos.y})`}
+            transform={`translate(${iconPos.x} ${iconPos.y})`}
             class-elklabel={true}
             href={'#' + href}
             width={icon.size.width}
             height={icon.size.height}
           />
-          <g
-            transform= {`translate(${labelPos.x} ${labelPos.y})`}
-          >
-            {mark}
-          </g>
-
+          <g transform={`translate(${labelPos.x} ${labelPos.y})`}>{mark}</g>
         </g>
       );
     }
     return mark;
   }
 
-  dimension(label:ElkLabel): Dimension{
+  dimension(label: ElkLabel): Dimension {
     return {
-      width:label?.properties?.shape?.width || label.size.width,
+      width: label?.properties?.shape?.width || label.size.width,
       height: label?.properties?.shape?.height || label.size.height
-    }
+    };
   }
 
   isVisible(label: ElkLabel, context: ElkModelRenderer): boolean {

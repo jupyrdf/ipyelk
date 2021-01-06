@@ -153,7 +153,7 @@ export class ElkGraphJsonToSprotty {
       children: [],
       cssClasses: getClasses(elkNode),
       properties: elkNode?.properties,
-      layoutOptions: elkNode?.layoutOptions,
+      layoutOptions: elkNode?.layoutOptions
     };
     // children
     if (elkNode.children) {
@@ -188,7 +188,7 @@ export class ElkGraphJsonToSprotty {
       children: [],
       cssClasses: getClasses(elkPort),
       properties: elkPort?.properties,
-      layoutOptions: elkPort?.layoutOptions,
+      layoutOptions: elkPort?.layoutOptions
     };
     // labels
     if (elkPort.labels) {
@@ -209,7 +209,7 @@ export class ElkGraphJsonToSprotty {
       cssClasses: getClasses(elkLabel),
       labels: [],
       properties: elkLabel?.properties,
-      layoutOptions: elkLabel?.layoutOptions,
+      layoutOptions: elkLabel?.layoutOptions
     };
     if (elkLabel.labels) {
       const sLabels = elkLabel.labels.map(this.transformElkLabel, this);
@@ -231,7 +231,7 @@ export class ElkGraphJsonToSprotty {
       children: [],
       cssClasses: getClasses(elkEdge),
       properties: elkEdge?.properties,
-      layoutOptions: elkEdge?.layoutOptions,
+      layoutOptions: elkEdge?.layoutOptions
     };
     if (isPrimitive(elkEdge)) {
       sEdge.sourceId = elkEdge.source;
