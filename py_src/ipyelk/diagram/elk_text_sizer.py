@@ -12,7 +12,7 @@ from async_lru import alru_cache
 
 from .._version import EXTENSION_NAME, EXTENSION_SPEC_VERSION
 from ..styled_widget import StyledWidget
-from .elk_model import ElkLabel
+from .elk_model import ElkLabel, ElkProperties
 
 
 @dataclass
@@ -162,5 +162,56 @@ async def size_labels(text_sizer: Optional[ElkTextSizer], labels: List[ElkLabel]
         ]
 
     for size, label in zip(sizes, labels):
-        label.width = size.width
-        label.height = size.height
+        # recording size in the shape props to backout nested label positions
+        shape = {}
+        if label.properties:
+            if label.properties.shape is None:
+                label.properties.shape = shape
+            else:
+                shape = label.properties.shape
+        else:
+            label.properties = {"shape":shape}
+        shape["width"] = size.width
+        shape["height"] = size.height
+
+    for label in labels:
+        overall = size_nested_label(label)
+        label.width = overall["width"]
+        label.height = overall["height"]
+
+def size_nested_label(label: ElkLabel):
+    shape = get(label, "properties.shape", {})
+    size = {
+        "width":get(label, "width") or shape.get("width", 0),
+        "height":get(label, "height") or shape.get('height', 0),
+    }
+    labels = get(label, "labels") or []
+    for l in labels:
+        ls = size_nested_label(l)
+        spacing = float(get(l, 'layoutOptions', {}).get("org.eclipse.elk.spacing.labelLabel", 0))
+        size = {
+            "width": size["width"] + ls["width"] + spacing,
+            "height": max(size["height"], ls["height"]),
+        }
+    return size
+
+
+def get(obj, attr, default=0):
+    """Helper function for nested lookups of an attr in either a dictionary or object
+
+    :param obj: input object
+    :type obj: dictionary or object
+    :param attr: Attribute (potentially `.` separated)
+    :type attr: str
+    :param default: Return value if nothing is found, defaults to 0
+    :type default: object
+    :return:
+    :rtype: [type]
+    """
+    if "." in attr:
+        for a in attr.split("."):
+            obj = get(obj, a, default)
+        return obj
+    if isinstance(obj, dict) and attr in obj:
+        return obj[attr]
+    return getattr(obj, attr, default)

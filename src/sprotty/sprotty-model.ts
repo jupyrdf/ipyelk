@@ -58,6 +58,7 @@ export class ElkJunction extends SNode {
 
 export class ElkLabel extends SLabel {
   properties: ElkProperties;
+  labels: ElkLabel[];
 }
 
 export class DefNode extends SNode {

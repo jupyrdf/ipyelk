@@ -58,18 +58,12 @@ import {
   // ModelRenderer,
   RenderingTargetKind,
   IVNodePostprocessor,
-  ViewRegistry,
+  ViewRegistry
 } from 'sprotty';
 
 import { JLModelSource } from './diagram-server';
 import * as v from './views';
-import {
-  ElkNode,
-  ElkPort,
-  ElkEdge,
-  ElkJunction,
-  DefNode,
-} from './sprotty-model';
+import { ElkNode, ElkPort, ElkEdge, ElkJunction, DefNode } from './sprotty-model';
 import { ElkModelRenderer, SDefModelFactory } from './renderer';
 // import { NodeSelectTool } from '../tools/select';
 import { toolFeedbackModule } from '../tools/feedback';
@@ -152,8 +146,9 @@ export default (containerId: string, view: DOMWidgetView) => {
       };
     });
 
-    rebind(TYPES.IModelFactory).to(SDefModelFactory).inSingletonScope();
-
+    rebind(TYPES.IModelFactory)
+      .to(SDefModelFactory)
+      .inSingletonScope();
   });
   const container = new Container();
 

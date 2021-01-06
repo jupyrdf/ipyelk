@@ -6,8 +6,7 @@ import { ElkModelRenderer } from '../renderer';
 // import { SDefsSchema } from '../json/elkgraph-to-sprotty';
 const JSX = { createElement: html };
 
-
-class SDefGraph extends SGraph{
+class SDefGraph extends SGraph {
   defs: SParentElement;
 }
 /**
@@ -20,7 +19,7 @@ export class SGraphView implements IView {
       .y})`;
     let graph = svg('svg', { class: { 'sprotty-graph': true } }, [
       svg('g', { transform: transform }, context.renderChildren(model)),
-      svg('g', {class: {elkdefs:true}}, context.renderChildren(model.defs)),
+      svg('g', { class: { elkdefs: true } }, context.renderChildren(model.defs))
     ]);
     const css_transform = {
       transform: `scale(${model.zoom}) translate(${-model.scroll.x}px,${-model.scroll

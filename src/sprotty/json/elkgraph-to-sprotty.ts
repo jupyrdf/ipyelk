@@ -49,8 +49,12 @@ function getClasses(element: ElkGraphElement) {
 }
 
 export interface SDefsSchema extends SModelElementSchema {}
-export interface SDefGraphSchema extends SGraphSchema{
+export interface SDefGraphSchema extends SGraphSchema {
   defs: SDefsSchema;
+}
+
+export interface ElkLabelschema extends SLabelSchema {
+  labels: ElkLabelschema[];
 }
 
 export class ElkGraphJsonToSprotty {
@@ -62,13 +66,17 @@ export class ElkGraphJsonToSprotty {
   defsIds: Map<string, string> = new Map();
   connectors: Map<string, SElkConnectorDef> = new Map();
 
-  public transform(elkGraph: ElkNode, defs: IElkDefs, idPrefix: string): SDefGraphSchema {
+  public transform(
+    elkGraph: ElkNode,
+    defs: IElkDefs,
+    idPrefix: string
+  ): SDefGraphSchema {
     const sGraph = <SDefGraphSchema>{
       type: 'graph',
       id: elkGraph.id || 'root',
       children: [],
       cssClasses: getClasses(elkGraph),
-      defs:this.transformDefs(defs, idPrefix),
+      defs: this.transformDefs(defs, idPrefix)
     };
 
     if (elkGraph.children) {
@@ -117,7 +125,7 @@ export class ElkGraphJsonToSprotty {
       children: children,
       position: this.pos(def),
       size: this.size(def),
-      properties: def.properties,
+      properties: def.properties
     };
   }
 
@@ -144,7 +152,8 @@ export class ElkGraphJsonToSprotty {
       size: this.size(elkNode),
       children: [],
       cssClasses: getClasses(elkNode),
-      properties: elkNode?.properties
+      properties: elkNode?.properties,
+      layoutOptions: elkNode?.layoutOptions,
     };
     // children
     if (elkNode.children) {
@@ -178,7 +187,8 @@ export class ElkGraphJsonToSprotty {
       size: this.size(elkPort),
       children: [],
       cssClasses: getClasses(elkPort),
-      properties: elkPort?.properties
+      properties: elkPort?.properties,
+      layoutOptions: elkPort?.layoutOptions,
     };
     // labels
     if (elkPort.labels) {
@@ -188,18 +198,25 @@ export class ElkGraphJsonToSprotty {
     return sPort;
   }
 
-  private transformElkLabel(elkLabel: ElkLabel): SLabelSchema {
+  private transformElkLabel(elkLabel: ElkLabel): ElkLabelschema {
     this.checkAndRememberId(elkLabel, this.labelIds);
-
-    return <SLabelSchema>{
+    let sLabel = <ElkLabelschema>{
       type: getType(elkLabel.properties?.type, 'label'),
       id: elkLabel.id,
       text: elkLabel.text,
       position: this.pos(elkLabel),
       size: this.size(elkLabel),
       cssClasses: getClasses(elkLabel),
-      properties: elkLabel?.properties
+      labels: [],
+      properties: elkLabel?.properties,
+      layoutOptions: elkLabel?.layoutOptions,
     };
+    if (elkLabel.labels) {
+      const sLabels = elkLabel.labels.map(this.transformElkLabel, this);
+      sLabel.labels!.push(...sLabels);
+    }
+
+    return sLabel;
   }
 
   private transformElkEdge(elkEdge: ElkEdge): SEdgeSchema {
@@ -213,7 +230,8 @@ export class ElkGraphJsonToSprotty {
       routingPoints: [],
       children: [],
       cssClasses: getClasses(elkEdge),
-      properties: elkEdge?.properties
+      properties: elkEdge?.properties,
+      layoutOptions: elkEdge?.layoutOptions,
     };
     if (isPrimitive(elkEdge)) {
       sEdge.sourceId = elkEdge.source;

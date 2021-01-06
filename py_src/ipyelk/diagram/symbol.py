@@ -236,6 +236,7 @@ class HTML(Symbol):
             props.update({"use": str(self.value)})
         return props
 
+
 @dataclass
 class Icon(Symbol):
     type = "label:icon"

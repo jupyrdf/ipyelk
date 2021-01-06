@@ -1,31 +1,16 @@
 # Copyright (c) 2021 Dane Freeman.
 # Distributed under the terms of the Modified BSD License.
 from dataclasses import dataclass, field
-from typing import Tuple, Union
+from typing import Tuple
 
 import networkx as nx
 
-from ...diagram.symbol import Symbol
-from .elements import Node, Port
+from .elements import Node
 from .registry import Registry
 
-def nx_wrap(node: Node, context: Registry) -> Tuple[str, Node]:
-    """Wrap the given node in another tuple so it can be used multiple times as
-    a networkx node.
-
-    :param node: Incomming Node Element to wrap
-    :type node: Node
-    :return: Tuple that describes this current node and context to be used in a
-    networkx graph.
-    :rtype: Tuple[str, Node]
-    """
-    return (context, node)
-
-def get_children(node: Node):
-    return getattr(node, "children", [])
 
 @dataclass
-class Compound():
+class Compound:
     registry: Registry = field(default_factory=Registry)
 
     def _add(self, node, g, tree):
@@ -38,7 +23,7 @@ class Compound():
             for edge in getattr(node, "_edges", []):
                 endpts = edge.points()
                 nx_u, nx_v = map(lambda n: nx_wrap(n, context), endpts)
-                for nx_pt, pt in zip([nx_u, nx_v],endpts):
+                for nx_pt, pt in zip([nx_u, nx_v], endpts):
                     if nx_pt not in g:
                         g.add_node(nx_pt, **pt.to_json())
 

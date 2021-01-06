@@ -1,7 +1,7 @@
 # Copyright (c) 2021 Dane Freeman.
 # Distributed under the terms of the Modified BSD License.
 from dataclasses import dataclass, field
-from typing import Dict, List, Optional, Union, Type
+from typing import Dict, List, Optional, Type, Union
 
 from ...diagram.elk_model import strip_none
 from ...diagram.symbol import Symbol
@@ -89,7 +89,7 @@ class Port(ShapeElement):
 
 @dataclass
 class Label(ShapeElement):
-    text: str = " " # if this is a completely empty string the label isn't included in node sizing
+    text: str = " "  # completely empty strings exclude label in node sizing
 
     def to_json(self):
         data = super().to_json()
@@ -132,13 +132,19 @@ class Node(ShapeElement):
         data["ports"] = ports
         return strip_none(data)
 
-    def add_child(self, child: "Node")->"Node":
+    def add_child(self, child: "Node") -> "Node":
         self.children.append(child)
         return child
 
-    def add_edge(self, source:Union["Node", Port], target:Union["Node", Port], cls:Type[Edge]=Edge)->Edge:
-        # for elk to layout correctly, edges must be owned by some common ancestor of the two endpoints
-        # the actual owner of the edge will be calculated later
+    def add_edge(
+        self,
+        source: Union["Node", Port],
+        target: Union["Node", Port],
+        cls: Type[Edge] = Edge,
+    ) -> Edge:
+        # for elk to layout correctly, edges must be owned by some common
+        # ancestor of the two endpoints the actual owner of the edge will be
+        # calculated later
         edge = cls(source=source, target=target)
         self._edges.add(edge)
         return edge

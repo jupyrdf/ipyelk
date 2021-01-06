@@ -91,8 +91,8 @@ class XOR_Gate(Gate):
                 y=-180,
             ),
         ],
-        width = 36,
-        height = 26,
+        width=36,
+        height=26,
     )
 
 
@@ -108,8 +108,8 @@ class And_Gate(Gate):
                 y=-319.7,
             )
         ],
-        width = 36,
-        height = 26,
+        width=36,
+        height=26,
     )
     width = 36
     height = 26
@@ -128,8 +128,8 @@ class Or_Gate(Gate):
                 y=-405,
             )
         ],
-        width = 29,
-        height = 26,
+        width=29,
+        height=26,
     )
     width = 29
     height = 26
@@ -157,8 +157,8 @@ class Nor_Gate(Gate):
                 y=-447,
             ),
         ],
-        width = 35.3,
-        height = 26,
+        width=35.3,
+        height=26,
     )
     width = 35.3
     height = 26
@@ -183,8 +183,8 @@ class Nand_Gate(Gate):
                 y=-221.5,
             ),
         ],
-        width = 45.4,
-        height = 26,
+        width=45.4,
+        height=26,
     )
     width = 45.4
     height = 26
@@ -212,8 +212,8 @@ class Not_Gate(Gate):
         ],
         x=291,
         y=530,
-        width = 35,
-        height = 26,
+        width=35,
+        height=26,
     )
     width = 35
     height = 26

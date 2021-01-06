@@ -12,7 +12,7 @@ import {
   Point,
   getSubType,
   SModelFactory,
-  SModelRoot,
+  SModelRoot
 } from 'sprotty';
 
 import { JLModelSource } from './diagram-server';
@@ -153,17 +153,16 @@ function getPosition(element: BoundsAware & SChildElement): Point {
   };
 }
 
-export class SDefModelFactory extends SModelFactory{
-
-
+export class SDefModelFactory extends SModelFactory {
   protected initializeRoot(root: SModelRoot, schema: SDefGraphSchema): SModelRoot {
     root = super.initializeRoot(root, schema);
 
-    if ((root as any)?.defs){
-      (root as any).defs.children = schema.defs.children.map(childSchema => this.createElement(childSchema, root));
+    if ((root as any)?.defs) {
+      (root as any).defs.children = schema.defs.children.map(childSchema =>
+        this.createElement(childSchema, root)
+      );
     }
 
     return root;
   }
-
 }

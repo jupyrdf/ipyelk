@@ -18,7 +18,8 @@ import {
   RectangularNodeView,
   setClass,
   Point,
-  ViewportRootElement
+  ViewportRootElement,
+  Dimension,
   // HtmlRootView,
   // PreRenderedElement,
   // PreRenderedView,
@@ -27,6 +28,7 @@ import {
   // RoutableView,
   // getSubType
   // IView
+
 } from 'sprotty';
 import { ElkNode, ElkPort, ElkLabel } from '../sprotty-model';
 import { ElkModelRenderer } from '../renderer';
@@ -168,7 +170,9 @@ export class ElkUseNodeView extends ElkNodeView {
   renderMark(node: ElkNode, context: ElkModelRenderer): VNode {
     let use = node?.properties?.shape?.use;
     let href = context.hrefID(use);
-    let mark: VNode = <use href={'#' + href} width={node.size.width} height={node.size.height}/>;
+    let mark: VNode = (
+      <use href={'#' + href} width={node.size.width} height={node.size.height} />
+    );
     setClass(mark, use, true);
     return mark;
   }
@@ -305,13 +309,66 @@ export class ElkLabelView extends ShapeView {
     let use = label?.properties?.shape?.use;
     let href = context.hrefID(use);
     if (href) {
-      mark = <use class-elklabel={true} href={'#' + href} width={label.size.width} height={label.size.height}/>;
+      mark = (
+        <use
+          class-elklabel={true}
+          href={'#' + href}
+          width={label.size.width}
+          height={label.size.height}
+        />
+      );
       setClass(mark, use, true);
     } else {
       mark = <text class-elklabel={true}>{label.text}</text>;
     }
 
+    if (label.labels?.length) {
+      console.log('sub labeling to do...');
+      let icon: ElkLabel = label.labels[0];
+      let use = icon?.properties?.shape?.use;
+      let href = context.hrefID(use);
+
+      let height = label.size.height;
+
+      let iconDims = this.dimension(icon);
+      let labelDims = this.dimension(label);
+      let iconPos:Point = {
+        x:0+icon.position.x,
+        y:(height - iconDims.height) / 2 + icon.position.x,
+      }
+      let opts = icon?.layoutOptions || {}
+
+      let spacing = Number(opts["org.eclipse.elk.spacing.labelLabel"]) || 0
+      let labelPos:Point = {
+        x:iconDims.width + spacing,
+        y:(height - labelDims.height) / 2,
+      }
+      mark = (
+        <g>
+          <use
+            transform= {`translate(${iconPos.x} ${iconPos.y})`}
+            class-elklabel={true}
+            href={'#' + href}
+            width={icon.size.width}
+            height={icon.size.height}
+          />
+          <g
+            transform= {`translate(${labelPos.x} ${labelPos.y})`}
+          >
+            {mark}
+          </g>
+
+        </g>
+      );
+    }
     return mark;
+  }
+
+  dimension(label:ElkLabel): Dimension{
+    return {
+      width:label?.properties?.shape?.width || label.size.width,
+      height: label?.properties?.shape?.height || label.size.height
+    }
   }
 
   isVisible(label: ElkLabel, context: ElkModelRenderer): boolean {
