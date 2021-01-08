@@ -1,63 +1,135 @@
 # Copyright (c) 2021 Dane Freeman.
 # Distributed under the terms of the Modified BSD License.
-from ...diagram.defs import shapes
-from ...diagram.defs.connectors import Containment, Rhomb, StraightArrow
+from typing import ClassVar
 
-# from ...diagram.defs.svg import Circle, Def, Path, Point
+from ...diagram import layout_options as opt
+from ...diagram.symbol import Def, Symbol, symbols
+from ..elements import Edge, Label, Node, Partition, Port, element
+from ..shapes import connectors, shapes
 
+center_label_opts = opt.OptionsWidget(
+    options=[opt.NodeLabelPlacement(horizontal="center", vertical="center")]
+).value
 
-def ActivityDiagram():
-    defs = {
-        "decision": shapes.Diamond(r=12),
-        "merge": shapes.Diamond(r=12),
-        "final_state": shapes.DoubleCircle(r=6),
-        "start_state": shapes.SingleCircle(r=6),
-        "exit_state": shapes.XCircle(r=6),
-    }
-
-    style = {
-        " defs g.final_state > circle:nth-child(2)": {
-            "fill": "var(--jp-elk-node-stroke)"
-        },
-    }
-
-    # def add_activity(kwargs):Hashable:
-    #     pass
-
-    # def link_activity(a1, a2):
-
-    #     return a1, a2, source_port, target_port
-
-    # a1 = activity("welrkjosd")
-
-    # g.add_node(a1)
-    # g.add_edge(*link_activity(a1, a2))
-
-    return defs, style
+heading_label_opts = opt.OptionsWidget(
+    options=[opt.NodeLabelPlacement(horizontal="left", vertical="top")]
+).value
 
 
-def BlockDiagram():
+node_opts = opt.OptionsWidget(options=[opt.NodeSizeConstraints()]).value
 
-    defs = {
-        "composition": Rhomb(r=4),
-        "aggregation": Rhomb(r=4),
-        "containment": Containment(r=4),
-        "directed_association": StraightArrow(r=4),
-        "inheritance": StraightArrow(r=4, closed=True),
-    }
+small_port_shape = symbols.Rect(width=0, height=0)
 
-    style = {
-        " .arrow.inheritance": {
-            "fill": "none",
-        },
-        " .arrow.containment": {
-            "fill": "none",
-        },
-        " .arrow.aggregation": {
-            "fill": "none",
-        },
-        " .arrow.directed_association": {
-            "fill": "none",
-        },
-    }
-    return defs, style
+
+@element
+class Activity(Node):
+    shape: ClassVar[Symbol] = symbols.Ellipse()
+
+    @classmethod
+    def make(cls, text, container=False):
+        if container:
+            mark = cls(
+                labels=[
+                    Label(text=text, layoutOptions=heading_label_opts),
+                ],
+                layoutOptions=node_opts,
+                properties={"cssClasses": "activity-container"},
+            )
+            mark.shape = None
+            return mark
+
+        return cls(
+            labels=[
+                Label(text=text, layoutOptions=center_label_opts),
+            ],
+            layoutOptions=node_opts,
+        )
+
+
+@element
+class Merge(Node):
+    shape: ClassVar[Symbol] = symbols.Rect(width=50, height=10)
+    _css_classes = ["activity-filled"]
+
+
+@element
+class Decision(Node):
+    shape: ClassVar[Symbol] = symbols.Diamond(width=20, height=20)
+
+    def __post_init__(self, *args, **kwargs):
+        super().__post_init__(*args, *kwargs)
+
+        def port_opts(side):
+            return opt.OptionsWidget(options=[opt.PortSide(value=side)]).value
+
+        self.add_port(
+            key="input",
+            port=Port(shape=small_port_shape, layoutOptions=port_opts("NORTH")),
+        )
+        self.add_port(
+            key="true",
+            port=Port(
+                shape=small_port_shape,
+                labels=[Label(text="true")],
+                layoutOptions=port_opts("WEST"),
+            ),
+        )
+        self.add_port(
+            key="false",
+            port=Port(
+                shape=small_port_shape,
+                labels=[Label(text="false")],
+                layoutOptions=port_opts("EAST"),
+            ),
+        )
+
+        self.layoutOptions[opt.PortConstraints.identifier] = opt.PortConstraints(
+            value="FIXED_SIDE"
+        ).value
+
+
+@element
+class Join(Node):
+    shape: ClassVar[Symbol] = symbols.Rect(width=50, height=10)
+    _css_classes = ["activity-filled"]
+
+
+@element
+class StartActivity(Node):
+    shape: ClassVar[Symbol] = symbols.Use(value="initial-state", width=12, height=12)
+
+
+@element
+class EndActivity(Node):
+    shape: ClassVar[Symbol] = symbols.Use(value="final-state", width=12, height=12)
+
+
+@element
+class SimpleArrow(Edge):
+    shape_end: ClassVar[str] = "arrow"
+
+
+class ActivityDiagram:
+    # TODO flesh out ideas of encapsulating diagram defs / styles / elements
+
+    def __init__(self):
+        self.defs = {
+            "initial-state": Def(children=[symbols.Circle(radius=6)]),
+            "final-state": shapes.DoubleCircle(radius=6),
+            "exit-state": shapes.XCircle(radius=6),
+            "arrow": connectors.StraightArrow(r=4),
+        }
+
+        self.style = {
+            " .final-state > g:nth-child(2)": {
+                "fill": "var(--jp-elk-node-stroke)",
+            },
+            " .activity-filled .elknode": {
+                "fill": "var(--jp-elk-node-stroke)",
+            },
+            " .activity-container > .elknode": {
+                "rx": "var(--jp-code-font-size)",
+            },
+        }
+
+        self.partition = Partition(default_edge=SimpleArrow)

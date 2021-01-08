@@ -1,7 +1,7 @@
 # Copyright (c) 2021 Dane Freeman.
 # Distributed under the terms of the Modified BSD License.
-from ...diagram.defs import ConnectorDef
-from ...diagram.symbol import Circle, Path, Point
+from ...diagram.symbol.defs import ConnectorDef
+from ...diagram.symbol.symbols import Circle, Path, Point
 
 
 def Rhomb(r=6):

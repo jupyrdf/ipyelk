@@ -7,7 +7,7 @@ from typing import Dict
 from ipywidgets import DOMWidget
 
 # from .elk_model import ElkNode
-from .symbol import Point, Symbol
+from .symbols import Point, Symbol
 
 
 @dataclass

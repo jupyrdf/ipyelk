@@ -12,7 +12,7 @@ from .._version import EXTENSION_NAME, EXTENSION_SPEC_VERSION
 from ..layouting.elkjs import ElkJS
 from ..schema import ElkSchemaValidator
 from ..trait_types import Schema
-from .defs import Def, def_serialization
+from .symbol.defs import Def, def_serialization
 
 
 class ElkDiagram(DOMWidget):

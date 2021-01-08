@@ -1,29 +1,29 @@
 # Copyright (c) 2021 Dane Freeman.
 # Distributed under the terms of the Modified BSD License.
-from ...diagram.defs import Def
-from ...diagram.symbol import Circle, Path
+from ...diagram.symbol import Def, symbols
 
 
-def DoubleCircle(r=6):
+def DoubleCircle(radius=6):
     return Def(
         children=[
-            Circle(radius=r),
-            Circle(radius=r / 2, x=r, y=r),
+            symbols.Circle(radius=radius),
+            symbols.Circle(radius=radius / 2, x=radius, y=radius),
         ]
     )
 
 
-def XCircle(r=6):
+def XCircle(radius=6):
+    r = radius
     return Def(
         children=[
-            Circle(radius=r),
-            Path.from_list(
+            symbols.Circle(radius=r),
+            symbols.Path.from_list(
                 [
                     (r + r * 2 ** -0.5, r + r * 2 ** -0.5),
                     (r - r * 2 ** -0.5, r - r * 2 ** -0.5),
                 ]
             ),
-            Path.from_list(
+            symbols.Path.from_list(
                 [
                     (r - r * 2 ** -0.5, r + r * 2 ** -0.5),
                     (r + r * 2 ** -0.5, r - r * 2 ** -0.5),

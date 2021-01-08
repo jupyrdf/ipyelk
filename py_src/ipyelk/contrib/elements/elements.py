@@ -1,7 +1,7 @@
 # Copyright (c) 2021 Dane Freeman.
 # Distributed under the terms of the Modified BSD License.
 from dataclasses import dataclass, field
-from typing import Dict, List, Optional, Type, Union
+from typing import ClassVar, Dict, List, Optional, Type, Union
 
 from ...diagram.elk_model import strip_none
 from ...diagram.symbol import Symbol
@@ -9,33 +9,106 @@ from ...transform import merge
 from .registry import Registry
 
 
-@dataclass
-class Element:
+def id_hash(self):
+    return hash(id(self))
+
+
+def element(
+    _cls=None,
+    *,
+    init=True,
+    repr=True,
+    eq=True,
+    order=False,
+    unsafe_hash=False,
+    frozen=False
+):
+    def wrap(cls):
+        wrapped = dataclass(
+            cls,
+            init=init,
+            repr=repr,
+            eq=eq,
+            order=order,
+            unsafe_hash=unsafe_hash,
+            frozen=frozen,
+        )
+        if getattr(wrapped, "__hash__", None) is None:
+            wrapped.__hash__ = id_hash
+        return wrapped
+
+    # See if we're being called as @dataclass or @dataclass().
+    if _cls is None:
+        # We're called with parens.
+        return wrap
+
+    # We're called as @dataclass without parens.
+    return wrap(_cls)
+
+
+@element
+class BaseElement:
     labels: List["Label"] = field(default_factory=list)
     properties: Dict = field(default_factory=dict)
     layoutOptions: Dict = field(default_factory=dict)
 
+    _dom_classes: List[str] = field(init=False, repr=False, default_factory=list)
+    _css_classes: ClassVar[List[str]] = []
+
+    def __post_init__(self, *args, **kwargs):
+        classes = self._css_classes or []
+        for css_class in classes:
+            self.add_class(css_class)
+
     def to_json(self):
         raise NotImplementedError("Subclasses should implement")
 
-    def __hash__(self):
-        return id(self)
+    def add_class(self, className: str) -> "BaseElement":
+        """
+        Adds a class to the top level element of the widget.
+
+        Doesn't add the class if it already exists.
+        """
+        dom_classes = self.properties.get("cssClasses", "").split(" ")
+        if className not in dom_classes:
+            dom_classes = list(dom_classes) + [className]
+        self.properties["cssClasses"] = " ".join(dom_classes).strip()
+        return self
+
+    def remove_class(self, className: str) -> "BaseElement":
+        """
+        Removes a class from the top level element of the widget.
+
+        Doesn't remove the class if it doesn't exist.
+        """
+        dom_classes = self.properties.get("cssClasses", "").split(" ")
+        if className in dom_classes:
+            self.properties["cssClasses"] = " ".join(
+                [c for c in dom_classes if c != className]
+            ).strip()
+        return self
 
 
-@dataclass
-class Edge(Element):
-    shape_end: Optional[Symbol] = None
-    shape_start: Optional[Symbol] = None
+@element
+class Edge(BaseElement):
+    shape_end: Optional[str] = None  # TODO maybe should be a ConnectorDef object
+    shape_start: Optional[str] = None
 
     source: Union["Node", "Port"] = None
     target: Union["Node", "Port"] = None
 
     def to_json(self):
+        props = self.properties
+        shape = props["shape"] = props.get("shape", {})
+        for key, connector in zip(["start", "end"], [self.shape_start, self.shape_end]):
+            if connector:
+                shape[key] = connector
+
         data = {
             "id": Registry.get_id(self),
-            "properties": {},
-            "layoutOptions": {},
-            "labels": [],
+            "properties": props,
+            "layoutOptions": self.layoutOptions,
+            "labels": [label.to_json() for label in self.labels],
         }
         if isinstance(self.source, Port):
             data["sourcePort"] = Registry.get_id(self.source)
@@ -48,12 +121,9 @@ class Edge(Element):
         v = self.target if isinstance(self.target, Node) else self.target._parent
         return u, v
 
-    def __hash__(self):
-        return id(self)
 
-
-@dataclass
-class ShapeElement(Element):
+@element
+class ShapeElement(BaseElement):
     shape: Optional[Symbol] = None
 
     def to_json(self):
@@ -68,11 +138,8 @@ class ShapeElement(Element):
 
         return strip_none(data)
 
-    def __hash__(self):
-        return id(self)
 
-
-@dataclass
+@element
 class Port(ShapeElement):
     _parent: Optional["Node"] = field(init=False, repr=False, default=None)
 
@@ -81,13 +148,11 @@ class Port(ShapeElement):
         parent_id = Registry.get_id(self._parent)
         self_id = Registry.get_id(self)
         data["id"] = ".".join([parent_id, self_id])
+        data["properties"]["type"] = "port"
         return data
 
-    def __hash__(self):
-        return id(self)
 
-
-@dataclass
+@element
 class Label(ShapeElement):
     text: str = " "  # completely empty strings exclude label in node sizing
 
@@ -96,45 +161,60 @@ class Label(ShapeElement):
         data["text"] = self.text
         return data
 
-    def __hash__(self):
-        return id(self)
 
-
-@dataclass
+@element
 class Node(ShapeElement):
     ports: Dict[str, Port] = field(default_factory=dict)
     children: List["Node"] = field(default_factory=list)
 
     _edges: set = field(init=False, repr=False, default_factory=set)  # could be a set?
+    _child_namespace: Dict[str, "Node"] = field(
+        init=False, repr=False, default_factory=dict
+    )
 
-    def __post_init__(self, **kwargs):
+    def __post_init__(self, *args, **kwargs):
+        super().__post_init__(self, *args, **kwargs)
         for key, port in self.ports.items():
             port_parent(self, port)
 
     def __getattr__(self, key):
+        if key in self._child_namespace:
+            return self._child_namespace.get(key)
         if key in self.ports:
             return self.ports.get(key)
         shape_ports = getattr(self.shape, "ports", {})
         if key in shape_ports:
-            return self.add_port(key, Port())
+            return self.add_port(key=key, port=Port())
         # TODO decide on bad magic to create a port if it doesn't exist?
         raise AttributeError
 
     def to_json(self):
         data = super().to_json()
         shape_ports = {p["id"].split(".")[-1]: p for p in data.get("ports", [])}
-        ports = []
+        ports = {}
 
+        # merge shape ports and ports defined on the element
         for key, port in shape_ports.items():
             if key in self.ports:
                 port = merge(self.ports[key].to_json(), port)
-            ports.append(port)
-        data["ports"] = ports
+            ports[key] = port
+
+        # add additional ports only defined on he element
+        for key, port in self.ports.items():
+            if key not in ports:
+                ports[key] = port.to_json()
+        data["ports"] = ports.values()
         return strip_none(data)
 
-    def add_child(self, child: "Node") -> "Node":
+    def add_child(self, child: "Node", key: str = "") -> "Node":
         self.children.append(child)
+        if key:
+            self._child_namespace[key] = child
         return child
+
+    def add_port(self, port: Port, key) -> Port:
+        self.ports[key] = port_parent(self, port)
+        return port
 
     def add_edge(
         self,
@@ -151,16 +231,11 @@ class Node(ShapeElement):
 
     def __setattr__(self, key, value):
         if isinstance(value, Port):
-            self.add_port(key, value)
+            self.add_port(port=value, key=key)
+        elif isinstance(value, Node):
+            self.add_child(child=value, key=key)
         else:
             super().__setattr__(key, value)
-
-    def add_port(self, key, port: Port) -> Port:
-        self.ports[key] = port_parent(self, port)
-        return port
-
-    def __hash__(self):
-        return id(self)
 
 
 def port_parent(node: Node, port: Port) -> Port:

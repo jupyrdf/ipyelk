@@ -22,7 +22,7 @@ export class SGraphView implements IView {
       svg('g', { class: { elkdefs: true } }, context.renderChildren(model.defs))
     ]);
     const css_transform = {
-      transform: `scale(${model.zoom}) translate(${-model.scroll.x}px,${-model.scroll
+      transform: `scale(${model.zoom}) translateZ(0) translate(${-model.scroll.x}px,${-model.scroll
         .y}px)`
     };
     let overlay = (

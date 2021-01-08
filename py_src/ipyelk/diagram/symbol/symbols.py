@@ -3,7 +3,6 @@
 from abc import ABC
 from dataclasses import dataclass, field
 from typing import ClassVar, Dict, List, Optional, Type
-from uuid import uuid4
 
 from ipywidgets import DOMWidget
 
@@ -62,7 +61,7 @@ class Symbol(ABC):
         return []
 
     def get_children(self, id=None) -> List:
-        return [c() for c in getattr(self, "children", [])]
+        return [c.to_json() for c in getattr(self, "children", [])]
 
     def get_properties(self) -> Dict:
         properties = {}
@@ -77,11 +76,6 @@ class Symbol(ABC):
 
     def get_shape_props(self) -> Optional[Dict]:
         return self.position()
-
-    def __call__(self, id=None):
-        if id is None:
-            id = str(uuid4())
-        return self.to_json(id)
 
     @classmethod
     def make_defs(cls, classes: List[Type["Symbol"]] = None) -> Dict:
@@ -184,6 +178,17 @@ class Rect(Symbol):
 
 
 @dataclass
+class Use(Symbol):
+    type = "node:use"
+    value: str = ""
+
+    def get_shape_props(self):
+        props = super().get_shape_props()
+        props.update({"use": str(self.value)})
+        return props
+
+
+@dataclass
 class Point:
     x: float = 0
     y: float = 0
@@ -240,7 +245,13 @@ class HTML(Symbol):
 @dataclass
 class Icon(Symbol):
     type = "label:icon"
-    value: str = ""
+    value: str = " "
+
+    def to_json(self, id=None):
+        """Returns a valid elk node dictionary"""
+        data = super().to_json(id=id)
+        data["text"] = " "  # can't be none or completely empty string
+        return strip_none(data)
 
     def get_shape_props(self):
         props = super().get_shape_props()
