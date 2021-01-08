@@ -1,6 +1,7 @@
 # Copyright (c) 2021 Dane Freeman.
 # Distributed under the terms of the Modified BSD License.
-from typing import ClassVar
+from dataclasses import field
+from typing import ClassVar, Dict, Type
 
 from ...diagram import layout_options as opt
 from ...diagram.symbol import Def, Symbol, symbols
@@ -109,18 +110,17 @@ class SimpleArrow(Edge):
     shape_end: ClassVar[str] = "arrow"
 
 
-class ActivityDiagram:
+
+@element
+class ActivityDiagram(Partition):
     # TODO flesh out ideas of encapsulating diagram defs / styles / elements
-
-    def __init__(self):
-        self.defs = {
-            "initial-state": Def(children=[symbols.Circle(radius=6)]),
-            "final-state": shapes.DoubleCircle(radius=6),
-            "exit-state": shapes.XCircle(radius=6),
-            "arrow": connectors.StraightArrow(r=4),
-        }
-
-        self.style = {
+    defs: ClassVar[Dict[str, Def]] = {
+        "initial-state": Def(children=[symbols.Circle(radius=6)]),
+        "final-state": shapes.DoubleCircle(radius=6),
+        "exit-state": shapes.XCircle(radius=6),
+        "arrow": connectors.StraightArrow(r=4),
+    }
+    style: ClassVar[Dict[str, Def]] = {
             " .final-state > g:nth-child(2)": {
                 "fill": "var(--jp-elk-node-stroke)",
             },
@@ -131,5 +131,4 @@ class ActivityDiagram:
                 "rx": "var(--jp-code-font-size)",
             },
         }
-
-        self.partition = Partition(default_edge=SimpleArrow)
+    default_edge: Type[Edge] = field(default=SimpleArrow)

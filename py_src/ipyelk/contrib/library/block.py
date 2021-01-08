@@ -1,8 +1,10 @@
 # Copyright (c) 2021 Dane Freeman.
 # Distributed under the terms of the Modified BSD License.
-from typing import ClassVar
+from dataclasses import field
+from typing import ClassVar, Dict, Type
 
 from ...diagram import layout_options as opt
+from ...diagram.symbol import Def
 from ..elements import Edge, Partition, Record, element
 from ..shapes import connectors
 
@@ -66,17 +68,17 @@ class Generalization(Edge):
     shape_start: ClassVar[str] = "generalization"
 
 
-class BlockDiagram:
-    def __init__(self):
-        self.defs = {
+@element
+class BlockDiagram(Partition):
+    # TODO flesh out ideas of encapsulating diagram defs / styles / elements
+    defs: ClassVar[Dict[str, Def]] = {
             "composition": connectors.Rhomb(r=4),
             "aggregation": connectors.Rhomb(r=4),
             "containment": connectors.Containment(r=4),
             "directed_association": connectors.StraightArrow(r=4),
             "generalization": connectors.StraightArrow(r=4, closed=True),
         }
-
-        self.style = {
+    style: ClassVar[Dict[str, Def]] = {
             " .elklabel.compartment_title_1": {
                 "font-weight": "bold",
             },
@@ -95,6 +97,9 @@ class BlockDiagram:
             " .arrow.directed_association": {
                 "fill": "none",
             },
+            " .internal>.elknode":{
+                "stroke": "transparent",
+                "fill": "transparent",
+            }
         }
-
-        self.partition = Partition()
+    default_edge: Type[Edge] = field(default=Association)
