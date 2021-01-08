@@ -2,8 +2,6 @@ name: test
 
 channels:
   - https://conda.anaconda.org/conda-forge
-  - https://conda.anaconda.org/anaconda
-  - https://conda.anaconda.org/msys2
 
 dependencies:
   - anaconda-project =0.8.4
