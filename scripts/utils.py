@@ -1,4 +1,4 @@
-# Copyright (c) 2020 Dane Freeman.
+# Copyright (c) 2021 Dane Freeman.
 # Distributed under the terms of the Modified BSD License.
 
 # from https://github.com/jupyrdf/ipyradiant/blob/master/_scripts/utils.py

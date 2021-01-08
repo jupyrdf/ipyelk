@@ -1,7 +1,7 @@
 """Set of Widgets to help configure Elk Layout Options
 https://www.eclipse.org/elk/reference/options.html
 """
-# Copyright (c) 2020 Dane Freeman.
+# Copyright (c) 2021 Dane Freeman.
 # Distributed under the terms of the Modified BSD License.
 
 from .edge_options import (
