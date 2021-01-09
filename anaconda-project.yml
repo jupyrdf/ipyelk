@@ -49,8 +49,6 @@ env_specs:
     description: binder environment
     channels:
       - https://conda.anaconda.org/conda-forge
-      - https://conda.anaconda.org/anaconda
-      - https://conda.anaconda.org/msys2
     packages:
       - async-lru >=1,<2
       - importnb
@@ -70,8 +68,6 @@ env_specs:
       - win-64
     channels:
       - https://conda.anaconda.org/conda-forge
-      - https://conda.anaconda.org/anaconda
-      - https://conda.anaconda.org/msys2
     packages:
       - firefox
       - geckodriver

@@ -6,7 +6,6 @@ import ipywidgets as W
 import traitlets as T
 
 from ..app import Elk, ElkDiagram
-from ..nx import XELK
 
 
 class ToolButton(W.Button):
