@@ -110,7 +110,6 @@ class SimpleArrow(Edge):
     shape_end: ClassVar[str] = "arrow"
 
 
-
 @element
 class ActivityDiagram(Partition):
     # TODO flesh out ideas of encapsulating diagram defs / styles / elements
@@ -121,14 +120,14 @@ class ActivityDiagram(Partition):
         "arrow": connectors.StraightArrow(r=4),
     }
     style: ClassVar[Dict[str, Def]] = {
-            " .final-state > g:nth-child(2)": {
-                "fill": "var(--jp-elk-node-stroke)",
-            },
-            " .activity-filled .elknode": {
-                "fill": "var(--jp-elk-node-stroke)",
-            },
-            " .activity-container > .elknode": {
-                "rx": "var(--jp-code-font-size)",
-            },
-        }
+        " .final-state > g:nth-child(2)": {
+            "fill": "var(--jp-elk-node-stroke)",
+        },
+        " .activity-filled .elknode": {
+            "fill": "var(--jp-elk-node-stroke)",
+        },
+        " .activity-container > .elknode": {
+            "rx": "var(--jp-code-font-size)",
+        },
+    }
     default_edge: Type[Edge] = field(default=SimpleArrow)

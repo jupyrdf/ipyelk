@@ -72,34 +72,34 @@ class Generalization(Edge):
 class BlockDiagram(Partition):
     # TODO flesh out ideas of encapsulating diagram defs / styles / elements
     defs: ClassVar[Dict[str, Def]] = {
-            "composition": connectors.Rhomb(r=4),
-            "aggregation": connectors.Rhomb(r=4),
-            "containment": connectors.Containment(r=4),
-            "directed_association": connectors.StraightArrow(r=4),
-            "generalization": connectors.StraightArrow(r=4, closed=True),
-        }
+        "composition": connectors.Rhomb(r=4),
+        "aggregation": connectors.Rhomb(r=4),
+        "containment": connectors.Containment(r=4),
+        "directed_association": connectors.StraightArrow(r=4),
+        "generalization": connectors.StraightArrow(r=4, closed=True),
+    }
     style: ClassVar[Dict[str, Def]] = {
-            " .elklabel.compartment_title_1": {
-                "font-weight": "bold",
-            },
-            " .elklabel.heading, .elklabel.compartment_title_2": {
-                "font-style": "italic",
-            },
-            " .arrow.inheritance": {
-                "fill": "none",
-            },
-            " .arrow.containment": {
-                "fill": "none",
-            },
-            " .arrow.aggregation": {
-                "fill": "none",
-            },
-            " .arrow.directed_association": {
-                "fill": "none",
-            },
-            " .internal>.elknode":{
-                "stroke": "transparent",
-                "fill": "transparent",
-            }
-        }
+        " .elklabel.compartment_title_1": {
+            "font-weight": "bold",
+        },
+        " .elklabel.heading, .elklabel.compartment_title_2": {
+            "font-style": "italic",
+        },
+        " .arrow.inheritance": {
+            "fill": "none",
+        },
+        " .arrow.containment": {
+            "fill": "none",
+        },
+        " .arrow.aggregation": {
+            "fill": "none",
+        },
+        " .arrow.directed_association": {
+            "fill": "none",
+        },
+        " .internal>.elknode": {
+            "stroke": "transparent",
+            "fill": "transparent",
+        },
+    }
     default_edge: Type[Edge] = field(default=Association)

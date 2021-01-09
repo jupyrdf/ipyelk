@@ -47,6 +47,7 @@ class ToggleCollapsedBtn(ToolButton):
             return tree.neighbors(node)
         return []
 
+
 class FitBtn(ToolButton):
     @T.default("description")
     def _default_description(self):
