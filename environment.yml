@@ -2,8 +2,6 @@ name: ipyelk
 
 channels:
   - https://conda.anaconda.org/conda-forge
-  - https://conda.anaconda.org/anaconda
-  - https://conda.anaconda.org/msys2
 
 dependencies:
   - async-lru >=1,<2

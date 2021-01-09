@@ -1,39 +1,12 @@
-# Copyright (c) 2020 Dane Freeman.
+# Copyright (c) 2021 Dane Freeman.
 # Distributed under the terms of the Modified BSD License.
-from dataclasses import dataclass
 from itertools import tee
 from typing import Dict, Hashable, List, Optional, Tuple
 
 import networkx as nx
 
-from ..diagram.elk_model import ElkNode, ElkPort, ElkRoot
-
-
-@dataclass(frozen=True)
-class Edge:
-    source: Hashable
-    source_port: Optional[Hashable]
-    target: Hashable
-    target_port: Optional[Hashable]
-    owner: Hashable
-    data: Optional[Dict]
-
-    def __hash__(self):
-        return hash((self.source, self.source_port, self.target, self.target_port))
-
-
-@dataclass(frozen=True)
-class Port:
-    node: Hashable
-    elkport: ElkPort
-
-    def __hash__(self):
-        return hash(tuple([hash(self.node), hash(self.elkport.id)]))
-
-
-NodeMap = Dict[Hashable, ElkNode]
-EdgeMap = Dict[Hashable, List[Edge]]
-PortMap = Dict[Hashable, Port]
+from ..diagram.elk_model import ElkNode, ElkRoot
+from ..transform import NodeMap
 
 
 def compact(array: Optional[List]) -> Optional[List]:
@@ -107,3 +80,89 @@ def get_ports(edge_data: Dict) -> Tuple[Optional[Hashable], Optional[Hashable]]:
     source_port = edge_data.get("sourcePort", None) or p
     target_port = edge_data.get("targetPort", None) or p
     return source_port, target_port
+
+
+def is_hidden(tree: nx.DiGraph, node: Hashable, attr: str) -> bool:
+    """Iterate  on the node ancestors and determine if it is hidden along the chain"""
+    if tree and node in tree:
+        if tree.nodes[node].get(attr, False):
+            return True
+        for ancestor in nx.ancestors(tree, node):
+            if tree.nodes[ancestor].get(attr, False):
+                return True
+    return False
+
+
+def build_hierarchy(
+    g: nx.Graph, tree: nx.DiGraph, elknodes: NodeMap, HIDDEN_ATTR: str
+) -> List[ElkNode]:
+    """The Elk JSON is hierarchical. This method iterates through the build
+    elknodes and links children to parents if the incoming source includes a
+    hierarcichal networkx diagraph tree.
+
+    :param g: [description]
+    :type g: nx.Graph
+    :param tree: [description]
+    :type tree: nx.DiGraph
+    :param elknodes: mapping of networkx nodes to their elknode representations
+    :type elknodes: NodeMap
+    :param HIDDEN_ATTR: [description]
+    :type HIDDEN_ATTR: str
+    :return: Top level ElkNodes to put as children under the ElkRoot
+    :rtype: List[ElkNode]
+    """
+    if tree:
+        # roots of the tree
+        roots = [n for n, d in tree.in_degree() if d == 0]
+        for n, elknode in elknodes.items():
+            if n in tree:
+                elknode.children = [
+                    elknodes[c]
+                    for c in tree.neighbors(n)
+                    if not is_hidden(tree, c, HIDDEN_ATTR)
+                ]
+            else:
+                # nodes that are not in the tree
+                roots.append(n)
+    else:
+        # only flat graph provided
+        roots = []
+        for n, elknode in elknodes.items():
+            if not is_hidden(tree, n, HIDDEN_ATTR):
+                roots.append(n)
+    return [elknodes[n] for n in roots]
+
+
+def map_visible(g: nx.Graph, tree: nx.DiGraph, attr: str) -> Dict[Hashable, Hashable]:
+    """Build mapping of nodes to their closest visible node.
+    If the node is not hidden then it would map to itself.
+
+    :param g: [description]
+    :type g: nx.Graph
+    :param tree: [description]
+    :type tree: nx.DiGraph
+    :param attr: [description]
+    :type attr: str
+    :return: [description]
+    :rtype: Dict[Hashable, Hashable]
+    """
+    mapping = {}
+    if tree:
+        for n in nx.algorithms.topological_sort(tree):
+            if n in mapping:
+                break  # go to next node in the sorting
+            if not is_hidden(tree, n, attr):
+                mapping[n] = n
+            else:
+                predecesors = list(tree.predecessors(n))
+                assert len(predecesors) <= 1
+                for last_visible in predecesors:
+                    mapping[n] = last_visible
+                    for d in nx.algorithms.dag.descendants(tree, n):
+                        mapping[d] = last_visible
+
+    # creating mapping entries for those nodes not in the tree
+    for n in g.nodes():
+        if n not in mapping:
+            mapping[n] = n
+    return mapping

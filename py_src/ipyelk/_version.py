@@ -1,4 +1,4 @@
-# Copyright (c) 2020 Dane Freeman.
+# Copyright (c) 2021 Dane Freeman.
 # Distributed under the terms of the Modified BSD License.
 
 __version__ = "0.3.0"
