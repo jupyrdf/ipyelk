@@ -15,6 +15,7 @@ import os
 import subprocess
 from hashlib import sha256
 
+from doit import create_after
 from doit.action import CmdAction
 from doit.tools import PythonInteractiveAction, config_changed
 from scripts import project as P
@@ -308,6 +309,22 @@ def task_test():
         *P.PYM,
         "pytest",
         "--cov-fail-under",
+        "-vv",
+        "-ff",
+        "--pyargs",
+        "ipyelk",
+        "--cov",
+        "ipyelk",
+        "--cov-report",
+        "term-missing:skip-covered",
+        "--cov-report",
+        "html:build/htmlcov",
+        "--no-cov-on-fail",
+        "--html",
+        "build/pytest.html",
+        "--self-contained-html",
+        "--junitxml",
+        "build/pytest.xunit.xml",
         str(P.PYTEST_COV_THRESHOLD),
     ]
 
@@ -552,6 +569,29 @@ def task_watch():
         uptodate=[lambda: False],
         file_dep=[P.OK_PIP_INSTALL],
         actions=[PythonInteractiveAction(_watch)],
+    )
+
+
+def task_docs():
+    """build the docs (mostly as readthedocs would)"""
+    yield dict(
+        name="sphinx",
+        file_dep=[P.DOCS_CONF, *P.ALL_PY_SRC, *P.ALL_MD],
+        targets=[P.DOCS_BUILDINFO],
+        actions=[[*P.APR_DOCS, "docs"]],
+    )
+
+
+@create_after(executed="docs", target_regex=r"build/docs/html/.*\.html")
+def task_checklinks():
+    file_dep = sorted(P.DOCS_BUILD.rglob("*.html"))
+    yield _ok(
+        dict(
+            name="all",
+            file_dep=file_dep,
+            actions=[[*P.APR_DOCS, "checklinks", *file_dep]],
+        ),
+        P.OK_LINKS,
     )
 
 
