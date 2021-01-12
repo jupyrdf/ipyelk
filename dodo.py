@@ -306,25 +306,8 @@ def task_test():
 
     utest_args = [
         *P.APR_DEFAULT,
-        *P.PYM,
         "pytest",
         "--cov-fail-under",
-        "-vv",
-        "-ff",
-        "--pyargs",
-        "ipyelk",
-        "--cov",
-        "ipyelk",
-        "--cov-report",
-        "term-missing:skip-covered",
-        "--cov-report",
-        "html:build/htmlcov",
-        "--no-cov-on-fail",
-        "--html",
-        "build/pytest.html",
-        "--self-contained-html",
-        "--junitxml",
-        "build/pytest.xunit.xml",
         str(P.PYTEST_COV_THRESHOLD),
     ]
 

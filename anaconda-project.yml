@@ -38,7 +38,9 @@ commands:
     description: check links in built docs
     unix: |-
       set -eux \
+      && mkdir -p build/links \
       && cd build/docs/html \
+      && touch pytest.ini \
       && pytest-check-links \
         --check-links-cache \
         --check-links-cache-name=../../../build/links/cache \
