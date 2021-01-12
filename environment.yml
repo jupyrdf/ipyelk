@@ -5,6 +5,7 @@ channels:
 
 dependencies:
   - async-lru >=1,<2
+  - bqplot
   - importnb
   - ipython >=7
   - ipywidgets >=7.5.1
