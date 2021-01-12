@@ -131,4 +131,4 @@ jobs:
 
       - name: docs
         if: ${{ contains(matrix.os, 'ubuntu') }}
-        run: doit checklinks
+        run: doit checkdocs

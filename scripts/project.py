@@ -109,6 +109,7 @@ VERSION_PY = PY_SRC / "_version.py"
 # docs
 DOCS_BUILD = BUILD / "docs"
 DOCS_CONF = DOCS / "conf.py"
+DICTIONARY = DOCS / "dictionary.txt"
 
 # js stuff
 JS_LIB = ROOT / "lib"
