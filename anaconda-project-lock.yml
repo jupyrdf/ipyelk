@@ -23,7 +23,7 @@ env_specs:
     locked: false
   default:
     locked: true
-    env_spec_hash: 8cac3d8f74865d444c4eaad7721f7fd33f1b9846
+    env_spec_hash: 7c95dbd9f1203e671738a9fa350f37ab61057d94
     platforms:
       - linux-64
       - osx-64
