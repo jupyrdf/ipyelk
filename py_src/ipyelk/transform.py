@@ -1,26 +1,62 @@
 # Copyright (c) 2021 Dane Freeman.
 # Distributed under the terms of the Modified BSD License.
 import asyncio
-from typing import Dict, Hashable, Optional
+from dataclasses import dataclass
+from typing import Dict, Hashable, List, Optional, Union
 
 import ipywidgets as W
 import traitlets as T
 
-from .diagram import ElkDiagram, ElkLabel, ElkNode
+from .diagram import ElkDiagram, ElkLabel, ElkNode, ElkPort
+from .diagram.elk_model import ElkGraphElement
+from .diagram.elk_text_sizer import ElkTextSizer, size_labels
+from .exceptions import ElkDuplicateIDError, ElkRegistryError
 from .schema import ElkSchemaValidator
-from .styled_widget import StyledWidget
-from .toolbar import Toolbar
 from .trait_types import Schema
+
+
+@dataclass(frozen=True)
+class Edge:
+    source: Hashable
+    source_port: Optional[Hashable]
+    target: Hashable
+    target_port: Optional[Hashable]
+    owner: Hashable
+    data: Optional[Dict]
+
+    def __hash__(self):
+        return hash((self.source, self.source_port, self.target, self.target_port))
+
+
+@dataclass(frozen=True)
+class Port:
+    node: Hashable
+    elkport: ElkPort
+
+    def __hash__(self):
+        return hash(tuple([hash(self.node), hash(self.elkport.id)]))
+
+
+NodeMap = Dict[Hashable, ElkNode]
+EdgeMap = Dict[Hashable, List[Edge]]
+PortMap = Dict[Hashable, Port]
 
 
 class ElkTransformer(W.Widget):
     """ Transform data into the form required by the ElkDiagram. """
 
+    ELK_ROOT_ID = "root"
     _nodes: Optional[Dict[Hashable, ElkNode]] = None
     source = T.Dict()
     value = Schema(ElkSchemaValidator)
     _version: str = "v1"
     _task: asyncio.Task = None
+
+    # internal map between output Elk Elements and incoming items
+    _elk_to_item: Dict[str, Hashable] = None
+    _item_to_elk: Dict[Hashable, str] = None
+
+    text_sizer: ElkTextSizer = T.Instance(ElkTextSizer, allow_none=True)
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -29,11 +65,14 @@ class ElkTransformer(W.Widget):
 
     async def transform(self) -> ElkNode:
         """Generate elk json"""
-        return ElkNode(**self.source)
+        top = ElkNode(**self.source)
+        # bulk calculate label sizes
+        await size_labels(self.text_sizer, collect_labels([top]))
+        return top
 
     @T.default("value")
     def _default_value(self):
-        return {"id": "root"}
+        return {"id": self.ELK_ROOT_ID}
 
     async def _refresh(self):
         root_node = await self.transform()
@@ -59,121 +98,114 @@ class ElkTransformer(W.Widget):
 
     def from_id(self, element_id: str) -> Hashable:
         """Use the elk identifiers to find original objects"""
-        return element_id
+        try:
+            return self._elk_to_item[element_id]
+        except KeyError as E:
+            raise ElkRegistryError(
+                f"Element id `{element_id}` not in elk id registry."
+            ) from E
 
     def to_id(self, item: Hashable) -> str:
         """Use original objects to find elk id"""
-        return item
+        try:
+            return self._item_to_elk[item]
+        except KeyError as E:
+            raise ElkRegistryError(f"Item `{item}` not in elk id registry.") from E
 
     def connect(self, view: ElkDiagram) -> T.link:
         """Connect the output value of this transformer to a diagram"""
         return T.dlink((self, "value"), (view, "value"))
 
+    def register(self, element: Union[str, ElkGraphElement], item: Hashable):
+        """Register Elk Element as a way to find the particular item.
 
-class Elk(W.VBox, StyledWidget):
-    """ An Elk diagramming widget """
+        This method is used in the `lookup` method for dereferencing the elk id.
 
-    transformer: ElkTransformer = T.Instance(ElkTransformer)
-    diagram: ElkDiagram = T.Instance(ElkDiagram)
-    selected = T.Tuple()
-    hovered = T.Any(allow_none=True, default_value=None)
-    toolbar: Toolbar = T.Instance(Toolbar, kw={})
+        :param element: ElkGraphElement or elk id to track
+        :type element: ElkGraphElement
+        :param item: [description]
+        :type item: Hashable
+        """
 
-    _data_link: T.dlink = None
+        _id = element.id if isinstance(element, ElkGraphElement) else element
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self._update_data_link()
-        self._update_children()
-        self.add_class("jp-ElkApp")
+        if _id in self._elk_to_item:
+            raise ElkDuplicateIDError(f"{_id} already exists in the registry")
+        self._elk_to_item[_id] = item
+        self._item_to_elk[item] = _id
 
-    def _set_arrows_opacity(self, value):
-        style = self.style
-        css_selector = " path.edge.arrow"
-
-        arrow_style = style.get(css_selector, {})
-        arrow_style["opacity"] = str(value)
-
-        style[css_selector] = arrow_style
-        self.style = style.copy()
-        # TODO should not need to trigger update this way but the observer isn't firing
-        self._update_style()
-
-    def hide_arrows(self):
-        self._set_arrows_opacity(0)
-
-    def show_arrows(self):
-        self._set_arrows_opacity(1)
-
-    @T.default("diagram")
-    def _default_diagram(self):
-        return ElkDiagram()
-
-    @T.default("transformer")
-    def _default_transformer(self):
-        return ElkTransformer()
-
-    @T.observe("diagram", "transformer")
-    def _update_data_link(self, *_):
-        if isinstance(self._data_link, T.link):
-            self._data_link.unlink()
-            self._data_link = None
-        if self.transformer and self.diagram:
-            self._data_link = T.dlink(
-                (self.transformer, "value"),
-                (self.diagram, "value"),
-            )
-
-    @T.observe("diagram")
-    def _update_children(self, change: T.Bunch = None):
-        self.children = [self.diagram, self.toolbar]
-
-        if change:
-            # uninstall old observers
-            safely_unobserve(change.old, "selected")
-            safely_unobserve(change.old, "hovered")
-
-        if self.diagram:  # also change.new
-            self.diagram.observe(self._handle_diagram_selected, "selected")
-            self.diagram.observe(self._handle_diagram_hovered, "hovered")
-
-    def _handle_diagram_selected(self, change: T.Bunch):
-        items = []
-        if change.new:
-            items = [self.transformer.from_id(s) for s in change.new]
-        if items != self.selected:
-            self.selected = items
-
-    def _handle_diagram_hovered(self, change: T.Bunch):
-        try:
-            _id = self.transformer.from_id(change.new)
-        except ValueError:  # TODO introduce custom ipyelk exceptions
-            _id = None
-        if _id != self.hovered:
-            self.hovered = _id
-
-    @T.observe("selected")
-    def _update_selected(self, change: T.Bunch):
-        if not self.diagram:
-            return
-
-        # transform selected nodes into ids and test if new ids
-        ids = [self.transformer.to_id(s) for s in self.selected]
-        if self.diagram.selected != ids:
-            self.diagram.selected = ids
-
-    @T.observe("hovered")
-    def _update_hover(self, change: T.Bunch):
-        if not self.diagram:
-            return
-
-        # transform hovered nodes into elk id
-        self.diagram.hover = self.transformer.to_id(self.hovered)
-
-    def refresh(self):
-        self.transformer.refresh()
+    def clear_registry(self):
+        self._elk_to_item: Dict[str, Hashable] = {}
+        self._item_to_elk: Dict[Hashable, str] = {}
 
 
-def safely_unobserve(item, handler):
-    if hasattr(item, "unobserve"):
-        item.unobserve(handler=handler)
+def merge(d1: Optional[Dict], d2: Optional[Dict]) -> Optional[Dict]:
+    """Merge two dictionaries while first testing if either are `None`.
+    The first dictionary's keys take precedence over the second dictionary.
+    If the final merged dictionary is empty `None` is returned.
+
+    :param d1: primary dictionary
+    :type d1: Optional[Dict]
+    :param d2: secondary dictionary
+    :type d2: Optional[Dict]
+    :return: merged dictionary
+    :rtype: Dict
+    """
+    if d1 is None:
+        d1 = {}
+    if d2 is None:
+        d2 = {}
+
+    cl1 = d1.get("cssClasses", "")
+    cl2 = d2.get("cssClasses", "")
+    cl = " ".join(sorted(set([*cl1.split(), *cl2.split()]))).strip()
+
+    value = {**d2, **d1}  # right most wins if duplicated keys
+
+    # if either had cssClasses, update that
+    if cl:
+        value["cssClasses"] = cl
+
+    if value:
+        return value
+
+
+def listed(values: Optional[List]) -> List:
+    """Checks if incoming `values` is None then either returns a new list or
+    original value.
+
+    :param values: List of values
+    :type values: Optional[List]
+    :return: List of values or empty list
+    :rtype: List
+    """
+    if values is None:
+        return []
+    return values
+
+
+def collect_labels(nodes: List[ElkNode], recurse: bool = True) -> List[ElkLabel]:
+    """Iterate over the map of ElkNodes and pluck labels from:
+        * node
+        * node.ports
+        * node.edges
+    If recuse is True then labels from each child will be included
+
+    :param nodes: [description]
+    :type nodes: List[ElkNode]
+    :return: [description]
+    :rtype: List[ElkLabel]
+    """
+    labels = []
+    for elknode in nodes:
+        for label in listed(elknode.labels):
+            labels.append(label)
+        for elkport in listed(elknode.ports):
+            for label in listed(elkport.labels):
+                labels.append(label)
+        for elkedge in listed(elknode.edges):
+            for label in listed(elkedge.labels):
+                labels.append(label)
+        if recurse:
+            labels.extend(collect_labels(listed(elknode.children)))
+    return labels
