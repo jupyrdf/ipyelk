@@ -41,7 +41,7 @@ commands:
       && cd build/docs/html \
       && pytest-check-links \
         --check-links-cache \
-        --check-links-cache-name=../../../build/links \
+        --check-links-cache-name=../../../build/links/cache \
         --links-ext=html
     env_spec: docs
 
