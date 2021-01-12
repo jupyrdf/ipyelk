@@ -108,17 +108,19 @@ jobs:
 
       - name: build docs
         if: ${{ contains(matrix.os, 'ubuntu') }}
-        run: doit docs
+        shell: bash -l {0}
+        run: doit -n4 docs
 
       - name: upload docs
+        if: ${{ contains(matrix.os, 'ubuntu') }}
         uses: actions/upload-artifact@v2
         with:
           name: ipyelk docs ${{ github.run_number }}
           path: |
             ./build/docs
-        if: always()
 
       - name: cache (docs)
+        if: ${{ contains(matrix.os, 'ubuntu') }}
         uses: actions/cache@v1
         with:
           path: build/links
@@ -131,4 +133,5 @@ jobs:
 
       - name: docs
         if: ${{ contains(matrix.os, 'ubuntu') }}
-        run: doit checkdocs
+        shell: bash -l {0}
+        run: doit -n4 checkdocs
