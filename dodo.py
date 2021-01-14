@@ -15,6 +15,7 @@ import os
 import subprocess
 from hashlib import sha256
 
+from doit import create_after
 from doit.action import CmdAction
 from doit.tools import PythonInteractiveAction, config_changed
 from scripts import project as P
@@ -305,7 +306,6 @@ def task_test():
 
     utest_args = [
         *P.APR_DEFAULT,
-        *P.PYM,
         "pytest",
         "--cov-fail-under",
         str(P.PYTEST_COV_THRESHOLD),
@@ -553,6 +553,60 @@ def task_watch():
         file_dep=[P.OK_PIP_INSTALL],
         actions=[PythonInteractiveAction(_watch)],
     )
+
+
+def task_docs():
+    """build the docs (mostly as readthedocs would)"""
+    yield dict(
+        name="sphinx",
+        file_dep=[P.DOCS_CONF, *P.ALL_PY_SRC, *P.ALL_MD],
+        targets=[P.DOCS_BUILDINFO],
+        actions=[[*P.APR_DOCS, "docs"]],
+    )
+
+
+def _make_spellcheck(dep, html):
+    ok = P.BUILD / "spell" / f"{dep.relative_to(html)}.ok"
+    return _ok(
+        dict(
+            name=f"""spell:{dep.relative_to(html)}""".replace("/", "_"),
+            doc=f"check spelling in {dep.relative_to(html)}",
+            file_dep=[dep, P.DICTIONARY],
+            actions=[
+                [
+                    *P.APR_DOCS,
+                    "hunspell",
+                    "-l",
+                    "-d",
+                    "en_US,en-GB",
+                    "-p",
+                    P.DICTIONARY,
+                    "-H",
+                    dep,
+                ]
+            ],
+        ),
+        ok,
+    )
+
+
+@create_after(executed="docs", target_regex=r"build/docs/html/.*\.html")
+def task_checkdocs():
+    html = P.DOCS_BUILD / "html"
+    file_dep = sorted({p for p in html.rglob("*.html") if "_static" not in str(p)})
+
+    yield _ok(
+        dict(
+            name="links",
+            doc="check for well-formed links",
+            file_dep=file_dep,
+            actions=[[*P.APR_DOCS, "checklinks", *file_dep]],
+        ),
+        P.OK_LINKS,
+    )
+
+    for dep in file_dep:
+        yield _make_spellcheck(dep, html)
 
 
 def _echo_ok(msg):
