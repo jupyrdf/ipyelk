@@ -41,7 +41,7 @@
     "watch": "jlpm build:ts --watch --preserveWatchOutput",
     "schema": "ts-json-schema-generator --tsconfig tsconfig.json --path ./src/elkschema.ts -o ./py_src/ipyelk/schema/elkschema.json",
     "lint": "jlpm lint:prettier",
-    "lint:prettier": "prettier --write --list-different \"*.{json,yml,md}\"  \"{src,style,py_src,.github,examples}/**/*.{ts,tsx,js,jsx,css,json,md,yml}\""
+    "lint:prettier": "prettier --write --list-different \"*.{json,yml,md}\"  \"{src,style,py_src,.github,examples,docs}/**/*.{ts,tsx,js,jsx,css,json,md,yml}\""
   },
   "dependencies": {
     "reflect-metadata": "^0.1.13",

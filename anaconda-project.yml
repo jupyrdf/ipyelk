@@ -26,6 +26,24 @@ commands:
     unix: mkdir -p dist && cd dist && npm pack ..
     windows: md dist || echo "ok" && cd dist && npm pack ..
 
+  docs:
+    description: build docs
+    unix: sphinx-build -M html docs build/docs
+    env_spec: docs
+
+  checklinks:
+    description: check links in built docs
+    unix: |-
+      set -eux \
+      && mkdir -p build/links \
+      && cd build/docs/html \
+      && touch pytest.ini \
+      && pytest-check-links \
+        --check-links-cache \
+        --check-links-cache-name=../../../build/links/cache \
+        --links-ext=html
+    env_spec: docs
+
 env_specs:
   default:
     platforms:
@@ -74,6 +92,27 @@ env_specs:
       - robotframework-lint
       - robotframework-pabot
       - robotframework-seleniumlibrary
+
+  docs:
+    description: documentation building environment
+    platforms:
+      - linux-64
+    channels:
+      - https://conda.anaconda.org/conda-forge
+      - nodefaults
+    inherit_from:
+      - ipyelk
+    packages:
+      - hunspell
+      - hunspell-en
+      - myst-nb
+      - pydata-sphinx-theme
+      - pytest-check-links
+      - python >=3.7,<3.8
+      - requests-cache
+      - sphinx
+      - sphinx-autobuild
+      - sphinx-autodoc-typehints
 
   _lint:
     description: linting/formatting environment. not actually created.

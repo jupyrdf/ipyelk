@@ -22,7 +22,7 @@ def lock():
     if MAMBA:
         env["CONDA_EXE"] = MAMBA
 
-    for envspec in ["default", "atest"]:
+    for envspec in ["default", "atest", "docs"]:
         subprocess.check_call(["anaconda-project", "update", "-n", envspec], env=env)
 
 

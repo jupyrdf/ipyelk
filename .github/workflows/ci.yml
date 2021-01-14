@@ -157,3 +157,33 @@ jobs:
             ./build/htmcov
             ./build/pytest.html
         if: always()
+
+      - name: build docs
+        if: ${{ contains(matrix.os, 'ubuntu') }}
+        shell: bash -l {0}
+        run: doit -n4 docs
+
+      - name: upload docs
+        if: ${{ contains(matrix.os, 'ubuntu') }}
+        uses: actions/upload-artifact@v2
+        with:
+          name: ipyelk docs ${{ github.run_number }}
+          path: |
+            ./build/docs
+
+      - name: cache (docs)
+        if: ${{ contains(matrix.os, 'ubuntu') }}
+        uses: actions/cache@v1
+        with:
+          path: build/links
+          key:
+            links-${{ runner.os }}-${{ hashFiles('.github/environment.yml',
+            'anaconda-project-lock.yml') }}
+          restore-keys: |
+            links-${{ runner.os }}-
+            links-
+
+      - name: docs
+        if: ${{ contains(matrix.os, 'ubuntu') }}
+        shell: bash -l {0}
+        run: doit -n4 checkdocs

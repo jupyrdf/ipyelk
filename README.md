@@ -63,7 +63,7 @@ This work is licensed under the [BSD-3-Clause License][license]. It contains pie
 derived from [other works][copyright].
 
 [copyright]: https://github.com/jupyrdf/ipyelk/tree/master/COPYRIGHT.md
-[license]: https://github.com/jupyrdf/ipyelk/tree/master/LICENSE.md
+[license]: https://github.com/jupyrdf/ipyelk/tree/master/LICENSE.txt
 [examples]: https://github.com/jupyrdf/ipyelk/tree/master/examples/_index.ipynb
 [contributing]: https://github.com/jupyrdf/ipyelk/tree/master/CONTRIBUTING.md
 [changelog]: https://github.com/jupyrdf/ipyelk/tree/master/CHANGELOG.md

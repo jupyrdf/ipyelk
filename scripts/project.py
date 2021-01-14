@@ -66,6 +66,8 @@ ENVS = ROOT / "envs"
 PROJ_LOCK = ROOT / "anaconda-project-lock.yml"
 CHANGELOG = ROOT / "CHANGELOG.md"
 CONDARC = CI / ".condarc"
+README = ROOT / "README.md"
+DOCS = ROOT / "docs"
 
 # tools
 PY = ["python"]
@@ -84,6 +86,7 @@ AP_PREP = [*AP, "prepare", "--env-spec"]
 APR = [*AP, "run", "--env-spec"]
 APR_DEFAULT = [*APR, "default"]
 APR_ATEST = [*APR, "atest"]
+APR_DOCS = [*APR, "docs"]
 PRETTIER = [*JLPM, "--silent", "prettier"]
 
 JUPYTERLAB_EXE = [
@@ -104,6 +107,11 @@ OK_ENV = {env: BUILD / f"prep_{env}.ok" for env in ["default", "atest"]}
 PY_SRC = ROOT / "py_src" / PY_PKG
 PY_SCHEMA = PY_SRC / "schema/elkschema.json"
 VERSION_PY = PY_SRC / "_version.py"
+
+# docs
+DOCS_BUILD = BUILD / "docs"
+DOCS_CONF = DOCS / "conf.py"
+DICTIONARY = DOCS / "dictionary.txt"
 
 # js stuff
 JS_LIB = ROOT / "lib"
@@ -126,10 +134,18 @@ BUILD_NBHTML = BUILD / "nbsmoke"
 
 # mostly linting
 ALL_PY_SRC = [*PY_SRC.rglob("*.py")]
-ALL_PY = [DODO, *ALL_PY_SRC, *EXAMPLE_PY, *SCRIPTS.rglob("*.py"), SETUP_PY]
+ALL_PY = [
+    *ALL_PY_SRC,
+    *EXAMPLE_PY,
+    *SCRIPTS.rglob("*.py"),
+    DOCS_CONF,
+    DODO,
+    SETUP_PY,
+]
 ALL_YML = [*ROOT.glob("*.yml"), *CI.rglob("*.yml")]
 ALL_JSON = [*ROOT.glob("*.json"), *EXAMPLE_JSON, PY_SCHEMA]
-ALL_MD = [*ROOT.glob("*.md")]
+ALL_DOCS_MD = [*DOCS.rglob("*.md")]
+ALL_MD = [*ROOT.glob("*.md"), *ALL_DOCS_MD]
 ALL_TS = [*TS_SRC.rglob("*.ts")]
 ALL_CSS = [*STYLE.rglob("*.css")]
 PRETTIER_IGNORE = ROOT / ".prettierignore"
@@ -151,6 +167,7 @@ OK_PIP_INSTALL = BUILD / "pip_install.ok"
 OK_PRETTIER = BUILD / "prettier.ok"
 OK_INDEX = BUILD / "index.ok"
 OK_LABEXT = BUILD / "labext.ok"
+OK_LINKS = BUILD / "links.ok"
 
 HTMLCOV = BUILD / "htmlcov"
 HTMLCOV_INDEX = HTMLCOV / "index.html"
@@ -179,3 +196,6 @@ ATEST = ROOT / "atest"
 ALL_ROBOT = [*ATEST.rglob("*.robot")]
 ATEST_OUT = ATEST / "output"
 ATEST_CANARY = BUILD / f"robot.{PLATFORM.lower()}_success.ok"
+
+# docs
+DOCS_BUILDINFO = DOCS_BUILD / "html" / ".buildinfo"
