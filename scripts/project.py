@@ -22,6 +22,8 @@ OSX = PLATFORM == "Darwin"
 LINUX = PLATFORM == "Linux"
 UNIX = not WIN
 
+TESTING_IN_CI = bool(json.loads(os.environ.get("TESTING_IN_CI", "0")))
+RUNNING_IN_CI = bool(json.loads(os.environ.get("RUNNING_IN_CI", "0")))
 WIN_CI = bool(json.loads(os.environ.get("WIN_CI", "0")))
 
 # CI jank

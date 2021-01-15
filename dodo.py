@@ -195,73 +195,74 @@ def task_setup():
     )
 
 
-def task_build():
-    """build packages"""
+if not P.TESTING_IN_CI:
+    def task_build():
+        """build packages"""
 
-    yield dict(
-        name="schema",
-        file_dep=[P.YARN_INTEGRITY, P.TS_SCHEMA, P.OK_ENV["default"]],
-        actions=[[*P.APR_DEFAULT, *P.JLPM, "schema"]],
-        targets=[P.PY_SCHEMA],
-    )
+        yield dict(
+            name="schema",
+            file_dep=[P.YARN_INTEGRITY, P.TS_SCHEMA, P.OK_ENV["default"]],
+            actions=[[*P.APR_DEFAULT, *P.JLPM, "schema"]],
+            targets=[P.PY_SCHEMA],
+        )
 
-    yield dict(
-        name="ts",
-        file_dep=[
-            P.YARN_INTEGRITY,
-            *P.ALL_TS,
-            P.OK_ENV["default"],
-            P.PY_SCHEMA,
-            P.OK_LINT,
-        ],
-        actions=[[*P.APR_DEFAULT, *P.JLPM, "build"]],
-        targets=[P.TSBUILDINFO],
-    )
+        yield dict(
+            name="ts",
+            file_dep=[
+                P.YARN_INTEGRITY,
+                *P.ALL_TS,
+                P.OK_ENV["default"],
+                P.PY_SCHEMA,
+                P.OK_LINT,
+            ],
+            actions=[[*P.APR_DEFAULT, *P.JLPM, "build"]],
+            targets=[P.TSBUILDINFO],
+        )
 
-    yield dict(
-        name="pack",
-        file_dep=[P.TSBUILDINFO, P.PACKAGE_JSON],
-        actions=[[*P.APR_DEFAULT, "ext:pack"]],
-        targets=[P.NPM_TGZ],
-    )
+        yield dict(
+            name="pack",
+            file_dep=[P.TSBUILDINFO, P.PACKAGE_JSON],
+            actions=[[*P.APR_DEFAULT, "ext:pack"]],
+            targets=[P.NPM_TGZ],
+        )
 
-    yield dict(
-        name="py",
-        file_dep=[
-            *P.ALL_PY_SRC,
-            P.SETUP_CFG,
-            P.SETUP_PY,
-            P.OK_LINT,
-            P.OK_ENV["default"],
-            P.PY_SCHEMA,
-        ],
-        actions=[
-            [*P.APR_DEFAULT, *P.PY, "setup.py", "sdist"],
-            [*P.APR_DEFAULT, *P.PY, "setup.py", "bdist_wheel"],
-        ],
-        targets=[P.WHEEL, P.SDIST],
-    )
+        yield dict(
+            name="py",
+            file_dep=[
+                *P.ALL_PY_SRC,
+                P.SETUP_CFG,
+                P.SETUP_PY,
+                P.OK_LINT,
+                P.OK_ENV["default"],
+                P.PY_SCHEMA,
+            ],
+            actions=[
+                [*P.APR_DEFAULT, *P.PY, "setup.py", "sdist"],
+                [*P.APR_DEFAULT, *P.PY, "setup.py", "bdist_wheel"],
+            ],
+            targets=[P.WHEEL, P.SDIST],
+        )
 
-    def _run_hash():
-        # mimic sha256sum CLI
-        if P.SHA256SUMS.exists():
-            P.SHA256SUMS.unlink()
+        def _run_hash():
+            # mimic sha256sum CLI
+            if P.SHA256SUMS.exists():
+                P.SHA256SUMS.unlink()
 
-        lines = []
+            lines = []
 
-        for p in P.HASH_DEPS:
-            lines += ["  ".join([sha256(p.read_bytes()).hexdigest(), p.name])]
+            for p in P.HASH_DEPS:
+                lines += ["  ".join([sha256(p.read_bytes()).hexdigest(), p.name])]
 
-        output = "\n".join(lines)
-        print(output)
-        P.SHA256SUMS.write_text(output)
+            output = "\n".join(lines)
+            print(output)
+            P.SHA256SUMS.write_text(output)
 
-    yield dict(
-        name="hash",
-        file_dep=P.HASH_DEPS,
-        targets=[P.SHA256SUMS],
-        actions=[_run_hash],
-    )
+        yield dict(
+            name="hash",
+            file_dep=P.HASH_DEPS,
+            targets=[P.SHA256SUMS],
+            actions=[_run_hash],
+        )
 
 
 def task_test():

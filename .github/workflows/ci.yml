@@ -15,10 +15,67 @@ env:
   PYTHONIOENCODING: utf-8
   PYTHONUNBUFFERED: 1
   SKIP_CONDA_PREFLIGHT: 1
+  RUNNING_IN_CI: 1
+  FORGE_URL_PREFIX: https://github.com/conda-forge/miniforge/releases/download/4.9.2-0/Miniforge3-4.9.2-0-
 
 jobs:
-  ci:
+  build:
     runs-on: ${{ matrix.vm }}
+      strategy:
+        fail-fast: false
+        matrix:
+          os:
+            - ubuntu
+          include:
+            - os: ubuntu
+              miniforge: Linux-x86_64.sh
+              vm: ubuntu-20.04
+    steps:
+      - name: git checkout
+        uses: actions/checkout@v2
+
+      - name: cache (conda)
+        uses: actions/cache@v1
+        with:
+          path: ~/conda_pkgs_dir
+          key:
+            ${{ runner.os }}-conda-${{ hashFiles('.github/environment.yml',
+            'anaconda-project-lock.yml') }}
+          restore-keys: |
+            ${{ runner.os }}-conda-
+
+      - name: cache (yarn)
+        uses: actions/cache@v1
+        with:
+          path: .yarn-packages
+          key: yarn-${{ runner.os }}-${{ hashFiles('yarn.lock', '.yarnrc') }}
+          restore-keys: |
+            yarn-${{ runner.os }}-
+            yarn-
+
+      - name: env (conda)
+        uses: conda-incubator/setup-miniconda@v2
+        with:
+          environment-file: .github/environment.yml
+          use-only-tar-bz2: true
+          installer-url: ${{ env.FORGE_URL_PREFIX }}${{ matrix.miniforge }}
+
+      - name: build (linux)
+        shell: bash -l {0}
+        run: doit -n4 build:hash || doit build:hash
+
+      - name: upload dist
+        uses: actions/upload-artifact@v2
+        with:
+          name: ipyelk ${{ github.run_number }} dist
+          path: |
+            ./dist
+
+  test:
+    runs-on: ${{ matrix.vm }}
+    needs: [build]
+    env:
+      TESTING_IN_CI: 1
     strategy:
       fail-fast: false
       matrix:
@@ -37,6 +94,12 @@ jobs:
             miniforge: Windows-x86_64.exe
             vm: windows-latest
     steps:
+      - name: download (dist)
+        uses: actions/download-artifact@v2
+        with:
+          name: ipyelk ${{ github.run_number }} dist
+          path: ./dist
+
       - name: configure line endings
         run: |
           git config --global core.autocrlf false
@@ -68,8 +131,7 @@ jobs:
         with:
           environment-file: .github/environment.yml
           use-only-tar-bz2: true
-          installer-url: |
-            https://github.com/conda-forge/miniforge/releases/download/4.9.2-0/Miniforge3-4.9.2-0-${{ matrix.miniforge }}
+          installer-url: ${{ env.FORGE_URL_PREFIX }}${{ matrix.miniforge }}
 
       - name: build (linux)
         if: ${{ contains(matrix.os, 'ubuntu') }}
@@ -89,17 +151,10 @@ jobs:
           WIN_CI: 1
         run: doit all || doit all || exit 1
 
-      - name: publish (linux)
-        if: ${{ contains(matrix.os, 'ubuntu') }}
-        uses: actions/upload-artifact@v2
-        with:
-          name: ipyelk dist ${{ github.run_number }}
-          path: ./dist
-
       - name: reports
         uses: actions/upload-artifact@v2
         with:
-          name: ${{ job.status }} reports ${{ matrix.os }} ${{ github.run_number }}
+          name: ipyelk ${{ github.run_number }} reports ${{ matrix.os }} ${{ job.status }}
           path: |
             ./atest/output
             ./build/htmcov
