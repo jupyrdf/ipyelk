@@ -21,15 +21,14 @@ env:
 jobs:
   build:
     runs-on: ${{ matrix.vm }}
-      strategy:
-        fail-fast: false
-        matrix:
-          os:
-            - ubuntu
-          include:
-            - os: ubuntu
-              miniforge: Linux-x86_64.sh
-              vm: ubuntu-20.04
+    strategy:
+      matrix:
+        os:
+          - ubuntu
+        include:
+          - os: ubuntu
+            miniforge: Linux-x86_64.sh
+            vm: ubuntu-20.04
     steps:
       - name: git checkout
         uses: actions/checkout@v2
