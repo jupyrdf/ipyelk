@@ -33,7 +33,7 @@
     "printWidth": 88
   },
   "scripts": {
-    "bootstrap": "jlpm --ignore-optional --ignore-scripts && jlpm clean && jlpm schema && jlpm lint && jlpm build",
+    "bootstrap": "jlpm --ignore-optional --ignore-scripts --frozen-lockfile && jlpm clean && jlpm schema && jlpm lint && jlpm build",
     "build": "tsc -b",
     "clean": "rimraf lib ./py_src/ipyelk/schema/elkschema.json",
     "watch": "jlpm build -w --preserveWatchOutput",
