@@ -12,7 +12,7 @@ from async_lru import alru_cache
 
 from .._version import EXTENSION_NAME, EXTENSION_SPEC_VERSION
 from ..styled_widget import StyledWidget
-from .elk_model import ElkLabel
+from .elk_model import ElkLabel, ElkProperties
 
 
 @dataclass
@@ -37,7 +37,7 @@ class SizingRequest:
         message id"""
         css_classes = None
         if self.text.properties:
-            css_classes = self.text.properties.get("cssClasses", None)
+            css_classes = self.text.properties.cssClasses
         if css_classes is None:
             css_classes = ""
         return {"value": self.text.text, "cssClasses": css_classes, "id": self.id}
@@ -162,5 +162,40 @@ async def size_labels(text_sizer: Optional[ElkTextSizer], labels: List[ElkLabel]
         ]
 
     for size, label in zip(sizes, labels):
-        label.width = size.width
-        label.height = size.height
+        # recording size in the shape props to backout nested label positions
+        shape = {
+            "width": size.width,
+            "height": size.height,
+        }
+        if label.properties is None:
+            label.properties = ElkProperties(shape=shape)
+
+        if label.properties.shape is None:
+            label.properties.shape = shape
+        else:
+            label.properties.shape.update(shape)
+
+    for label in labels:
+        overall = size_nested_label(label)
+        label.width = overall["width"]
+        label.height = overall["height"]
+
+
+def size_nested_label(label: ElkLabel):
+    shape = label.properties.shape
+    size = {
+        "width": label.width or shape.get("width", 0),
+        "height": label.height or shape.get("height", 0),
+    }
+    for sublabel in label.labels or []:
+        ls = size_nested_label(sublabel)
+        spacing = float(
+            getattr(sublabel, "layoutOptions", {}).get(
+                "org.eclipse.elk.spacing.labelLabel", 0
+            )
+        )
+        size = {
+            "width": size["width"] + ls["width"] + spacing,
+            "height": max(size["height"], ls["height"]),
+        }
+    return size

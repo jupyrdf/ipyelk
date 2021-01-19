@@ -6,7 +6,6 @@ import ipywidgets as W
 import traitlets as T
 
 from ..app import Elk, ElkDiagram
-from ..nx import XELK
 
 
 class ToolButton(W.Button):
@@ -25,15 +24,28 @@ class ToggleCollapsedBtn(ToolButton):
     def _default_description(self):
         return "Toggle Collapsed"
 
+    def toggle(self, node):
+        """Toggle the `hidden` state for the given networkx node"""
+        tree = self.app.transformer.source[1]
+        state = tree.nodes[node].get("hidden", False)
+        tree.nodes[node]["hidden"] = not state
+
     def handler(self, *args):
-        transformer: XELK = self.app.transformer
-        graph, tree = transformer.source
-        for element_id in self.app.selected:
-            if element_id in tree:
-                for child in tree.neighbors(element_id):
-                    state = tree.nodes[child].get("hidden", False)
-                    tree.nodes[child]["hidden"] = not state
-                self.app.refresh()
+        should_refresh = False
+        for selected in self.app.selected:
+            for node in self.get_related(selected):
+                self.toggle(node)
+                should_refresh = True
+
+        # trigger refresh if needed
+        if should_refresh:
+            self.app.refresh()
+
+    def get_related(self, node):
+        tree = self.app.transformer.source[1]
+        if tree and node in tree:
+            return tree.neighbors(node)
+        return []
 
 
 class FitBtn(ToolButton):

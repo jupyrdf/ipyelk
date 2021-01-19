@@ -6,10 +6,7 @@
  * this exists for generating a complete JSON schema
  */
 import * as ELK from 'elkjs';
-
-export interface ElkProperties {
-  cssClasses?: string;
-}
+import { ElkProperties } from './elkgraph-json';
 
 export type AnyElkLabelWithProperties = ELK.ElkLabel & { properties?: ElkProperties };
 

@@ -11,10 +11,15 @@ import {
   selectFeature,
   hoverFeedbackFeature,
   SEdge,
-  editFeature
+  editFeature,
+  SLabel
 } from 'sprotty';
 
+import { ElkProperties } from './json/elkgraph-json';
+
 export class ElkNode extends RectangularNode {
+  properties: ElkProperties;
+
   hasFeature(feature: symbol): boolean {
     if (feature === moveFeature) return false;
     else return super.hasFeature(feature);
@@ -22,6 +27,8 @@ export class ElkNode extends RectangularNode {
 }
 
 export class ElkPort extends RectangularPort {
+  properties: ElkProperties;
+
   hasFeature(feature: symbol): boolean {
     if (feature === moveFeature) return false;
     else return super.hasFeature(feature);
@@ -29,6 +36,8 @@ export class ElkPort extends RectangularPort {
 }
 
 export class ElkEdge extends SEdge {
+  properties: ElkProperties;
+
   hasFeature(feature: symbol): boolean {
     if (feature === editFeature) return false;
     else return super.hasFeature(feature);
@@ -43,6 +52,18 @@ export class ElkJunction extends SNode {
       feature === hoverFeedbackFeature
     )
       return false;
+    else return super.hasFeature(feature);
+  }
+}
+
+export class ElkLabel extends SLabel {
+  properties: ElkProperties;
+  labels: ElkLabel[];
+}
+
+export class DefNode extends SNode {
+  hasFeature(feature: symbol): boolean {
+    if (feature === moveFeature) return false;
     else return super.hasFeature(feature);
   }
 }

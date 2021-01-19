@@ -4,20 +4,28 @@
  */
 import { injectable } from 'inversify';
 import {
+  Bounds,
   CenterAction,
   FitToScreenAction,
-  LocalModelSource,
-  Viewport,
-  Bounds,
   GetViewportAction,
-  InitializeCanvasBoundsAction
+  InitializeCanvasBoundsAction,
+  LocalModelSource,
+  Viewport
 } from 'sprotty';
-import { ElkGraphJsonToSprotty } from './json/elkgraph-to-sprotty';
-
+import { ElkGraphJsonToSprotty, SDefGraphSchema } from './json/elkgraph-to-sprotty';
+import { ManagerBase } from '@jupyter-widgets/base';
+import { Widget } from '@phosphor/widgets';
+// import { WidgetManager } from '@jupyter-widgets/jupyterlab-manager';
 @injectable()
 export class JLModelSource extends LocalModelSource {
-  async updateLayout(layout) {
-    let sGraph = new ElkGraphJsonToSprotty().transform(layout);
+  elkToSprotty: ElkGraphJsonToSprotty;
+  widget_manager: ManagerBase<Widget>;
+  // widget_manager: WidgetManager;
+
+  async updateLayout(layout, defs, idPrefix: string) {
+    this.elkToSprotty = new ElkGraphJsonToSprotty();
+    let sGraph: SDefGraphSchema = this.elkToSprotty.transform(layout, defs, idPrefix);
+    console.warn('update layout');
     await this.updateModel(sGraph);
     // TODO this promise resolves before ModelViewer rendering is done. need to hook into postprocessing
   }
@@ -60,7 +68,6 @@ export class JLModelSource extends LocalModelSource {
    */
   async getViewport(): Promise<Viewport & { canvasBounds: Bounds }> {
     const res = await this.actionDispatcher.request(GetViewportAction.create());
-    // console.log("get viewpoint")
     return {
       scroll: res.viewport.scroll,
       zoom: res.viewport.zoom,

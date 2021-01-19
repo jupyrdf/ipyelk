@@ -73,4 +73,4 @@ ${SCREENS}        ${SCREENS ROOT}${/}notebook-examples
     # not worth counting anything, as is basically non-deterministic
     Computed Element Style Should Be    rect.elknode    stroke=rgba(0, 0, 0, 0)
     Computed Element Style Should Be    .down path    strokeDasharray=4px    stroke=rgb(255, 0, 0)
-    Computed Element Style Should Be    .sprotty-edge    fontWeight=700
+    Computed Element Style Should Be    .elkedge    fontWeight=700

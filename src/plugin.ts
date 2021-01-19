@@ -23,7 +23,8 @@ const plugin: IPlugin<Application<Widget>, void> = {
       version: VERSION,
       exports: async () => {
         const widgetExports = {
-          ...(await import(/* webpackChunkName: "elk" */ './widget')),
+          ...(await import(/* webpackChunkName: "elklayout" */ './layout_widget')),
+          ...(await import(/* webpackChunkName: "elkdisplay" */ './display_widget')),
           ...(await import(/* webpackChunkName: "elkexporter" */ './exporter'))
         };
         ELK_DEBUG && console.warn('widgets loaded');

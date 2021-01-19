@@ -25,11 +25,15 @@ from .edge_options import (
 from .layout import LayoutAlgorithm
 from .node_options import (
     ActivateInsideSelfLoops,
+    AspectRatio,
+    ConsiderModelOrder,
+    ExpandNodes,
     HierarchyHandling,
     NodeLabelPlacement,
     NodeSizeConstraints,
     NodeSizeMinimum,
     NodeSizeOptions,
+    Padding,
 )
 from .port_options import (
     AdditionalPortSpace,
@@ -55,9 +59,11 @@ from .spacing_options import (
 __all__ = [
     "ActivateInsideSelfLoops",
     "AdditionalPortSpace",
+    "AspectRatio",
     "CommentCommentSpacing",
     "CommentNodeSpacing",
     "ComponentsSpacing",
+    "ConsiderModelOrder",
     "Direction",
     "EadesRepulsion",
     "EdgeCenterLabelPlacementStrategy" "EdgeEdgeLayerSpacing",
@@ -74,6 +80,7 @@ __all__ = [
     "EdgeSpacing",
     "EdgeThickness",
     "EdgeType",
+    "ExpandNodes",
     "FeedbackEdges",
     "HierarchyHandling",
     "LabelNodeSpacing",
@@ -88,6 +95,7 @@ __all__ = [
     "NodeSizeOptions",
     "NodeSpacing",
     "OptionsWidget",
+    "Padding",
     "PortAnchorOffset",
     "PortBorderOffset",
     "PortConstraints",

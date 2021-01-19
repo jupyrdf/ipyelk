@@ -33,17 +33,18 @@
     "printWidth": 88
   },
   "scripts": {
-    "bootstrap": "jlpm --ignore-optional --ignore-scripts && jlpm clean && jlpm schema && jlpm lint && jlpm build",
+    "bootstrap": "jlpm --ignore-scripts --frozen-lockfile && jlpm clean && jlpm schema && jlpm lint && jlpm build",
     "build": "tsc -b",
     "clean": "rimraf lib ./py_src/ipyelk/schema/elkschema.json",
     "watch": "jlpm build -w --preserveWatchOutput",
-    "schema": "ts-json-schema-generator --tsconfig tsconfig.json --path ./src/elkschema.ts -o ./py_src/ipyelk/schema/elkschema.json",
+    "schema": "ts-json-schema-generator --tsconfig ./tsconfig.json --no-type-check --path ./src/sprotty/json/elkschema.ts --expose all -o ./py_src/ipyelk/schema/elkschema.json",
     "lint": "jlpm lint:prettier",
     "lint:prettier": "prettier --write --list-different \"*.{json,yml,md}\"  \"{src,style,py_src,.github,examples,docs}/**/*.{ts,tsx,js,jsx,css,json,md,yml}\""
   },
   "dependencies": {
     "reflect-metadata": "^0.1.13",
-    "sprotty-elk": "0.9.0",
+    "sprotty": "0.9.0",
+    "elkjs": "0.7.1",
     "worker-loader": "^2.0.0"
   },
   "devDependencies": {
@@ -57,7 +58,7 @@
     "react": "*",
     "rimraf": "^2.6.1",
     "snabbdom": "~0.6.6",
-    "ts-json-schema-generator": "^0.71.2",
+    "ts-json-schema-generator": "^0.83.2",
     "typescript": "~3.9.2"
   },
   "peerDependencies": {

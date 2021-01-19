@@ -39,14 +39,19 @@ class ModScrollMouseListener extends ScrollMouseListener {
   mouseDown(target: SModelElement, event: MouseEvent): Action[] {
     const moveable = findParentByFeature(target, isMoveable);
     if (moveable == null && !(target instanceof SRoutingHandle)) {
-      const viewport = findParentByFeature(target, isViewport);
-      if (viewport) {
-        this.lastScrollPosition = {
-          x: event.pageX,
-          y: event.pageY
-        };
-      } else {
+      if (target.type == 'node:widget') {
+        // disable scrolling if mouse down on a widget node.
         this.lastScrollPosition = undefined;
+      } else {
+        const viewport = findParentByFeature(target, isViewport);
+        if (viewport) {
+          this.lastScrollPosition = {
+            x: event.pageX,
+            y: event.pageY
+          };
+        } else {
+          this.lastScrollPosition = undefined;
+        }
       }
     }
     return [];

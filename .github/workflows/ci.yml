@@ -15,6 +15,7 @@ env:
   PYTHONIOENCODING: utf-8
   PYTHONUNBUFFERED: 1
   SKIP_CONDA_PREFLIGHT: 1
+  CACHE_EPOCH: 0
 
 jobs:
   ci:
@@ -48,20 +49,20 @@ jobs:
         uses: actions/cache@v1
         with:
           path: ~/conda_pkgs_dir
-          key:
-            ${{ runner.os }}-conda-${{ hashFiles('.github/environment.yml',
-            'anaconda-project-lock.yml') }}
+          key: |
+            ${{ env.CACHE_EPOCH }}-${{ runner.os }}-conda-${{ hashFiles('.github/environment.yml', 'anaconda-project-lock.yml') }}
           restore-keys: |
-            ${{ runner.os }}-conda-
+            ${{ env.CACHE_EPOCH }}-${{ runner.os }}-conda-
 
       - name: cache (yarn)
         uses: actions/cache@v1
         with:
           path: .yarn-packages
-          key: yarn-${{ runner.os }}-${{ hashFiles('yarn.lock', '.yarnrc') }}
+          key: |
+            ${{ env.CACHE_EPOCH }}-yarn-${{ runner.os }}-${{ hashFiles('yarn.lock', '.yarnrc') }}
           restore-keys: |
-            yarn-${{ runner.os }}-
-            yarn-
+            ${{ env.CACHE_EPOCH }}-yarn-${{ runner.os }}-
+            ${{ env.CACHE_EPOCH }}-yarn-
 
       - name: env (conda)
         uses: conda-incubator/setup-miniconda@v2
@@ -124,12 +125,11 @@ jobs:
         uses: actions/cache@v1
         with:
           path: build/links
-          key:
-            links-${{ runner.os }}-${{ hashFiles('.github/environment.yml',
-            'anaconda-project-lock.yml') }}
+          key: |
+            ${{ env.CACHE_EPOCH }}-links-${{ runner.os }}-${{ hashFiles('.github/environment.yml', 'anaconda-project-lock.yml') }}
           restore-keys: |
-            links-${{ runner.os }}-
-            links-
+            ${{ env.CACHE_EPOCH }}-links-${{ runner.os }}-
+            ${{ env.CACHE_EPOCH }}-links-
 
       - name: docs
         if: ${{ contains(matrix.os, 'ubuntu') }}
