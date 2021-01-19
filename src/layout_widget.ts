@@ -2,7 +2,7 @@
  * Copyright (c) 2021 Dane Freeman.
  * Distributed under the terms of the Modified BSD License.
  */
-import { Signal } from '@phosphor/signaling';
+import { Signal } from '@lumino/signaling';
 
 import { DOMWidgetModel } from '@jupyter-widgets/base';
 
