@@ -39,7 +39,7 @@
     "build:ext": "jupyter labextension build .",
     "clean": "rimraf ./lib ./py_src/ipyelk/schema/elkschema.json ./py_src/ipyelk/labextension",
     "watch": "jlpm build:ts --watch --preserveWatchOutput",
-    "schema": "ts-json-schema-generator --tsconfig tsconfig.json --no-type-check --path ./src/elkschema.ts -o ./py_src/ipyelk/schema/elkschema.json",
+    "schema": "ts-json-schema-generator --tsconfig ./tsconfig.json --type AnyElkNode --no-type-check --expose all --path ./src/elkschema.ts -o ./py_src/ipyelk/schema/elkschema.json",
     "lint": "jlpm lint:prettier",
     "lint:prettier": "prettier --write --list-different \"*.{json,yml,md}\" \"{src,style,py_src,.github,examples,docs}/**/*.{ts,tsx,js,jsx,css,json,md,yml}\""
   },
