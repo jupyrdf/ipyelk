@@ -16,6 +16,7 @@ from ..diagram.elk_model import (
     ElkLabel,
     ElkNode,
     ElkPort,
+    ElkProperties,
     ElkRoot,
 )
 from ..diagram.elk_text_sizer import ElkTextSizer, size_labels
@@ -94,7 +95,7 @@ class XELK(ElkTransformer):
         if node is ElkRoot:
             return self.ELK_ROOT_ID
         elif node in g:
-            return g.nodes.get(node, {}).get("_id", f"{node}")
+            return g.nodes.get(node, {}).get("id", f"{node}")
         return f"{node}"
 
     def port_id(self, node: Hashable, port: Optional[Hashable] = None) -> str:
@@ -187,9 +188,11 @@ class XELK(ElkTransformer):
         return top
 
     async def make_elknode(self, node) -> Tuple[ElkNode, PortMap]:
-        # merge layout options defined on the node data with default layout options
+        # merge layout options defined on the node data with default layout
+        # options
+        node_data = self.get_node_data(node)
         layout = merge(
-            self.get_node_data(node).get("layoutOptions", {}),
+            node_data.get("layoutOptions", {}),
             self.get_layout(node, ElkNode),
         )
         labels = await self.make_labels(node)
@@ -204,6 +207,8 @@ class XELK(ElkTransformer):
             labels=labels,
             layoutOptions=layout,
             properties=properties,
+            width=node_data.get("width", None),
+            height=node_data.get("height", None),
         )
         return elk_node, node_ports
 
@@ -250,12 +255,11 @@ class XELK(ElkTransformer):
 
         properties = []
 
-        if isinstance(element, str):
-            if g and element in g:
-                g_props = g.nodes[element].get("properties", {})
-                if g_props:
-                    properties += [g_props]
-        elif hasattr(element, "data"):
+        if g and element in g:
+            g_props = g.nodes[element].get("properties", {})
+            if g_props:
+                properties += [g_props]
+        if hasattr(element, "data"):
             properties += [element.data.get("properties", {})]
         elif isinstance(element, dict):
             properties += [element.get("properties", {})]
@@ -311,7 +315,6 @@ class XELK(ElkTransformer):
         for owner, edge_list in edges.items():
             edge_css = self.get_css(owner, ElkEdge, edge_style)
             port_css = self.get_css(owner, ElkPort, port_style)
-            layout_options = self.get_layout(owner, ElkEdge)
             for edge in edge_list:
                 elknode = nodes[owner]
                 if elknode.edges is None:
@@ -329,11 +332,11 @@ class XELK(ElkTransformer):
                             edge.target, edge.target_port, port_css
                         )
 
-                elknode.edges += [await self.make_edge(edge, edge_css, layout_options)]
+                elknode.edges += [await self.make_edge(edge, edge_css)]
         return nodes, ports
 
     async def make_edge(
-        self, edge: Edge, styles: Optional[Set[str]] = None, layout_options: Dict = None
+        self, edge: Edge, styles: Optional[Set[str]] = None
     ) -> ElkExtendedEdge:
         """Make the associated Elk edge for the given Edge
 
@@ -347,27 +350,29 @@ class XELK(ElkTransformer):
 
         labels = []
         properties = self.get_properties(edge, styles) or None
+        label_layout_options = self.get_layout(
+            edge.owner, ElkLabel
+        )  # TODO add edgelabel type?
+        edge_layout_options = self.get_layout(edge.owner, ElkEdge)
 
         for i, label in enumerate(edge.data.get(self.label_key, [])):
-            layout_options = self.get_layout(
-                edge.owner, ElkLabel
-            )  # TODO add edgelabel type?
+
             if isinstance(label, ElkLabel):
                 label = label.to_dict()  # used to create copy of label
             if isinstance(label, dict):
                 label = ElkLabel.from_dict(label)
             if isinstance(label, str):
                 label = ElkLabel(id=f"{edge.owner}_label_{i}_{label}", text=label)
-            label.layoutOptions = merge(label.layoutOptions, layout_options)
+            label.layoutOptions = merge(label.layoutOptions, label_layout_options)
             labels.append(label)
         for label in labels:
             self.register(label, edge)
         elk_edge = ElkExtendedEdge(
-            id=self.edge_id(edge),
+            id=edge.data.get("id", self.edge_id(edge)),
             sources=[self.port_id(edge.source, edge.source_port)],
             targets=[self.port_id(edge.target, edge.target_port)],
             properties=properties,
-            layoutOptions=self.get_layout(edge.owner, ElkEdge),
+            layoutOptions=merge(edge.data.get("layoutOptions"), edge_layout_options),
             labels=compact(labels),
         )
         self.register(elk_edge, edge)
@@ -439,7 +444,10 @@ class XELK(ElkTransformer):
         data = g.nodes.get(node, {})
         values = data.get(self.label_key, [data.get("_id", f"{node}")])
 
-        properties = self.get_properties(node, self.get_css(node, ElkLabel))
+        properties = {}
+        css_classes = self.get_css(node, ElkLabel)
+        if css_classes:
+            properties["cssClasses"] = " ".join(css_classes)
 
         if isinstance(values, (str, ElkLabel)):
             values = [values]
@@ -454,13 +462,16 @@ class XELK(ElkTransformer):
                 # prevent mutating original label in the node data
                 label = label.to_dict()
             if isinstance(label, dict):
-                label = ElkLabel(**label)
+                label = ElkLabel.from_dict(label)
 
             # add css classes and layout options
             label.layoutOptions = merge(
                 label.layoutOptions, self.get_layout(node, ElkLabel)
             )
-            label.properties = merge(label.properties, properties)
+            merged_props = merge(label.properties, properties)
+            if merged_props is not None:
+                merged_props = ElkProperties.from_dict(merged_props)
+            label.properties = merged_props
 
             labels.append(label)
             self.register(label, node)
@@ -507,8 +518,12 @@ class XELK(ElkTransformer):
             vis_target = closest_visible[target]
             shidden = vis_source != source
             thidden = vis_target != target
-
             owner = closest_common_visible((vis_source, vis_target))
+            if source == target and source == owner:
+                if owner in tree:
+                    for p in tree.predecessors(owner):
+                        # need to make this edge's owner to it's parent
+                        owner = p
 
             if shidden or thidden:
                 # create new slack ports if source or target is remapped

@@ -75,7 +75,7 @@ PYM = [*PY, "-m"]
 PIP = [*PYM, "pip"]
 
 JLPM = ["jlpm"]
-JLPM_INSTALL = [*JLPM, "--ignore-optional", "--prefer-offline"]
+JLPM_INSTALL = [*JLPM, "--prefer-offline", "--frozen-lockfile"]
 PREFLIGHT = ["python", "-m", "scripts.preflight"]
 YARN = [shutil.which("yarn") or shutil.which("yarn.cmd")]
 LAB_EXT = ["jupyter", "labextension"]
@@ -117,7 +117,7 @@ DICTIONARY = DOCS / "dictionary.txt"
 JS_LIB = ROOT / "lib"
 TSBUILDINFO = JS_LIB / ".tsbuildinfo"
 TS_SRC = ROOT / "src"
-TS_SCHEMA = TS_SRC / "elkschema.ts"
+TS_SCHEMA = TS_SRC / "sprotty" / "json" / "elkschema.ts"
 STYLE = ROOT / "style"
 
 # tests
@@ -154,6 +154,7 @@ ALL_PRETTIER = [*ALL_YML, *ALL_JSON, *ALL_MD, *ALL_TS, *ALL_CSS]
 # built files
 OK_RELEASE = BUILD / "release.ok"
 OK_PREFLIGHT_CONDA = BUILD / "preflight.conda.ok"
+OK_PREFLIGHT_BUILD = BUILD / "preflight.build.ok"
 OK_PREFLIGHT_KERNEL = BUILD / "preflight.kernel.ok"
 OK_PREFLIGHT_LAB = BUILD / "preflight.lab.ok"
 OK_PREFLIGHT_RELEASE = BUILD / "preflight.release.ok"

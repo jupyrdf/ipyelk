@@ -26,6 +26,12 @@ NODESIZE_OPTIONS_OPTIONS = {
     "asymmetrical": "ASYMMETRICAL",
 }
 
+MODEL_ORDER_OPTIONS = {
+    "None": "NONE",
+    "Nodes and Edges": "NODES_AND_EDGES",
+    "Prefer Edges": "PREFER_EDGES",
+}
+
 
 class NodeSizeConstraints(LayoutOptionWidget):
     """What should be taken into account when calculating a node’s size. Empty
@@ -232,7 +238,7 @@ class NodeLabelPlacement(LayoutOptionWidget):
     horizontal = T.Enum(values=["left", "center", "right"], default_value="left")
     h_priority = T.Bool(allow_none=True)
     vertical = T.Enum(values=["top", "center", "bottom"], default_value="top")
-    inside = T.Enum(values=["inside", "outside"], default_value="inside")
+    inside = T.Bool(default_value=True)
 
     def _ui(self) -> List[W.Widget]:
         horizontal_options = W.RadioButtons(
@@ -257,16 +263,7 @@ class NodeLabelPlacement(LayoutOptionWidget):
         T.link((self, "horizontal"), (horizontal_options, "value"))
         T.link((self, "vertical"), (vertical_options, "value"))
         T.link((self, "h_priority"), (horizontal_priority_options, "value"))
-
-        def _handle_inside_option_change(change):
-            self.inside = "inside" if inside_options.value is True else "outside"
-
-        def _update_inside_option(change=None):
-            inside_options.value = self.inside == "inside"
-
-        inside_options.observe(_handle_inside_option_change, "value")
-        self.observe(_update_inside_option, "inside")
-        _update_inside_option()
+        T.link((self, "inside"), (inside_options, "value"))
 
         return [
             horizontal_options,
@@ -285,7 +282,9 @@ class NodeLabelPlacement(LayoutOptionWidget):
         is_centered = self.horizontal == "center" and self.vertical == "center"
         inside = "inside" if is_centered else self.inside
         if inside:
-            options.append(inside.upper())
+            options.append("INSIDE")
+        else:
+            options.append("OUTSIDE")
         if self.h_priority:
             options.append("H_PRIORITY")
         if options:
@@ -396,6 +395,104 @@ class LayoutPartitioning(LayoutOptionWidget):
         T.link((self, "active"), (cb, "value"))
         return [cb]
 
-    @T.observe("index")
+    @T.observe("active")
     def _update_value(self, change: T.Bunch = None):
         self.value = "true" if self.active else "false"
+
+
+class Padding(LayoutOptionWidget):
+    """The padding to be left to a parent element’s border when placing child
+    elements. This can also serve as an output option of a layout algorithm if
+    node size calculation is setup appropriately.
+
+    https://www.eclipse.org/elk/reference/options/org-eclipse-elk-padding.html
+    """
+
+    identifier = "org.eclipse.elk.padding"
+    metadata_provider = "core.options.CoreOptions"
+    applies_to = ["parents", "nodes"]
+
+    top = T.Float(min_value=0, default_value=12)
+    bottom = T.Float(min_value=0, default_value=12)
+    left = T.Float(min_value=0, default_value=12)
+    right = T.Float(min_value=0, default_value=12)
+
+    _traits = ["top", "bottom", "left", "right"]
+
+    def _ui(self) -> List[W.Widget]:
+
+        sliders = []
+        for trait in self._traits:
+            slider = W.FloatSlider(description=f"{trait.title()} Padding")
+            T.link((self, trait), (slider, "value"))
+            sliders.append(slider)
+        return sliders
+
+    @T.observe("top", "bottom", "left", "right")
+    def _update_value(self, change: T.Bunch = None):
+        padding = ",".join([f"{t}={getattr(self, t)}" for t in self._traits])
+        self.value = f"[{padding}]"
+
+
+class ConsiderModelOrder(LayoutOptionWidget):
+    """Preserves the order of nodes and edges in the model file if this does not
+    lead to edge crossings or conflicts between the ordering or edges and nodes.
+    """
+
+    identifier = "org.eclipse.elk.layered.considerModelOrder"
+    metadata_provider = "options.LayeredMetaDataProvider"
+    applies_to = ["parents", "nodes"]
+
+    value = T.Enum(values=list(MODEL_ORDER_OPTIONS.values()), default_value="NONE")
+
+    def _ui(self) -> List[W.Widget]:
+        dropdown = W.Dropdown(options=list(MODEL_ORDER_OPTIONS.items()))
+        T.link((self, "value"), (dropdown, "value"))
+
+        return [dropdown]
+
+
+class ExpandNodes(LayoutOptionWidget):
+    """Preserves the order of nodes and edges in the model file if this does not
+    lead to edge crossings or conflicts between the ordering or edges and nodes.
+    """
+
+    identifier = "org.eclipse.elk.expandNodes"
+    metadata_provider = "core.options.CoreOptions"
+    applies_to = ["parents"]
+
+    activate = T.Bool(default_value=False)
+
+    def _ui(self) -> List[W.Widget]:
+        cb = W.Checkbox(description="Expand Nodes")
+        T.link((self, "activate"), (cb, "value"))
+
+        return [cb]
+
+    @T.observe("activate")
+    def _update_value(self, change: T.Bunch = None):
+        self.value = "true" if self.activate else "false"
+
+
+class AspectRatio(LayoutOptionWidget):
+    """The padding to be left to a parent element’s border when placing child
+    elements. This can also serve as an output option of a layout algorithm if
+    node size calculation is setup appropriately.
+
+    https://www.eclipse.org/elk/reference/options/org-eclipse-elk-padding.html
+    """
+
+    identifier = "org.eclipse.elk.aspectRatio"
+    metadata_provider = "core.options.CoreOptions"
+    applies_to = ["parents"]
+
+    ratio = T.Float(min_value=0, default_value=0.01)
+
+    def _ui(self) -> List[W.Widget]:
+        slider = W.FloatSlider(description="Aspect Ratio")
+        T.link((self, "ratio"), (slider, "value"))
+        return [slider]
+
+    @T.observe("ratio")
+    def _update_value(self, change: T.Bunch = None):
+        self.value = str(self.ratio)

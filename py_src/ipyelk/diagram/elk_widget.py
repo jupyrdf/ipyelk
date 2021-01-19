@@ -3,45 +3,47 @@
 # Copyright (c) 2021 Dane Freeman.
 # Distributed under the terms of the Modified BSD License.
 
-
-import enum
 from typing import List
 
 import traitlets as T
-from ipywidgets import CallbackDispatcher, DOMWidget
+from ipywidgets import CallbackDispatcher, DOMWidget, widget_serialization
 
 from .._version import EXTENSION_NAME, EXTENSION_SPEC_VERSION
+from ..layouting.elkjs import ElkJS
 from ..schema import ElkSchemaValidator
 from ..trait_types import Schema
-
-
-class Interactions(enum.Enum):
-    select = 1  # -- IMPLICIT: default_value
-    toggle = 2
+from .symbol.defs import Def, def_serialization
 
 
 class ElkDiagram(DOMWidget):
     """Jupyterlab widget for interacting with ELK diagrams"""
 
-    _model_name = T.Unicode("ELKModel").tag(sync=True)
+    _model_name = T.Unicode("ELKDiagramModel").tag(sync=True)
     _model_module = T.Unicode(EXTENSION_NAME).tag(sync=True)
     _model_module_version = T.Unicode(EXTENSION_SPEC_VERSION).tag(sync=True)
-    _view_name = T.Unicode("ELKView").tag(sync=True)
+    _view_name = T.Unicode("ELKDiagramView").tag(sync=True)
     _view_module = T.Unicode(EXTENSION_NAME).tag(sync=True)
     _view_module_version = T.Unicode(EXTENSION_SPEC_VERSION).tag(sync=True)
 
     value = Schema(ElkSchemaValidator).tag(sync=True)
-    _mark_layout = T.Dict().tag(sync=True)
+    defs = T.Dict(value_trait=T.Instance(Def), kw={}).tag(
+        sync=True, **def_serialization
+    )
+    mark_layout = T.Dict().tag(sync=True)
     selected = T.Tuple().tag(sync=True)
     hovered = T.Unicode(allow_none=True, default_value=None).tag(sync=True)
-    # interaction = T.UseEnum(Interactions).tag(sync=True)
+    layouter = T.Instance(ElkJS, kw={}).tag(sync=True, **widget_serialization)
 
     def __init__(self, *value, **kwargs):
         if value:
             kwargs["value"] = value[0]
+        defs = kwargs.pop("defs", {})
         super().__init__(**kwargs)
         self._click_handlers = CallbackDispatcher()
         self.on_msg(self._handle_click_msg)
+        # defs are using the model_id to serialize so need the rest of the
+        # widget to initialize before setting the `defs` trait
+        self.defs = defs
 
     @T.default("value")
     def _default_value(self):

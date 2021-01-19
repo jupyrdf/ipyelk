@@ -14,14 +14,27 @@ export interface ElkPoint {
   y: number;
 }
 
+export interface Shape {
+  use?: string;
+  start?: string;
+  end?: string;
+  x?: number;
+  y?: number;
+  width?: number;
+  height?: number;
+}
 export interface ElkProperties {
   cssClasses?: string;
+  type?: string;
+  shape?: Shape;
+  isDef?: boolean;
 }
 
 export interface ElkGraphElement {
   id: string;
   labels?: ElkLabel[];
   properties?: ElkProperties;
+  layoutOptions?: object;
 }
 
 export interface ElkShape extends ElkGraphElement {

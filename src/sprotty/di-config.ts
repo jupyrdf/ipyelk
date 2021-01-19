@@ -24,14 +24,19 @@ import {
   // Tool,
   // MouseTool,
   exportModule,
-  SGraphView,
+  // SGraphView,
+  // DiamondNodeView,
+  // RectangularNodeView,
+  // CircularNodeView,
+  // SCompartmentView,
+  // ForeignObjectView,
+  // HtmlRootView,
   ConsoleLogger,
   LogLevel,
   configureViewerOptions,
   SvgExporter,
   configureModelElement,
   SGraph,
-  SGraphFactory,
   SLabel,
   edgeEditModule,
   undoRedoModule,
@@ -39,29 +44,31 @@ import {
   routingModule,
   modelSourceModule,
   labelEditModule,
+
   // ICommandStack,
   // ToolManager, DefaultToolsEnablingKeyListener, ToolManagerActionHandler,
   // EnableToolsAction,
   // EnableDefaultToolsAction,
   // configureActionHandler,
   HoverFeedbackCommand,
-  configureCommand
+  configureCommand,
   // HoverFeedbackAction
   // LocalModelSource,
+  //
+  // ModelRenderer,
+  RenderingTargetKind,
+  IVNodePostprocessor,
+  ViewRegistry
 } from 'sprotty';
 
 import { JLModelSource } from './diagram-server';
-import {
-  ElkNodeView,
-  ElkPortView,
-  ElkEdgeView,
-  ElkLabelView,
-  JunctionView
-} from './views';
-import { ElkNode, ElkPort, ElkEdge, ElkJunction } from './sprotty-model';
+import * as v from './views';
+import { ElkNode, ElkPort, ElkEdge, ElkJunction, DefNode } from './sprotty-model';
+import { ElkModelRenderer, SDefModelFactory } from './renderer';
 // import { NodeSelectTool } from '../tools/select';
 import { toolFeedbackModule } from '../tools/feedback';
 import viewportModule from './viewportModule';
+// import {SElkConnectorDef} from './json/defs';
 
 class FilteringSvgExporter extends SvgExporter {
   protected isExported(styleSheet: CSSStyleSheet): boolean {
@@ -83,9 +90,6 @@ export default (containerId: string, view: DOMWidgetView) => {
       .to(ConsoleLogger)
       .inSingletonScope();
     rebind(TYPES.LogLevel).toConstantValue(LogLevel.warn);
-    rebind(TYPES.IModelFactory)
-      .to(SGraphFactory)
-      .inSingletonScope();
     rebind(TYPES.SvgExporter)
       .to(FilteringSvgExporter)
       .inSingletonScope();
@@ -93,12 +97,35 @@ export default (containerId: string, view: DOMWidgetView) => {
     const context = { bind, unbind, isBound, rebind };
 
     // Initialize model element views
-    configureModelElement(context, 'graph', SGraph, SGraphView);
-    configureModelElement(context, 'node', ElkNode, ElkNodeView);
-    configureModelElement(context, 'port', ElkPort, ElkPortView);
-    configureModelElement(context, 'edge', ElkEdge, ElkEdgeView);
-    configureModelElement(context, 'label', SLabel, ElkLabelView);
-    configureModelElement(context, 'junction', ElkJunction, JunctionView);
+    configureModelElement(context, 'graph', SGraph, v.SGraphView);
+    configureModelElement(context, 'node', ElkNode, v.ElkNodeView);
+    configureModelElement(context, 'node:use', ElkNode, v.ElkUseNodeView);
+    configureModelElement(context, 'node:diamond', ElkNode, v.ElkDiamondNodeView);
+    configureModelElement(context, 'node:round', ElkNode, v.ElkRoundNodeView);
+    configureModelElement(context, 'node:image', ElkNode, v.ElkImageNodeView);
+    configureModelElement(context, 'node:comment', ElkNode, v.ElkCommentNodeView);
+    configureModelElement(context, 'node:path', ElkNode, v.ElkPathNodeView);
+    configureModelElement(context, 'node:svg', ElkNode, v.ElkSVGNodeView);
+    configureModelElement(context, 'node:html', ElkNode, v.ElkHTMLNodeView);
+    configureModelElement(context, 'node:widget', ElkNode, v.ElkHTMLNodeView);
+    configureModelElement(
+      context,
+      'node:compartment',
+      ElkNode,
+      v.ElkCompartmentNodeView
+    );
+    configureModelElement(
+      context,
+      'node:foreignobject',
+      ElkNode,
+      v.ElkForeignObjectNodeView
+    );
+
+    configureModelElement(context, 'port', ElkPort, v.ElkPortView);
+    configureModelElement(context, 'edge', ElkEdge, v.ElkEdgeView);
+    configureModelElement(context, 'label', SLabel, v.ElkLabelView);
+    configureModelElement(context, 'label:icon', SLabel, v.ElkLabelView);
+    configureModelElement(context, 'junction', ElkJunction, v.JunctionView);
     configureViewerOptions(context, {
       needsClientLayout: false,
       baseDiv: containerId
@@ -107,7 +134,21 @@ export default (containerId: string, view: DOMWidgetView) => {
     // Hover
     configureCommand(context, HoverFeedbackCommand);
 
-    // bind(TYPES.IActionHandlerInitializer).to(MyActionHandlerInitializer)
+    // Model elements for defs
+    configureModelElement(context, 'def', DefNode, v.DefNodeView);
+
+    // Expose extracted path and connector offset to the rendering context
+    rebind(TYPES.ModelRendererFactory).toFactory<ElkModelRenderer>(ctx => {
+      return (targetKind: RenderingTargetKind, processors: IVNodePostprocessor[]) => {
+        const viewRegistry = ctx.container.get<ViewRegistry>(TYPES.ViewRegistry);
+        const modelSource = ctx.container.get<JLModelSource>(TYPES.ModelSource);
+        return new ElkModelRenderer(viewRegistry, targetKind, processors, modelSource);
+      };
+    });
+
+    rebind(TYPES.IModelFactory)
+      .to(SDefModelFactory)
+      .inSingletonScope();
   });
   const container = new Container();
 
