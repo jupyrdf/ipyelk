@@ -151,6 +151,7 @@ ALL_PRETTIER = [*ALL_YML, *ALL_JSON, *ALL_MD, *ALL_TS, *ALL_CSS]
 # built files
 OK_RELEASE = BUILD / "release.ok"
 OK_PREFLIGHT_CONDA = BUILD / "preflight.conda.ok"
+OK_PREFLIGHT_BUILD = BUILD / "preflight.build.ok"
 OK_PREFLIGHT_KERNEL = BUILD / "preflight.kernel.ok"
 OK_PREFLIGHT_LAB = BUILD / "preflight.lab.ok"
 OK_PREFLIGHT_RELEASE = BUILD / "preflight.release.ok"

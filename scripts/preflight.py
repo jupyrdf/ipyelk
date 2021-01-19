@@ -104,6 +104,27 @@ def preflight_conda():
     return len(errors)
 
 
+def preflight_build():
+    yarn_lock_errors = []
+    for line in P.YARN_LOCK.read_text(encoding="utf-8").splitlines():
+        if line.strip().startswith("resolved ") and "https://" not in line:
+            yarn_lock_errors += line
+
+    if yarn_lock_errors:
+        print(f"Encountered non-https resolutions in {P.YARN_LOCK}")
+        print("\n".join(yarn_lock_errors))
+        print(
+            """Perhaps try:
+            rm -rf node_modules .yarn-packages yarn.lock
+            anaconda-project run jlpm cache clean
+            anaconda-project run jlpm
+            doit preflight:build
+            """
+        )
+
+    return len(yarn_lock_errors)
+
+
 def preflight_kernel():
     """this should only run from the `dev` env"""
     print("Checking kernel list...", flush=True)
@@ -189,6 +210,8 @@ def preflight_release():
 def preflight(stage):
     if stage == "conda":
         return preflight_conda()
+    elif stage == "build":
+        return preflight_build()
     elif stage == "kernel":
         return preflight_kernel()
     elif stage == "lab":

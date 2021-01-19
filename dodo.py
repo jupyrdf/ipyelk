@@ -60,6 +60,7 @@ def task_preflight():
         dict(
             uptodate=[config_changed({"commit": COMMIT})],
             name="conda",
+            doc="ensure the conda envs have a chance of working",
             file_dep=file_dep,
             actions=(
                 [_echo_ok("skipping preflight, hope you know what you're doing!")]
@@ -73,6 +74,7 @@ def task_preflight():
     yield _ok(
         dict(
             name="kernel",
+            doc="ensure the kernel has a chance of working",
             file_dep=[*file_dep, P.OK_ENV["default"]],
             actions=[[*P.APR_DEFAULT, *P.PREFLIGHT, "kernel"]],
         ),
@@ -82,10 +84,21 @@ def task_preflight():
     yield _ok(
         dict(
             name="lab",
+            doc="ensure lab has a chance of working",
             file_dep=[*file_dep, P.LAB_INDEX, P.OK_ENV["default"]],
             actions=[[*P.APR_DEFAULT, *P.PREFLIGHT, "lab"]],
         ),
         P.OK_PREFLIGHT_LAB,
+    )
+
+    yield _ok(
+        dict(
+            name="build",
+            doc="ensure the build has a chance of succeeding",
+            file_dep=[*file_dep, P.YARN_LOCK, P.OK_ENV["default"]],
+            actions=[[*P.APR_DEFAULT, *P.PREFLIGHT, "build"]],
+        ),
+        P.OK_PREFLIGHT_BUILD,
     )
 
     yield _ok(
@@ -399,7 +412,12 @@ def task_lint():
                     )
                 )
             ],
-            file_dep=[P.YARN_INTEGRITY, *P.ALL_PRETTIER, P.OK_ENV["default"]],
+            file_dep=[
+                *P.ALL_PRETTIER,
+                P.OK_ENV["default"],
+                P.OK_PREFLIGHT_BUILD,
+                P.YARN_INTEGRITY,
+            ],
             actions=[[*P.APR_DEFAULT, "npm", "run", "lint:prettier"]],
         ),
         P.OK_PRETTIER,
