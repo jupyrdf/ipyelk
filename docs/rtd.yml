@@ -10,3 +10,5 @@ dependencies:
   - python >=3.7,<3.8
   - sphinx
   - sphinx-autodoc-typehints
+  - pip:
+    - ../.
