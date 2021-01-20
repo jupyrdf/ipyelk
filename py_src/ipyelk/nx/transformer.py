@@ -41,7 +41,7 @@ from .nx import (
 
 
 class XELK(ElkTransformer):
-    """NetworkX DiGraphs to ELK dictionary structure"""
+    """NetworkX source graphs to a valid ELK JSON dictionary structure"""
 
     HIDDEN_ATTR = "hidden"
     hoist_hidden_edges: bool = True

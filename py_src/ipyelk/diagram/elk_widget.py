@@ -16,7 +16,13 @@ from .symbol.defs import Def, def_serialization
 
 
 class ElkDiagram(DOMWidget):
-    """Jupyterlab widget for interacting with ELK diagrams"""
+    """Jupyterlab widget for interacting with ELK diagrams.
+
+    Setting the instance's `value` traitlet to valid `elk json
+    <https://www.eclipse.org/elk/documentation/tooldevelopers/graphdatastructure/jsonformat.html>`_
+    will call the `elkjs layout method <https://github.com/kieler/elkjs>`_ and
+    display the returned `mark_layout` using `sprotty <https://github.com/eclipse/sprotty>`_.
+    """
 
     _model_name = T.Unicode("ELKDiagramModel").tag(sync=True)
     _model_module = T.Unicode(EXTENSION_NAME).tag(sync=True)
