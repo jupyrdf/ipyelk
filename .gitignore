@@ -157,9 +157,6 @@ py_src/ipyelk/labextension/*.tgz
 # -------------
 **/coverage/
 
-# generated files
-py_src/ipyelk/schema/*.json
-
 # editors
 .idea/
 .vscode/

@@ -1,0 +1,746 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "definitions": {
+    "AnyElkEdge": {
+      "anyOf": [
+        {
+          "$ref": "#/definitions/ElkEdge"
+        },
+        {
+          "$ref": "#/definitions/ElkExtendedEdge"
+        },
+        {
+          "$ref": "#/definitions/ElkPrimitiveEdge"
+        },
+        {
+          "$ref": "#/definitions/LazyElkEdge"
+        }
+      ]
+    },
+    "AnyElkEdgeWithProperties": {
+      "anyOf": [
+        {
+          "additionalProperties": false,
+          "properties": {
+            "id": {
+              "type": "string"
+            },
+            "junctionPoints": {
+              "items": {
+                "$ref": "#/definitions/ElkPoint"
+              },
+              "type": "array"
+            },
+            "labels": {
+              "items": {
+                "$ref": "#/definitions/ElkLabel"
+              },
+              "type": "array"
+            },
+            "layoutOptions": {
+              "$ref": "#/definitions/LayoutOptions"
+            },
+            "properties": {
+              "$ref": "#/definitions/ElkProperties"
+            }
+          },
+          "required": ["id"],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "id": {
+              "type": "string"
+            },
+            "junctionPoints": {
+              "items": {
+                "$ref": "#/definitions/ElkPoint"
+              },
+              "type": "array"
+            },
+            "labels": {
+              "items": {
+                "$ref": "#/definitions/ElkLabel"
+              },
+              "type": "array"
+            },
+            "layoutOptions": {
+              "$ref": "#/definitions/LayoutOptions"
+            },
+            "properties": {
+              "$ref": "#/definitions/ElkProperties"
+            },
+            "sections": {
+              "items": {
+                "$ref": "#/definitions/ElkEdgeSection"
+              },
+              "type": "array"
+            },
+            "sources": {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            "targets": {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            }
+          },
+          "required": ["id", "sections", "sources", "targets"],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "bendPoints": {
+              "items": {
+                "$ref": "#/definitions/ElkPoint"
+              },
+              "type": "array"
+            },
+            "id": {
+              "type": "string"
+            },
+            "junctionPoints": {
+              "items": {
+                "$ref": "#/definitions/ElkPoint"
+              },
+              "type": "array"
+            },
+            "labels": {
+              "items": {
+                "$ref": "#/definitions/ElkLabel"
+              },
+              "type": "array"
+            },
+            "layoutOptions": {
+              "$ref": "#/definitions/LayoutOptions"
+            },
+            "properties": {
+              "$ref": "#/definitions/ElkProperties"
+            },
+            "source": {
+              "type": "string"
+            },
+            "sourcePoint": {
+              "$ref": "#/definitions/ElkPoint"
+            },
+            "sourcePort": {
+              "type": "string"
+            },
+            "target": {
+              "type": "string"
+            },
+            "targetPoint": {
+              "$ref": "#/definitions/ElkPoint"
+            },
+            "targetPort": {
+              "type": "string"
+            }
+          },
+          "required": ["id", "source", "target"],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "id": {
+              "type": "string"
+            },
+            "junctionPoints": {
+              "items": {
+                "$ref": "#/definitions/ElkPoint"
+              },
+              "type": "array"
+            },
+            "labels": {
+              "items": {
+                "$ref": "#/definitions/AnyElkLabelWithProperties"
+              },
+              "type": "array"
+            },
+            "layoutOptions": {
+              "$ref": "#/definitions/LayoutOptions"
+            },
+            "properties": {
+              "$ref": "#/definitions/ElkProperties"
+            },
+            "sources": {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            "targets": {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            }
+          },
+          "required": ["id", "sources", "targets"],
+          "type": "object"
+        }
+      ]
+    },
+    "AnyElkLabelWithProperties": {
+      "additionalProperties": false,
+      "properties": {
+        "height": {
+          "type": "number"
+        },
+        "id": {
+          "type": "string"
+        },
+        "labels": {
+          "items": {
+            "$ref": "#/definitions/ElkLabel"
+          },
+          "type": "array"
+        },
+        "layoutOptions": {
+          "$ref": "#/definitions/LayoutOptions"
+        },
+        "properties": {
+          "$ref": "#/definitions/ElkProperties"
+        },
+        "text": {
+          "type": "string"
+        },
+        "width": {
+          "type": "number"
+        },
+        "x": {
+          "type": "number"
+        },
+        "y": {
+          "type": "number"
+        }
+      },
+      "required": ["id", "text"],
+      "type": "object"
+    },
+    "AnyElkNode": {
+      "additionalProperties": false,
+      "properties": {
+        "children": {
+          "items": {
+            "$ref": "#/definitions/AnyElkNode"
+          },
+          "type": "array"
+        },
+        "edges": {
+          "items": {
+            "$ref": "#/definitions/AnyElkEdgeWithProperties"
+          },
+          "type": "array"
+        },
+        "height": {
+          "type": "number"
+        },
+        "id": {
+          "type": "string"
+        },
+        "labels": {
+          "items": {
+            "$ref": "#/definitions/AnyElkLabelWithProperties"
+          },
+          "type": "array"
+        },
+        "layoutOptions": {
+          "$ref": "#/definitions/LayoutOptions"
+        },
+        "ports": {
+          "items": {
+            "$ref": "#/definitions/AnyElkPort"
+          },
+          "type": "array"
+        },
+        "properties": {
+          "$ref": "#/definitions/ElkProperties"
+        },
+        "width": {
+          "type": "number"
+        },
+        "x": {
+          "type": "number"
+        },
+        "y": {
+          "type": "number"
+        }
+      },
+      "required": ["id"],
+      "type": "object"
+    },
+    "AnyElkPort": {
+      "additionalProperties": false,
+      "properties": {
+        "height": {
+          "type": "number"
+        },
+        "id": {
+          "type": "string"
+        },
+        "labels": {
+          "items": {
+            "$ref": "#/definitions/AnyElkLabelWithProperties"
+          },
+          "type": "array"
+        },
+        "layoutOptions": {
+          "$ref": "#/definitions/LayoutOptions"
+        },
+        "properties": {
+          "$ref": "#/definitions/ElkProperties"
+        },
+        "width": {
+          "type": "number"
+        },
+        "x": {
+          "type": "number"
+        },
+        "y": {
+          "type": "number"
+        }
+      },
+      "required": ["id"],
+      "type": "object"
+    },
+    "ElkEdge": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "junctionPoints": {
+          "items": {
+            "$ref": "#/definitions/ElkPoint"
+          },
+          "type": "array"
+        },
+        "labels": {
+          "items": {
+            "$ref": "#/definitions/ElkLabel"
+          },
+          "type": "array"
+        },
+        "layoutOptions": {
+          "$ref": "#/definitions/LayoutOptions"
+        }
+      },
+      "required": ["id"],
+      "type": "object"
+    },
+    "ElkEdgeSection": {
+      "additionalProperties": false,
+      "properties": {
+        "bendPoints": {
+          "items": {
+            "$ref": "#/definitions/ElkPoint"
+          },
+          "type": "array"
+        },
+        "endPoint": {
+          "$ref": "#/definitions/ElkPoint"
+        },
+        "id": {
+          "type": "string"
+        },
+        "incomingSections": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "incomingShape": {
+          "type": "string"
+        },
+        "labels": {
+          "items": {
+            "$ref": "#/definitions/ElkLabel"
+          },
+          "type": "array"
+        },
+        "layoutOptions": {
+          "$ref": "#/definitions/LayoutOptions"
+        },
+        "outgoingSections": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "outgoingShape": {
+          "type": "string"
+        },
+        "startPoint": {
+          "$ref": "#/definitions/ElkPoint"
+        }
+      },
+      "required": ["endPoint", "id", "startPoint"],
+      "type": "object"
+    },
+    "ElkExtendedEdge": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "junctionPoints": {
+          "items": {
+            "$ref": "#/definitions/ElkPoint"
+          },
+          "type": "array"
+        },
+        "labels": {
+          "items": {
+            "$ref": "#/definitions/ElkLabel"
+          },
+          "type": "array"
+        },
+        "layoutOptions": {
+          "$ref": "#/definitions/LayoutOptions"
+        },
+        "sections": {
+          "items": {
+            "$ref": "#/definitions/ElkEdgeSection"
+          },
+          "type": "array"
+        },
+        "sources": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "targets": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        }
+      },
+      "required": ["id", "sections", "sources", "targets"],
+      "type": "object"
+    },
+    "ElkGraphElement": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "labels": {
+          "items": {
+            "$ref": "#/definitions/ElkLabel"
+          },
+          "type": "array"
+        },
+        "layoutOptions": {
+          "$ref": "#/definitions/LayoutOptions"
+        }
+      },
+      "required": ["id"],
+      "type": "object"
+    },
+    "ElkLabel": {
+      "additionalProperties": false,
+      "properties": {
+        "height": {
+          "type": "number"
+        },
+        "id": {
+          "type": "string"
+        },
+        "labels": {
+          "items": {
+            "$ref": "#/definitions/ElkLabel"
+          },
+          "type": "array"
+        },
+        "layoutOptions": {
+          "$ref": "#/definitions/LayoutOptions"
+        },
+        "text": {
+          "type": "string"
+        },
+        "width": {
+          "type": "number"
+        },
+        "x": {
+          "type": "number"
+        },
+        "y": {
+          "type": "number"
+        }
+      },
+      "required": ["id", "text"],
+      "type": "object"
+    },
+    "ElkNode": {
+      "additionalProperties": false,
+      "properties": {
+        "children": {
+          "items": {
+            "$ref": "#/definitions/ElkNode"
+          },
+          "type": "array"
+        },
+        "edges": {
+          "items": {
+            "$ref": "#/definitions/ElkEdge"
+          },
+          "type": "array"
+        },
+        "height": {
+          "type": "number"
+        },
+        "id": {
+          "type": "string"
+        },
+        "labels": {
+          "items": {
+            "$ref": "#/definitions/ElkLabel"
+          },
+          "type": "array"
+        },
+        "layoutOptions": {
+          "$ref": "#/definitions/LayoutOptions"
+        },
+        "ports": {
+          "items": {
+            "$ref": "#/definitions/ElkPort"
+          },
+          "type": "array"
+        },
+        "width": {
+          "type": "number"
+        },
+        "x": {
+          "type": "number"
+        },
+        "y": {
+          "type": "number"
+        }
+      },
+      "required": ["id"],
+      "type": "object"
+    },
+    "ElkPoint": {
+      "additionalProperties": false,
+      "properties": {
+        "x": {
+          "type": "number"
+        },
+        "y": {
+          "type": "number"
+        }
+      },
+      "required": ["x", "y"],
+      "type": "object"
+    },
+    "ElkPort": {
+      "additionalProperties": false,
+      "properties": {
+        "height": {
+          "type": "number"
+        },
+        "id": {
+          "type": "string"
+        },
+        "labels": {
+          "items": {
+            "$ref": "#/definitions/ElkLabel"
+          },
+          "type": "array"
+        },
+        "layoutOptions": {
+          "$ref": "#/definitions/LayoutOptions"
+        },
+        "width": {
+          "type": "number"
+        },
+        "x": {
+          "type": "number"
+        },
+        "y": {
+          "type": "number"
+        }
+      },
+      "required": ["id"],
+      "type": "object"
+    },
+    "ElkPrimitiveEdge": {
+      "additionalProperties": false,
+      "properties": {
+        "bendPoints": {
+          "items": {
+            "$ref": "#/definitions/ElkPoint"
+          },
+          "type": "array"
+        },
+        "id": {
+          "type": "string"
+        },
+        "junctionPoints": {
+          "items": {
+            "$ref": "#/definitions/ElkPoint"
+          },
+          "type": "array"
+        },
+        "labels": {
+          "items": {
+            "$ref": "#/definitions/ElkLabel"
+          },
+          "type": "array"
+        },
+        "layoutOptions": {
+          "$ref": "#/definitions/LayoutOptions"
+        },
+        "source": {
+          "type": "string"
+        },
+        "sourcePoint": {
+          "$ref": "#/definitions/ElkPoint"
+        },
+        "sourcePort": {
+          "type": "string"
+        },
+        "target": {
+          "type": "string"
+        },
+        "targetPoint": {
+          "$ref": "#/definitions/ElkPoint"
+        },
+        "targetPort": {
+          "type": "string"
+        }
+      },
+      "required": ["id", "source", "target"],
+      "type": "object"
+    },
+    "ElkProperties": {
+      "additionalProperties": false,
+      "properties": {
+        "cssClasses": {
+          "type": "string"
+        },
+        "isDef": {
+          "type": "boolean"
+        },
+        "shape": {
+          "$ref": "#/definitions/Shape"
+        },
+        "type": {
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "ElkShape": {
+      "additionalProperties": false,
+      "properties": {
+        "height": {
+          "type": "number"
+        },
+        "id": {
+          "type": "string"
+        },
+        "labels": {
+          "items": {
+            "$ref": "#/definitions/ElkLabel"
+          },
+          "type": "array"
+        },
+        "layoutOptions": {
+          "$ref": "#/definitions/LayoutOptions"
+        },
+        "width": {
+          "type": "number"
+        },
+        "x": {
+          "type": "number"
+        },
+        "y": {
+          "type": "number"
+        }
+      },
+      "required": ["id"],
+      "type": "object"
+    },
+    "LayoutOptions": {
+      "additionalProperties": {
+        "type": "string"
+      },
+      "description": "***************************************************************************** Copyright (c) 2019 TypeFox and others. All rights reserved. This program and the accompanying materials are made available under the terms of the Eclipse Public License v1.0 which accompanies this distribution, and is available at http://www.eclipse.org/legal/epl-v10.html *****************************************************************************",
+      "type": "object"
+    },
+    "LazyElkEdge": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "junctionPoints": {
+          "items": {
+            "$ref": "#/definitions/ElkPoint"
+          },
+          "type": "array"
+        },
+        "labels": {
+          "items": {
+            "$ref": "#/definitions/AnyElkLabelWithProperties"
+          },
+          "type": "array"
+        },
+        "layoutOptions": {
+          "$ref": "#/definitions/LayoutOptions"
+        },
+        "sources": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "targets": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        }
+      },
+      "required": ["id", "sources", "targets"],
+      "type": "object"
+    },
+    "Shape": {
+      "additionalProperties": false,
+      "properties": {
+        "end": {
+          "type": "string"
+        },
+        "height": {
+          "type": "number"
+        },
+        "start": {
+          "type": "string"
+        },
+        "use": {
+          "type": "string"
+        },
+        "width": {
+          "type": "number"
+        },
+        "x": {
+          "type": "number"
+        },
+        "y": {
+          "type": "number"
+        }
+      },
+      "type": "object"
+    }
+  }
+}
