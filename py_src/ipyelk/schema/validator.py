@@ -8,9 +8,17 @@ from typing import List
 
 import jsonschema
 
-HERE = Path(__file__).parent
-SCHEMA = json.loads((HERE / "elkschema.json").read_text(encoding="utf-8"))
-SCHEMA["$ref"] = "#/definitions/AnyElkNode"
+try:
+    HERE = Path(__file__).parent
+    SCHEMA = json.loads((HERE / "elkschema.json").read_text(encoding="utf-8"))
+    SCHEMA["$ref"] = "#/definitions/AnyElkNode"
+except FileNotFoundError as E:
+    import os
+    if os.environ.get("READTHEDOCS", False):
+        SCHEMA = {}  # use dummy schema while building the docs
+    else:
+        raise E
+
 
 ElkSchemaValidator = jsonschema.Draft7Validator(SCHEMA)
 
