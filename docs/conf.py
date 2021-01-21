@@ -43,6 +43,8 @@ autosummary_generate = True
 # theme
 html_theme = "pydata_sphinx_theme"
 html_logo = "_static/ipyelk.svg"
+html_favicon = "_static/favicon.ico"
+
 html_theme_options = {
     "github_url": META["url"],
     "use_edit_page_button": True,
