@@ -6,7 +6,7 @@ import { WidgetModel, WidgetView } from '@jupyter-widgets/base';
 
 import { unpack_models as deserialize } from '@jupyter-widgets/base';
 
-import { ELK_DEBUG, NAME, VERSION } from '.';
+import { ELK_DEBUG, NAME, VERSION } from './tokens';
 
 import { ELKDiagramModel } from './display_widget';
 

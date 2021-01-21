@@ -25,7 +25,7 @@ import {
   TYPES
 } from 'sprotty';
 
-import { NAME, VERSION, TAnyELKMessage, ELK_CSS } from '.';
+import { NAME, VERSION, TAnyELKMessage, ELK_CSS } from './tokens';
 
 import createContainer from './sprotty/di-config';
 import { JLModelSource } from './sprotty/diagram-server';

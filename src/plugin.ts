@@ -7,7 +7,7 @@ import { Widget } from '@lumino/widgets';
 
 import { IJupyterWidgetRegistry } from '@jupyter-widgets/base';
 
-import { NAME, VERSION, ELK_DEBUG } from '.';
+import { NAME, VERSION, ELK_DEBUG } from './tokens';
 import '../style/index.css';
 
 const EXTENSION_ID = `${NAME}:plugin`;

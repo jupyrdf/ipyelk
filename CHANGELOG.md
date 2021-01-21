@@ -1,20 +1,25 @@
 # Changelog
 
-## ipyelk 0.3.0
+## @jupyrdf/jupyter-elk 1.0.0
 
-- support JupyterLab 3 ([#6][])
-  - `@jupyrdf/jupyter-elk` is now bundled in the `pip`/`conda` package, and no
-    `jupyter lab build` is required
+- updates for JupyterLab 3 ([#6][])
+  - uses `@lumino` components
 
-## @jupyrdf/jupyter-elk 0.3.0
+## ipyelk 1.0.0
 
-- uses newer `@lumino` and `@jupyter-widgets` packages
-- packages will continue to be released on npmjs.org, and _might_ even install from the
-  extension manager, but this is _no longer be tested_
+- supports (and depends on) JupyterLab 3 ([#6][])
+  - labextension is delivered as part of the `ipyelk` python package, no more
+    `lab build`
+  - `npm` tarballs will still be uploaded, and most useful exports have been hoisted for
+    reuse
 
 [#6]: https://github.com/jupyrdf/ipyelk/issues/6
 
+--
+
 ## @jupyrdf/jupyter-elk 0.3.0
+
+## ipyelk 0.3.0
 
 - Custom shapes ([#60][])
   - Ability to add custom svg symbols and use as a reference for other elements
