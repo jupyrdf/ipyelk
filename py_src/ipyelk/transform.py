@@ -106,14 +106,23 @@ class ElkTransformer(W.Widget):
             ) from E
 
     def to_id(self, item: Hashable) -> str:
-        """Use original objects to find elk id"""
+        """Use original objects to find elk id
+
+        :param item: item to convert to the elk identifier
+        :raises ElkRegistryError: If unable to find item in the registry
+        :return: elk identifier
+        """
         try:
             return self._item_to_elk[item]
         except KeyError as E:
             raise ElkRegistryError(f"Item `{item}` not in elk id registry.") from E
 
     def connect(self, view: ElkDiagram) -> T.link:
-        """Connect the output value of this transformer to a diagram"""
+        """Connect the output elk json value of this transformer to a diagram
+
+        :param view: Elk diagram to link elk json values.
+        :return: traitlet link
+        """
         return T.dlink((self, "value"), (view, "value"))
 
     def register(self, element: Union[str, ElkGraphElement], item: Hashable):

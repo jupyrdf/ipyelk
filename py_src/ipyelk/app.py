@@ -15,6 +15,14 @@ class Elk(W.VBox, StyledWidget):
     :py:class:`~ipyelk.diagram.elk_widget.ElkDiagram` and
     :py:class:`~ipyelk.transform.ElkTransformer`
 
+    Attributes
+    ----------
+
+    transformer: :py:class:`~ipyelk.diagram.elk_widget.ElkDiagram`
+        Transformer to convert source objects into valid elk json value
+    diagram: :py:class:`~ipyelk.diagram.elk_widget.ElkDiagram`
+
+    :param toolbar: Toolar for widget
     """
 
     transformer: ElkTransformer = T.Instance(ElkTransformer)

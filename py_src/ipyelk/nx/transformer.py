@@ -41,13 +41,23 @@ from .nx import (
 
 
 class XELK(ElkTransformer):
-    """NetworkX source graphs to a valid ELK JSON dictionary structure"""
+    """NetworkX source graphs to a valid ELK JSON dictionary structure
+
+    :param source: Tuple of NetworkX graphs. The first graph contains
+    node/port/edge information while the second graph contains the node
+    hierarchy.
+
+    :param value: Output elk json
+
+    """
 
     HIDDEN_ATTR = "hidden"
     hoist_hidden_edges: bool = True
 
-    source = T.Tuple(T.Instance(nx.Graph), T.Instance(nx.DiGraph, allow_none=True))
-    layouts = T.Dict()  # keys: networkx nodes {ElkElements: {layout options}}
+    source: Tuple[nx.Graph, nx.DiGraph] = T.Tuple(
+        T.Instance(nx.Graph), T.Instance(nx.DiGraph, allow_none=True)
+    )
+    layouts = T.Dict()  # keys: NetworkX nodes {ElkElements: {layout options}}
     css_classes = T.Dict()
 
     port_scale = T.Int(default_value=5)
@@ -87,9 +97,7 @@ class XELK(ElkTransformer):
         """Get the element id for a node in the main graph for use in elk
 
         :param node: Node in main  graph
-        :type node: Hashable
         :return: Element ID
-        :rtype: str
         """
         g, tree = self.source
         if node is ElkRoot:
@@ -101,12 +109,9 @@ class XELK(ElkTransformer):
     def port_id(self, node: Hashable, port: Optional[Hashable] = None) -> str:
         """Get a suitable Elk identifier from the node and port
 
-        :param node: Node from the incoming networkx graph
-        :type node: Hashable
+        :param node: Node from the incoming NetworkX graph
         :param port: Port identifier, defaults to None
-        :type port: Optional[Hashable], optional
         :return: If no port is provided will refer to the node
-        :rtype: str
         """
         if port is None:
             return self.node_id(node)
@@ -122,14 +127,13 @@ class XELK(ElkTransformer):
     async def transform(self) -> ElkNode:
         """Generate ELK dictionary structure
         :return: Root Elk node
-        :rtype: ElkNode
         """
         # TODO decide behavior for nodes that exist in the tree but not g
         g, tree = self.source
         self.clear_registry()
         visible_edges, hidden_edges = self.collect_edges()
 
-        # Process visible networkx nodes into elknodes
+        # Process visible NetworkX nodes into elknodes
         visible_nodes = [
             n for n in g.nodes() if not is_hidden(tree, n, self.HIDDEN_ATTR)
         ]
@@ -187,7 +191,12 @@ class XELK(ElkTransformer):
 
         return top
 
-    async def make_elknode(self, node) -> Tuple[ElkNode, PortMap]:
+    async def make_elknode(self, node: Hashable) -> Tuple[ElkNode, PortMap]:
+        """Get the elknode and ports associated with given NetworkX node
+
+        :param node: Incoming NetworkX node
+        :return: ElkNode and Ports
+        """
         # merge layout options defined on the node data with default layout
         # options
         node_data = self.get_node_data(node)
@@ -197,7 +206,7 @@ class XELK(ElkTransformer):
         )
         labels = await self.make_labels(node)
 
-        # update port map with declared ports in the networkx node data
+        # update port map with declared ports in the NetworkX node data
         node_ports = await self.collect_ports(node)
 
         properties = self.get_properties(node, self.get_css(node, ElkNode)) or None
@@ -215,15 +224,12 @@ class XELK(ElkTransformer):
     def get_layout(
         self, node: Hashable, elk_type: Type[ElkGraphElement]
     ) -> Optional[Dict]:
-        """Get the Elk Layout Options appropriate for given networkx node and
+        """Get the Elk Layout Options appropriate for given NetworkX node and
         filter by given elk_type
 
-        :param node: [description]
-        :type node: Hashable
-        :param elk_type: [description]
-        :type elk_type: Type[ElkGraphElement]
-        :return: [description]
-        :rtype: [type]
+        :param node: NetworkX node
+        :param elk_type: Elk Graph Element to apply layouts to
+        :return: Dictionary of relevant layout options
         """
         # TODO look at self.source hierarchy and resolve layout with added
         # infomation. until then use root node `None` for layout options
@@ -242,13 +248,10 @@ class XELK(ElkTransformer):
     ) -> Dict:
         """Get the properties for a graph element
 
-        :param element: Networkx node or edge
-        :type node: Hashable
+        :param element: NetworkX node or edge
         :param dom_classes: Set of base CSS DOM classes to merge, defaults to
         Set[str]=None
-        :type dom_classes: [type], optional
         :return: Set of CSS Classes to apply
-        :rtype: Set[str]
         """
 
         g, tree = self.source
@@ -285,18 +288,14 @@ class XELK(ElkTransformer):
         elk_type: Type[ElkGraphElement],
         dom_classes: Set[str] = None,
     ) -> Set[str]:
-        """Get the CSS Classes appropriate for given networkx node given
+        """Get the CSS Classes appropriate for given NetworkX node given
         elk_type
 
-        :param node: Networkx node
-        :type node: Hashable
+        :param node: NetworkX node
         :param elk_type: ElkGraphElement to get appropriate css classes
-        :type elk_type: Type[ElkGraphElement]
         :param dom_classes: Set of base CSS DOM classes to merge, defaults to
         Set[str]=None
-        :type dom_classes: [type], optional
         :return: Set of CSS Classes to apply
-        :rtype: Set[str]
         """
         typed_css = self.css_classes.get(node, {})
         css_classes = set(typed_css.get(elk_type, []))
@@ -341,11 +340,8 @@ class XELK(ElkTransformer):
         """Make the associated Elk edge for the given Edge
 
         :param edge: Edge object to wrap
-        :type edge: Edge
         :param styles: List of css classes to add to given Elk edge, defaults to None
-        :type styles: Optional[List[str]], optional
         :return: Elk edge
-        :rtype: ElkExtendedEdge
         """
 
         labels = []
@@ -383,14 +379,10 @@ class XELK(ElkTransformer):
     ) -> Port:
         """Make the associated elk port for the given owner node and port
 
-        :param owner: [description]
-        :type owner: Hashable
-        :param port: [description]
-        :type port: Hashable
+        :param owner: NetworkX node
+        :param port: NetworkX port name
         :param styles: list of css classes to apply to given ElkPort
-        :type styles: List[str]
-        :return: [description]
-        :rtype: ElkPort
+        :return: Elk port
         """
         port_id = self.port_id(owner, port)
         properties = self.get_properties(port, styles) or None
@@ -409,6 +401,10 @@ class XELK(ElkTransformer):
         return g.nodes.get(node, {})
 
     async def collect_ports(self, *nodes) -> PortMap:
+        """Get port map for list of incoming NetworkX nodes
+
+        :return: ElkPort objects mapped to their
+        """
         ports: PortMap = {}
         for node in nodes:
             values = self.get_node_data(node).get(self.port_key, [])
@@ -438,7 +434,12 @@ class XELK(ElkTransformer):
                 ports[elkport.id] = Port(node=node, elkport=elkport)
         return ports
 
-    async def make_labels(self, node: Hashable) -> Optional[List[ElkLabel]]:
+    async def make_labels(self, node: Hashable) -> List[ElkLabel]:
+        """Get associated ElkLabels for a given input NetworkX node.
+
+        :param node: Input NetworkX node
+        :return: List of ElkLabels
+        """
         labels = []
         g = self.source[0]
         data = g.nodes.get(node, {})
@@ -478,13 +479,10 @@ class XELK(ElkTransformer):
         return labels
 
     def collect_edges(self) -> Tuple[EdgeMap, EdgeMap]:
-        """[summary]
+        """Method to process edges in the NetworkX source graph and separate
+        visible edges and hidden edges.
 
-        :return: [description]
-        :rtype: Tuple[
-            Dict[Hashable, List[ElkExtendedEdge]],
-            Dict[Hashable, List[ElkExtendedEdge]]
-        ]
+        :return: Visible edge mapping and hidden edge mapping.
         """
         visible: EdgeMap = defaultdict(
             list

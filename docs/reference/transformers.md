@@ -1,5 +1,6 @@
 # Transformers
-The goal of transformers it to take some generalized objects and
+The goal of transformers is to take some generalized source and generate valid
+elk json to pass to an ElkDiagram widget for layout.
 
 ## Transformer
 
