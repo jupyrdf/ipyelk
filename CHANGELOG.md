@@ -3,7 +3,20 @@
 ## @jupyrdf/jupyter-elk 0.3.0
 
 ## ipyelk 0.3.0
+- Initial `readthedocs` sphinx doc workflow ([#64][])
+- Custom shapes ([#60][])
+  - Ability to add custom svg symbols and use as a reference for other elements
+  - Custom node shapes
+  - Custom connector end shapes for edges
+  - Custom shapes for ports
+  - Custom node label shapes
+  - Jupyterlab widgets rendering inside Node
+  - Node compartments
+  - Initial level of detail checks for labels
+  - Rendering checks for nodes outside of view bounding box
 
+[#60]: https://github.com/jupyrdf/ipyelk/pull/60
+[#64]: https://github.com/jupyrdf/ipyelk/pull/64
 ---
 
 ## @jupyrdf/jupyter-elk 0.2.1
