@@ -23,7 +23,11 @@ from scripts import project as P
 from scripts import reporter
 from scripts import utils as U
 
-os.environ.update(PYTHONIOENCODING="utf-8", PIP_DISABLE_PIP_VERSION_CHECK="1")
+os.environ.update(
+    NODE_OPTS="--max-old-space-size=4096",
+    PYTHONIOENCODING="utf-8",
+    PIP_DISABLE_PIP_VERSION_CHECK="1",
+)
 
 DOIT_CONFIG = {
     "backend": "sqlite3",

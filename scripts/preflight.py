@@ -183,8 +183,8 @@ def preflight_release():
             problems += [f"- Not found in CHANGELOG.md: {version}"]
 
     print("Checking widget spec versions...", flush=True)
-    index_ts = P.TS_SRC / "index.ts"
-    ts_version = re.findall(r"""VERSION = '(.*?)'""", index_ts.read_text())[0]
+    tokens_ts = P.TS_SRC / "tokens.ts"
+    ts_version = re.findall(r"""VERSION = '(.*?)'""", tokens_ts.read_text())[0]
     py_version = re.findall(
         r"""EXTENSION_SPEC_VERSION = "([^"]+)""", P.VERSION_PY.read_text()
     )[0]

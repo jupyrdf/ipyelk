@@ -10,8 +10,7 @@
 - supports (and depends on) JupyterLab 3 ([#6][])
   - labextension is delivered as part of the `ipyelk` python package, no more
     `lab build`
-  - `npm` tarballs will still be uploaded, and most useful exports have been hoisted for
-    reuse
+  - `npm` tarballs will still be uploaded
 
 [#6]: https://github.com/jupyrdf/ipyelk/issues/6
 
