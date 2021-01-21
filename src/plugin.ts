@@ -2,12 +2,12 @@
  * Copyright (c) 2021 Dane Freeman.
  * Distributed under the terms of the Modified BSD License.
  */
-import { Application, IPlugin } from '@phosphor/application';
-import { Widget } from '@phosphor/widgets';
+import { Application, IPlugin } from '@lumino/application';
+import { Widget } from '@lumino/widgets';
 
 import { IJupyterWidgetRegistry } from '@jupyter-widgets/base';
 
-import { NAME, VERSION, ELK_DEBUG } from '.';
+import { NAME, VERSION, ELK_DEBUG } from './tokens';
 import '../style/index.css';
 
 const EXTENSION_ID = `${NAME}:plugin`;

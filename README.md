@@ -19,8 +19,14 @@
 ## Prerequisites
 
 - `python >=3.7`
-- `jupyterlab >=1,<2` _JupyterLab 2+ compatibility coming soon!_
-- `nodejs >=10,<14`
+
+### JupyterLab compatibility
+
+| `jupyterlab` | `ipyelk` | special concerns                                                                                                          |
+| ------------ | -------- | ------------------------------------------------------------------------------------------------------------------------- |
+| `==1.*`      | `>1`     | needs `nodejs >10`<br/>`jupyter labextension install @jupyrdf/jupyter-elk`<br/>backports, etc. land on the `0.3.x` branch |
+| `==2.*`      | `>1`     | _untested_                                                                                                                |
+| `==3.*`      | `>=1`    |
 
 ## Install
 
@@ -28,10 +34,8 @@
 
 ### `ipyelk` with `conda` (recommended)
 
-`conda` can also install `nodejs`.
-
 ```bash
-conda install -c conda-forge ipyelk jupyterlab=1 nodejs
+conda install -c conda-forge ipyelk jupyterlab=3
 ```
 
 ### `ipyelk` with `pip`
@@ -39,16 +43,7 @@ conda install -c conda-forge ipyelk jupyterlab=1 nodejs
 install `nodejs` with a [package manager][package-manager]
 
 ```bash
-pip install ipyelk jupyterlab=1
-```
-
-### `@jupyrdf/jupyter-elk` with `jupyter labextension install`
-
-`@jupyrdf/jupyter-elk` is distributed on [npm][], and relies on
-`@jupyter-widgets/jupyterlab-manager`.
-
-```bash
-jupyter labextension install @jupyter-widgets/jupyterlab-manager @jupyrdf/jupyter-elk
+pip install ipyelk jupyterlab=3
 ```
 
 ### Developing
@@ -62,6 +57,11 @@ In your kernel, `ipyelk`:
 - build [ELK JSON][elk-json]
   - optionally, use [networkx][]
 
+In your `jupyter_server`:
+
+- serve the `@jupyrdf/jupyter-elk` assets as a
+  [federated module](https://jupyterlab.readthedocs.io/en/latest/extension/extension_dev.html#prebuilt-extensions)
+
 In the browser, `@jupyrdf/jupyter-elk`:
 
 - [ELK][] lays out the diagram in a WebWorker
@@ -72,7 +72,6 @@ In the browser, `@jupyrdf/jupyter-elk`:
 
 ```bash
 pip uninstall ipyelk
-jupyter labextension uninstall @jupyrdf/jupyter-elk
 ```
 
 ## Open Source

@@ -11,11 +11,6 @@ from datetime import datetime
 
 from doit.reporter import ConsoleReporter
 
-from . import project as P
-
-START = "::group::" if P.INSTALL_ARTIFACT else ""
-END = "\n::endgroup::" if P.INSTALL_ARTIFACT else ""
-
 TIMEFMT = "%H:%M:%S"
 SKIP = "        "
 
@@ -27,7 +22,7 @@ class GithubActionsReporter(ConsoleReporter):
         start = datetime.now()
         title = task.title()
         self._gh_timings[title] = [start]
-        self.outstream.write(f"""{START}[{start.strftime(TIMEFMT)}] 🦌  {title}\n""")
+        self.outstream.write(f"""{start.strftime(TIMEFMT)} 🦌  {title}\n""")
 
     def gh_outtro(self, task, emoji):
         title = task.title()
@@ -37,7 +32,7 @@ class GithubActionsReporter(ConsoleReporter):
         ]
         delta = end - start
         sec = str(delta.seconds).rjust(7)
-        self.outstream.write(f"{END}\n[{sec}s] {emoji} {task.title()} {emoji}\n")
+        self.outstream.write(f"{sec}s {emoji} {task.title()} {emoji}\n")
 
     def add_failure(self, task, exception):
         super().add_failure(task, exception)
@@ -48,6 +43,6 @@ class GithubActionsReporter(ConsoleReporter):
         self.gh_outtro(task, "🏁 ")
 
     def skip_uptodate(self, task):
-        self.outstream.write(f"{START}[{SKIP}] ⏩  {task.title()}{END}\n")
+        self.outstream.write(f"{SKIP} ⏩  {task.title()}\n")
 
     skip_ignore = skip_uptodate

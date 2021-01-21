@@ -5,9 +5,9 @@
 import 'reflect-metadata';
 import difference from 'lodash/difference';
 
-import { Message } from '@phosphor/messaging';
-import { Widget } from '@phosphor/widgets';
-import { Signal } from '@phosphor/signaling';
+import { Message } from '@lumino/messaging';
+import { Widget } from '@lumino/widgets';
+import { Signal } from '@lumino/signaling';
 
 import { DOMWidgetModel, DOMWidgetView } from '@jupyter-widgets/base';
 // import { WidgetManager } from '@jupyter-widgets/jupyterlab-manager';
@@ -25,7 +25,7 @@ import {
   TYPES
 } from 'sprotty';
 
-import { NAME, VERSION, TAnyELKMessage, ELK_CSS } from '.';
+import { NAME, VERSION, TAnyELKMessage, ELK_CSS } from './tokens';
 
 import createContainer from './sprotty/di-config';
 import { JLModelSource } from './sprotty/diagram-server';
@@ -37,7 +37,7 @@ import {
   FeedbackActionDispatcher
 } from './tools/feedback/feedback-action-dispatcher';
 import { ToolTYPES } from './tools/types';
-import { PromiseDelegate } from '@phosphor/coreutils';
+import { PromiseDelegate } from '@lumino/coreutils';
 
 const DEFAULT_VALUE = { id: 'root' };
 const POLL = 300;

@@ -2,12 +2,18 @@
 
 ## Install
 
-- Get [Miniconda3](https://docs.conda.io/en/latest/miniconda.html)
+- Get [Miniforge](https://github.com/conda-forge/miniforge)
 - Get [anaconda-project](https://anaconda-project.readthedocs.io)
 - Get [doit](https://pydoit.org)
 
 ```bash
 conda install anaconda-project=0.8.4 doit=0.32
+```
+
+To have an environment _similar_ to what's on CI:
+
+```bash
+CONDA_EXE=$(which mamba) CONDARC=.github/.condarc conda env update --file .github/environment.yml
 ```
 
 ## Get Started
@@ -140,7 +146,7 @@ anaconda-project run twine upload where-you-expanded-the-archive/ipyelk-*
 - Run:
 
 ```bash
-anaconda-project update
+python scripts/lock.py
 doit lint
 ```
 

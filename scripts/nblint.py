@@ -12,12 +12,15 @@ from pathlib import Path
 import black
 import isort
 import nbformat
+from isort.api import sort_code_string
 
 from . import project as P
 
 NODE = [shutil.which("node") or shutil.which("node.exe") or shutil.which("node.cmd")]
 
 NB_METADATA_KEYS = ["kernelspec", "language_info"]
+
+ISORT_CONFIG = isort.settings.Config(settings_path=P.SETUP_CFG)
 
 
 def blacken(source):
@@ -65,7 +68,7 @@ def nblint_one(nb_node):
                 continue
             if source.startswith("%"):
                 continue
-            new = isort.SortImports(file_contents=source).output
+            new = sort_code_string(source, config=ISORT_CONFIG)
             new = blacken(new).rstrip()
             if new != source:
                 cell["source"] = new.splitlines(True)

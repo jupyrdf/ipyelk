@@ -1,5 +1,6 @@
 include LICENSE.txt README.md COPYRIGHT.md py_src/ipyelk/schema/elkschema.json
 recursive-include third-party *.html
+recursive-include py_src/ipyelk/labextension *.*
 recursive-exclude scripts *.*
 
 exclude src lib docs examples package.json scripts

@@ -22,7 +22,7 @@ import { ElkNode } from './sprotty-model';
 import { VNode } from 'snabbdom/vnode';
 import { WidgetModel, DOMWidgetView } from '@jupyter-widgets/base';
 import { html } from 'snabbdom-jsx';
-import { Widget } from '@phosphor/widgets';
+import { Widget } from '@lumino/widgets';
 
 interface JLSprottyWidget {
   vnode: VNode;

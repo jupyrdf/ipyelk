@@ -14,7 +14,7 @@ import {
 } from 'sprotty';
 import { ElkGraphJsonToSprotty, SDefGraphSchema } from './json/elkgraph-to-sprotty';
 import { ManagerBase } from '@jupyter-widgets/base';
-import { Widget } from '@phosphor/widgets';
+import { Widget } from '@lumino/widgets';
 // import { WidgetManager } from '@jupyter-widgets/jupyterlab-manager';
 @injectable()
 export class JLModelSource extends LocalModelSource {
