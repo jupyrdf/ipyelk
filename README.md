@@ -3,11 +3,18 @@
 [Jupyter Widgets][widgets] for interactive graphs powered by the [Eclipse Layout Kernel
 (ELK)][elk].
 
-|                                        Install                                        |            Demo             |        Build        |                          Docs                           |
-| :-----------------------------------------------------------------------------------: | :-------------------------: | :-----------------: | :-----------------------------------------------------: |
-| [![npm-badge]][npm] <br/> [![pypi-badge][]][pypi] <br/> [![conda-badge]][conda-forge] | [![binder-badge][]][binder] | [![ci-badge][]][ci] | [CHANGELOG][] <br/> [CONTRIBUTING][] <br/> [examples][] |
+|                                        Install                                        |            Demo             |        Build        |                                         Docs                                         |
+| :-----------------------------------------------------------------------------------: | :-------------------------: | :-----------------: | :----------------------------------------------------------------------------------: |
+| [![npm-badge]][npm] <br/> [![pypi-badge][]][pypi] <br/> [![conda-badge]][conda-forge] | [![binder-badge][]][binder] | [![ci-badge][]][ci] | [![][docs-badge]][docs] <br/> [Examples][] <br/>[CHANGELOG][] <br/> [CONTRIBUTING][] |
 
-![Interactive diagrams with elk.js, sprotty in JupyterLab][screenshot]
+## Screenshots
+
+| what can you do...                                     | ... with `ipyelk`              |
+| ------------------------------------------------------ | ------------------------------ |
+| automatically lay out complex, nested data as diagrams | ![][screenshot]                |
+| interactive activity/flow-chart diagrams               | ![][screenshot-activities]     |
+| collapsible blocks                                     | ![][screenshot-activity-block] |
+| visual simulations                                     | ![][screenshot-1-bit]          |
 
 ## Prerequisites
 
@@ -75,6 +82,8 @@ derived from [other works][copyright].
 
 [copyright]: https://github.com/jupyrdf/ipyelk/tree/master/COPYRIGHT.md
 [license]: https://github.com/jupyrdf/ipyelk/tree/master/LICENSE.txt
+[docs]: https://ipyelk.readthedocs.org
+[docs-badge]: https://readthedocs.org/projects/ipyelk/badge/?version=latest
 [examples]: https://github.com/jupyrdf/ipyelk/tree/master/examples/_index.ipynb
 [contributing]: https://github.com/jupyrdf/ipyelk/tree/master/CONTRIBUTING.md
 [changelog]: https://github.com/jupyrdf/ipyelk/tree/master/CHANGELOG.md
@@ -92,6 +101,12 @@ derived from [other works][copyright].
 [widgets]: https://jupyter.org/widgets
 [screenshot]:
   https://user-images.githubusercontent.com/7581399/90518838-40820300-e135-11ea-8e68-b19356794c78.png
+[screenshot-activities]:
+  https://user-images.githubusercontent.com/7581399/105381388-f36ef500-5bdc-11eb-8208-d227951b806e.gif
+[screenshot-activity-block]:
+  https://user-images.githubusercontent.com/7581399/105381390-f4a02200-5bdc-11eb-808e-844ee17cad8f.gif
+[screenshot-1-bit]:
+  https://user-images.githubusercontent.com/7581399/105381389-f4a02200-5bdc-11eb-975d-e4a09c4f0c96.gif
 [npm-badge]: https://img.shields.io/npm/v/@jupyrdf/jupyter-elk
 [npm]: https://www.npmjs.com/package/@jupyrdf/jupyter-elk
 [pypi]: https://pypi.org/project/ipyelk

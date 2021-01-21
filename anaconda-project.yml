@@ -44,6 +44,7 @@ commands:
       && pytest-check-links \
         --check-links-cache \
         --check-links-cache-name=../../../build/links/cache \
+        -k "not edit" \
         --links-ext=html
     env_spec: docs
 
