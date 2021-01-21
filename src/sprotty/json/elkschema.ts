@@ -8,7 +8,10 @@
 import * as ELK from 'elkjs';
 import { ElkProperties } from './elkgraph-json';
 
-export type AnyElkLabelWithProperties = ELK.ElkLabel & { properties?: ElkProperties };
+export interface AnyElkLabelWithProperties extends ELK.ElkLabel {
+  properties?: ElkProperties;
+  labels?: AnyElkLabelWithProperties[];
+}
 
 export interface LazyElkEdge extends ELK.ElkEdge {
   sources: string[];
