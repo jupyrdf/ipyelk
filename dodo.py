@@ -17,7 +17,7 @@ from hashlib import sha256
 
 from doit import create_after
 from doit.action import CmdAction
-from doit.tools import PythonInteractiveAction, config_changed
+from doit.tools import LongRunning, PythonInteractiveAction, config_changed
 
 from scripts import project as P
 from scripts import reporter
@@ -27,6 +27,7 @@ os.environ.update(
     NODE_OPTS="--max-old-space-size=4096",
     PYTHONIOENCODING="utf-8",
     PIP_DISABLE_PIP_VERSION_CHECK="1",
+    MAMBA_NO_BANNER="1",
 )
 
 DOIT_CONFIG = {
@@ -585,6 +586,20 @@ def task_docs():
         file_dep=[P.DOCS_CONF, *P.ALL_PY_SRC, *P.ALL_MD],
         targets=[P.DOCS_BUILDINFO],
         actions=[[*P.APR_DOCS, "docs"]],
+    )
+
+
+def task_watch_docs():
+    """continuously rebuild the docs on change"""
+    yield dict(
+        uptodate=[lambda: False],
+        name="sphinx-autobuild",
+        file_dep=[P.DOCS_BUILDINFO, *P.ALL_MD],
+        actions=[
+            LongRunning(
+                [*P.APR_DOCS, "sphinx-autobuild", P.DOCS, P.DOCS_BUILD], shell=False
+            )
+        ],
     )
 
 

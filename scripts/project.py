@@ -68,6 +68,7 @@ CHANGELOG = ROOT / "CHANGELOG.md"
 CONDARC = CI / ".condarc"
 README = ROOT / "README.md"
 DOCS = ROOT / "docs"
+POSTBUILD = ROOT / "postBuild"
 
 # tools
 PY = ["python"]
@@ -141,6 +142,7 @@ ALL_PY = [
     DOCS_CONF,
     DODO,
     SETUP_PY,
+    POSTBUILD,
 ]
 ALL_YML = [*ROOT.glob("*.yml"), *CI.rglob("*.yml")]
 ALL_JSON = [*ROOT.glob("*.json"), *EXAMPLE_JSON, PY_SCHEMA]
