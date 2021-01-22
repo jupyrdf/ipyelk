@@ -11,4 +11,4 @@ dependencies:
   - sphinx
   - sphinx-autodoc-typehints
   - pip:
-    - -e ..
+      - -e ..

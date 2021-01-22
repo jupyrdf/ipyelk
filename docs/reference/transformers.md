@@ -1,18 +1,24 @@
 # Transformers
-The goal of transformers is to take some generalized source and generate valid
-elk json to pass to an ElkDiagram widget for layout.
+
+The goal of transformers is to take some generalized source and generate valid elk json
+to pass to an ElkDiagram widget for layout.
 
 ## Transformer
 
 ```{eval-rst}
-.. autoclass:: ipyelk.transform.ElkTransformer
+.. currentmodule:: ipyelk.transform
+.. autoclass:: EdgeMap
+.. autoclass:: ElkTransformer
     :members:
 ```
 
 ## NetworkX Transformer
 
 ```{eval-rst}
-.. autoclass:: ipyelk.nx.transformer.XELK
+.. currentmodule:: ipyelk.nx.transformer
+
+
+.. autoclass:: XELK
     :show-inheritance:
     :members:
 ```

@@ -1,6 +1,7 @@
 # Widgets
 
 ## Diagram Widget
+
 ```{eval-rst}
 .. currentmodule:: ipyelk.diagram.elk_widget
 .. autoclass:: ipyelk.diagram.elk_widget.ElkDiagram
@@ -8,9 +9,17 @@
 ```
 
 ## App Widget
+
 ```{eval-rst}
 .. currentmodule:: ipyelk.app
 .. autoclass:: ipyelk.app.Elk
     :members:
-    :autoattribute: hovered
+```
+
+## Layout Widget
+
+```{eval-rst}
+.. currentmodule:: ipyelk.layouting.elkjs
+.. autoclass:: ipyelk.layouting.elkjs.ElkJS
+    :members:
 ```

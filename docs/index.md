@@ -12,3 +12,4 @@ contributing
 :hidden:
 :titlesonly:
 reference/index
+```

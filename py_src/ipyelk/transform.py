@@ -37,6 +37,8 @@ class Port:
         return hash(tuple([hash(self.node), hash(self.elkport.id)]))
 
 
+# TODO investigating following pattern for various map
+# https://github.com/pandas-dev/pandas/issues/33025#issuecomment-699636759
 NodeMap = Dict[Hashable, ElkNode]
 EdgeMap = Dict[Hashable, List[Edge]]
 PortMap = Dict[Hashable, Port]
