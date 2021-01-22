@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 """ a windows-friendly, binder-compatible script to get a development environment
 """
+# Copyright (c) 2021 Dane Freeman.
+# Distributed under the terms of the Modified BSD License.
 
 import shutil
 import subprocess
