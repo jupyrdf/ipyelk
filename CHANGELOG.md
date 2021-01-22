@@ -2,6 +2,8 @@
 
 ## @jupyrdf/jupyter-elk 0.3.1
 
+- hide some errant `console.warn` messages
+
 ## ipyelk 0.3.1
 
 ---

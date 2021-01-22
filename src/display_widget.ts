@@ -73,7 +73,6 @@ export class ELKDiagramModel extends DOMWidgetModel {
 
   async value_changed() {
     let rootNode = this.get('value');
-    console.warn('layouting', rootNode);
     let layoutEngine: any = await this.layoutEngine(); // TODO need layoutEngine interface
     let result;
     if (layoutEngine) {

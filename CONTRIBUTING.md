@@ -2,12 +2,12 @@
 
 ## Install
 
-- Get [Miniconda3](https://docs.conda.io/en/latest/miniconda.html)
-- Get [anaconda-project](https://anaconda-project.readthedocs.io)
-- Get [doit](https://pydoit.org)
+- Get [Mambaforge](https://github.com/conda-forge/miniforge/releases/tag/4.9.2-5)
+- Get [anaconda-project](https://anaconda-project.readthedocs.io) and
+  [doit](https://pydoit.org)
 
 ```bash
-conda install anaconda-project=0.8.4 doit=0.32
+mamba install anaconda-project=0.8.4 doit=0.32
 ```
 
 ## Get Started
@@ -15,9 +15,22 @@ conda install anaconda-project=0.8.4 doit=0.32
 ```bash
 git clone https://github.com/jupyrdf/ipyelk
 cd ipyelk
-doit       # this is _basically_ what happens on binder
-doit lab   # start lab
+doit list --all # see what you can do
+doit            # this is _basically_ what happens on binder
+doit lab        # start lab
 ```
+
+## Branches
+
+Presently, on GitHub:
+
+- `master`: the `1.x` line, which distributes the lab extension inside the python
+  distribution for JupyterLab `>3`
+  - generates the `latest` tag on ReadTheDocs
+  - PRs welcome for new features or bugfixes here, backport fixes to `0.3.x`
+- `0.3.x`: the JupyterLab 1 (and, theoretically, 2) -compatible maintenance branch
+  - generates the `0.3.x` tag on ReadTheDocs
+  - PRs welcome for fixes here, forward-port to `master`
 
 ## Important Paths
 
@@ -108,6 +121,29 @@ Then run:
 ATEST_ARGS="--exclude NOTsome:tag" doit test:atest
 ```
 
+## Building Documentation
+
+To build (and check the spelling and link health) of what _would_ go to
+`ipyelk.readthedocs.org`, we:
+
+- build with `sphinx` and `myst-nb`
+- check spelling with `hunspell`
+- check links with `pytest-check-links`
+
+```bash
+doit -n8 checkdocs
+```
+
+### Watch the Docs
+
+`sphinx-autobuild` will try to watch docs sources for changes, re-build, and serve a
+live-reloading website. A number of files (e.g. `_static`) won't often update correctly,
+but will usually work when restarted.
+
+```bash
+doit watch_docs
+```
+
 ## Releasing
 
 - After merging to `master`, download the ipyelk dist artifacts
@@ -140,7 +176,7 @@ anaconda-project run twine upload where-you-expanded-the-archive/ipyelk-*
 - Run:
 
 ```bash
-anaconda-project update
+python scripts/lock.py
 doit lint
 ```
 
