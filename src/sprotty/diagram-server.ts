@@ -25,7 +25,6 @@ export class JLModelSource extends LocalModelSource {
   async updateLayout(layout, defs, idPrefix: string) {
     this.elkToSprotty = new ElkGraphJsonToSprotty();
     let sGraph: SDefGraphSchema = this.elkToSprotty.transform(layout, defs, idPrefix);
-    console.warn('update layout');
     await this.updateModel(sGraph);
     // TODO this promise resolves before ModelViewer rendering is done. need to hook into postprocessing
   }

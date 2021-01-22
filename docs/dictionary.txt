@@ -1,6 +1,7 @@
+2FA
 ci
 conda
-conda
+doit
 ipyelk
 js
 jupyrdf
@@ -8,9 +9,14 @@ jupyter
 Jupyter
 JupyterLab
 labextension
+maintainence
+Mambaforge
 networkx
 npm
+PRs
 pypi
 PyPI
+ReadTheDocs
 sprotty
+TypeScript
 WebWorker
