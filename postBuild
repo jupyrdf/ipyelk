@@ -3,15 +3,14 @@
 """
 
 import shutil
+import subprocess
 import sys
 from pathlib import Path
-from subprocess import check_call, check_output
 
 from jupyterlab_server.process import which
 
 NPM = which("npm") or which("npm.cmd") or which("npm.bat")
 JLPM = which("jlpm")
-
 
 HERE = Path.cwd()
 DIST = HERE / "dist"
@@ -20,11 +19,15 @@ DIST.exists() and shutil.rmtree(DIST)
 
 
 def _(*args, **kwargs):
+    _check = kwargs.pop("_check", True)
     if "cwd" in kwargs:
         kwargs["cwd"] = str(kwargs["cwd"])
     str_args = [str(a) for a in args]
     print(f"\n>>>\t{' '.join(str_args)}\n")
-    check_call(str_args, **kwargs)
+    if _check:
+        return subprocess.check_call(str_args, **kwargs)
+    else:
+        return subprocess.call(str_args, **kwargs)
 
 
 # preflight existing extensions
@@ -43,7 +46,8 @@ _(sys.executable, "-m", "pip", "install", "-e", ".", "--no-deps")
 _("jupyter", "labextension", "list")
 
 # disable bundled extensions
-_("jupyter", "labextension", "disable", "jupyter-offlinenotebook")
+_("jupyter", "labextension", "disable", "jupyter-offlinenotebook", _check=False)
+_("jupyter", "labextension", "uninstall", "jupyter-offlinenotebook", _check=False)
 
 # install our extension
 _("jupyter", "labextension", "develop", "--overwrite", ".")
