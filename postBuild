@@ -39,10 +39,14 @@ _(JLPM, "bootstrap")
 # install local python dev
 _(sys.executable, "-m", "pip", "install", "-e", ".", "--no-deps")
 
-_("jupyter", "labextension", "develop", "--overwrite", ".")
-
 # list the extensions
 _("jupyter", "labextension", "list")
+
+# disable bundled extensions
+_("jupyter", "labextension", "disable", "jupyter-offlinenotebook")
+
+# install our extension
+_("jupyter", "labextension", "develop", "--overwrite", ".")
 
 # list the extensions again
 _("jupyter", "labextension", "list")

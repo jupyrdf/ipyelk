@@ -9,7 +9,7 @@ jupyter
 Jupyter
 JupyterLab
 labextension
-maintainence
+maintenance
 Mambaforge
 networkx
 npm

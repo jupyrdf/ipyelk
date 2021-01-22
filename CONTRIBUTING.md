@@ -28,7 +28,7 @@ Presently, on GitHub:
   distribution for JupyterLab `>3`
   - generates the `latest` tag on ReadTheDocs
   - PRs welcome for new features or bugfixes here, backport fixes to `0.3.x`
-- `0.3.x`: the JupyterLab 1 (and, theoretically, 2) -compatible maintainence branch
+- `0.3.x`: the JupyterLab 1 (and, theoretically, 2) -compatible maintenance branch
   - generates the `0.3.x` tag on ReadTheDocs
   - PRs welcome for fixes here, forward-port to `master`
 
