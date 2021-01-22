@@ -1,5 +1,13 @@
 # Changelog
 
+## @jupyrdf/jupyter-elk 1.0.1
+
+- hides some browser console messages
+
+## ipyelk 1.0.1
+
+---
+
 ## @jupyrdf/jupyter-elk 1.0.0
 
 - updates for JupyterLab 3 ([#6][])
