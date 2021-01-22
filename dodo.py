@@ -28,7 +28,6 @@ os.environ.update(
     PYTHONIOENCODING="utf-8",
     PIP_DISABLE_PIP_VERSION_CHECK="1",
     MAMBA_NO_BANNER="1",
-    CONDA_EXE="mamba",
 )
 
 DOIT_CONFIG = {
