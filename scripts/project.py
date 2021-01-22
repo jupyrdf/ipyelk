@@ -66,6 +66,7 @@ PROJ_LOCK = ROOT / "anaconda-project-lock.yml"
 CHANGELOG = ROOT / "CHANGELOG.md"
 README = ROOT / "README.md"
 DOCS = ROOT / "docs"
+POSTBUILD = ROOT / "postBuild"
 
 # tools
 PY = ["python"]
@@ -139,7 +140,7 @@ BUILD_NBHTML = BUILD / "nbsmoke"
 
 # mostly linting
 ALL_PY_SRC = [*PY_SRC.rglob("*.py")]
-ALL_PY = [DODO, DOCS_CONF, *ALL_PY_SRC, *EXAMPLE_PY, *SCRIPTS.rglob("*.py")]
+ALL_PY = [DODO, DOCS_CONF, *ALL_PY_SRC, *EXAMPLE_PY, *SCRIPTS.rglob("*.py"), POSTBUILD]
 ALL_YML = [*ROOT.glob("*.yml"), *CI.rglob("*.yml")]
 ALL_JSON = [*ROOT.glob("*.json"), *EXAMPLE_JSON, PY_SCHEMA]
 ALL_DOCS_MD = [*DOCS.rglob("*.md")]
