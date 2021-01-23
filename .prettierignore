@@ -1,0 +1,7 @@
+build
+dist
+envs
+lib
+node_modules
+py_src/ipyelk/tests/elk-models
+py_src/ipyelk/tests/fixtures

@@ -21,6 +21,7 @@ from doit.tools import PythonInteractiveAction, config_changed
 from scripts import project as P
 from scripts import reporter
 from scripts import utils as U
+from scripts import migrate_models as M
 
 os.environ.update(PYTHONIOENCODING="utf-8", PIP_DISABLE_PIP_VERSION_CHECK="1")
 
@@ -207,6 +208,13 @@ def task_setup():
         targets=[P.YARN_INTEGRITY],
     )
 
+def task_fixtures():
+    """migrate elk-models to fixtures"""
+    return dict(
+        file_dep=[*M.ELKMODEL_ELKT, *M.ELKMODEL_JSON],
+        actions=[M.migrate],
+        targets=[*M.ELKMODEL_FIXTURES],
+    )
 
 def task_build():
     """build packages"""
