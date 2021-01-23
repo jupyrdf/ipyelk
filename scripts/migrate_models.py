@@ -10,6 +10,7 @@ import requests
 from itertools import chain
 from pathlib import Path
 from typing import Dict
+from uuid import uuid4
 
 from .project import ELKMODELS, ELKFIXTURES
 
@@ -47,6 +48,27 @@ def migrate_layout_options(data:Dict)->Dict:
             data[prop] = value
     return data
 
+def backfill_ids(data:Dict)->Dict:
+    """Seems like some `id`s are missing. This will backfill as needed
+
+    :param data: JSON
+    :return: Updated ElkJSON
+    """
+    data = {**data}
+    data["id"] = data.get("id", str(uuid4()))
+
+    for prop in ["ports", "children", "labels"]:
+        value = [backfill_ids(d) for d in data.get(prop, [])]
+        if value:
+            data[prop] = value
+
+    edges = []
+    for edge in data.get("edges", []):
+        edges.append(backfill_ids(edge))
+    if edges:
+        data["edges"] = edges
+    return data
+
 
 def elkt_to_elkjson(data:str)->Dict:
     """Uses public server to convert elkt to elk json
@@ -64,11 +86,12 @@ def elkt_to_elkjson(data:str)->Dict:
         return json.loads(resp.content.decode("utf-8"))
 
 
-def migrate():
+def migrate(force=False):
     """Migrate elk-models' elkt and older json formats to fixtures"""
     ELKFIXTURES.mkdir(parents=True, exist_ok=True)
 
     def save(model, elkjson):
+        elkjson = backfill_ids(elkjson)
         path = fixture(model)
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(json.dumps(elkjson))
@@ -79,7 +102,7 @@ def migrate():
 
     for model in ELKMODEL_ELKT:
         path = fixture(model)
-        if not path.exists():
+        if force or not path.exists():
             elkjson = elkt_to_elkjson(model.read_text())
 
             save(model, elkjson)

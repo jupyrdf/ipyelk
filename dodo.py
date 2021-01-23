@@ -211,9 +211,11 @@ def task_setup():
 def task_fixtures():
     """migrate elk-models to fixtures"""
     return dict(
-        file_dep=[*M.ELKMODEL_ELKT, *M.ELKMODEL_JSON],
+        file_dep=[P.SCRIPTS / "migrate_models.py", *M.ELKMODEL_ELKT, *M.ELKMODEL_JSON],
         actions=[M.migrate],
-        targets=[*M.ELKMODEL_FIXTURES],
+        uptodate=[False],
+        targets=["fake_target_since_somehow_duplicating_doit_task"],
+        # targets=[f for f in M.ELKMODEL_FIXTURES],
     )
 
 def task_build():
