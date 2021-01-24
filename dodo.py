@@ -18,10 +18,10 @@ from hashlib import sha256
 from doit import create_after
 from doit.action import CmdAction
 from doit.tools import PythonInteractiveAction, config_changed
+from scripts import migrate_models as M
 from scripts import project as P
 from scripts import reporter
 from scripts import utils as U
-from scripts import migrate_models as M
 
 os.environ.update(PYTHONIOENCODING="utf-8", PIP_DISABLE_PIP_VERSION_CHECK="1")
 
@@ -208,6 +208,7 @@ def task_setup():
         targets=[P.YARN_INTEGRITY],
     )
 
+
 def task_fixtures():
     """migrate elk-models to fixtures"""
     return dict(
@@ -217,6 +218,7 @@ def task_fixtures():
         targets=["fake_target_since_somehow_duplicating_doit_task"],
         # targets=[f for f in M.ELKMODEL_FIXTURES],
     )
+
 
 def task_build():
     """build packages"""

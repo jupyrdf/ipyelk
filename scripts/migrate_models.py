@@ -5,21 +5,20 @@
 # Distributed under the terms of the Modified BSD License.
 
 import json
-import requests
-
 from itertools import chain
 from pathlib import Path
 from typing import Dict
 from uuid import uuid4
 
-from .project import ELKMODELS, ELKFIXTURES
+import requests
 
+from .project import ELKFIXTURES, ELKMODELS
 
 ELKMODEL_ELKT = [f for f in ELKMODELS.rglob("*.elkt")]
 ELKMODEL_JSON = [f for f in ELKMODELS.rglob("*.json")]
 
 
-def fixture(model:Path)->Path:
+def fixture(model: Path) -> Path:
     """Get mapped fixture target
 
     :param model: model path
@@ -27,10 +26,11 @@ def fixture(model:Path)->Path:
     """
     return ELKFIXTURES / model.relative_to(ELKMODELS).with_suffix(".json")
 
+
 ELKMODEL_FIXTURES = [fixture(f) for f in chain(ELKMODEL_ELKT, ELKMODEL_JSON)]
 
 
-def migrate_layout_options(data:Dict)->Dict:
+def migrate_layout_options(data: Dict) -> Dict:
     """The older klayjs json uses the `properties` key which needs to be
     remapped to `layoutOptions`
 
@@ -48,7 +48,8 @@ def migrate_layout_options(data:Dict)->Dict:
             data[prop] = value
     return data
 
-def backfill_ids(data:Dict)->Dict:
+
+def backfill_ids(data: Dict) -> Dict:
     """Seems like some `id`s are missing. This will backfill as needed
 
     :param data: JSON
@@ -70,16 +71,16 @@ def backfill_ids(data:Dict)->Dict:
     return data
 
 
-def elkt_to_elkjson(data:str)->Dict:
+def elkt_to_elkjson(data: str) -> Dict:
     """Uses public server to convert elkt to elk json
 
     :param data: elkt text
     :return: ElkJSON
     """
-    #TODO maybe this url can be configured elsewhere but it isn't immediately discoverable
+    # TODO maybe this url can be configured elsewhere but it isn't immediately discoverable
     url = "https://rtsys.informatik.uni-kiel.de/elklive/conversion?inFormat=elkt&outFormat=json"
     headers = {
-        'Content-Type': 'text/plain',
+        "Content-Type": "text/plain",
     }
     resp = requests.post(url, data=data.encode("utf-8"), headers=headers)
     if resp.status_code == 200:
@@ -106,4 +107,3 @@ def migrate(force=False):
             elkjson = elkt_to_elkjson(model.read_text())
 
             save(model, elkjson)
-
