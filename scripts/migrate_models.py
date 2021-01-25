@@ -77,12 +77,14 @@ def elkt_to_elkjson(data: str) -> Dict:
     :param data: elkt text
     :return: ElkJSON
     """
-    # TODO maybe this url can be configured elsewhere but it isn't immediately discoverable
-    url = "https://rtsys.informatik.uni-kiel.de/elklive/conversion?inFormat=elkt&outFormat=json"
+    # TODO maybe this url can be configured elsewhere but it isn't immediately
+    # discoverable
+    url = "https://rtsys.informatik.uni-kiel.de/elklive/conversion"
+    params = {"inFormat": "elkt", "outFormat": "json"}
     headers = {
         "Content-Type": "text/plain",
     }
-    resp = requests.post(url, data=data.encode("utf-8"), headers=headers)
+    resp = requests.post(url, params=params, data=data.encode("utf-8"), headers=headers)
     if resp.status_code == 200:
         return json.loads(resp.content.decode("utf-8"))
 
