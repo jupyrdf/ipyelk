@@ -1,7 +1,11 @@
-build
+.yarn-packages/
+**/__pycache__/**/*
+**/.ipynb_checkpoints/**/*
+build/
 dist
-envs
-lib
-node_modules
+envs/
+lib/
+node_modules/
+py_src/ipyelk/labextension
 py_src/ipyelk/tests/elk-models
 py_src/ipyelk/tests/fixtures

@@ -14,7 +14,7 @@ import {
 } from 'sprotty';
 import { ElkGraphJsonToSprotty, SDefGraphSchema } from './json/elkgraph-to-sprotty';
 import { ManagerBase } from '@jupyter-widgets/base';
-import { Widget } from '@phosphor/widgets';
+import { Widget } from '@lumino/widgets';
 // import { WidgetManager } from '@jupyter-widgets/jupyterlab-manager';
 @injectable()
 export class JLModelSource extends LocalModelSource {
@@ -25,7 +25,6 @@ export class JLModelSource extends LocalModelSource {
   async updateLayout(layout, defs, idPrefix: string) {
     this.elkToSprotty = new ElkGraphJsonToSprotty();
     let sGraph: SDefGraphSchema = this.elkToSprotty.transform(layout, defs, idPrefix);
-    console.warn('update layout');
     await this.updateModel(sGraph);
     // TODO this promise resolves before ModelViewer rendering is done. need to hook into postprocessing
   }

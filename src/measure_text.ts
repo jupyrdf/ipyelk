@@ -4,7 +4,7 @@
  */
 
 import { DOMWidgetModel, DOMWidgetView } from '@jupyter-widgets/base';
-import { NAME, VERSION, ELK_CSS, ELK_DEBUG } from '.';
+import { NAME, VERSION, ELK_CSS, ELK_DEBUG } from './tokens';
 
 export class ELKTextSizerModel extends DOMWidgetModel {
   static model_name = 'ELKTextSizerModel';

@@ -43,7 +43,7 @@ Create Lab Launch Command
     [Arguments]    ${root}
     [Documentation]    Create a JupyterLab CLI shell string, escaping for traitlets
     ${WORKSPACES DIR} =    Set Variable    ${OUTPUT DIR}${/}workspaces
-    ${app args} =    Set Variable    --no-browser --debug --NotebookApp.base_url\='${URL PREFIX}' --port\=${PORT} --NotebookApp.token\='${TOKEN}'
+    ${app args} =    Set Variable    --no-browser --debug --LabApp.base_url\='${URL PREFIX}' --port\=${PORT} --LabApp.token\='${TOKEN}' --ExtensionApp.open_browser\=False --ServerApp.open_browser\=False
     ${path args} =    Set Variable    --LabApp.user_settings_dir\='${SETTINGS DIR.replace('\\', '\\\\')}' --LabApp.workspaces_dir\='${WORKSPACES DIR.replace('\\', '\\\\')}'
     ${cmd} =    Set Variable
     ...    ${JUPYTERLAB_EXE} ${app args} ${path args}
@@ -55,11 +55,17 @@ Create Notebok Server Config
     Copy File    ${FIXTURES}${/}${NBSERVER CONF}    ${home}${/}${NBSERVER CONF}
 
 Initialize User Settings
+    [Documentation]    Configure the settings directory, and modify settings that make tests less reproducible
     Set Suite Variable    ${SETTINGS DIR}    ${OUTPUT DIR}${/}user-settings    children=${True}
-    Create File    ${SETTINGS DIR}${/}@jupyterlab${/}codemirror-extension${/}commands.jupyterlab-settings
+    Create File
+    ...    ${SETTINGS DIR}${/}@jupyterlab${/}codemirror-extension${/}commands.jupyterlab-settings
     ...    {"styleActiveLine": true}
-    Create File    ${SETTINGS DIR}${/}@jupyterlab${/}extensionmanager-extension${/}plugin.jupyterlab-settings
+    Create File
+    ...    ${SETTINGS DIR}${/}@jupyterlab${/}extensionmanager-extension${/}plugin.jupyterlab-settings
     ...    {"enabled": false}
+    Create File
+    ...    ${SETTINGS DIR}${/}@jupyterlab${/}apputils-extension${/}palette.jupyterlab-settings
+    ...    {"modal": false}
 
 Tear Down Everything
     Close All Browsers

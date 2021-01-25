@@ -1,37 +1,35 @@
 #!/usr/bin/env python3
 """ a windows-friendly, binder-compatible script to get a development environment
 """
+# Copyright (c) 2021 Dane Freeman.
+# Distributed under the terms of the Modified BSD License.
 
 import shutil
+import subprocess
 import sys
 from pathlib import Path
-from subprocess import check_call, check_output
 
 from jupyterlab_server.process import which
 
 NPM = which("npm") or which("npm.cmd") or which("npm.bat")
 JLPM = which("jlpm")
 
-
 HERE = Path.cwd()
 DIST = HERE / "dist"
-
-# third-party extensions for demo/testing
-LABEXTENSIONS = [
-    line.strip()
-    for line in (HERE / "labextensions.txt").read_text(encoding="utf-8").strip().splitlines()
-    if line.strip() and not line.startswith("#")
-]
 
 DIST.exists() and shutil.rmtree(DIST)
 
 
 def _(*args, **kwargs):
+    _check = kwargs.pop("_check", True)
     if "cwd" in kwargs:
         kwargs["cwd"] = str(kwargs["cwd"])
     str_args = [str(a) for a in args]
     print(f"\n>>>\t{' '.join(str_args)}\n")
-    check_call(str_args, **kwargs)
+    if _check:
+        return subprocess.check_call(str_args, **kwargs)
+    else:
+        return subprocess.call(str_args, **kwargs)
 
 
 # preflight existing extensions
@@ -43,33 +41,18 @@ _(JLPM, "cache", "clean")
 # perform all the node stuff
 _(JLPM, "bootstrap")
 
-# build python packages
-_(sys.executable, "setup.py", "bdist_wheel", "sdist")
-
-# build labextension package
-TARBALL = (
-    DIST / check_output([str(NPM), "pack", ".."], cwd=DIST).decode("utf-8").strip()
-)
-
 # install local python dev
 _(sys.executable, "-m", "pip", "install", "-e", ".", "--no-deps")
 
 # list the extensions
 _("jupyter", "labextension", "list")
 
-# install labextensions
-_(
-    "jupyter",
-    "labextension",
-    "install",
-    "--no-build",
-    "--debug",
-    TARBALL,
-    *LABEXTENSIONS,
-)
+# disable bundled extensions
+_("jupyter", "labextension", "disable", "jupyter-offlinenotebook", _check=False)
+_("jupyter", "labextension", "uninstall", "jupyter-offlinenotebook", _check=False)
 
-# do a production build of lab
-_("jupyter", "lab", "build", "--debug", "--dev-build=False", "--minimize=True")
+# install our extension
+_("jupyter", "labextension", "develop", "--overwrite", ".")
 
 # list the extensions again
 _("jupyter", "labextension", "list")

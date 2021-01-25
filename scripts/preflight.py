@@ -99,7 +99,7 @@ def preflight_conda():
     if errors:
         pprint(errors)
 
-    print("Conda look ok!")
+    print(">>> OK conda!")
 
     return len(errors)
 
@@ -147,21 +147,25 @@ def preflight_kernel():
         print(f"The {DEFAULT_KERNEL_NAME} does not use {sys.executable}!")
         return 2
 
-    print("Kernels look ok!")
+    print(">>> OK kernel!")
     return 0
 
 
 def preflight_lab():
-    """this should only run from the `dev` env"""
-    print("Checking lab build status...", flush=True)
-    raw = subprocess.check_output(["jupyter", "labextension", "list"]).decode("utf-8")
-    if "Build recommended" in raw:
-        print(f"Something is not right with the lab build: {raw}")
-        return 1
+    proc = subprocess.Popen(
+        ["jupyter", "labextension", "list"],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+    )
+    out, err = proc.communicate()
+    name = P.JS_PACKAGE_DATA["name"]
 
-    print("Lab looks ready to start!")
-
-    return 0
+    for line in (out + err).decode("utf-8").splitlines():
+        if name in line and "OK" in line and "enabled" in line:
+            print(">>> OK lab")
+            return 0
+    print("The labextension is not enabled")
+    return 1
 
 
 def preflight_release():
@@ -179,8 +183,8 @@ def preflight_release():
             problems += [f"- Not found in CHANGELOG.md: {version}"]
 
     print("Checking widget spec versions...", flush=True)
-    index_ts = P.TS_SRC / "index.ts"
-    ts_version = re.findall(r"""VERSION = '(.*?)'""", index_ts.read_text())[0]
+    tokens_ts = P.TS_SRC / "tokens.ts"
+    ts_version = re.findall(r"""VERSION = '(.*?)'""", tokens_ts.read_text())[0]
     py_version = re.findall(
         r"""EXTENSION_SPEC_VERSION = "([^"]+)""", P.VERSION_PY.read_text()
     )[0]
