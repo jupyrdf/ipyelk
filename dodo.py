@@ -549,7 +549,7 @@ def task_lab():
 
     return dict(
         uptodate=[lambda: False],
-        file_dep=[P.OK_PIP_INSTALL],
+        file_dep=[P.OK_PIP_INSTALL, P.OK_PREFLIGHT_LAB],
         actions=[PythonInteractiveAction(lab)],
     )
 
