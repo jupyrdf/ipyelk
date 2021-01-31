@@ -17,12 +17,18 @@ from hashlib import sha256
 
 from doit import create_after
 from doit.action import CmdAction
-from doit.tools import PythonInteractiveAction, config_changed
+from doit.tools import LongRunning, PythonInteractiveAction, config_changed
+
 from scripts import project as P
 from scripts import reporter
 from scripts import utils as U
 
-os.environ.update(PYTHONIOENCODING="utf-8", PIP_DISABLE_PIP_VERSION_CHECK="1")
+os.environ.update(
+    NODE_OPTS="--max-old-space-size=4096",
+    PYTHONIOENCODING="utf-8",
+    PIP_DISABLE_PIP_VERSION_CHECK="1",
+    MAMBA_NO_BANNER="1",
+)
 
 DOIT_CONFIG = {
     "backend": "sqlite3",
@@ -38,16 +44,21 @@ COMMIT = subprocess.check_output(["git", "rev-parse", "HEAD"]).decode("utf-8").s
 def task_all():
     """do everything except start lab"""
 
-    return dict(
-        file_dep=[
-            *P.EXAMPLE_HTML,
-            P.ATEST_CANARY,
-            P.HTMLCOV_INDEX,
-            P.OK_PREFLIGHT_LAB,
+    file_dep = [
+        *P.EXAMPLE_HTML,
+        P.ATEST_CANARY,
+        P.HTMLCOV_INDEX,
+        P.PYTEST_HTML,
+    ]
+
+    if not P.TESTING_IN_CI:
+        file_dep += [
             P.OK_RELEASE,
-            P.PYTEST_HTML,
             P.SHA256SUMS,
-        ],
+        ]
+
+    return dict(
+        file_dep=file_dep,
         actions=([_echo_ok("ALL GOOD")]),
     )
 
@@ -84,8 +95,7 @@ def task_preflight():
     yield _ok(
         dict(
             name="lab",
-            doc="ensure lab has a chance of working",
-            file_dep=[*file_dep, P.LAB_INDEX, P.OK_ENV["default"]],
+            file_dep=[*file_dep, P.OK_LABEXT, P.OK_ENV["default"]],
             actions=[[*P.APR_DEFAULT, *P.PREFLIGHT, "lab"]],
         ),
         P.OK_PREFLIGHT_LAB,
@@ -122,7 +132,6 @@ def task_binder():
     """get to a minimal interactive environment"""
     return dict(
         file_dep=[
-            P.LAB_INDEX,
             P.OK_PIP_INSTALL,
             P.OK_PREFLIGHT_KERNEL,
             P.OK_PREFLIGHT_LAB,
@@ -164,25 +173,35 @@ def task_setup():
 
     _install = ["--no-deps", "--ignore-installed", "-vv"]
 
-    if P.INSTALL_ARTIFACT == "wheel":
-        _install += [P.WHEEL]
-    elif P.INSTALL_ARTIFACT == "sdist":
-        _install += [P.SDIST]
+    if P.TESTING_IN_CI:
+        if P.INSTALL_ARTIFACT == "wheel":
+            _install += [P.WHEEL]
+        elif P.INSTALL_ARTIFACT == "sdist":
+            _install += [P.SDIST]
+        else:
+            raise RuntimeError(f"Don't know how to install {P.INSTALL_ARTIFACT}")
     else:
         _install += ["-e", "."]
 
-    yield _ok(
+    file_dep = [
+        P.NPM_TGZ,
+        P.OK_ENV["default"],
+        P.SDIST,
+        P.WHEEL,
+    ]
+
+    if not P.TESTING_IN_CI:
+        file_dep += [
+            P.PY_SCHEMA,
+            P.SETUP_CFG,
+            P.SETUP_PY,
+        ]
+
+    py_task = _ok(
         dict(
             name="py",
             uptodate=[config_changed({"artifact": P.INSTALL_ARTIFACT})],
-            file_dep=[
-                P.SETUP_PY,
-                P.SETUP_CFG,
-                P.OK_ENV["default"],
-                P.PY_SCHEMA,
-                P.WHEEL,
-                P.SDIST,
-            ],
+            file_dep=file_dep,
             actions=[
                 [*P.APR_DEFAULT, *P.PIP, "install", *_install],
                 [*P.APR_DEFAULT, *P.PIP, "check"],
@@ -191,90 +210,98 @@ def task_setup():
         P.OK_PIP_INSTALL,
     )
 
-    yield dict(
-        name="js",
-        file_dep=[P.YARN_LOCK, P.OK_ENV["default"]],
-        uptodate=[
-            config_changed(
-                {
-                    k: v
-                    for k, v in P.JS_PACKAGE_DATA.items()
-                    if k in P.JS_NEEDS_INSTALL_KEYS
-                }
-            )
-        ],
-        actions=[[*P.APR_DEFAULT, *P.JLPM_INSTALL]],
-        targets=[P.YARN_INTEGRITY],
-    )
+    if P.TESTING_IN_CI and P.INSTALL_ARTIFACT:
+        py_task = _ok(py_task, P.OK_LABEXT)
+
+    yield py_task
+
+    if not P.TESTING_IN_CI:
+        yield dict(
+            name="js",
+            file_dep=[P.YARN_LOCK, P.PACKAGE_JSON, P.OK_ENV["default"]],
+            actions=[[*P.APR_DEFAULT, *P.JLPM_INSTALL]],
+            targets=[P.YARN_INTEGRITY],
+        )
+        yield _ok(
+            dict(
+                name="labext",
+                actions=[[*P.APR_DEFAULT, *P.LAB_EXT, "develop", "--overwrite", "."]],
+                file_dep=[P.NPM_TGZ, P.OK_PIP_INSTALL],
+            ),
+            P.OK_LABEXT,
+        )
 
 
-def task_build():
-    """build packages"""
+if not P.TESTING_IN_CI:
 
-    yield dict(
-        name="schema",
-        file_dep=[P.YARN_INTEGRITY, P.TS_SCHEMA, P.OK_ENV["default"]],
-        actions=[[*P.APR_DEFAULT, *P.JLPM, "schema"]],
-        targets=[P.PY_SCHEMA],
-    )
+    def task_build():
+        """build packages"""
 
-    yield dict(
-        name="ts",
-        file_dep=[
-            P.YARN_INTEGRITY,
-            *P.ALL_TS,
-            P.OK_ENV["default"],
-            P.PY_SCHEMA,
-            P.OK_LINT,
-        ],
-        actions=[[*P.APR_DEFAULT, *P.JLPM, "build"]],
-        targets=[P.TSBUILDINFO],
-    )
+        yield dict(
+            name="schema",
+            file_dep=[P.YARN_INTEGRITY, P.TS_SCHEMA, P.OK_ENV["default"]],
+            actions=[[*P.APR_DEFAULT, *P.JLPM, "schema"]],
+            targets=[P.PY_SCHEMA],
+        )
 
-    yield dict(
-        name="pack",
-        file_dep=[P.TSBUILDINFO, P.PACKAGE_JSON],
-        actions=[[*P.APR_DEFAULT, "ext:pack"]],
-        targets=[P.NPM_TGZ],
-    )
+        yield dict(
+            name="ts",
+            file_dep=[
+                *P.ALL_TS,
+                P.OK_ENV["default"],
+                P.OK_PRETTIER,
+                P.PY_SCHEMA,
+                P.YARN_INTEGRITY,
+            ],
+            actions=[[*P.APR_DEFAULT, *P.JLPM, "build"]],
+            targets=[P.TSBUILDINFO],
+        )
 
-    yield dict(
-        name="py",
-        file_dep=[
-            *P.ALL_PY_SRC,
-            P.SETUP_CFG,
-            P.SETUP_PY,
-            P.OK_LINT,
-            P.OK_ENV["default"],
-            P.PY_SCHEMA,
-        ],
-        actions=[
-            [*P.APR_DEFAULT, *P.PY, "setup.py", "sdist"],
-            [*P.APR_DEFAULT, *P.PY, "setup.py", "bdist_wheel"],
-        ],
-        targets=[P.WHEEL, P.SDIST],
-    )
+        yield dict(
+            name="pack",
+            file_dep=[P.TSBUILDINFO, P.PACKAGE_JSON],
+            actions=[[*P.APR_DEFAULT, "ext:pack"]],
+            targets=[P.NPM_TGZ],
+        )
 
-    def _run_hash():
-        # mimic sha256sum CLI
-        if P.SHA256SUMS.exists():
-            P.SHA256SUMS.unlink()
+        yield dict(
+            name="py",
+            file_dep=[
+                *P.ALL_PY_SRC,
+                P.SETUP_CFG,
+                P.SETUP_PY,
+                P.OK_LINT,
+                P.OK_ENV["default"],
+                P.PY_SCHEMA,
+                P.NPM_TGZ,
+            ],
+            actions=[
+                [*P.APR_DEFAULT, *P.PY, "setup.py", "sdist"],
+                [*P.APR_DEFAULT, *P.PY, "setup.py", "bdist_wheel"],
+            ],
+            targets=[P.WHEEL, P.SDIST],
+        )
 
-        lines = []
+        def _run_hash():
+            # mimic sha256sum CLI
+            if P.SHA256SUMS.exists():
+                P.SHA256SUMS.unlink()
 
-        for p in P.HASH_DEPS:
-            lines += ["  ".join([sha256(p.read_bytes()).hexdigest(), p.name])]
+            lines = []
 
-        output = "\n".join(lines)
-        print(output)
-        P.SHA256SUMS.write_text(output)
+            for p in P.HASH_DEPS:
+                lines += ["  ".join([sha256(p.read_bytes()).hexdigest(), p.name])]
 
-    yield dict(
-        name="hash",
-        file_dep=P.HASH_DEPS,
-        targets=[P.SHA256SUMS],
-        actions=[_run_hash],
-    )
+            output = "\n".join(lines)
+            print(output)
+            P.SHA256SUMS.write_text(output)
+
+        yield dict(
+            name="hash",
+            file_dep=P.HASH_DEPS,
+            targets=[P.SHA256SUMS],
+            actions=[_run_hash],
+        )
 
 
 def task_test():
@@ -298,18 +325,24 @@ def task_test():
             ]
             return CmdAction(args, env=env, shell=False)
 
+        file_dep = [
+            *P.ALL_PY_SRC,
+            *P.EXAMPLE_IPYNB,
+            *P.EXAMPLE_JSON,
+            P.OK_ENV["default"],
+            P.OK_PIP_INSTALL,
+            P.OK_PREFLIGHT_KERNEL,
+            *([] if P.TESTING_IN_CI else [P.OK_NBLINT[nb.name]]),
+        ]
+
+        if not P.TESTING_IN_CI:
+            file_dep += [
+                P.PY_SCHEMA,
+            ]
+
         return dict(
             name=f"nb:{nb.name}".replace(" ", "_").replace(".ipynb", ""),
-            file_dep=[
-                *P.ALL_PY_SRC,
-                *P.EXAMPLE_IPYNB,
-                *P.EXAMPLE_JSON,
-                P.OK_ENV["default"],
-                P.OK_PIP_INSTALL,
-                P.OK_PREFLIGHT_KERNEL,
-                P.PY_SCHEMA,
-                *([] if P.WIN_CI else [P.OK_NBLINT[nb.name]]),
-            ],
+            file_dep=file_dep,
             actions=[_test()],
             targets=[P.BUILD_NBHTML / nb.name.replace(".ipynb", ".html")],
         )
@@ -357,172 +390,143 @@ def task_test():
     yield dict(
         name="atest",
         file_dep=[
-            *P.ALL_ROBOT,
             *P.ALL_PY_SRC,
+            *P.ALL_ROBOT,
             *P.EXAMPLE_IPYNB,
             *P.EXAMPLE_JSON,
-            P.OK_ROBOT_LINT,
+            P.OK_PIP_INSTALL,
             P.OK_PREFLIGHT_LAB,
             P.SCRIPTS / "atest.py",
-            *([] if P.WIN_CI else P.OK_NBLINT.values()),
+            *([] if P.TESTING_IN_CI else [P.OK_ROBOT_LINT, *P.OK_NBLINT.values()]),
         ],
         actions=[[*P.APR_ATEST, *P.PYM, "scripts.atest"], _pabot_logs],
         targets=[P.ATEST_CANARY],
     )
 
 
-def task_lint():
-    """format all source files"""
+if not P.TESTING_IN_CI:
 
-    yield _ok(
-        dict(
-            name="black",
-            file_dep=[*P.ALL_PY, P.OK_ENV["default"]],
-            actions=[
-                [*P.APR_DEFAULT, "isort", "-rc", *P.ALL_PY],
-                [*P.APR_DEFAULT, "black", "--quiet", *P.ALL_PY],
-            ],
-        ),
-        P.OK_BLACK,
-    )
-    yield _ok(
-        dict(
-            name="flake8",
-            file_dep=[*P.ALL_PY, P.OK_BLACK],
-            actions=[[*P.APR_DEFAULT, "flake8", *P.ALL_PY]],
-        ),
-        P.OK_FLAKE8,
-    )
-    yield _ok(
-        dict(
-            name="pyflakes",
-            file_dep=[*P.ALL_PY, P.OK_BLACK],
-            actions=[[*P.APR_DEFAULT, "pyflakes", *P.ALL_PY]],
-        ),
-        P.OK_PYFLAKES,
-    )
-    yield _ok(
-        dict(
-            name="prettier",
-            uptodate=[
-                config_changed(
-                    dict(
-                        conf=P.JS_PACKAGE_DATA["prettier"],
-                        script=P.JS_PACKAGE_DATA["scripts"]["lint:prettier"],
-                    )
-                )
-            ],
-            file_dep=[
-                *P.ALL_PRETTIER,
-                P.OK_ENV["default"],
-                P.OK_PREFLIGHT_BUILD,
-                P.YARN_INTEGRITY,
-            ],
-            actions=[[*P.APR_DEFAULT, "npm", "run", "lint:prettier"]],
-        ),
-        P.OK_PRETTIER,
-    )
+    def task_lint():
+        """format all source files"""
 
-    for nb in P.EXAMPLE_IPYNB:
         yield _ok(
             dict(
-                name=f"nblint:{nb.name}".replace(" ", "_").replace(".ipynb", ""),
-                file_dep=[P.YARN_INTEGRITY, nb, P.OK_ENV["default"], P.OK_BLACK],
-                actions=[[*P.APR_DEFAULT, *P.PYM, "scripts.nblint", nb]],
+                name="black",
+                file_dep=[*P.ALL_PY, P.OK_ENV["default"]],
+                actions=[
+                    [*P.APR_DEFAULT, "isort", "--quiet", "--ac", *P.ALL_PY],
+                    [*P.APR_DEFAULT, "black", "--quiet", *P.ALL_PY],
+                ],
             ),
-            P.OK_NBLINT[nb.name],
+            P.OK_BLACK,
+        )
+        yield _ok(
+            dict(
+                name="flake8",
+                file_dep=[*P.ALL_PY, P.OK_BLACK],
+                actions=[[*P.APR_DEFAULT, "flake8", *P.ALL_PY]],
+            ),
+            P.OK_FLAKE8,
+        )
+        yield _ok(
+            dict(
+                name="pyflakes",
+                file_dep=[*P.ALL_PY, P.OK_BLACK],
+                actions=[[*P.APR_DEFAULT, "pyflakes", *P.ALL_PY]],
+            ),
+            P.OK_PYFLAKES,
+        )
+        yield _ok(
+            dict(
+                name="prettier",
+                uptodate=[
+                    config_changed(
+                        dict(
+                            conf=P.JS_PACKAGE_DATA["prettier"],
+                            script=P.JS_PACKAGE_DATA["scripts"]["lint:prettier"],
+                        )
+                    )
+                ],
+                file_dep=[
+                    *P.ALL_PRETTIER,
+                    P.OK_ENV["default"],
+                    P.PRETTIER_IGNORE,
+                    P.YARN_INTEGRITY,
+                ],
+                actions=[[*P.APR_DEFAULT, "npm", "run", "lint:prettier"]],
+            ),
+            P.OK_PRETTIER,
         )
 
-    yield _ok(
-        dict(
-            name="robot",
-            file_dep=[
-                *P.ALL_ROBOT,
-                *P.ALL_PY_SRC,
-                *P.ALL_TS,
-                P.SCRIPTS / "atest.py",
-                P.OK_PYFLAKES,
-                P.OK_ENV["atest"],
-            ],
-            actions=[
-                [*P.APR_ATEST, *P.PYM, "robot.tidy", "--inplace", *P.ALL_ROBOT],
-                [*P.APR_ATEST, *P.PYM, "scripts.atest", "--dryrun"],
-            ],
-        ),
-        P.OK_ROBOT_LINT,
-    )
+        for nb in P.EXAMPLE_IPYNB:
+            yield _ok(
+                dict(
+                    name=f"nblint:{nb.name}".replace(" ", "_").replace(".ipynb", ""),
+                    file_dep=[P.YARN_INTEGRITY, nb, P.OK_ENV["default"], P.OK_BLACK],
+                    actions=[[*P.APR_DEFAULT, *P.PYM, "scripts.nblint", nb]],
+                ),
+                P.OK_NBLINT[nb.name],
+            )
 
-    index_src = P.EXAMPLE_INDEX.read_text(encoding="utf-8")
+        yield _ok(
+            dict(
+                name="robot",
+                file_dep=[
+                    *P.ALL_ROBOT,
+                    *P.ALL_PY_SRC,
+                    *P.ALL_TS,
+                    P.SCRIPTS / "atest.py",
+                    P.OK_PYFLAKES,
+                    P.OK_ENV["atest"],
+                ],
+                actions=[
+                    [*P.APR_ATEST, *P.PYM, "robot.tidy", "--inplace", *P.ALL_ROBOT],
+                    [*P.APR_ATEST, *P.PYM, "scripts.atest", "--dryrun"],
+                ],
+            ),
+            P.OK_ROBOT_LINT,
+        )
 
-    def _make_index_check(ex):
-        def _check():
-            md = f"(./{ex.name})"
+        index_src = P.EXAMPLE_INDEX.read_text(encoding="utf-8")
 
-            if md not in index_src:
-                print(f"{ex.name} link missing in _index.ipynb")
-                return False
+        def _make_index_check(ex):
+            def _check():
+                md = f"(./{ex.name})"
 
-        return _check
+                if md not in index_src:
+                    print(f"{ex.name} link missing in _index.ipynb")
+                    return False
 
-    yield _ok(
-        dict(
-            name="index",
-            file_dep=P.EXAMPLE_IPYNB,
-            actions=[
-                _make_index_check(ex) for ex in P.EXAMPLE_IPYNB if ex != P.EXAMPLE_INDEX
-            ],
-        ),
-        P.OK_INDEX,
-    )
+            return _check
 
-    yield _ok(
-        dict(
-            name="all",
-            actions=[_echo_ok("all ok")],
-            file_dep=[
-                P.OK_BLACK,
-                P.OK_FLAKE8,
-                P.OK_PRETTIER,
-                P.OK_PYFLAKES,
-                P.OK_ROBOT_LINT,
-                P.OK_INDEX,
-            ],
-        ),
-        P.OK_LINT,
-    )
+        yield _ok(
+            dict(
+                name="index",
+                file_dep=P.EXAMPLE_IPYNB,
+                actions=[
+                    _make_index_check(ex)
+                    for ex in P.EXAMPLE_IPYNB
+                    if ex != P.EXAMPLE_INDEX
+                ],
+            ),
+            P.OK_INDEX,
+        )
 
-
-def task_lab_build():
-    """do a "production" build of lab"""
-    exts = [
-        line.strip()
-        for line in P.EXTENSIONS.read_text(encoding="utf-8").strip().splitlines()
-        if line and not line.startswith("#")
-    ]
-
-    def _clean():
-        _call([*P.APR_DEFAULT, "jlpm", "cache", "clean"])
-        _call([*P.APR_DEFAULT, *P.LAB, "clean"])
-
-        return True
-
-    install = [*P.APR_DEFAULT, *P.LAB_EXT, "install", "--debug", "--no-build"]
-    list_ext = [*P.APR_DEFAULT, *P.LAB_EXT, "list"]
-
-    yield dict(
-        name="extensions",
-        file_dep=[P.EXTENSIONS, P.NPM_TGZ],
-        actions=[
-            _clean,
-            [*install, *exts],
-            list_ext,
-            [*install, P.NPM_TGZ],
-            list_ext,
-            [*P.APR_DEFAULT, "lab:build"],
-            list_ext,
-        ],
-        targets=[P.LAB_INDEX],
-    )
+        yield _ok(
+            dict(
+                name="all",
+                actions=[_echo_ok("all ok")],
+                file_dep=[
+                    P.OK_BLACK,
+                    P.OK_FLAKE8,
+                    P.OK_PRETTIER,
+                    P.OK_PYFLAKES,
+                    P.OK_ROBOT_LINT,
+                    P.OK_INDEX,
+                ],
+            ),
+            P.OK_LINT,
+        )
 
 
 def task_lab():
@@ -545,32 +549,34 @@ def task_lab():
 
     return dict(
         uptodate=[lambda: False],
-        file_dep=[P.LAB_INDEX, P.OK_PIP_INSTALL, P.OK_PREFLIGHT_LAB],
+        file_dep=[P.OK_PIP_INSTALL, P.OK_PREFLIGHT_LAB],
         actions=[PythonInteractiveAction(lab)],
     )
 
 
-def task_watch():
-    """watch typescript sources, launch lab, rebuilding as files change"""
+if not P.TESTING_IN_CI:
 
-    def _watch():
-        proc = subprocess.Popen(
-            list(map(str, [*P.APR_DEFAULT, "watch"])), stdin=subprocess.PIPE
-        )
+    def task_watch():
+        """watch typescript sources, launch lab, rebuilding as files change"""
 
-        try:
+        def _watch():
+            proc = subprocess.Popen(
+                list(map(str, [*P.APR_DEFAULT, "watch"])), stdin=subprocess.PIPE
+            )
+
+            try:
+                proc.wait()
+            except KeyboardInterrupt:
+                pass
+
             proc.wait()
-        except KeyboardInterrupt:
-            pass
+            return True
 
-        proc.wait()
-        return True
-
-    return dict(
-        uptodate=[lambda: False],
-        file_dep=[P.OK_PIP_INSTALL],
-        actions=[PythonInteractiveAction(_watch)],
-    )
+        return dict(
+            uptodate=[lambda: False],
+            file_dep=[P.OK_PREFLIGHT_LAB],
+            actions=[PythonInteractiveAction(_watch)],
+        )
 
 
 def task_docs():
@@ -580,6 +586,20 @@ def task_docs():
         file_dep=[P.DOCS_CONF, *P.ALL_PY_SRC, *P.ALL_MD],
         targets=[P.DOCS_BUILDINFO],
         actions=[[*P.APR_DOCS, "docs"]],
+    )
+
+
+def task_watch_docs():
+    """continuously rebuild the docs on change"""
+    yield dict(
+        uptodate=[lambda: False],
+        name="sphinx-autobuild",
+        file_dep=[P.DOCS_BUILDINFO, *P.ALL_MD],
+        actions=[
+            LongRunning(
+                [*P.APR_DOCS, "sphinx-autobuild", P.DOCS, P.DOCS_BUILD], shell=False
+            )
+        ],
     )
 
 

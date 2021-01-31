@@ -11,17 +11,65 @@ on:
       - 0.3.x
 
 env:
-  ATEST_RETRIES: 2
-  INSTALL_ARTIFACT: wheel
-  PIP_DISABLE_PIP_VERSION_CHECK: 1
   PYTHONIOENCODING: utf-8
-  PYTHONUNBUFFERED: 1
+  PYTHONUNBUFFERED: '1'
+  PIP_DISABLE_PIP_VERSION_CHECK: '1'
+  # until have mamabforge...
+  CONDA_EXE: mamba
+  # our stuff
   SKIP_CONDA_PREFLIGHT: 1
   CACHE_EPOCH: 0
 
 jobs:
-  ci:
+  build:
+    runs-on: ${{ matrix.os }}-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu]
+    steps:
+      - name: git checkout
+        uses: actions/checkout@v2
+
+      - name: cache (conda)
+        uses: actions/cache@v1
+        with:
+          path: ~/conda_pkgs_dir
+          key:
+            ${{ runner.os }}-conda-${{ hashFiles('.github/environment.yml',
+            'anaconda-project-lock.yml') }}
+          restore-keys: |
+            ${{ runner.os }}-conda-
+
+      - name: cache (yarn)
+        uses: actions/cache@v1
+        with:
+          path: .yarn-packages
+          key: yarn-${{ runner.os }}-${{ hashFiles('yarn.lock', '.yarnrc') }}
+          restore-keys: |
+            yarn-${{ runner.os }}-
+            yarn-
+
+      - name: base env (conda)
+        uses: conda-incubator/setup-miniconda@v2
+        with:
+          environment-file: .github/environment.yml
+          use-only-tar-bz2: true
+
+      - name: build
+        shell: bash -l {0}
+        run: |
+          doit -n4 lint release || doit lint release || exit 1
+
+      - name: publish dists
+        uses: actions/upload-artifact@v2
+        with:
+          name: ipyelk dist ${{ github.run_number }}
+          path: ./dist
+
+  test:
     runs-on: ${{ matrix.vm }}
+    needs: [build]
     strategy:
       fail-fast: false
       matrix:
@@ -39,6 +87,10 @@ jobs:
           - os: windows
             miniforge: Windows-x86_64.exe
             vm: windows-latest
+    env:
+      INSTALL_ARTIFACT: wheel
+      TESTING_IN_CI: 'true'
+      ATEST_RETRIES: '2'
     steps:
       - name: configure line endings
         run: |
@@ -56,6 +108,14 @@ jobs:
           restore-keys: |
             ${{ env.CACHE_EPOCH }}-${{ runner.os }}-conda-
 
+      - name: env (conda)
+        uses: conda-incubator/setup-miniconda@v2
+        with:
+          environment-file: .github/environment.yml
+          use-only-tar-bz2: true
+          installer-url: |
+            https://github.com/conda-forge/miniforge/releases/download/4.9.2-4/Miniforge3-4.9.2-4-${{ matrix.miniforge }}
+
       - name: cache (yarn)
         uses: actions/cache@v1
         with:
@@ -66,38 +126,30 @@ jobs:
             ${{ env.CACHE_EPOCH }}-yarn-${{ runner.os }}-
             ${{ env.CACHE_EPOCH }}-yarn-
 
-      - name: env (conda)
-        uses: conda-incubator/setup-miniconda@v2
+      - uses: actions/download-artifact@v2
         with:
-          environment-file: .github/environment.yml
-          use-only-tar-bz2: true
-          installer-url: |
-            https://github.com/conda-forge/miniforge/releases/download/4.9.2-0/Miniforge3-4.9.2-0-${{ matrix.miniforge }}
+          name: ipyelk dist ${{ github.run_number }}
+          path: ./dist
 
-      - name: build (linux)
+      - name: test (linux)
         if: ${{ contains(matrix.os, 'ubuntu') }}
         shell: bash -l {0}
-        run: INSTALL_ARTIFACT=sdist doit -n4 all || doit all || exit 1
+        run: |
+          export INSTALL_ARTIFACT=sdist
+          doit -n4 all || doit all || exit 1
 
-      - name: build (macos)
+      - name: test (macos)
         if: ${{ contains(matrix.os, 'macos') }}
         shell: bash -l {0}
         run: doit -n4 all || doit all || exit 1
 
-      - name: build (windows)
+      - name: test (windows)
         if: ${{ contains(matrix.os, 'windows') }}
         shell: cmd /C CALL {0}
         env:
           ATEST_PROCESSES: 1
           WIN_CI: 1
         run: doit all || doit all || exit 1
-
-      - name: publish (linux)
-        if: ${{ contains(matrix.os, 'ubuntu') }}
-        uses: actions/upload-artifact@v2
-        with:
-          name: ipyelk dist ${{ github.run_number }}
-          path: ./dist
 
       - name: reports
         uses: actions/upload-artifact@v2

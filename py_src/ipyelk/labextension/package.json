@@ -78,6 +78,11 @@
         "bundled": false,
         "singleton": true
       }
+    },
+    "_build": {
+      "load": "static/remoteEntry.71cdf6b00b374443398e.js",
+      "extension": "./extension",
+      "style": "./style"
     }
   }
 }
