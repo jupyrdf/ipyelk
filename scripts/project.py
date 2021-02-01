@@ -102,7 +102,7 @@ JUPYTERLAB_EXE = [
 ]
 
 # env stuff
-OK_ENV = {env: BUILD / f"prep_{env}.ok" for env in ["default", "atest"]}
+OK_ENV = {env: BUILD / f"prep_{env}.ok" for env in ["default", "atest", "docs"]}
 
 # python stuff
 PY_SRC = ROOT / "py_src" / PY_PKG
@@ -167,6 +167,7 @@ OK_LINT = BUILD / "lint.ok"
 OK_PYFLAKES = BUILD / "pyflakes.ok"
 OK_NBLINT = {nb.name: BUILD / f"nblint.{nb.name}.ok" for nb in EXAMPLE_IPYNB}
 OK_PIP_INSTALL = BUILD / "pip_install.ok"
+OK_DOCS_PIP_INSTALL = BUILD / "docs_pip_install.ok"
 OK_PRETTIER = BUILD / "prettier.ok"
 OK_INDEX = BUILD / "index.ok"
 OK_LABEXT = BUILD / "labext.ok"

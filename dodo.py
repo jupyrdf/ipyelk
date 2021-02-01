@@ -142,7 +142,7 @@ def task_binder():
 
 def task_env():
     """prepare project envs"""
-    envs = ["default", "atest"]
+    envs = ["default", "atest", "docs"]
     for i, env in enumerate(envs):
         file_dep = [P.PROJ_LOCK, P.OK_PREFLIGHT_CONDA]
         if P.FORCE_SERIAL_ENV_PREP and i:
@@ -231,6 +231,19 @@ def task_setup():
             P.OK_LABEXT,
         )
 
+def task_setup_docs():
+    _install = ["--no-deps", "--ignore-installed", "-vv", "-e", "."]
+    yield _ok(
+        dict(
+            name="docs py setup",
+            file_dep=[P.OK_ENV["docs"]],
+            actions=[
+                [*P.APR, "docs", *P.PIP, "install", *_install],
+                [*P.APR, "docs", *P.PIP, "check"],
+            ],
+        ),
+        P.OK_DOCS_PIP_INSTALL
+    )
 
 if not P.TESTING_IN_CI:
 
@@ -583,7 +596,7 @@ def task_docs():
     """build the docs (mostly as readthedocs would)"""
     yield dict(
         name="sphinx",
-        file_dep=[P.DOCS_CONF, *P.ALL_PY_SRC, *P.ALL_MD],
+        file_dep=[P.DOCS_CONF, *P.ALL_PY_SRC, *P.ALL_MD, P.OK_DOCS_PIP_INSTALL],
         targets=[P.DOCS_BUILDINFO],
         actions=[[*P.APR_DOCS, "docs"]],
     )
@@ -594,7 +607,7 @@ def task_watch_docs():
     yield dict(
         uptodate=[lambda: False],
         name="sphinx-autobuild",
-        file_dep=[P.DOCS_BUILDINFO, *P.ALL_MD],
+        file_dep=[P.DOCS_BUILDINFO, *P.ALL_MD, P.OK_DOCS_PIP_INSTALL],
         actions=[
             LongRunning(
                 [*P.APR_DOCS, "sphinx-autobuild", P.DOCS, P.DOCS_BUILD], shell=False
