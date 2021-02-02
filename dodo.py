@@ -231,6 +231,7 @@ def task_setup():
             P.OK_LABEXT,
         )
 
+
 def task_setup_docs():
     _install = ["--no-deps", "--ignore-installed", "-vv", "-e", "."]
     yield _ok(
@@ -242,8 +243,9 @@ def task_setup_docs():
                 [*P.APR, "docs", *P.PIP, "check"],
             ],
         ),
-        P.OK_DOCS_PIP_INSTALL
+        P.OK_DOCS_PIP_INSTALL,
     )
+
 
 if not P.TESTING_IN_CI:
 
