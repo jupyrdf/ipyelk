@@ -3,9 +3,9 @@
 from dataclasses import dataclass, field
 from typing import ClassVar, Dict, List, Optional, Type, Union
 
-from ...diagram.elk_model import strip_none
-from ...diagram.symbol import Symbol
-from ...transform import merge
+from ..diagram.elk_model import strip_none
+from ..diagram.symbol import Symbol
+from ..transform import merge
 from .registry import Registry
 
 
@@ -46,11 +46,17 @@ def element(
     return wrap(_cls)
 
 
+@dataclass
+class ElementMetadata:
+    pass
+
+
 @element
 class BaseElement:
     labels: List["Label"] = field(default_factory=list)
     properties: Dict = field(default_factory=dict)
     layoutOptions: Dict = field(default_factory=dict)
+    metadata: ElementMetadata = field(default_factory=ElementMetadata)
 
     _dom_classes: List[str] = field(init=False, repr=False, default_factory=list)
     _css_classes: ClassVar[List[str]] = []
@@ -148,6 +154,8 @@ class Port(ShapeElement):
         parent_id = Registry.get_id(self._parent)
         self_id = Registry.get_id(self)
         data["id"] = ".".join([parent_id, self_id])
+        if "properties" not in data:
+            data["properties"] = {}
         data["properties"]["type"] = "port"
         return data
 
@@ -210,6 +218,13 @@ class Node(ShapeElement):
         self.children.append(child)
         if key:
             self._child_namespace[key] = child
+        return child
+
+    def remove_child(partition: "Node", child: "Node", key: str = ""):
+        if child in self.children:
+            self.children.remove(child)
+        if key:
+            self._child_namespace.pop(key, None)
         return child
 
     def add_port(self, port: Port, key) -> Port:

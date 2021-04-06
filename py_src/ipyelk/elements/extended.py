@@ -3,9 +3,9 @@
 from dataclasses import field
 from typing import Dict, List, Optional, Type
 
-from ...diagram import layout_options as opt
-from ...diagram.symbol import Symbol
-from ...transform import merge
+from ..diagram import layout_options as opt
+from ..diagram.symbol import Symbol
+from ..transform import merge
 from .elements import Edge, Label, Node, element
 
 record_opts = opt.OptionsWidget(

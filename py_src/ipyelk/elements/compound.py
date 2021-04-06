@@ -1,8 +1,9 @@
 # Copyright (c) 2021 Dane Freeman.
 # Distributed under the terms of the Modified BSD License.
-from dataclasses import dataclass, field
-
 import networkx as nx
+
+from dataclasses import dataclass, field
+from typing import Dict
 
 from .elements import Node
 from .registry import Registry
@@ -27,15 +28,12 @@ class Mark:
         return hash((id(self.node), id(self.context)))
 
 
-# def Mark(node, context):
-#     return (node, context)
-
-
 @dataclass
 class Compound:
     registry: Registry = field(default_factory=Registry)
+    edge_map:Dict = field(default_factory=dict)
 
-    def _add(self, node, g, tree, follow_edges: bool):
+    def _add(self, node:Node, g:nx.Graph, tree:nx.DiGraph, follow_edges: bool):
         context = self.registry
         with context:
             nx_node = Mark(node=node, context=context)
@@ -56,7 +54,8 @@ class Compound:
                         else:
                             g.add_node(nx_pt, **pt.to_json())
 
-                g.add_edge(nx_u, nx_v, **edge.to_json())
+                edge_key = g.add_edge(nx_u, nx_v, **edge.to_json())
+                self.edge_map[nx_u, nx_v, edge_key] = edge
             return nx_node
 
     def __call__(self, *nodes, follow_edges=True):

@@ -5,7 +5,7 @@ from typing import ClassVar, Dict, Type
 
 from ...diagram import layout_options as opt
 from ...diagram.symbol import Def
-from ..elements import Edge, Partition, Record, element
+from ...elements import Edge, Partition, Record, element
 from ..shapes import connectors
 
 content_label_opts = opt.OptionsWidget(

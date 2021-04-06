@@ -5,6 +5,7 @@ import traitlets as T
 
 from .diagram import ElkDiagram
 from .diagram.elk_model import ElkNullElement
+from .exceptions import ElkRegistryError
 from .styled_widget import StyledWidget
 from .toolbar import Toolbar
 from .transform import ElkTransformer
@@ -99,7 +100,7 @@ class Elk(W.VBox, StyledWidget):
     def _handle_diagram_hovered(self, change: T.Bunch):
         try:
             _id = self.transformer.from_id(change.new)
-        except ValueError:  # TODO introduce custom ipyelk exceptions
+        except ElkRegistryError:
             _id = ElkNullElement
         if _id != self.hovered:
             self.hovered = _id
@@ -122,7 +123,7 @@ class Elk(W.VBox, StyledWidget):
         # transform hovered nodes into elk id
         try:
             self.diagram.hover = self.transformer.to_id(self.hovered)
-        except ValueError:  # TODO introduce custom ipyelk exceptions
+        except ElkRegistryError:
             # okay not to pass the hovered state to the diagram?
             pass
 
