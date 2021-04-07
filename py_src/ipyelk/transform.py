@@ -58,7 +58,7 @@ class ElkTransformer(W.Widget):
     _elk_to_item: Dict[str, Hashable] = None
     _item_to_elk: Dict[Hashable, str] = None
 
-    text_sizer: ElkTextSizer = T.Instance(ElkTextSizer, allow_none=True)
+    text_sizer: ElkTextSizer = T.Instance(ElkTextSizer, allow_none=True, kw={})
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -68,8 +68,6 @@ class ElkTransformer(W.Widget):
     async def transform(self) -> ElkNode:
         """Generate elk json"""
         top = ElkNode(**self.source)
-        # bulk calculate label sizes
-        await size_labels(self.text_sizer, collect_labels([top]))
         return top
 
     @T.default("value")
@@ -78,6 +76,8 @@ class ElkTransformer(W.Widget):
 
     async def _refresh(self):
         root_node = await self.transform()
+        # bulk calculate label sizes
+        await size_labels(self.text_sizer, collect_labels([root_node]))
         value = root_node.to_dict()
 
         # forces redraw on the frontend by creating to new label

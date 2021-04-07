@@ -19,7 +19,6 @@ from ..diagram.elk_model import (
     ElkProperties,
     ElkRoot,
 )
-from ..diagram.elk_text_sizer import ElkTextSizer, size_labels
 from ..transform import (
     Edge,
     EdgeMap,
@@ -27,7 +26,6 @@ from ..transform import (
     NodeMap,
     Port,
     PortMap,
-    collect_labels,
     merge,
 )
 from .nx import (
@@ -67,10 +65,6 @@ class XELK(ElkTransformer):
     @T.default("source")
     def _default_source(self):
         return (nx.Graph(), None)
-
-    @T.default("text_sizer")
-    def _default_text_sizer(self):
-        return ElkTextSizer()
 
     @T.default("layouts")
     def _default_layouts(self):
@@ -185,10 +179,6 @@ class XELK(ElkTransformer):
 
             # map of ports to the generated elkports
             self.register(elkport, port)
-
-        # bulk calculate label sizes
-        await size_labels(self.text_sizer, collect_labels([top]))
-
         return top
 
     async def make_elknode(self, node: Hashable) -> Tuple[ElkNode, PortMap]:
