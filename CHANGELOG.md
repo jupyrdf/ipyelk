@@ -1,5 +1,29 @@
 # Changelog
 
+## @jupyrdf/jupyter-elk 1.0.1
+
+- hides some browser console messages
+
+## ipyelk 1.0.1
+
+---
+
+## @jupyrdf/jupyter-elk 1.0.0
+
+- updates for JupyterLab 3 ([#6][])
+  - uses `@lumino` components
+
+## ipyelk 1.0.0
+
+- supports (and depends on) JupyterLab 3 ([#6][])
+  - labextension is delivered as part of the `ipyelk` python package, no more
+    `lab build`
+  - `npm` tarballs will still be uploaded
+
+[#6]: https://github.com/jupyrdf/ipyelk/issues/6
+
+--
+
 ## @jupyrdf/jupyter-elk 0.3.0
 
 ## ipyelk 0.3.0

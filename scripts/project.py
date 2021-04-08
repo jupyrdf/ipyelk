@@ -22,7 +22,9 @@ OSX = PLATFORM == "Darwin"
 LINUX = PLATFORM == "Linux"
 UNIX = not WIN
 
-WIN_CI = bool(json.loads(os.environ.get("WIN_CI", "0")))
+CI = bool(json.loads(os.environ.get("CI", "false")))
+WIN_CI = bool(json.loads(os.environ.get("WIN_CI", "false")))
+TESTING_IN_CI = bool(json.loads(os.environ.get("TESTING_IN_CI", "false")))
 
 # CI jank
 SKIP_CONDA_PREFLIGHT = bool(json.loads(os.environ.get("SKIP_CONDA_PREFLIGHT", "false")))
@@ -56,7 +58,6 @@ JS_VERSION = JS_PACKAGE_DATA["version"]
 JS_VERSION_MANGLED = re.sub(r"([ab])(\d+)", "-\\1\\2", JS_VERSION)
 YARN_INTEGRITY = NODE_MODULES / ".yarn-integrity"
 YARN_LOCK = ROOT / "yarn.lock"
-EXTENSIONS = ROOT / "labextensions.txt"
 CI = ROOT / ".github"
 DODO = ROOT / "dodo.py"
 BUILD = ROOT / "build"
@@ -64,8 +65,10 @@ DIST = ROOT / "dist"
 ENVS = ROOT / "envs"
 PROJ_LOCK = ROOT / "anaconda-project-lock.yml"
 CHANGELOG = ROOT / "CHANGELOG.md"
+CONDARC = CI / ".condarc"
 README = ROOT / "README.md"
 DOCS = ROOT / "docs"
+POSTBUILD = ROOT / "postBuild"
 
 # tools
 PY = ["python"]
@@ -118,13 +121,6 @@ TS_SRC = ROOT / "src"
 TS_SCHEMA = TS_SRC / "sprotty" / "json" / "elkschema.ts"
 STYLE = ROOT / "style"
 
-# lab stuff
-LAB_APP_DIR = ENVS / "default/share/jupyter/lab"
-LAB_STAGING = LAB_APP_DIR / "staging"
-LAB_LOCK = LAB_STAGING / "yarn.lock"
-LAB_STATIC = LAB_APP_DIR / "static"
-LAB_INDEX = LAB_STATIC / "index.html"
-
 # tests
 EXAMPLES = ROOT / "examples"
 EXAMPLE_IPYNB = [
@@ -139,13 +135,22 @@ BUILD_NBHTML = BUILD / "nbsmoke"
 
 # mostly linting
 ALL_PY_SRC = [*PY_SRC.rglob("*.py")]
-ALL_PY = [DODO, DOCS_CONF, *ALL_PY_SRC, *EXAMPLE_PY, *SCRIPTS.rglob("*.py")]
+ALL_PY = [
+    *ALL_PY_SRC,
+    *EXAMPLE_PY,
+    *SCRIPTS.rglob("*.py"),
+    DOCS_CONF,
+    DODO,
+    SETUP_PY,
+    POSTBUILD,
+]
 ALL_YML = [*ROOT.glob("*.yml"), *CI.rglob("*.yml")]
 ALL_JSON = [*ROOT.glob("*.json"), *EXAMPLE_JSON, PY_SCHEMA]
 ALL_DOCS_MD = [*DOCS.rglob("*.md")]
 ALL_MD = [*ROOT.glob("*.md"), *ALL_DOCS_MD]
 ALL_TS = [*TS_SRC.rglob("*.ts")]
 ALL_CSS = [*STYLE.rglob("*.css")]
+PRETTIER_IGNORE = ROOT / ".prettierignore"
 ALL_PRETTIER = [*ALL_YML, *ALL_JSON, *ALL_MD, *ALL_TS, *ALL_CSS]
 
 # built files
@@ -164,6 +169,7 @@ OK_NBLINT = {nb.name: BUILD / f"nblint.{nb.name}.ok" for nb in EXAMPLE_IPYNB}
 OK_PIP_INSTALL = BUILD / "pip_install.ok"
 OK_PRETTIER = BUILD / "prettier.ok"
 OK_INDEX = BUILD / "index.ok"
+OK_LABEXT = BUILD / "labext.ok"
 OK_LINKS = BUILD / "links.ok"
 
 HTMLCOV = BUILD / "htmlcov"

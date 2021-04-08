@@ -2,14 +2,14 @@
  * Copyright (c) 2021 Dane Freeman.
  * Distributed under the terms of the Modified BSD License.
  */
-import { Signal } from '@phosphor/signaling';
+import { Signal } from '@lumino/signaling';
 
 import { DOMWidgetModel } from '@jupyter-widgets/base';
 
 // import Worker from '!!worker-loader!elkjs/lib/elk-worker.min.js';
 import Worker from '!!worker-loader!elkjs/lib/elk-worker.js';
 import * as ELK from 'elkjs/lib/elk-api';
-import { NAME, VERSION, ELK_DEBUG } from '.';
+import { NAME, VERSION, ELK_DEBUG } from './tokens';
 
 import { ElkNode } from './sprotty/json/elkgraph-json';
 export { ELKTextSizerModel, ELKTextSizerView } from './measure_text';

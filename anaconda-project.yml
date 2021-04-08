@@ -1,8 +1,5 @@
 name: ipyelk
 
-variables:
-  PYTHONIOENCODING: utf-8
-
 commands:
   postBuild:
     description: do what binder does
@@ -70,10 +67,12 @@ env_specs:
       - https://conda.anaconda.org/conda-forge
     packages:
       - async-lru >=1,<2
+      - bqplot >=0.12.20
       - importnb
       - ipython >=7
       - ipywidgets >=7.5.1
-      - jupyterlab >=1.2,<1.3.0a0
+      - jupyterlab >=3,<4
+      - jupyterlab_widgets >=1.0.0
       - networkx
       - nodejs >=14,<15
       - pandas
@@ -120,7 +119,7 @@ env_specs:
     description: linting/formatting environment. not actually created.
     packages:
       - black
-      - isort <5
+      - isort
       - pyflakes
       - flake8
 
