@@ -103,6 +103,7 @@ class ElkProperties:
     cssClasses: Optional[str] = None
     type: Optional[str] = None
     shape: Optional[Dict[str, str or float]] = None
+    selectable: Optional[bool] = None
 
     @staticmethod
     def from_dict(obj: Any) -> "ElkProperties":
@@ -121,10 +122,12 @@ class ElkProperties:
             ],
             obj.get("shape"),
         )
+        selectable = from_union([from_bool, from_none], obj.get("selectable"))
         return ElkProperties(
             cssClasses=cssClasses,
             type=type,
             shape=shape,
+            selectable=selectable,
         )
 
     def to_dict(self) -> dict:
@@ -140,6 +143,7 @@ class ElkProperties:
             ],
             self.shape,
         )
+        result["selectable"] = from_union([from_bool, from_none], self.selectable)
         return strip_none(result)
 
 

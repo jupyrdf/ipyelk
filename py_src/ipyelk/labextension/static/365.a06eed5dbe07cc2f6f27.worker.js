@@ -1,1 +1,0 @@
-(self.webpackChunk_jupyrdf_jupyter_elk=self.webpackChunk_jupyrdf_jupyter_elk||[]).push([[365],{365:(e,l,s)=>{"use strict";s.r(l),s.d(l,{ELK_CSS:()=>r,ELK_DEBUG:()=>k,NAME:()=>p,VERSION:()=>_});const p="@jupyrdf/jupyter-elk",_="1.0.1",k=window.location.hash.indexOf("ELK_DEBUG")>-1,r={label:"elklabel",widget_class:"jp-ElkView",sizer_class:"jp-ElkSizer"}}}]);

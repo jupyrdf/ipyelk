@@ -28,6 +28,7 @@ export interface ElkProperties {
   type?: string;
   shape?: Shape;
   isDef?: boolean;
+  selectable?: boolean;
 }
 
 export interface ElkGraphElement {

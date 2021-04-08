@@ -151,6 +151,7 @@ $RECYCLE.BIN/
 **/node_modules/
 py_src/ipyelk/nbextension/static/index.*
 py_src/ipyelk/labextension/*.tgz
+py_src/ipyelk/labextension
 **/.yarn-packages/
 
 # Coverage data

@@ -5,7 +5,7 @@ from typing import Dict, List, Optional, Type
 
 from ..diagram import layout_options as opt
 from ..diagram.symbol import Symbol
-from ..transform import merge
+from ..util import merge
 from .elements import Edge, Label, Node, element
 
 record_opts = opt.OptionsWidget(
@@ -111,7 +111,7 @@ class Compartment(Record):
     def _make_labels(self):
         bullet_label = []
         if self.bullet_shape:
-            bullet_label = Label(shape=self.bullet_shape, layoutOptions=bullet_opts)
+            bullet_label = Label(shape=self.bullet_shape, layoutOptions=bullet_opts, selectable=True)
         if self.headings and not self.content:
             heading_label_opts = center_label_opts
             heading_cls = "compartment_title"
@@ -125,7 +125,7 @@ class Compartment(Record):
             for i, text in enumerate(self.headings)
         ]
         content = [
-            Label(text=text, layoutOptions=content_label_opts, labels=bullet_label)
+            Label(text=text, layoutOptions=content_label_opts, labels=bullet_label, selectable=True)
             for text in self.content
         ]
         return heading + content

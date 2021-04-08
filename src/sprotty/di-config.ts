@@ -37,7 +37,6 @@ import {
   SvgExporter,
   configureModelElement,
   SGraph,
-  SLabel,
   edgeEditModule,
   undoRedoModule,
   updateModule,
@@ -63,7 +62,7 @@ import {
 
 import { JLModelSource } from './diagram-server';
 import * as v from './views';
-import { ElkNode, ElkPort, ElkEdge, ElkJunction, DefNode } from './sprotty-model';
+import { ElkNode, ElkPort, ElkEdge, ElkJunction, DefNode, ElkLabel } from './sprotty-model';
 import { ElkModelRenderer, SDefModelFactory } from './renderer';
 // import { NodeSelectTool } from '../tools/select';
 import { toolFeedbackModule } from '../tools/feedback';
@@ -123,8 +122,8 @@ export default (containerId: string, view: DOMWidgetView) => {
 
     configureModelElement(context, 'port', ElkPort, v.ElkPortView);
     configureModelElement(context, 'edge', ElkEdge, v.ElkEdgeView);
-    configureModelElement(context, 'label', SLabel, v.ElkLabelView);
-    configureModelElement(context, 'label:icon', SLabel, v.ElkLabelView);
+    configureModelElement(context, 'label', ElkLabel, v.ElkLabelView);
+    configureModelElement(context, 'label:icon', ElkLabel, v.ElkLabelView);
     configureModelElement(context, 'junction', ElkJunction, v.JunctionView);
     configureViewerOptions(context, {
       needsClientLayout: false,

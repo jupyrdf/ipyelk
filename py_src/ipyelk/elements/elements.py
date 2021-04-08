@@ -1,11 +1,11 @@
 # Copyright (c) 2021 Dane Freeman.
 # Distributed under the terms of the Modified BSD License.
 from dataclasses import dataclass, field
-from typing import ClassVar, Dict, List, Optional, Type, Union
+from typing import ClassVar, Dict, List, Optional, Set, Type, Union
 
 from ..diagram.elk_model import strip_none
 from ..diagram.symbol import Symbol
-from ..transform import merge
+from ..util import merge
 from .registry import Registry
 
 
@@ -51,13 +51,32 @@ class ElementMetadata:
     pass
 
 
+@dataclass
+class ElementShape:
+    use: Optional[str]
+    start: Optional[str]
+    end: Optional[str]
+    x: Optional[float]
+    y: Optional[float]
+    width: Optional[float]
+    height: Optional[float]
+
+
+@dataclass
+class ElementProperties:
+    cssClasses: Optional[str]
+    type: Optional[str]
+    shape: Optional[ElementShape]
+    selectable: Optional[bool]
+
+
 @element
 class BaseElement:
     labels: List["Label"] = field(default_factory=list)
-    properties: Dict = field(default_factory=dict)
+    properties: Dict = field(default_factory=dict)  #TODO convert to use `ElementProperties`
     layoutOptions: Dict = field(default_factory=dict)
     metadata: ElementMetadata = field(default_factory=ElementMetadata)
-
+    selectable: bool = True
     _dom_classes: List[str] = field(init=False, repr=False, default_factory=list)
     _css_classes: ClassVar[List[str]] = []
 
@@ -106,6 +125,7 @@ class Edge(BaseElement):
     def to_json(self):
         props = self.properties
         shape = props["shape"] = props.get("shape", {})
+        props["selectable"] = self.selectable
         for key, connector in zip(["start", "end"], [self.shape_start, self.shape_end]):
             if connector:
                 shape[key] = connector
@@ -139,7 +159,11 @@ class ShapeElement(BaseElement):
             data = {"id": Registry.get_id(self)}
         labels = data["labels"] = data.get("labels", [])
         labels.extend([label.to_json() for label in self.labels])
-        data["properties"] = merge(self.properties, data.get("properties", {}))
+        props = merge(self.properties, data.get("properties", {}))
+        if props is None:
+            props = {}
+        props["selectable"] = self.selectable
+        data["properties"] = props
         data["layoutOptions"] = merge(self.layoutOptions, data.get("layoutOptions", {}))
 
         return strip_none(data)
@@ -163,6 +187,7 @@ class Port(ShapeElement):
 @element
 class Label(ShapeElement):
     text: str = " "  # completely empty strings exclude label in node sizing
+    selectable: bool = False
 
     def to_json(self):
         data = super().to_json()
@@ -175,7 +200,9 @@ class Node(ShapeElement):
     ports: Dict[str, Port] = field(default_factory=dict)
     children: List["Node"] = field(default_factory=list)
 
-    _edges: set = field(init=False, repr=False, default_factory=set)  # could be a set?
+    _edges: Set[Edge] = field(
+        init=False, repr=False, default_factory=set
+    )  # could be a set?
     _child_namespace: Dict[str, "Node"] = field(
         init=False, repr=False, default_factory=dict
     )
@@ -220,7 +247,7 @@ class Node(ShapeElement):
             self._child_namespace[key] = child
         return child
 
-    def remove_child(partition: "Node", child: "Node", key: str = ""):
+    def remove_child(self, child: "Node", key: str = ""):
         if child in self.children:
             self.children.remove(child)
         if key:
