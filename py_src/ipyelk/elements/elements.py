@@ -1,5 +1,7 @@
 # Copyright (c) 2021 Dane Freeman.
 # Distributed under the terms of the Modified BSD License.
+import textwrap
+
 from dataclasses import dataclass, field
 from typing import ClassVar, Dict, List, Optional, Set, Type, Union
 
@@ -196,6 +198,10 @@ class Label(ShapeElement):
         data["text"] = self.text
         return data
 
+    def wrap(self, **kwargs)->List["Label"]:
+        data = self.to_json()
+        return [Label(**{**data, "text":line}) for line in textwrap.wrap(self.text, **kwargs)]
+
 
 @element
 class Node(ShapeElement):
@@ -254,6 +260,11 @@ class Node(ShapeElement):
             self.children.remove(child)
         if key:
             self._child_namespace.pop(key, None)
+        else:
+            for key, value in self._child_namespace.items():
+                if value is child:
+                    self._child_namespace.pop(key)
+                    break
         return child
 
     def add_port(self, port: Port, key) -> Port:
