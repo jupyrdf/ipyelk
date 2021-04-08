@@ -29,9 +29,7 @@
               "$ref": "#/definitions/ElkProperties"
             }
           },
-          "required": [
-            "id"
-          ],
+          "required": ["id"],
           "type": "object"
         },
         {
@@ -77,12 +75,7 @@
               "type": "array"
             }
           },
-          "required": [
-            "id",
-            "sections",
-            "sources",
-            "targets"
-          ],
+          "required": ["id", "sections", "sources", "targets"],
           "type": "object"
         },
         {
@@ -134,11 +127,7 @@
               "type": "string"
             }
           },
-          "required": [
-            "id",
-            "source",
-            "target"
-          ],
+          "required": ["id", "source", "target"],
           "type": "object"
         },
         {
@@ -178,11 +167,7 @@
               "type": "array"
             }
           },
-          "required": [
-            "id",
-            "sources",
-            "targets"
-          ],
+          "required": ["id", "sources", "targets"],
           "type": "object"
         }
       ]
@@ -198,7 +183,7 @@
         },
         "labels": {
           "items": {
-            "$ref": "#/definitions/ElkLabel"
+            "$ref": "#/definitions/AnyElkLabelWithProperties"
           },
           "type": "array"
         },
@@ -221,10 +206,7 @@
           "type": "number"
         }
       },
-      "required": [
-        "id",
-        "text"
-      ],
+      "required": ["id", "text"],
       "type": "object"
     },
     "AnyElkNode": {
@@ -276,9 +258,7 @@
           "type": "number"
         }
       },
-      "required": [
-        "id"
-      ],
+      "required": ["id"],
       "type": "object"
     },
     "AnyElkPort": {
@@ -312,9 +292,7 @@
           "type": "number"
         }
       },
-      "required": [
-        "id"
-      ],
+      "required": ["id"],
       "type": "object"
     },
     "ElkEdgeSection": {
@@ -363,11 +341,7 @@
           "$ref": "#/definitions/ElkPoint"
         }
       },
-      "required": [
-        "endPoint",
-        "id",
-        "startPoint"
-      ],
+      "required": ["endPoint", "id", "startPoint"],
       "type": "object"
     },
     "ElkLabel": {
@@ -401,10 +375,7 @@
           "type": "number"
         }
       },
-      "required": [
-        "id",
-        "text"
-      ],
+      "required": ["id", "text"],
       "type": "object"
     },
     "ElkPoint": {
@@ -417,10 +388,7 @@
           "type": "number"
         }
       },
-      "required": [
-        "x",
-        "y"
-      ],
+      "required": ["x", "y"],
       "type": "object"
     },
     "ElkProperties": {

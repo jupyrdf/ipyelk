@@ -8,7 +8,7 @@
 # flake8: noqa
 from collections import namedtuple
 from dataclasses import dataclass
-from typing import Any, Callable, Dict, List, Optional, Type, TypeVar, cast
+from typing import Any, Callable, Dict, List, Optional, Type, TypeVar, Union, cast
 
 # Sentinel Value for tracking the root node in the Elk JSON
 ElkRoot = namedtuple("ElkRootNode", [])()
@@ -102,7 +102,7 @@ class Elk:
 class ElkProperties:
     cssClasses: Optional[str] = None
     type: Optional[str] = None
-    shape: Optional[Dict[str, str or float]] = None
+    shape: Optional[Dict[str, Union[str, float]]] = None
     selectable: Optional[bool] = None
 
     @staticmethod

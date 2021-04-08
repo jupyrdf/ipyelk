@@ -311,6 +311,8 @@ export class ElkLabelView extends ShapeView {
       mark = (
         <use
           class-elklabel={true}
+          class-mouseover={label.hoverFeedback}
+          class-selected={label.selected}
           href={'#' + href}
           width={label.size.width}
           height={label.size.height}
@@ -318,11 +320,14 @@ export class ElkLabelView extends ShapeView {
       );
       setClass(mark, use, true);
     } else {
-      mark = <text class-elklabel={true}>{label.text}</text>;
+      mark = (
+        <text class-elklabel={true} class-selected={label.selected} class-mouseover={label.hoverFeedback}>
+          {label.text}
+        </text>
+      );
     }
 
     if (label.labels?.length) {
-      console.log('sub labeling to do...');
       let icon: ElkLabel = label.labels[0];
       let use = icon?.properties?.shape?.use;
       let href = context.hrefID(use);
@@ -347,6 +352,8 @@ export class ElkLabelView extends ShapeView {
           <use
             transform={`translate(${iconPos.x} ${iconPos.y})`}
             class-elklabel={true}
+            class-mouseover={label.hoverFeedback}
+            class-selected={label.selected}
             href={'#' + href}
             width={icon.size.width}
             height={icon.size.height}

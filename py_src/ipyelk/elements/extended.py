@@ -111,7 +111,9 @@ class Compartment(Record):
     def _make_labels(self):
         bullet_label = []
         if self.bullet_shape:
-            bullet_label = Label(shape=self.bullet_shape, layoutOptions=bullet_opts, selectable=True)
+            bullet_label = Label(
+                shape=self.bullet_shape, layoutOptions=bullet_opts, selectable=True
+            )
         if self.headings and not self.content:
             heading_label_opts = center_label_opts
             heading_cls = "compartment_title"
@@ -125,7 +127,12 @@ class Compartment(Record):
             for i, text in enumerate(self.headings)
         ]
         content = [
-            Label(text=text, layoutOptions=content_label_opts, labels=bullet_label, selectable=True)
+            Label(
+                text=text,
+                layoutOptions=content_label_opts,
+                labels=bullet_label,
+                selectable=True,
+            )
             for text in self.content
         ]
         return heading + content

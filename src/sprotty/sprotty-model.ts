@@ -17,7 +17,7 @@ import {
   layoutableChildFeature,
   edgeLayoutFeature,
   fadeFeature,
-  SLabel,
+  SLabel
 } from 'sprotty';
 
 import { ElkProperties } from './json/elkgraph-json';
@@ -62,18 +62,26 @@ export class ElkJunction extends SNode {
 }
 
 export class ElkLabel extends SLabel {
-  static readonly DEFAULT_FEATURES = [selectFeature, hoverFeedbackFeature, boundsFeature, alignFeature, layoutableChildFeature,
-    edgeLayoutFeature, fadeFeature];
+  static readonly DEFAULT_FEATURES = [
+    selectFeature,
+    hoverFeedbackFeature,
+    boundsFeature,
+    alignFeature,
+    layoutableChildFeature,
+    edgeLayoutFeature,
+    fadeFeature
+  ];
   properties: ElkProperties;
   labels: ElkLabel[];
+  selected: boolean = false;
+  hoverFeedback: boolean = false;
 
   hasFeature(feature: symbol): boolean {
-    if (feature === selectFeature || feature === hoverFeedbackFeature){
-      if (this.properties?.selectable !== false){
+    if (feature === selectFeature || feature === hoverFeedbackFeature) {
+      if (this.properties?.selectable === true) {
         return true;
       }
-    }
-    else return super.hasFeature(feature);
+    } else return super.hasFeature(feature);
   }
 }
 

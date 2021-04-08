@@ -62,7 +62,14 @@ import {
 
 import { JLModelSource } from './diagram-server';
 import * as v from './views';
-import { ElkNode, ElkPort, ElkEdge, ElkJunction, DefNode, ElkLabel } from './sprotty-model';
+import {
+  ElkNode,
+  ElkPort,
+  ElkEdge,
+  ElkJunction,
+  DefNode,
+  ElkLabel
+} from './sprotty-model';
 import { ElkModelRenderer, SDefModelFactory } from './renderer';
 // import { NodeSelectTool } from '../tools/select';
 import { toolFeedbackModule } from '../tools/feedback';

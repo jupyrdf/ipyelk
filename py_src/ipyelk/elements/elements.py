@@ -73,7 +73,9 @@ class ElementProperties:
 @element
 class BaseElement:
     labels: List["Label"] = field(default_factory=list)
-    properties: Dict = field(default_factory=dict)  #TODO convert to use `ElementProperties`
+    properties: Dict = field(
+        default_factory=dict
+    )  # TODO convert to use `ElementProperties`
     layoutOptions: Dict = field(default_factory=dict)
     metadata: ElementMetadata = field(default_factory=ElementMetadata)
     selectable: bool = True
