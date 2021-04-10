@@ -4,7 +4,7 @@ recursive-include py_src/ipyelk/labextension *.*
 recursive-exclude scripts *.*
 
 exclude src lib docs examples package.json scripts
-
+prune py_src/ipyelk/tests/elk-models
 global-exclude *~
 global-exclude *.pyc
 global-exclude *.pyo

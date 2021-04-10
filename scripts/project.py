@@ -132,9 +132,11 @@ EXAMPLE_JSON = [
 EXAMPLE_PY = [*EXAMPLES.rglob("*.py")]
 EXAMPLE_INDEX = EXAMPLES / "_index.ipynb"
 BUILD_NBHTML = BUILD / "nbsmoke"
+ELKMODELS = PY_SRC / "tests" / "elk-models"
+ELKFIXTURES = PY_SRC / "tests" / "fixtures"
 
 # mostly linting
-ALL_PY_SRC = [*PY_SRC.rglob("*.py")]
+ALL_PY_SRC = [p for p in PY_SRC.rglob("*.py") if str(ELKMODELS) not in str(p)]
 ALL_PY = [
     *ALL_PY_SRC,
     *EXAMPLE_PY,

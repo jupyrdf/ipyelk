@@ -1,0 +1,3 @@
+[submodule "py_src/ipyelk/tests/elk-models"]
+	path = py_src/ipyelk/tests/elk-models
+	url = https://github.com/eclipse/elk-models.git

@@ -19,6 +19,7 @@ from doit import create_after
 from doit.action import CmdAction
 from doit.tools import LongRunning, PythonInteractiveAction, config_changed
 
+from scripts import migrate_models as M
 from scripts import project as P
 from scripts import reporter
 from scripts import utils as U
@@ -230,6 +231,17 @@ def task_setup():
             ),
             P.OK_LABEXT,
         )
+
+
+def task_fixtures():
+    """migrate elk-models to fixtures"""
+    return dict(
+        file_dep=[P.SCRIPTS / "migrate_models.py", *M.ELKMODEL_ELKT, *M.ELKMODEL_JSON],
+        actions=[M.migrate],
+        uptodate=[False],
+        targets=["fake_target_since_somehow_duplicating_doit_task"],
+        # targets=[f for f in M.ELKMODEL_FIXTURES],
+    )
 
 
 if not P.TESTING_IN_CI:
