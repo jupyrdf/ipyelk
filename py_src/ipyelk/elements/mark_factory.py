@@ -1,15 +1,15 @@
 # Copyright (c) 2021 Dane Freeman.
 # Distributed under the terms of the Modified BSD License.
-from dataclasses import dataclass, field
+from typing import Dict
 
 import networkx as nx
+from pydantic import BaseModel, Field
 
 from .elements import BaseElement, Edge, Node
 from .registry import Registry
 
 
-@dataclass
-class Mark:
+class Mark(BaseModel):
     """Wrap the given node in another tuple so it can be used multiple times as
     a networkx node.
 
@@ -18,20 +18,22 @@ class Mark:
     networkx graph.
     """
 
-    element: BaseElement
-    context: Registry
+    element: BaseElement = Field(...)
+    context: Registry = Field(...)
 
     def __hash__(self):
         return hash((id(self.element), id(self.context)))
+
+    def __eq__(self, other):
+        return hash(self) == hash(other)
 
     def to_json(self):
         with self.context:
             return self.element.to_json()
 
 
-@dataclass
-class Compound:
-    registry: Registry = field(default_factory=Registry)
+class MarkFactory(BaseModel):
+    registry: Registry = Field(default_factory=Registry)
 
     def _add(
         self, node: Node, g: nx.Graph, tree: nx.DiGraph, follow_edges: bool
@@ -42,11 +44,11 @@ class Compound:
             if nx_node not in g:
                 g.add_node(nx_node, mark=nx_node, elkjson=node.to_json())
 
-            for child in get_children(node):
+            for key, child in get_children(node).items():
                 nx_child = self._add(child, g, tree, follow_edges=follow_edges)
                 tree.add_edge(nx_node, nx_child)
 
-            for edge in node._edges:
+            for edge in node.edges:
                 endpts = edge.points()
                 nx_u, nx_v = map(lambda n: Mark(element=n, context=context), endpts)
                 for nx_pt, pt in zip([nx_u, nx_v], endpts):
@@ -57,7 +59,12 @@ class Compound:
                             g.add_node(nx_pt, mark=nx_pt, elkjson=pt.to_json())
 
                 assert isinstance(edge, Edge), f"Expected Edge type not {type(edge)}"
-                g.add_edge(nx_u, nx_v, mark=Mark(edge, context), elkjson=edge.to_json())
+                g.add_edge(
+                    nx_u,
+                    nx_v,
+                    mark=Mark(element=edge, context=context),
+                    elkjson=edge.to_json(),
+                )
             return nx_node
 
     def __call__(self, *nodes, follow_edges=True):
@@ -76,5 +83,5 @@ def get_nodes(nodes):
         yield from get_children(node)
 
 
-def get_children(node: Node):
-    return getattr(node, "children", [])
+def get_children(node: Node) -> Dict[str, Node]:
+    return getattr(node, "children", {})

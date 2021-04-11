@@ -1,6 +1,5 @@
 # Copyright (c) 2021 Dane Freeman.
 # Distributed under the terms of the Modified BSD License.
-import textwrap
 from collections import defaultdict
 from functools import lru_cache
 from typing import Dict, Hashable, List, Optional, Set, Tuple, Type, Union
@@ -57,8 +56,6 @@ class XELK(ElkTransformer):
     label_key = T.Unicode(default_value="labels")
     port_key = T.Unicode(default_value="ports")
 
-    line_length = T.Int(default_value=None, allow_none=True)
-
     @T.default("source")
     def _default_source(self):
         return (nx.Graph(), None)
@@ -95,7 +92,8 @@ class XELK(ElkTransformer):
             return self.ELK_ROOT_ID
         elif node in g:
             mark, data = self.get_node_data(node)
-            return data.get("id", f"{node}")
+            if "id" in data:
+                return data["id"]
         return f"{node}"
 
     def port_id(self, node: Hashable, port: Optional[Hashable] = None) -> str:
@@ -444,7 +442,7 @@ class XELK(ElkTransformer):
         """
         labels = []
         mark, data = self.get_node_data(node)
-        values = data.get(self.label_key, [data.get("_id", f"{node}")])
+        values = data.get(self.label_key, [data.get("id", f"{node}")])
 
         properties = {}
         css_classes = self.get_css(node, ElkLabel)
@@ -476,16 +474,13 @@ class XELK(ElkTransformer):
             label.properties = merged_props
 
             lmark = node
-
             # test if the label mark is selectable independently
             if isinstance(mark, elements.Mark):
                 el = mark.element.labels[i]
                 if el.selectable:
                     lmark = elements.Mark(element=el, context=mark.context)
-            lines = self.wrap_label(label)
-            for j, line in enumerate(lines):
-                labels.append(line)
-                self.register(line, lmark)
+            self.register(label, lmark)
+            labels.append(label)
         return labels
 
     def collect_edges(self) -> Tuple[EdgeMap, EdgeMap]:
@@ -566,24 +561,6 @@ class XELK(ElkTransformer):
                     )
                 )
         return visible, hidden
-
-    def wrap_label(self, label: ElkLabel) -> List[ElkLabel]:
-        """Helper function to wrap long text lines
-
-        :param text: incoming text to wrap
-        :return: list of wrapped text
-        """
-        if self.line_length is None:
-            return [label]
-
-        lines = []
-        data = label.to_dict()
-        for i, line in enumerate(textwrap.wrap(label.text, width=self.line_length)):
-            newlabel = ElkLabel.from_dict(data)
-            newlabel.id = newlabel.id + f"_{i}"
-            newlabel.text = line
-            lines.append(newlabel)
-        return lines
 
 
 def split_mark_data(data: Dict) -> Tuple[Optional[elements.Mark], Dict]:

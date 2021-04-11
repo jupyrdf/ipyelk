@@ -321,7 +321,11 @@ export class ElkLabelView extends ShapeView {
       setClass(mark, use, true);
     } else {
       mark = (
-        <text class-elklabel={true} class-selected={label.selected} class-mouseover={label.hoverFeedback}>
+        <text
+          class-elklabel={true}
+          class-selected={label.selected}
+          class-mouseover={label.hoverFeedback}
+        >
           {label.text}
         </text>
       );

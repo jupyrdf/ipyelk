@@ -1,24 +1,21 @@
 # Copyright (c) 2021 Dane Freeman.
 # Distributed under the terms of the Modified BSD License.
-from abc import ABC
-from dataclasses import dataclass, field
 from typing import ClassVar, Dict, List, Optional, Type
 
 from ipywidgets import DOMWidget
+from pydantic import BaseModel, Field
 
 from ipyelk.diagram.elk_model import strip_none
 
 
-@dataclass
-class Symbol(ABC):
+class Symbol(BaseModel):
     identifier: ClassVar[str] = None
     type: ClassVar[str] = None
-
     x: Optional[float] = None
     y: Optional[float] = None
     width: Optional[float] = None
     height: Optional[float] = None
-    children: List["Symbol"] = field(default_factory=list)
+    children: List["Symbol"] = Field(default_factory=list)
 
     def __hash__(self):
         """Simple hashing function to make it easier to use as a networkx node"""
@@ -92,7 +89,9 @@ class Symbol(ABC):
         return {c.identifier: c.shape for c in classes}
 
 
-@dataclass
+Symbol.update_forward_refs()
+
+
 class Path(Symbol):
     value: str = ""
     type = "node:path"
@@ -111,7 +110,6 @@ class Path(Symbol):
         return Path(value=d)
 
 
-@dataclass
 class Circle(Symbol):
     radius: float = 0
 
@@ -130,7 +128,6 @@ class Circle(Symbol):
         }
 
 
-@dataclass
 class SVG(Symbol):
     value: str = ""
     type = "node:svg"
@@ -142,7 +139,6 @@ class SVG(Symbol):
         return props
 
 
-@dataclass
 class Ellipse(Symbol):
     rx: float = 0
     ry: float = 0
@@ -156,12 +152,10 @@ class Ellipse(Symbol):
         }
 
 
-@dataclass
 class Diamond(Symbol):
     type = "node:diamond"
 
 
-@dataclass
 class Comment(Symbol):
     type = "node:comment"
     size: float = 15
@@ -172,12 +166,10 @@ class Comment(Symbol):
         return props
 
 
-@dataclass
 class Rect(Symbol):
     type = "node"
 
 
-@dataclass
 class Use(Symbol):
     type = "node:use"
     value: str = ""
@@ -188,13 +180,14 @@ class Use(Symbol):
         return props
 
 
-@dataclass
-class Point:
+class Point(BaseModel):
     x: float = 0
     y: float = 0
 
+    def __init__(self, x=0, y=0):
+        super().__init__(x=x, y=y)
 
-@dataclass
+
 class Image(Symbol):
     type = "node:image"
     value: str = None
@@ -206,7 +199,6 @@ class Image(Symbol):
         return props
 
 
-@dataclass
 class ForeignObject(Symbol):
     type = "node:foreignobject"
     value: str = ""
@@ -218,10 +210,12 @@ class ForeignObject(Symbol):
         return props
 
 
-@dataclass
 class Widget(Symbol):
     type = "node:widget"
-    widget: Type[DOMWidget] = None
+    widget: DOMWidget = None
+
+    class Config:
+        arbitrary_types_allowed = True
 
     def get_shape_props(self):
         props = super().get_shape_props()
@@ -230,7 +224,6 @@ class Widget(Symbol):
         return props
 
 
-@dataclass
 class HTML(Symbol):
     type = "node:html"
     value: str = ""
@@ -242,7 +235,6 @@ class HTML(Symbol):
         return props
 
 
-@dataclass
 class Icon(Symbol):
     type = "label:icon"
     value: str = " "
@@ -258,3 +250,5 @@ class Icon(Symbol):
         if self.value:
             props.update({"use": str(self.value)})
         return props
+
+Symbol.update_forward_refs()

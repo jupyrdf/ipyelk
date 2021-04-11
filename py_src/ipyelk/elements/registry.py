@@ -1,21 +1,24 @@
 # Copyright (c) 2021 Dane Freeman.
 # Distributed under the terms of the Modified BSD License.
 from collections import defaultdict
-from dataclasses import dataclass, field
 from typing import ClassVar, List, Optional
 from uuid import uuid4
+
+from pydantic import BaseModel, Field
 
 
 def id_factory():
     return defaultdict(lambda: str(uuid4()))
 
 
-@dataclass
-class Registry:
+class Registry(BaseModel):
     """Context Manager to generate and maintain a lookup of objects to identifiers"""
 
-    _ids: defaultdict = field(repr=False, default_factory=id_factory)
-    _stack: ClassVar[List] = []
+    ids: defaultdict = Field(repr=False, default_factory=id_factory)
+    stack: ClassVar[List] = []
+
+    class Config:
+        copy_on_model_validation = False
 
     def __enter__(self):
         self.get_contexts().append(self)
@@ -25,7 +28,7 @@ class Registry:
         self.get_contexts().pop()
 
     @classmethod
-    def get_context(cls, error_if_none=True) -> Optional:
+    def get_context(cls, error_if_none=True) -> Optional["Registry"]:
         try:
             return cls.get_contexts()[-1]
         except IndexError:
@@ -35,7 +38,7 @@ class Registry:
 
     @classmethod
     def get_contexts(cls) -> List:
-        return cls._stack
+        return cls.stack
 
     @classmethod
     def get_id(cls, key):
@@ -44,7 +47,7 @@ class Registry:
             return context[key]
 
     def __getitem__(self, key):
-        return self._ids[key]
+        return self.ids[key]
 
     def __hash__(self):
         return hash(id(self))

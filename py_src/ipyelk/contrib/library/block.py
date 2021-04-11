@@ -1,11 +1,12 @@
 # Copyright (c) 2021 Dane Freeman.
 # Distributed under the terms of the Modified BSD License.
-from dataclasses import field
 from typing import ClassVar, Dict, Type
+
+from pydantic import Field
 
 from ...diagram import layout_options as opt
 from ...diagram.symbol import Def
-from ...elements import Edge, Partition, Record, element
+from ...elements import Edge, Partition, Record
 from ..shapes import connectors
 
 content_label_opts = opt.OptionsWidget(
@@ -33,52 +34,44 @@ compart_opts = opt.OptionsWidget(
 ).value
 
 
-@element
 class Block(Record):
     pass
 
 
-@element
 class Composition(Edge):
-    shape_start: ClassVar[str] = "composition"
+    shape_start: str = "composition"
 
 
-@element
 class Aggregation(Edge):
-    shape_start: ClassVar[str] = "aggregation"
+    shape_start: str = "aggregation"
 
 
-@element
 class Containment(Edge):
-    shape_start: ClassVar[str] = "containment"
+    shape_start: str = "containment"
 
 
-@element
 class DirectedAssociation(Edge):
-    shape_end: ClassVar[str] = "directed_association"
+    shape_end: str = "directed_association"
 
 
-@element
 class Association(Edge):
     pass
 
 
-@element
 class Generalization(Edge):
-    shape_start: ClassVar[str] = "generalization"
+    shape_start: str = "generalization"
 
 
-@element
 class BlockDiagram(Partition):
     # TODO flesh out ideas of encapsulating diagram defs / styles / elements
-    defs: ClassVar[Dict[str, Def]] = {
+    defs: Dict[str, Def] = {
         "composition": connectors.Rhomb(r=4),
         "aggregation": connectors.Rhomb(r=4),
         "containment": connectors.Containment(r=4),
         "directed_association": connectors.StraightArrow(r=4),
         "generalization": connectors.StraightArrow(r=4, closed=True),
     }
-    style: ClassVar[Dict[str, Def]] = {
+    style: Dict[str, Def] = {
         " .elklabel.compartment_title_1": {
             "font-weight": "bold",
         },
@@ -102,4 +95,4 @@ class BlockDiagram(Partition):
             "fill": "transparent",
         },
     }
-    default_edge: Type[Edge] = field(default=Association)
+    default_edge: Type[Edge] = Field(default=Association)

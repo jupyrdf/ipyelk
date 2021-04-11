@@ -78,7 +78,11 @@ class ElkTransformer(W.Widget):
     def _default_value(self):
         return {"id": self.ELK_ROOT_ID}
 
-    async def _refresh(self):
+    async def _refresh(self, debug=False):
+        text_sizer = self.text_sizer
+        if debug:
+            self.text_sizer = None
+
         root_node = await self.transform()
         # bulk calculate label sizes
         await size_labels(self.text_sizer, collect_labels([root_node]))
@@ -90,6 +94,7 @@ class ElkTransformer(W.Widget):
 
         value["labels"] = labels
         self.value = value
+        self.text_sizer = text_sizer
 
     @T.observe("source")
     def refresh(self, change: T.Bunch = None):
@@ -170,7 +175,7 @@ def collect_labels(
     :return: [description]
     :rtype: List[ElkLabel]
     """
-    labels = []
+    labels: List[ElkLabel] = []
 
     def include(label):
         return include_sized or not bool(label.width or label.height)

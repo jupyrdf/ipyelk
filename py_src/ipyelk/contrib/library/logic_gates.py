@@ -6,7 +6,6 @@ Based on https://upload.wikimedia.org/wikipedia/commons/c/cb/Circuit_elements.sv
 
 """
 
-from dataclasses import dataclass
 from typing import ClassVar, Dict, List
 from uuid import uuid4
 
@@ -14,7 +13,6 @@ from ...diagram import layout_options as opt
 from ...diagram.symbol import Def, Symbol, symbols
 
 
-@dataclass
 class Gate(Symbol):
     ports: ClassVar[Dict] = {"a": "WEST", "b": "WEST", "out": "EAST"}
     width: ClassVar[float] = None

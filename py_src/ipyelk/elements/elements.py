@@ -1,9 +1,9 @@
 # Copyright (c) 2021 Dane Freeman.
 # Distributed under the terms of the Modified BSD License.
 import textwrap
-
-from dataclasses import dataclass, field
 from typing import ClassVar, Dict, List, Optional, Set, Type, Union
+
+from pydantic import BaseModel, Field
 
 from ..diagram.elk_model import strip_none
 from ..diagram.symbol import Symbol
@@ -11,50 +11,11 @@ from ..util import merge
 from .registry import Registry
 
 
-def id_hash(self):
-    return hash(id(self))
-
-
-def element(
-    _cls=None,
-    *,
-    init=True,
-    repr=True,
-    eq=True,
-    order=False,
-    unsafe_hash=False,
-    frozen=False
-):
-    def wrap(cls):
-        wrapped = dataclass(
-            cls,
-            init=init,
-            repr=repr,
-            eq=eq,
-            order=order,
-            unsafe_hash=unsafe_hash,
-            frozen=frozen,
-        )
-        if getattr(wrapped, "__hash__", None) is None:
-            wrapped.__hash__ = id_hash
-        return wrapped
-
-    # See if we're being called as @dataclass or @dataclass().
-    if _cls is None:
-        # We're called with parens.
-        return wrap
-
-    # We're called as @dataclass without parens.
-    return wrap(_cls)
-
-
-@dataclass
-class ElementMetadata:
+class ElementMetadata(BaseModel):
     pass
 
 
-@dataclass
-class ElementShape:
+class ElementShape(BaseModel):
     use: Optional[str]
     start: Optional[str]
     end: Optional[str]
@@ -64,30 +25,38 @@ class ElementShape:
     height: Optional[float]
 
 
-@dataclass
-class ElementProperties:
+class ElementProperties(BaseModel):
     cssClasses: Optional[str]
     type: Optional[str]
     shape: Optional[ElementShape]
     selectable: Optional[bool]
 
 
-@element
-class BaseElement:
-    labels: List["Label"] = field(default_factory=list)
-    properties: Dict = field(
+class BaseElement(BaseModel):
+    labels: List["Label"] = Field(default_factory=list)
+    properties: Dict = Field(
         default_factory=dict
     )  # TODO convert to use `ElementProperties`
-    layoutOptions: Dict = field(default_factory=dict)
-    metadata: ElementMetadata = field(default_factory=ElementMetadata)
+    layoutOptions: Dict = Field(default_factory=dict)
+    metadata: ElementMetadata = Field(default_factory=ElementMetadata)
     selectable: bool = True
-    _dom_classes: List[str] = field(init=False, repr=False, default_factory=list)
+    _dom_classes: List[str] = Field(init=False, repr=False, default_factory=list)
     _css_classes: ClassVar[List[str]] = []
 
-    def __post_init__(self, *args, **kwargs):
+    class Config:
+        copy_on_model_validation = False
+
+    def __init__(self, **data):
+        super().__init__(**data)
         classes = self._css_classes or []
         for css_class in classes:
             self.add_class(css_class)
+
+    def __hash__(self):
+        return hash(id(self))
+
+    def __eq__(self, other):
+        return id(self) == id(other)
 
     def to_json(self):
         raise NotImplementedError("Subclasses should implement")
@@ -118,13 +87,36 @@ class BaseElement:
         return self
 
 
-@element
+class ShapeElement(BaseElement):
+    shape: Optional[Symbol] = None
+
+    def to_json(self):
+        if isinstance(self.shape, Symbol):
+            data = self.shape.to_json(id=Registry.get_id(self))
+        else:
+            data = {"id": Registry.get_id(self)}
+        labels = data["labels"] = data.get("labels", [])
+        labels.extend([label.to_json() for label in self.labels])
+        props = merge(self.properties, data.get("properties", {}))
+        if props is None:
+            props = {}
+        props["selectable"] = self.selectable
+        data["properties"] = props
+        data["layoutOptions"] = merge(self.layoutOptions, data.get("layoutOptions", {}))
+
+        return strip_none(data)
+
+
+class UnionNodePort(ShapeElement):
+    pass
+
+
 class Edge(BaseElement):
     shape_end: Optional[str] = None  # TODO maybe should be a ConnectorDef object
     shape_start: Optional[str] = None
 
-    source: Union["Node", "Port"] = None
-    target: Union["Node", "Port"] = None
+    source: UnionNodePort = None
+    target: UnionNodePort = None
 
     def to_json(self):
         props = self.properties
@@ -147,48 +139,11 @@ class Edge(BaseElement):
         return data
 
     def points(self):
-        u = self.source if isinstance(self.source, Node) else self.source._parent
-        v = self.target if isinstance(self.target, Node) else self.target._parent
+        u = self.source if isinstance(self.source, Node) else self.source.parent
+        v = self.target if isinstance(self.target, Node) else self.target.parent
         return u, v
 
 
-@element
-class ShapeElement(BaseElement):
-    shape: Optional[Symbol] = None
-
-    def to_json(self):
-        if isinstance(self.shape, Symbol):
-            data = self.shape.to_json(id=Registry.get_id(self))
-        else:
-            data = {"id": Registry.get_id(self)}
-        labels = data["labels"] = data.get("labels", [])
-        labels.extend([label.to_json() for label in self.labels])
-        props = merge(self.properties, data.get("properties", {}))
-        if props is None:
-            props = {}
-        props["selectable"] = self.selectable
-        data["properties"] = props
-        data["layoutOptions"] = merge(self.layoutOptions, data.get("layoutOptions", {}))
-
-        return strip_none(data)
-
-
-@element
-class Port(ShapeElement):
-    _parent: Optional["Node"] = field(init=False, repr=False, default=None)
-
-    def to_json(self):
-        data = super().to_json()
-        parent_id = Registry.get_id(self._parent)
-        self_id = Registry.get_id(self)
-        data["id"] = ".".join([parent_id, self_id])
-        if "properties" not in data:
-            data["properties"] = {}
-        data["properties"]["type"] = "port"
-        return data
-
-
-@element
 class Label(ShapeElement):
     text: str = " "  # completely empty strings exclude label in node sizing
     selectable: bool = False
@@ -198,31 +153,50 @@ class Label(ShapeElement):
         data["text"] = self.text
         return data
 
-    def wrap(self, **kwargs)->List["Label"]:
+    def wrap(self, **kwargs) -> List["Label"]:
         data = self.to_json()
-        return [Label(**{**data, "text":line}) for line in textwrap.wrap(self.text, **kwargs)]
+        return [
+            Label(**{**data, "text": line})
+            for line in textwrap.wrap(self.text, **kwargs)
+        ]
 
 
-@element
-class Node(ShapeElement):
-    ports: Dict[str, Port] = field(default_factory=dict)
-    children: List["Node"] = field(default_factory=list)
+class Port(UnionNodePort):
+    parent: Optional["Node"] = Field(default=None)
 
-    _edges: Set[Edge] = field(
+    class Config:
+        copy_on_model_validation = False
+
+    def to_json(self):
+        data = super().to_json()
+        parent_id = Registry.get_id(self.parent)
+        self_id = Registry.get_id(self)
+        data["id"] = ".".join([parent_id, self_id])
+        if "properties" not in data:
+            data["properties"] = {}
+        data["properties"]["type"] = "port"
+        return data
+
+
+class Node(UnionNodePort):
+    ports: Dict[str, Port] = Field(default_factory=dict)
+    children: Dict[str, "Node"] = Field(default_factory=dict)
+
+    edges: Set[Edge] = Field(
         init=False, repr=False, default_factory=set
     )  # could be a set?
-    _child_namespace: Dict[str, "Node"] = field(
-        init=False, repr=False, default_factory=dict
-    )
 
-    def __post_init__(self, *args, **kwargs):
-        super().__post_init__(self, *args, **kwargs)
+    class Config:
+        copy_on_model_validation = False
+
+    def __init__(self, **data):
+        super().__init__(**data)
         for key, port in self.ports.items():
             port_parent(self, port)
 
     def __getattr__(self, key):
-        if key in self._child_namespace:
-            return self._child_namespace.get(key)
+        if key in self.children:
+            return self.children.get(key)
         if key in self.ports:
             return self.ports.get(key)
         shape_ports = getattr(self.shape, "ports", {})
@@ -249,22 +223,17 @@ class Node(ShapeElement):
         data["ports"] = ports.values()
         return strip_none(data)
 
-    def add_child(self, child: "Node", key: str = "") -> "Node":
-        self.children.append(child)
-        if key:
-            self._child_namespace[key] = child
+    def add_child(self, child: "Node", key: str) -> "Node":
+        self.children[key] = child
         return child
 
     def remove_child(self, child: "Node", key: str = ""):
-        if child in self.children:
-            self.children.remove(child)
-        if key:
-            self._child_namespace.pop(key, None)
+        for key, value in self.children.items():
+            if value is child:
+                break
         else:
-            for key, value in self._child_namespace.items():
-                if value is child:
-                    self._child_namespace.pop(key)
-                    break
+            raise ValueError("Child element not found")
+        self.children.pop(key)
         return child
 
     def add_port(self, port: Port, key) -> Port:
@@ -281,7 +250,7 @@ class Node(ShapeElement):
         # ancestor of the two endpoints the actual owner of the edge will be
         # calculated later
         edge = cls(source=source, target=target)
-        self._edges.add(edge)
+        self.edges.add(edge)
         return edge
 
     def __setattr__(self, key, value):
@@ -295,7 +264,15 @@ class Node(ShapeElement):
 
 def port_parent(node: Node, port: Port) -> Port:
     assert (
-        port._parent is None or port._parent is node
+        port.parent is None or port.parent is node
     ), "Incoming port owned by different node"
-    port._parent = node
+    port.parent = node
     return port
+
+
+Label.update_forward_refs()
+Port.update_forward_refs()
+Edge.update_forward_refs()
+BaseElement.update_forward_refs()
+Node.update_forward_refs()
+UnionNodePort.update_forward_refs()

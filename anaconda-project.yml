@@ -3,23 +3,23 @@ name: ipyelk
 commands:
   postBuild:
     description: do what binder does
-    unix: &setup python postBuild
-    windows: *setup
+    unix: python postBuild
+    windows: python postBuild
 
   watch:
     description: set up processes for live development
-    unix: &watch python -m scripts.lab watch
-    windows: *watch
+    unix: python -m scripts.lab watch
+    windows: python -m scripts.lab watch
 
   lab:
     description: launch lab
-    unix: &lab jupyter lab --no-browser --debug
-    windows: *lab
+    unix: jupyter lab --no-browser --debug
+    windows: jupyter lab --no-browser --debug
 
   lab:build:
     description: do a regular lab build
-    unix: &labBuild python -m scripts.lab build
-    windows: *labBuild
+    unix: python -m scripts.lab build
+    windows: python -m scripts.lab build
 
   ext:pack:
     description: ensure built tarballs, a little finicky
@@ -48,87 +48,86 @@ commands:
 env_specs:
   default:
     platforms:
-      - linux-64
-      - osx-64
-      - win-64
+    - linux-64
+    - osx-64
+    - win-64
     inherit_from:
-      - ipyelk
-      - _utest
-      - _lint
+    - ipyelk
+    - _utest
+    - _lint
     packages:
-      - pip
-      - python >=3.7,<3.8.0a0
-      - twine
-      - wheel
+    - pip
+    - python >=3.7,<3.8.0a0
+    - twine
+    - wheel
 
   ipyelk:
-    description: binder environment
-    channels:
-      - https://conda.anaconda.org/conda-forge
     packages:
-      - async-lru >=1,<2
-      - bqplot >=0.12.20
-      - importnb
-      - ipython >=7
-      - ipywidgets >=7.5.1
-      - jupyterlab >=3,<4
-      - jupyterlab_widgets >=1.0.0
-      - networkx
-      - nodejs >=14,<15
-      - pandas
-      - python >=3.7
-
+    - async-lru >=1,<2
+    - bqplot >=0.12.20
+    - importnb
+    - ipython >=7
+    - ipywidgets >=7.5.1
+    - jupyterlab >=3,<4
+    - jupyterlab_widgets >=1.0.0
+    - networkx
+    - nodejs >=14,<15
+    - pandas
+    - pydantic
+    - python >=3.7
+    channels:
+    - https://conda.anaconda.org/conda-forge
   atest:
     description: acceptance test environment (kept separate because firefox)
     platforms:
-      - linux-64
-      - osx-64
-      - win-64
+    - linux-64
+    - osx-64
+    - win-64
     channels:
-      - https://conda.anaconda.org/conda-forge
+    - https://conda.anaconda.org/conda-forge
     packages:
-      - firefox
-      - geckodriver
-      - python >=3.7,<3.8.0a0
-      - robotframework-lint
-      - robotframework-pabot
-      - robotframework-seleniumlibrary
+    - firefox
+    - geckodriver
+    - python >=3.7,<3.8.0a0
+    - robotframework-lint
+    - robotframework-pabot
+    - robotframework-seleniumlibrary
 
   docs:
     description: documentation building environment
     platforms:
-      - linux-64
+    - linux-64
     channels:
-      - https://conda.anaconda.org/conda-forge
-      - nodefaults
+    - https://conda.anaconda.org/conda-forge
+    - nodefaults
     inherit_from:
-      - ipyelk
+    - ipyelk
     packages:
-      - hunspell
-      - hunspell-en
-      - myst-nb
-      - pydata-sphinx-theme
-      - pytest-check-links
-      - python >=3.7,<3.8
-      - requests-cache
-      - sphinx
-      - sphinx-autobuild
-      - sphinx-autodoc-typehints
+    - hunspell
+    - hunspell-en
+    - myst-nb
+    - pydata-sphinx-theme
+    - pytest-check-links
+    - python >=3.7,<3.8
+    - requests-cache
+    - sphinx
+    - sphinx-autobuild
+    - sphinx-autodoc-typehints
 
   _lint:
     description: linting/formatting environment. not actually created.
     packages:
-      - black
-      - isort
-      - pyflakes
-      - flake8
+    - black
+    - isort
+    - pyflakes
+    - flake8
 
   _utest:
     description: unit test environment. not actually created.
     packages:
-      - ansi2html
-      - hypothesis-jsonschema
-      - pytest-asyncio
-      - pytest-cov
-      - pytest-html
-      - pytest-xdist
+    - ansi2html
+    - hypothesis-jsonschema
+    - pytest-asyncio
+    - pytest-cov
+    - pytest-html
+    - pytest-xdist
