@@ -36,7 +36,8 @@
   --jp-elk-transition: 0.1s ease-in;
 }
 
-.jp-ElkView .elkdefs > symbol {
+/* firefox doesnt apply style correctly with the addition of .jp-ElkView */
+symbol.elksymbol {
   overflow: visible;
 }
 

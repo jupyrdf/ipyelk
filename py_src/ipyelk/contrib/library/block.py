@@ -1,13 +1,13 @@
 # Copyright (c) 2021 Dane Freeman.
 # Distributed under the terms of the Modified BSD License.
-from typing import ClassVar, Dict, Type
+from typing import Dict, Type
 
 from pydantic import Field
 
 from ...diagram import layout_options as opt
-from ...diagram.symbol import Def
-from ...elements import Edge, Partition, Record
-from ..shapes import connectors
+from ...diagram.shape import Symbol
+from ...elements import Edge, EdgeProperties, Partition, Record
+from ..molds import connectors
 
 content_label_opts = opt.OptionsWidget(
     options=[opt.NodeLabelPlacement(horizontal="left", vertical="center")]
@@ -39,19 +39,19 @@ class Block(Record):
 
 
 class Composition(Edge):
-    shape_start: str = "composition"
+    properties: EdgeProperties = EdgeProperties(shape={"start": "composition"})
 
 
 class Aggregation(Edge):
-    shape_start: str = "aggregation"
+    properties: EdgeProperties = EdgeProperties(shape={"start": "aggregation"})
 
 
 class Containment(Edge):
-    shape_start: str = "containment"
+    properties: EdgeProperties = EdgeProperties(shape={"start": "containment"})
 
 
 class DirectedAssociation(Edge):
-    shape_end: str = "directed_association"
+    properties: EdgeProperties = EdgeProperties(shape={"end": "directed_association"})
 
 
 class Association(Edge):
@@ -59,19 +59,19 @@ class Association(Edge):
 
 
 class Generalization(Edge):
-    shape_start: str = "generalization"
+    properties: EdgeProperties = EdgeProperties(shape={"start": "generalization"})
 
 
 class BlockDiagram(Partition):
     # TODO flesh out ideas of encapsulating diagram defs / styles / elements
-    defs: Dict[str, Def] = {
+    symbols: Dict[str, Symbol] = {
         "composition": connectors.Rhomb(r=4),
         "aggregation": connectors.Rhomb(r=4),
         "containment": connectors.Containment(r=4),
         "directed_association": connectors.StraightArrow(r=4),
         "generalization": connectors.StraightArrow(r=4, closed=True),
     }
-    style: Dict[str, Def] = {
+    style: Dict[str, Dict] = {
         " .elklabel.compartment_title_1": {
             "font-weight": "bold",
         },

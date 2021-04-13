@@ -6,3 +6,4 @@ envs/
 lib/
 node_modules/
 py_src/ipyelk/labextension
+**/.mypy_cache/**

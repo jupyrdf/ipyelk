@@ -184,13 +184,14 @@ async def size_labels(text_sizer: Optional[ElkTextSizer], labels: List[ElkLabel]
 def size_nested_label(label: ElkLabel):
     shape = label.properties.shape
     size = {
-        "width": label.width or shape.get("width", 0),
-        "height": label.height or shape.get("height", 0),
+        "width": label.width or shape.get("width") or 0,
+        "height": label.height or shape.get("height") or 0,
     }
     for sublabel in label.labels or []:
         ls = size_nested_label(sublabel)
+        layout_opts = getattr(sublabel, "layoutOptions") or {}
         spacing = float(
-            getattr(sublabel, "layoutOptions", {}).get(
+            layout_opts.get(
                 "org.eclipse.elk.spacing.labelLabel", 0
             )
         )

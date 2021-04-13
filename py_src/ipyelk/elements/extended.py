@@ -5,9 +5,9 @@ from typing import Dict, List, Optional, Type
 from pydantic import Field
 
 from ..diagram import layout_options as opt
-from ..diagram.symbol import Symbol
+from ..diagram.shape import Shape
 from ..util import merge
-from .elements import Edge, Label, Node
+from .elements import Edge, Label, Node, ElementProperties
 
 record_opts = opt.OptionsWidget(
     options=[
@@ -97,7 +97,7 @@ class Record(Node):
 class Compartment(Record):
     headings: List[str] = ""
     content: List[str] = Field(default_factory=list)
-    bullet_shape: Optional[Symbol] = None
+    bullet_shape: Optional[Shape] = None
 
     def to_json(self):
         # TODO generalize label creation and merging with the upstream to_json
@@ -129,7 +129,9 @@ class Compartment(Record):
                 text=text,
                 layoutOptions=content_label_opts,
                 labels=bullet_label,
-                selectable=True,
+                properties=ElementProperties(
+                    selectable=True
+                )
             )
             for text in self.content
         ]

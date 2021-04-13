@@ -67,14 +67,12 @@ import {
   ElkPort,
   ElkEdge,
   ElkJunction,
-  DefNode,
+  SymbolNode,
   ElkLabel
 } from './sprotty-model';
-import { ElkModelRenderer, SDefModelFactory } from './renderer';
-// import { NodeSelectTool } from '../tools/select';
+import { ElkModelRenderer, SSymbolModelFactory } from './renderer';
 import { toolFeedbackModule } from '../tools/feedback';
 import viewportModule from './viewportModule';
-// import {SElkConnectorDef} from './json/defs';
 
 class FilteringSvgExporter extends SvgExporter {
   protected isExported(styleSheet: CSSStyleSheet): boolean {
@@ -140,8 +138,8 @@ export default (containerId: string, view: DOMWidgetView) => {
     // Hover
     configureCommand(context, HoverFeedbackCommand);
 
-    // Model elements for defs
-    configureModelElement(context, 'def', DefNode, v.DefNodeView);
+    // Model elements for symbols
+    configureModelElement(context, 'symbol', SymbolNode, v.SymbolNodeView);
 
     // Expose extracted path and connector offset to the rendering context
     rebind(TYPES.ModelRendererFactory).toFactory<ElkModelRenderer>(ctx => {
@@ -153,7 +151,7 @@ export default (containerId: string, view: DOMWidgetView) => {
     });
 
     rebind(TYPES.IModelFactory)
-      .to(SDefModelFactory)
+      .to(SSymbolModelFactory)
       .inSingletonScope();
   });
   const container = new Container();

@@ -1,6 +1,6 @@
 # Copyright (c) 2021 Dane Freeman.
 # Distributed under the terms of the Modified BSD License.
-from typing import Dict
+from typing import Any, Dict, Optional
 
 import networkx as nx
 from pydantic import BaseModel, Field
@@ -20,6 +20,7 @@ class Mark(BaseModel):
 
     element: BaseElement = Field(...)
     context: Registry = Field(...)
+    selector: Optional[Any] = Field(None, exclude=True)
 
     def __hash__(self):
         return hash((id(self.element), id(self.context)))
@@ -30,6 +31,18 @@ class Mark(BaseModel):
     def to_json(self):
         with self.context:
             return self.element.to_json()
+
+    def get_selector(self):
+        if isinstance(self.element, Edge):
+            if self.selector is None:
+                raise ValueError("Edge Selector not set")
+            else:
+                return self.selector
+        else:
+            return self
+
+    def set_edge_selector(self, u, v, key):
+        self.selector = (u, v, key)
 
 
 class MarkFactory(BaseModel):
@@ -59,12 +72,14 @@ class MarkFactory(BaseModel):
                             g.add_node(nx_pt, mark=nx_pt, elkjson=pt.to_json())
 
                 assert isinstance(edge, Edge), f"Expected Edge type not {type(edge)}"
-                g.add_edge(
+                mark = Mark(element=edge, context=context)
+                key = g.add_edge(
                     nx_u,
                     nx_v,
-                    mark=Mark(element=edge, context=context),
+                    mark=mark,
                     elkjson=edge.to_json(),
                 )
+                mark.set_edge_selector(nx_u, nx_v, key)
             return nx_node
 
     def __call__(self, *nodes, follow_edges=True):

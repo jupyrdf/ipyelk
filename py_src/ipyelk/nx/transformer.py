@@ -383,7 +383,7 @@ class XELK(ElkTransformer):
             properties=properties,
             # TODO labels
         )
-        return Port(node=owner, elkport=elk_port)
+        return Port(node=owner, elkport=elk_port, mark=None)
 
     def get_node_data(self, node: Hashable) -> Tuple[Optional[elements.Mark], Dict]:
         g = self.source[0]
@@ -477,7 +477,7 @@ class XELK(ElkTransformer):
             # test if the label mark is selectable independently
             if isinstance(mark, elements.Mark):
                 el = mark.element.labels[i]
-                if el.selectable:
+                if el.properties.selectable:
                     lmark = elements.Mark(element=el, context=mark.context)
             self.register(label, lmark)
             labels.append(label)

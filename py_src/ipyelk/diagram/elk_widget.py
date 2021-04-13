@@ -12,7 +12,7 @@ from .._version import EXTENSION_NAME, EXTENSION_SPEC_VERSION
 from ..layouting.elkjs import ElkJS
 from ..schema import ElkSchemaValidator
 from ..trait_types import Schema
-from .symbol.defs import Def, def_serialization
+from .shape.symbol import Symbol, symbol_serialization
 
 
 class ElkDiagram(DOMWidget):
@@ -47,8 +47,8 @@ class ElkDiagram(DOMWidget):
     _view_module_version = T.Unicode(EXTENSION_SPEC_VERSION).tag(sync=True)
 
     value = Schema(ElkSchemaValidator).tag(sync=True)
-    defs = T.Dict(value_trait=T.Instance(Def), kw={}).tag(
-        sync=True, **def_serialization
+    symbols = T.Dict(value_trait=T.Instance(Symbol), kw={}).tag(
+        sync=True, **symbol_serialization
     )
     mark_layout: Dict = T.Dict().tag(sync=True)
     selected: Tuple = T.Tuple().tag(sync=True)

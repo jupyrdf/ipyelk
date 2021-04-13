@@ -1,6 +1,6 @@
 # Copyright (c) 2021 Dane Freeman.
 # Distributed under the terms of the Modified BSD License.
-from typing import ClassVar, Dict, List, Optional, Type
+from typing import Dict, List, Optional, Type
 
 from ipywidgets import DOMWidget
 from pydantic import BaseModel, Field
@@ -8,14 +8,14 @@ from pydantic import BaseModel, Field
 from ipyelk.diagram.elk_model import strip_none
 
 
-class Symbol(BaseModel):
-    identifier: ClassVar[str] = None
-    type: ClassVar[str] = None
+class Shape(BaseModel):
+    identifier: Optional[str] = None
+    type: Optional[str] = None
     x: Optional[float] = None
     y: Optional[float] = None
     width: Optional[float] = None
     height: Optional[float] = None
-    children: List["Symbol"] = Field(default_factory=list)
+    children: List["Shape"] = Field(default_factory=list)
 
     def __hash__(self):
         """Simple hashing function to make it easier to use as a networkx node"""
@@ -75,12 +75,12 @@ class Symbol(BaseModel):
         return self.position()
 
     @classmethod
-    def make_defs(cls, classes: List[Type["Symbol"]] = None) -> Dict:
+    def make_defs(cls, classes: List[Type["Shape"]] = None) -> Dict:
         """Take a list of classes and return the def dictionary
 
-        :param classes: Subclasses of Symbol. If `None` use the subclasses of
+        :param classes: Subclasses of Shape. If `None` use the subclasses of
         the current class.
-        :type classes: List[Type["Symbol"]]
+        :type classes: List[Type["Shape"]]
         :return: Def Dictionary
         :rtype: Dict
         """
@@ -89,10 +89,7 @@ class Symbol(BaseModel):
         return {c.identifier: c.shape for c in classes}
 
 
-Symbol.update_forward_refs()
-
-
-class Path(Symbol):
+class Path(Shape):
     value: str = ""
     type = "node:path"
 
@@ -110,7 +107,7 @@ class Path(Symbol):
         return Path(value=d)
 
 
-class Circle(Symbol):
+class Circle(Shape):
     radius: float = 0
 
     type = "node:round"
@@ -128,7 +125,7 @@ class Circle(Symbol):
         }
 
 
-class SVG(Symbol):
+class SVG(Shape):
     value: str = ""
     type = "node:svg"
 
@@ -139,7 +136,7 @@ class SVG(Symbol):
         return props
 
 
-class Ellipse(Symbol):
+class Ellipse(Shape):
     rx: float = 0
     ry: float = 0
 
@@ -152,11 +149,11 @@ class Ellipse(Symbol):
         }
 
 
-class Diamond(Symbol):
+class Diamond(Shape):
     type = "node:diamond"
 
 
-class Comment(Symbol):
+class Comment(Shape):
     type = "node:comment"
     size: float = 15
 
@@ -166,11 +163,11 @@ class Comment(Symbol):
         return props
 
 
-class Rect(Symbol):
+class Rect(Shape):
     type = "node"
 
 
-class Use(Symbol):
+class Use(Shape):
     type = "node:use"
     value: str = ""
 
@@ -188,7 +185,7 @@ class Point(BaseModel):
         super().__init__(x=x, y=y)
 
 
-class Image(Symbol):
+class Image(Shape):
     type = "node:image"
     value: str = None
 
@@ -199,7 +196,7 @@ class Image(Symbol):
         return props
 
 
-class ForeignObject(Symbol):
+class ForeignObject(Shape):
     type = "node:foreignobject"
     value: str = ""
 
@@ -210,7 +207,7 @@ class ForeignObject(Symbol):
         return props
 
 
-class Widget(Symbol):
+class Widget(Shape):
     type = "node:widget"
     widget: DOMWidget = None
 
@@ -224,7 +221,7 @@ class Widget(Symbol):
         return props
 
 
-class HTML(Symbol):
+class HTML(Shape):
     type = "node:html"
     value: str = ""
 
@@ -235,7 +232,7 @@ class HTML(Symbol):
         return props
 
 
-class Icon(Symbol):
+class Icon(Shape):
     type = "label:icon"
     value: str = " "
 
@@ -243,7 +240,7 @@ class Icon(Symbol):
         """Returns a valid elk node dictionary"""
         data = super().to_json(id=id)
         data["text"] = " "  # can't be none or completely empty string
-        return strip_none(data)
+        return data
 
     def get_shape_props(self):
         props = super().get_shape_props()
@@ -251,4 +248,5 @@ class Icon(Symbol):
             props.update({"use": str(self.value)})
         return props
 
-Symbol.update_forward_refs()
+
+Shape.update_forward_refs()

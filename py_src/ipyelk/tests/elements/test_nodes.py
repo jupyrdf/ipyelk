@@ -1,7 +1,8 @@
 # Copyright (c) 2021 Dane Freeman.
 # Distributed under the terms of the Modified BSD License.
 
-from ipyelk.elements import Edge, Node, Port
+from ipyelk.diagram.symbol import symbols
+from ipyelk.elements import Edge, Label, Node, Port
 
 
 def test_node_instances():
@@ -27,12 +28,11 @@ def test_edge_node_instances():
     assert e.source is n1, "Edge source instance changed"
     assert e.target is n2, "Edge target instance changed"
 
+
 def test_node_label_instance():
-    l = Label()
-    n = Node(
-        labels=[l]
-    )
-    assert n.labels[0] is l, "Expect node label instance to match"
+    label = Label()
+    n = Node(labels=[label])
+    assert n.labels[0] is label, "Expect node label instance to match"
 
 
 def test_edge_port_instances():
@@ -45,3 +45,10 @@ def test_edge_port_instances():
     )
     assert e.source is x, "Edge source instance changed"
     assert e.target is n2, "Edge target instance changed"
+
+
+def test_node_shape():
+    shape = symbols.Ellipse()
+    n = Node(shape=shape)
+    data = n.to_json()
+    assert data["properties"]["shape"].get("type") == shape.type

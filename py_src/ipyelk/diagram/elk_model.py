@@ -19,8 +19,20 @@ ElkNullElement = namedtuple("ElkNullElement", [])()
 T = TypeVar("T")
 
 
-def strip_none(result: dict) -> dict:
-    return {key: value for key, value in result.items() if value is not None}
+def strip_none(data: Dict) -> Dict:
+    if not isinstance(data, dict):
+        return data
+    result: Dict = {}
+    for key, value in data.items():
+        if isinstance(value, dict):
+            value = strip_none(value)
+        if isinstance(value, (dict, list)) and len(value) == 0:
+            value = None  # empty
+        if value is None:
+            continue
+        # populate key value pair
+        result[key] = value
+    return result
 
 
 def from_list(f: Callable[[Any], T], x: Any) -> List[T]:

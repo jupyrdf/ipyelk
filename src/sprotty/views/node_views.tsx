@@ -42,12 +42,12 @@ function svgStr(point: Point) {
 @injectable()
 export class ElkNodeView extends RectangularNodeView {
   render(node: ElkNode, context: ElkModelRenderer): VNode | undefined {
-    if (!this.isDef(node) && !this.isVisible(node, context)) {
+    if (!this.isSymbol(node) && !this.isVisible(node, context)) {
       return;
     }
     let mark = this.renderMark(node, context);
-    if (!this.isDef(node)) {
-      // skip marking extra classes on def nodes
+    if (!this.isSymbol(node)) {
+      // skip marking extra classes on symbol nodes
       setClass(mark, 'elknode', true);
       setClass(mark, 'mouseover', node.hoverFeedback);
       setClass(mark, 'selected', node.selected);
@@ -77,8 +77,8 @@ export class ElkNodeView extends RectangularNodeView {
    *
    * @param node
    */
-  isDef(node: ElkNode): boolean {
-    return node?.properties?.isDef == true;
+  isSymbol(node: ElkNode): boolean {
+    return node?.properties?.isSymbol == true;
   }
 }
 
@@ -231,12 +231,12 @@ export class ElkForeignObjectNodeView extends ElkNodeView {
 @injectable()
 export class ElkHTMLNodeView extends ElkNodeView {
   render(node: ElkNode, context: ElkModelRenderer): VNode | undefined {
-    if (!this.isDef(node) && !this.isVisible(node, context)) {
+    if (!this.isSymbol(node) && !this.isVisible(node, context)) {
       return;
     }
     let mark = this.renderMark(node, context);
-    if (!this.isDef(node)) {
-      // skip marking extra classes on def nodes
+    if (!this.isSymbol(node)) {
+      // skip marking extra classes on symbol nodes
       setClass(mark, 'elknode', true);
       setClass(mark, 'mouseover', node.hoverFeedback);
       setClass(mark, 'selected', node.selected);

@@ -1,7 +1,7 @@
 # Copyright (c) 2021 Dane Freeman.
 # Distributed under the terms of the Modified BSD License.
 
-from ipyelk.elements import MarkFactory, Node, Port, Edge
+from ipyelk.elements import MarkFactory, Node
 
 
 def test_simple_flat():
@@ -15,6 +15,7 @@ def test_simple_flat():
     assert len(g.edges) == 1, "Expect only one edge"
     assert len(tree) == 0, "Expecting no hierarchy"
     assert len(tree.edges) == 0, "Expecting no hierarchy"
+
 
 def test_simple_hierarchy():
     n1 = Node()

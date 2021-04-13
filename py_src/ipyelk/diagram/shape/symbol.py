@@ -6,15 +6,15 @@ from ipywidgets import DOMWidget
 from pydantic import Field
 
 # from .elk_model import ElkNode
-from .symbols import Point, Symbol
+from .shapes import Point, Shape
 
 
-class Def(Symbol):
+class Symbol(Shape):
     type = "def"
     # TODO should def strip `id` out of the `to_json` result?
 
 
-class ConnectorDef(Def):
+class ConnectorDef(Symbol):
     type = "connectordef"
     offset: Point = Field(default_factory=Point)
     correction: Point = Field(default_factory=Point)
@@ -30,7 +30,7 @@ class ConnectorDef(Def):
         return data
 
 
-def defs_to_json(defs: Dict[str, Def], widget: DOMWidget):
+def symbols_to_json(symbols: Dict[str, Symbol], widget: DOMWidget):
     """[summary]
 
     :param defs: [description]
@@ -40,7 +40,7 @@ def defs_to_json(defs: Dict[str, Def], widget: DOMWidget):
     :return: [description]
     :rtype: [type]
     """
-    return {f"{k}": v.to_json() for k, v in defs.items()}
+    return {f"{k}": v.to_json() for k, v in symbols.items()}
 
 
-def_serialization = {"to_json": defs_to_json}
+symbol_serialization = {"to_json": symbols_to_json}

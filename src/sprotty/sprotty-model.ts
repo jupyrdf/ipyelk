@@ -85,7 +85,7 @@ export class ElkLabel extends SLabel {
   }
 }
 
-export class DefNode extends SNode {
+export class SymbolNode extends SNode {
   hasFeature(feature: symbol): boolean {
     if (feature === moveFeature) return false;
     else return super.hasFeature(feature);

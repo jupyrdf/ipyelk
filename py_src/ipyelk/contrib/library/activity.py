@@ -1,13 +1,13 @@
 # Copyright (c) 2021 Dane Freeman.
 # Distributed under the terms of the Modified BSD License.
-from typing import ClassVar, Dict, Type
+from typing import Dict, Type
 
 from pydantic import Field
 
 from ...diagram import layout_options as opt
-from ...diagram.symbol import Def, Symbol, symbols
-from ...elements import Edge, Label, Node, Partition, Port
-from ..shapes import connectors, shapes
+from ...diagram.shape import Shape, Symbol, shapes
+from ...elements import Edge, EdgeProperties, Label, Node, Partition, Port
+from ..molds import connectors, structures
 
 center_label_opts = opt.OptionsWidget(
     options=[opt.NodeLabelPlacement(horizontal="center", vertical="center")]
@@ -20,11 +20,11 @@ heading_label_opts = opt.OptionsWidget(
 
 node_opts = opt.OptionsWidget(options=[opt.NodeSizeConstraints()]).value
 
-small_port_shape = symbols.Rect(width=0, height=0)
+small_port_shape = shapes.Rect(width=0, height=0)
 
 
 class Activity(Node):
-    shape: Symbol = symbols.Ellipse()
+    shape: Shape = shapes.Ellipse()
 
     @classmethod
     def make(cls, text, container=False):
@@ -48,12 +48,12 @@ class Activity(Node):
 
 
 class Merge(Node):
-    shape: Symbol = symbols.Rect(width=50, height=10)
+    shape: Shape = shapes.Rect(width=50, height=10)
     _css_classes = ["activity-filled"]
 
 
 class Decision(Node):
-    shape: Symbol = symbols.Diamond(width=20, height=20)
+    shape: Shape = shapes.Diamond(width=20, height=20)
 
     def __init__(self, **data):
         super().__init__(**data)
@@ -88,28 +88,28 @@ class Decision(Node):
 
 
 class Join(Node):
-    shape: Symbol = symbols.Rect(width=50, height=10)
+    shape: Shape = shapes.Rect(width=50, height=10)
     _css_classes = ["activity-filled"]
 
 
 class StartActivity(Node):
-    shape: Symbol = symbols.Use(value="initial-state", width=12, height=12)
+    shape: Shape = shapes.Use(value="initial-state", width=12, height=12)
 
 
 class EndActivity(Node):
-    shape: Symbol = symbols.Use(value="final-state", width=12, height=12)
+    shape: Shape = shapes.Use(value="final-state", width=12, height=12)
 
 
 class SimpleArrow(Edge):
-    shape_end: str = "arrow"
+    properties: EdgeProperties = EdgeProperties(shape={"end": "arrow"})
 
 
 class ActivityDiagram(Partition):
     # TODO flesh out ideas of encapsulating diagram defs / styles / elements
-    defs: Dict[str, Def] = {
-        "initial-state": Def(children=[symbols.Circle(radius=6)]),
-        "final-state": shapes.DoubleCircle(radius=6),
-        "exit-state": shapes.XCircle(radius=6),
+    symbols: Dict[str, Symbol] = {
+        "initial-state": Symbol(children=[shapes.Circle(radius=6)]),
+        "final-state": structures.DoubleCircle(radius=6),
+        "exit-state": structures.XCircle(radius=6),
         "arrow": connectors.StraightArrow(r=4),
     }
     style: Dict[str, Dict] = {
