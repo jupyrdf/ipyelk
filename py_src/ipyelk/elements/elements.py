@@ -43,16 +43,9 @@ class BaseElement(BaseModel):
     properties: ElementProperties = Field(default_factory=ElementProperties)
     layoutOptions: Dict = Field(default_factory=dict)
     metadata: ElementMetadata = Field(default_factory=ElementMetadata)
-    css_classes: Set[str] = Field(default_factory=set)
 
     class Config:
         copy_on_model_validation = False
-
-    def __init__(self, **data):
-        super().__init__(**data)
-        classes = self.css_classes or []
-        for css_class in classes:
-            self.add_class(css_class)
 
     def __hash__(self):
         return hash(id(self))

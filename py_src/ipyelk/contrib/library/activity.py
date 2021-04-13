@@ -6,7 +6,7 @@ from pydantic import Field
 
 from ...diagram import layout_options as opt
 from ...diagram.shape import Shape, Symbol, shapes
-from ...elements import Edge, EdgeProperties, Label, Node, Partition, Port
+from ...elements import Edge, EdgeProperties, Label, Node, Partition, Port, ElementProperties
 from ..molds import connectors, structures
 
 center_label_opts = opt.OptionsWidget(
@@ -34,7 +34,7 @@ class Activity(Node):
                     Label(text=text, layoutOptions=heading_label_opts),
                 ],
                 layoutOptions=node_opts,
-                properties={"cssClasses": "activity-container"},
+                properties=ElementProperties(cssClasses="activity-container"),
             )
             mark.shape = None
             return mark
@@ -49,7 +49,9 @@ class Activity(Node):
 
 class Merge(Node):
     shape: Shape = shapes.Rect(width=50, height=10)
-    _css_classes = ["activity-filled"]
+    properties = ElementProperties(
+        cssClasses="activity-filled"
+    )
 
 
 class Decision(Node):
