@@ -180,8 +180,8 @@ export class ElkUseNodeView extends ElkNodeView {
 @injectable()
 export class ElkSVGNodeView extends ElkNodeView {
   renderMark(node: ElkNode, context: ElkModelRenderer): VNode {
-    let x = node.properties?.shape?.x;
-    let y = node.properties?.shape?.y;
+    let x = node.properties?.shape?.x || 0;
+    let y = node.properties?.shape?.y || 0;
     return JSX.createElement(
       'g',
       {

@@ -28,9 +28,9 @@ class Mark(BaseModel):
     def __eq__(self, other):
         return hash(self) == hash(other)
 
-    def to_json(self):
+    def dict(self, **kwargs):
         with self.context:
-            return self.element.to_json()
+            return self.element.dict(**kwargs)
 
     def get_selector(self):
         if isinstance(self.element, Edge):
@@ -55,7 +55,11 @@ class MarkFactory(BaseModel):
         with context:
             nx_node = Mark(element=node, context=context)
             if nx_node not in g:
-                g.add_node(nx_node, mark=nx_node, elkjson=node.to_json())
+                g.add_node(
+                    nx_node,
+                    mark=nx_node,
+                    elkjson=node.dict(exclude={"children", "edges"}),
+                )
 
             for key, child in get_children(node).items():
                 nx_child = self._add(child, g, tree, follow_edges=follow_edges)
@@ -69,7 +73,11 @@ class MarkFactory(BaseModel):
                         if follow_edges:
                             self._add(pt, g, tree, follow_edges=follow_edges)
                         else:
-                            g.add_node(nx_pt, mark=nx_pt, elkjson=pt.to_json())
+                            g.add_node(
+                                nx_pt,
+                                mark=nx_pt,
+                                elkjson=pt.dict(exclude={"children", "edges"}),
+                            )
 
                 assert isinstance(edge, Edge), f"Expected Edge type not {type(edge)}"
                 mark = Mark(element=edge, context=context)
@@ -77,7 +85,7 @@ class MarkFactory(BaseModel):
                     nx_u,
                     nx_v,
                     mark=mark,
-                    elkjson=edge.to_json(),
+                    elkjson=edge.dict(),
                 )
                 mark.set_edge_selector(nx_u, nx_v, key)
             return nx_node

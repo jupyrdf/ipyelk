@@ -5,7 +5,6 @@
 from .elk_model import ElkExtendedEdge, ElkLabel, ElkNode, ElkPort
 from .elk_text_sizer import ElkTextSizer
 from .elk_widget import ElkDiagram, ElkJS
-from .shape import Shape
 
 __all__ = [
     "ElkDiagram",
@@ -14,6 +13,5 @@ __all__ = [
     "ElkNode",
     "ElkPort",
     "ElkTextSizer",
-    "Shape",
     "ElkJS",
 ]

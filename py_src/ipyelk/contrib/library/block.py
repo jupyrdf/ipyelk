@@ -5,8 +5,7 @@ from typing import Dict, Type
 from pydantic import Field
 
 from ...diagram import layout_options as opt
-from ...diagram.shape import Symbol
-from ...elements import Edge, EdgeProperties, Partition, Record
+from ...elements import Edge, EdgeProperties, Partition, Record, Symbol
 from ..molds import connectors
 
 content_label_opts = opt.OptionsWidget(
@@ -64,13 +63,16 @@ class Generalization(Edge):
 
 class BlockDiagram(Partition):
     # TODO flesh out ideas of encapsulating diagram defs / styles / elements
-    symbols: Dict[str, Symbol] = {
-        "composition": connectors.Rhomb(r=4),
-        "aggregation": connectors.Rhomb(r=4),
-        "containment": connectors.Containment(r=4),
-        "directed_association": connectors.StraightArrow(r=4),
-        "generalization": connectors.StraightArrow(r=4, closed=True),
-    }
+    symbols: Dict[str, Symbol] = Symbol.make_defs(
+        [
+            connectors.Rhomb(identifier="composition", r=4),
+            connectors.Rhomb(identifier="aggregation", r=4),
+            connectors.Containment(identifier="containment", r=4),
+            connectors.StraightArrow(identifier="directed_association", r=4),
+            connectors.StraightArrow(identifier="generalization", r=4, closed=True),
+        ]
+    )
+
     style: Dict[str, Dict] = {
         " .elklabel.compartment_title_1": {
             "font-weight": "bold",

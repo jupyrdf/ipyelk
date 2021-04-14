@@ -41,7 +41,7 @@ class Registry(BaseModel):
         return cls.stack
 
     @classmethod
-    def get_id(cls, key):
+    def get_id(cls, key) -> Optional[str]:
         context = cls.get_context(error_if_none=False)
         if context:
             return context[key]

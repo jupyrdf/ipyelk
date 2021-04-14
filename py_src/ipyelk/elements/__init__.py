@@ -5,6 +5,7 @@ from .elements import (
     EdgeProperties,
     ElementMetadata,
     ElementProperties,
+    ElementShape,
     Label,
     Node,
     Port,
@@ -12,13 +13,16 @@ from .elements import (
 from .extended import Compartment, Partition, Record
 from .mark_factory import Mark, MarkFactory
 from .registry import Registry
+from .symbol import ConnectorDef, Symbol
 
 __all__ = [
     "Compartment",
+    "ConnectorDef",
     "Edge",
-    "ElementMetadata",
     "EdgeProperties",
+    "ElementMetadata",
     "ElementProperties",
+    "ElementShape",
     "Label",
     "Mark",
     "MarkFactory",
@@ -27,4 +31,5 @@ __all__ = [
     "Port",
     "Record",
     "Registry",
+    "Symbol",
 ]

@@ -5,9 +5,21 @@ from typing import Dict, List, Optional, Set, Type, Union
 
 from pydantic import BaseModel, Field
 
-from ..diagram.shape import Shape
-from ..util import merge
 from .registry import Registry
+
+
+def add_excluded_fields(kwargs: Dict, excluded: List) -> Dict:
+    """Shim function to help manipulate excluded fields from the `dict`
+    method"""
+
+    exclude = kwargs.pop("exclude", None) or set()
+    if isinstance(exclude, set):
+        for i in excluded:
+            exclude.add(i)
+    else:
+        raise TypeError(f"TODO handle other types of exclude e.g. {type(exclude)}")
+    kwargs["exclude"] = exclude
+    return kwargs
 
 
 class ElementMetadata(BaseModel):
@@ -15,6 +27,7 @@ class ElementMetadata(BaseModel):
 
 
 class ElementShape(BaseModel):
+    type: Optional[str]
     use: Optional[str]
     x: Optional[float]
     y: Optional[float]
@@ -24,7 +37,6 @@ class ElementShape(BaseModel):
 
 class ElementProperties(BaseModel):
     cssClasses: str = ""
-    type: Optional[str]
     shape: Optional[ElementShape]
     selectable: Optional[bool]
 
@@ -39,6 +51,7 @@ class EdgeProperties(ElementProperties):
 
 
 class BaseElement(BaseModel):
+    id: Optional[str] = Field(None)  # required for final elk json schema
     labels: List["Label"] = Field(default_factory=list)
     properties: ElementProperties = Field(default_factory=ElementProperties)
     layoutOptions: Dict = Field(default_factory=dict)
@@ -52,9 +65,6 @@ class BaseElement(BaseModel):
 
     def __eq__(self, other):
         return id(self) == id(other)
-
-    def to_json(self):
-        raise NotImplementedError("Subclasses should implement")
 
     def add_class(self, className: str) -> "BaseElement":
         """
@@ -79,26 +89,48 @@ class BaseElement(BaseModel):
         ).strip()
         return self
 
+    def dict(self, **kwargs) -> Dict:
+        """Shimming in the ability to have excluded fields by default. This
+        should be removeable in future versions of pydantic
+        """
+        excluded = getattr(self.Config, "excluded", [])
+        if excluded:
+            kwargs = add_excluded_fields(kwargs, excluded)
+        data = super().dict(**kwargs)
+        data["id"] = self._get_id()
+        return data
+
+    def _get_id(self) -> Optional[str]:
+        if self.id is None:
+            return Registry.get_id(self)
+        return self.id
+
 
 class ShapeElement(BaseElement):
-    shape: Optional[Shape] = None
+    x: Optional[float]
+    y: Optional[float]
+    width: Optional[float]
+    height: Optional[float]
 
-    def to_json(self):
-        if isinstance(self.shape, Shape):
-            data = self.shape.to_json(id=Registry.get_id(self))
-        else:
-            data = {"id": Registry.get_id(self)}
-        labels = data["labels"] = data.get("labels", [])
-        labels.extend([label.to_json() for label in self.labels])
-        props = ElementProperties(
-            **merge(dict(self.properties), data.get("properties", {}))
-        )
-        if props is None:
-            props = ElementProperties()
-        data["properties"] = props.dict()
-        data["layoutOptions"] = merge(
-            dict(self.layoutOptions), data.get("layoutOptions", {})
-        )
+    def dict(self, **kwargs):
+        data = super().dict(**kwargs)
+        # potentially set width and height if there is a shape defined in the
+        # properties
+        width = 0
+        height = 0
+        if self.properties.shape:
+            shape = self.properties.shape
+            width = shape.width
+            height = shape.height
+
+            # if shape.type == "node:diamond":
+            #     raise undead
+        # update width if not set
+        if data.get("width", None) is None and width is not None:
+            data["width"] = width
+        # update height if not set
+        if data.get("height", None) is None and height is not None:
+            data["height"] = height
 
         return data
 
@@ -112,24 +144,29 @@ class Edge(BaseElement):
     source: UnionNodePort = Field(...)
     target: UnionNodePort = Field(...)
 
-    def to_json(self):
-        props = self.properties
-        data = {
-            "id": Registry.get_id(self),
-            "properties": props.dict(),
-            "layoutOptions": self.layoutOptions,
-            "labels": [label.to_json() for label in self.labels],
-        }
-        if isinstance(self.source, Port):
-            data["sourcePort"] = Registry.get_id(self.source)
-        if isinstance(self.target, Port):
-            data["targetPort"] = Registry.get_id(self.target)
-        return data
+    class Config:
+        excluded = ["source", "target"]
 
     def points(self):
         u = self.source if isinstance(self.source, Node) else self.source.parent
         v = self.target if isinstance(self.target, Node) else self.target.parent
         return u, v
+
+    def dict(self, **kwargs):
+        data = super().dict(**kwargs)
+
+        if isinstance(self.source, Port):
+            data["source"] = Registry.get_id(self.source.parent)
+            data["sourcePort"] = Registry.get_id(self.source)
+        else:
+            data["source"] = Registry.get_id(self.source)
+        if isinstance(self.target, Port):
+            data["target"] = Registry.get_id(self.target.parent)
+            data["targetPort"] = Registry.get_id(self.target)
+        else:
+            data["target"] = Registry.get_id(self.target)
+
+        return data
 
 
 class Label(ShapeElement):
@@ -137,11 +174,6 @@ class Label(ShapeElement):
     properties: ElementProperties = Field(
         default_factory=lambda: ElementProperties(selectable=False)
     )
-
-    def to_json(self):
-        data = super().to_json()
-        data["text"] = self.text
-        return data
 
     def wrap(self, **kwargs) -> List["Label"]:
         data = self.to_json()
@@ -157,32 +189,39 @@ class Port(UnionNodePort):
     class Config:
         copy_on_model_validation = False
 
-    def to_json(self):
-        data = super().to_json()
-        parent_id = Registry.get_id(self.parent)
-        self_id = Registry.get_id(self)
-        data["id"] = ".".join([parent_id, self_id])
-        if "properties" not in data:
-            data["properties"] = {}
-        data["properties"]["type"] = "port"
-        return data
+        # non-pydantic configs
+        excluded = ["parent"]
 
     def dict(self, **kwargs):
-        exclude = kwargs.pop("exclude", None)
-        if exclude is None:
-            exclude = {"parent"}
-        kwargs["exclude"] = exclude
-        super().dict(**kwargs)
+        if self.properties.shape is None:
+            self.properties.shape = ElementShape(type="port")
+        else:
+            if self.properties.shape.type is None:
+                self.properties.shape.type = "port"
+            assert "port" in self.properties.shape.type
+        data = super().dict(**kwargs)
+        return data
+
+    def _get_id(self) -> Optional[str]:
+        if self.id is None:
+            parent_id = Registry.get_id(self.parent)
+            self_id = Registry.get_id(self)
+            if parent_id is not None and self_id is not None:
+                return ".".join([parent_id, self_id])
+        return self.id
 
 
 class Node(UnionNodePort):
     ports: Dict[str, Port] = Field(default_factory=dict)
     children: Dict[str, "Node"] = Field(default_factory=dict)
-
     edges: Set[Edge] = Field(default_factory=set)
 
     class Config:
         copy_on_model_validation = False
+
+        # non-pydantic configs
+        excluded = ["metadata"]
+        to_list = ["children", "ports", "edges"]
 
     def __init__(self, **data):
         super().__init__(**data)
@@ -194,28 +233,22 @@ class Node(UnionNodePort):
             return self.children.get(key)
         if key in self.ports:
             return self.ports.get(key)
-        shape_ports = getattr(self.shape, "ports", {})
-        if key in shape_ports:
-            return self.add_port(key=key, port=Port())
         # TODO decide on bad magic to create a port if it doesn't exist?
         raise AttributeError
 
-    def to_json(self):
-        data = super().to_json()
-        shape_ports = {p["id"].split(".")[-1]: p for p in data.get("ports", [])}
-        ports = {}
+    def dict(self, **kwargs):
+        data = super().dict(**kwargs)
 
-        # merge shape ports and ports defined on the element
-        for key, port in shape_ports.items():
-            if key in self.ports:
-                port = merge(self.ports[key].to_json(), port)
-            ports[key] = port
-
-        # add additional ports only defined on he element
-        for key, port in self.ports.items():
-            if key not in ports:
-                ports[key] = port.to_json()
-        data["ports"] = ports.values()
+        for key in self.Config.to_list:
+            if key in data:
+                value = data[key]
+                if isinstance(value, (set,)):
+                    value = list(value)
+                elif isinstance(value, dict):
+                    value = list(data[key].values())
+                else:
+                    raise TypeError(f"Need to handle converting {type(value)}")
+                data[key] = value
         return data
 
     def add_child(self, child: "Node", key: str) -> "Node":

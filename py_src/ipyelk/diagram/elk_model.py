@@ -113,7 +113,6 @@ class Elk:
 @dataclass
 class ElkProperties:
     cssClasses: Optional[str] = None
-    type: Optional[str] = None
     shape: Optional[Dict[str, Union[str, float]]] = None
     selectable: Optional[bool] = None
 
@@ -121,10 +120,6 @@ class ElkProperties:
     def from_dict(obj: Any) -> "ElkProperties":
         assert isinstance(obj, dict)
         cssClasses = from_union([from_str, from_none], obj.get("cssClasses"))
-        type = from_union(
-            [from_str, from_none],
-            obj.get("type"),
-        )
         shape = from_union(
             [
                 lambda x: from_dict(
@@ -137,7 +132,6 @@ class ElkProperties:
         selectable = from_union([from_bool, from_none], obj.get("selectable"))
         return ElkProperties(
             cssClasses=cssClasses,
-            type=type,
             shape=shape,
             selectable=selectable,
         )
@@ -145,7 +139,6 @@ class ElkProperties:
     def to_dict(self) -> dict:
         result: dict = {}
         result["cssClasses"] = from_union([from_str, from_none], self.cssClasses)
-        result["type"] = from_union([from_str, from_none], self.type)
         result["shape"] = from_union(
             [
                 lambda x: from_dict(

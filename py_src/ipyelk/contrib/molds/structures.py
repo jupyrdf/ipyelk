@@ -1,33 +1,45 @@
 # Copyright (c) 2021 Dane Freeman.
 # Distributed under the terms of the Modified BSD License.
-from ...diagram.shape import Symbol, shapes
+from ...elements import ElementProperties, Node, shapes
 
 
 def DoubleCircle(radius=6):
-    return Symbol(
-        children=[
-            shapes.Circle(radius=radius),
-            shapes.Circle(radius=radius / 2, x=radius, y=radius),
-        ]
+    return Node(
+        children={
+            "0": Node(properties=ElementProperties(shape=shapes.Circle(radius=6))),
+            "1": Node(
+                properties=ElementProperties(
+                    shape=shapes.Circle(radius=3, x=radius, y=radius)
+                )
+            ),
+        }
     )
 
 
-def XCircle(radius=6):
+def XCircle(radius=6) -> Node:
     r = radius
-    return Symbol(
-        children=[
-            shapes.Circle(radius=r),
-            shapes.Path.from_list(
-                [
-                    (r + r * 2 ** -0.5, r + r * 2 ** -0.5),
-                    (r - r * 2 ** -0.5, r - r * 2 ** -0.5),
-                ]
+    return Node(
+        children={
+            "0": Node(properties=ElementProperties(shape=shapes.Circle(radius=r))),
+            "1": Node(
+                properties=ElementProperties(
+                    shape=shapes.Path.from_list(
+                        [
+                            (r + r * 2 ** -0.5, r + r * 2 ** -0.5),
+                            (r - r * 2 ** -0.5, r - r * 2 ** -0.5),
+                        ]
+                    )
+                )
             ),
-            shapes.Path.from_list(
-                [
-                    (r - r * 2 ** -0.5, r + r * 2 ** -0.5),
-                    (r + r * 2 ** -0.5, r - r * 2 ** -0.5),
-                ]
+            "2": Node(
+                properties=ElementProperties(
+                    shape=shapes.Path.from_list(
+                        [
+                            (r - r * 2 ** -0.5, r + r * 2 ** -0.5),
+                            (r + r * 2 ** -0.5, r - r * 2 ** -0.5),
+                        ]
+                    )
+                )
             ),
-        ]
+        }
     )

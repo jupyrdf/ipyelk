@@ -31,7 +31,7 @@ import {
   isExtended
 } from './elkgraph-json';
 
-import { IElkSymbols, SElkConnectorSymbol } from './symbols';
+import { IElkSymbols, IElkSymbol, SElkConnectorSymbol } from './symbols';
 
 /**
  * Checks the given type string and potentially returns the default type
@@ -110,12 +110,16 @@ export class ElkGraphJsonToSprotty {
 
   private transformSymbol(
     id: string,
-    symbol: ElkNode,
+    symbol: IElkSymbol,
     idPrefix: string
   ): SModelElementSchema {
-    let children = symbol?.children?.map(this.transformSymbolElement, this) || [];
+    let element = symbol?.element;
+    let children = [];
+    if (element) {
+      children = [this.transformSymbolElement(element)];
+    }
     this.symbolsIds[id] = `${idPrefix}_${id}`;
-    if (symbol?.properties?.type == 'connectorsymbol') {
+    if (symbol?.properties?.shape?.type == 'connectorsymbol') {
       this.connectors[id] = <SElkConnectorSymbol>symbol;
     }
 
@@ -131,22 +135,24 @@ export class ElkGraphJsonToSprotty {
 
   private transformSymbolElement(elkNode: ElkNode): SNodeSchema {
     elkNode.properties.isSymbol = true;
-    let element = <SNodeSchema>{
+    let sNode = <SNodeSchema>{
       id: elkNode.id,
       position: this.pos(elkNode),
       size: this.size(elkNode),
       children: [],
       properties: elkNode.properties,
-      type: elkNode.properties?.type
+      type: getType(elkNode?.properties?.shape?.type, 'node')
     };
-    return element;
+    const sNodes = elkNode.children.map(this.transformSymbolElement, this);
+    sNode.children!.push(...sNodes);
+    return sNode;
   }
 
   private transformElkNode(elkNode: ElkNode): SNodeSchema {
     this.checkAndRememberId(elkNode, this.nodeIds);
 
     const sNode = <SNodeSchema>{
-      type: getType(elkNode?.properties?.type, 'node'),
+      type: getType(elkNode?.properties?.shape?.type, 'node'),
       id: elkNode.id,
       position: this.pos(elkNode),
       size: this.size(elkNode),
@@ -181,7 +187,7 @@ export class ElkGraphJsonToSprotty {
   private transformElkPort(elkPort: ElkPort): SPortSchema {
     this.checkAndRememberId(elkPort, this.portIds);
     const sPort = <SPortSchema>{
-      type: getType(elkPort.properties?.type, 'port'),
+      type: getType(elkPort.properties?.shape?.type, 'port'),
       id: elkPort.id,
       position: this.pos(elkPort),
       size: this.size(elkPort),
@@ -201,7 +207,7 @@ export class ElkGraphJsonToSprotty {
   private transformElkLabel(elkLabel: ElkLabel): ElkLabelschema {
     this.checkAndRememberId(elkLabel, this.labelIds);
     let sLabel = <ElkLabelschema>{
-      type: getType(elkLabel.properties?.type, 'label'),
+      type: getType(elkLabel.properties?.shape?.type, 'label'),
       id: elkLabel.id,
       text: elkLabel.text,
       position: this.pos(elkLabel),
@@ -223,7 +229,7 @@ export class ElkGraphJsonToSprotty {
     this.checkAndRememberId(elkEdge, this.edgeIds);
 
     const sEdge = <SEdgeSchema>{
-      type: getType(elkEdge.properties?.type, 'edge'),
+      type: getType(elkEdge.properties?.shape?.type, 'edge'),
       id: elkEdge.id,
       sourceId: '',
       targetId: '',

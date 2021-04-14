@@ -5,9 +5,8 @@ from typing import Dict, List, Optional, Type
 from pydantic import Field
 
 from ..diagram import layout_options as opt
-from ..diagram.shape import Shape
 from ..util import merge
-from .elements import Edge, Label, Node, ElementProperties
+from .elements import Edge, ElementProperties, ElementShape, Label, Node
 
 record_opts = opt.OptionsWidget(
     options=[
@@ -79,7 +78,7 @@ class Record(Node):
     layoutOptions: Dict = Field(default_factory=lambda: {**record_opts})
     width: float = Field(default=80)
 
-    def to_json(self):
+    def dict(self, **kwargs):
         # TODO need ability to resize the min width based on label/child max width
         for key, child in self.children.items():
             child.layoutOptions = merge(
@@ -91,26 +90,26 @@ class Record(Node):
                 ).value,
                 child.layoutOptions,
             )
-        return super().to_json()
+        return super().dict(**kwargs)
 
 
 class Compartment(Record):
     headings: List[str] = ""
     content: List[str] = Field(default_factory=list)
-    bullet_shape: Optional[Shape] = None
+    bullet_shape: Optional[ElementShape] = None
 
-    def to_json(self):
-        # TODO generalize label creation and merging with the upstream to_json
-        # result
+    def dict(self, **kwargs):
         if self.headings or self.content:
             self.labels = self._make_labels()
-        return super().to_json()
+        return super().dict(**kwargs)
 
     def _make_labels(self):
         bullet_label = []
         if self.bullet_shape:
             bullet_label = Label(
-                shape=self.bullet_shape, layoutOptions=bullet_opts, selectable=True
+                properties=ElementProperties(shape=self.bullet_shape),
+                layoutOptions=bullet_opts,
+                selectable=True,
             )
         if self.headings and not self.content:
             heading_label_opts = center_label_opts
@@ -129,9 +128,7 @@ class Compartment(Record):
                 text=text,
                 layoutOptions=content_label_opts,
                 labels=bullet_label,
-                properties=ElementProperties(
-                    selectable=True
-                )
+                properties=ElementProperties(selectable=True),
             )
             for text in self.content
         ]

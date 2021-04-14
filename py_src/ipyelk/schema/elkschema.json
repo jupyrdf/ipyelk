@@ -397,7 +397,7 @@
         "cssClasses": {
           "type": "string"
         },
-        "isDef": {
+        "isSymbol": {
           "type": "boolean"
         },
         "selectable": {
@@ -405,9 +405,6 @@
         },
         "shape": {
           "$ref": "#/definitions/Shape"
-        },
-        "type": {
-          "type": "string"
         }
       },
       "type": "object"
@@ -429,6 +426,9 @@
           "type": "number"
         },
         "start": {
+          "type": "string"
+        },
+        "type": {
           "type": "string"
         },
         "use": {

@@ -425,7 +425,7 @@ class XELK(ElkTransformer):
                 if elkport.height is None:
                     elkport.height = self.port_scale
 
-                if i <= len(port_list):
+                if port_list and i <= len(port_list):
                     port_mark = elements.Mark(
                         element=port_list[i], context=node.context
                     )

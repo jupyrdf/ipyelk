@@ -26,9 +26,12 @@ for ext_path in [EXT] + [d for d in EXT.rglob("*") if d.is_dir()]:
 
 ALL_FILES = sum(EXT_FILES.values(), [])
 
-assert (
-    len([p for p in ALL_FILES if "remoteEntry" in str(p)]) == 1
-), "expected _exactly one_ remoteEntry.*.js"
+remote_entries = []
+pat = re.compile("remoteEntry.*.js$")
+for file in ALL_FILES:
+    if re.search(pat, file):
+        remote_entries.append(file)
+assert len(remote_entries) == 1, "expect _exactly one_ remoteEntry.*.js$"
 
 EXT_FILES[str(SHARE)] += ["install.json"]
 

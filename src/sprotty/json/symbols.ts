@@ -3,6 +3,7 @@
  * Distributed under the terms of the Modified BSD License.
  */
 import { SModelElementSchema, Point } from 'sprotty';
+import { ElkNode, ElkProperties } from './elkgraph-json';
 
 export interface IElement extends SModelElementSchema {
   x: number;
@@ -10,7 +11,8 @@ export interface IElement extends SModelElementSchema {
 }
 
 export interface IElkSymbol extends SModelElementSchema {
-  elements: IElement[];
+  element: ElkNode;
+  properties: ElkProperties;
 }
 
 export interface IElkSymbols {

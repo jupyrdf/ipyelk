@@ -9,10 +9,10 @@ import traitlets as T
 from ipywidgets import CallbackDispatcher, DOMWidget, widget_serialization
 
 from .._version import EXTENSION_NAME, EXTENSION_SPEC_VERSION
+from ..elements.symbol import Symbol, symbol_serialization
 from ..layouting.elkjs import ElkJS
 from ..schema import ElkSchemaValidator
 from ..trait_types import Schema
-from .shape.symbol import Symbol, symbol_serialization
 
 
 class ElkDiagram(DOMWidget):
