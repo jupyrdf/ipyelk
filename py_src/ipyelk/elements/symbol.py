@@ -67,8 +67,12 @@ class Symbol(BaseModel):
 
 
 class ConnectorDef(Symbol):
-    offset: Point = Field(default_factory=Point, description="Moves the endpoint of the path")
-    correction: Point = Field(default_factory=Point, description="Moves the origin of the symbol")
+    offset: Point = Field(
+        default_factory=Point, description="Moves the endpoint of the path"
+    )
+    correction: Point = Field(
+        default_factory=Point, description="Moves the origin of the symbol"
+    )
     width: float = 0
     height: float = 0
 

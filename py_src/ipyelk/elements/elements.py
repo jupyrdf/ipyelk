@@ -122,9 +122,6 @@ class ShapeElement(BaseElement):
             shape = self.properties.shape
             width = shape.width
             height = shape.height
-
-            # if shape.type == "node:diamond":
-            #     raise undead
         # update width if not set
         if data.get("width", None) is None and width is not None:
             data["width"] = width
@@ -176,7 +173,7 @@ class Label(ShapeElement):
     )
 
     def wrap(self, **kwargs) -> List["Label"]:
-        data = self.to_json()
+        data = self.dict()
         return [
             Label(**{**data, "text": line})
             for line in textwrap.wrap(self.text, **kwargs)

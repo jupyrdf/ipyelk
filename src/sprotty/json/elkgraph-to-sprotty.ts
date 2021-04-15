@@ -119,7 +119,7 @@ export class ElkGraphJsonToSprotty {
       children = [this.transformSymbolElement(element)];
     }
     this.symbolsIds[id] = `${idPrefix}_${id}`;
-    if (symbol?.properties?.shape?.type == 'connectorsymbol') {
+    if (symbol.hasOwnProperty('correction') || symbol.hasOwnProperty('offset')) {
       this.connectors[id] = <SElkConnectorSymbol>symbol;
     }
 

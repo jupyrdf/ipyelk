@@ -268,6 +268,8 @@ export class ElkPortView extends RectangularNodeView {
       mark = (
         <use
           class-elkport={true}
+          width={port.size.width}
+          height={port.size.height}
           class-mouseover={port.hoverFeedback}
           class-selected={port.selected}
           href={'#' + href}
