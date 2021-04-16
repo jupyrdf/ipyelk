@@ -87,8 +87,8 @@ class XOR_Gate(Gate):
     element: Node = Node(
         # width=36,
         # height=26,
-        children={
-            "0": Node(
+        children=[
+            Node(
                 properties=ElementProperties(
                     shape=ElementShape(
                         type="node:svg",
@@ -104,7 +104,7 @@ class XOR_Gate(Gate):
                     ),
                 )
             ),
-            "1": Node(
+            Node(
                 properties=ElementProperties(
                     shape=ElementShape(
                         type="node:svg",
@@ -116,7 +116,7 @@ class XOR_Gate(Gate):
                     ),
                 )
             ),
-        },
+        ],
     )
     width: float = 36
     height: float = 26
@@ -127,8 +127,8 @@ class And_Gate(Gate):
     element: Node = Node(
         # width=36,
         # height=26,
-        children={
-            "0": Node(
+        children=[
+            Node(
                 properties=ElementProperties(
                     shape=ElementShape(
                         type="node:svg",
@@ -141,7 +141,7 @@ class And_Gate(Gate):
                     ),
                 )
             ),
-        },
+        ],
     )
     width: float = 36
     height: float = 26
@@ -152,8 +152,8 @@ class Or_Gate(Gate):
     element: Node = Node(
         # width=29,
         # height=26,
-        children={
-            "0": Node(
+        children=[
+            Node(
                 properties=ElementProperties(
                     shape=ElementShape(
                         type="node:svg",
@@ -168,7 +168,7 @@ class Or_Gate(Gate):
                     ),
                 )
             ),
-        },
+        ],
     )
 
     width: float = 29
@@ -180,8 +180,8 @@ class Nor_Gate(Gate):
     element: Node = Node(
         # width=35.3,
         # height=26,
-        children={
-            "0": Node(
+        children=[
+            Node(
                 properties=ElementProperties(
                     shape=ElementShape(
                         type="node:svg",
@@ -197,7 +197,7 @@ class Nor_Gate(Gate):
                     ),
                 )
             ),
-            "1": Node(
+            Node(
                 properties=ElementProperties(
                     shape=ElementShape(
                         type="node:svg",
@@ -211,7 +211,7 @@ class Nor_Gate(Gate):
                     ),
                 )
             ),
-        },
+        ],
     )
     width: float = 35.3
     height: float = 26
@@ -220,8 +220,8 @@ class Nor_Gate(Gate):
 class Nand_Gate(Gate):
     identifier: str = "nand_gate"
     element: Node = Node(
-        children={
-            "0": Node(
+        children=[
+            Node(
                 properties=ElementProperties(
                     shape=ElementShape(
                         type="node:svg",
@@ -234,7 +234,7 @@ class Nand_Gate(Gate):
                     ),
                 )
             ),
-            "1": Node(
+            Node(
                 properties=ElementProperties(
                     shape=ElementShape(
                         type="node:svg",
@@ -247,7 +247,7 @@ class Nand_Gate(Gate):
                     ),
                 )
             ),
-        },
+        ],
     )
     width: float = 45.4
     height: float = 26
@@ -258,8 +258,8 @@ class Not_Gate(Gate):
     element: Node = Node(
         # width=35,
         # height=26,
-        children={
-            "0": Node(
+        children=[
+            Node(
                 properties=ElementProperties(
                     shape=ElementShape(
                         type="node:svg",
@@ -269,7 +269,7 @@ class Not_Gate(Gate):
                     ),
                 )
             ),
-            "1": Node(
+            Node(
                 properties=ElementProperties(
                     shape=ElementShape(
                         type="node:svg",
@@ -280,7 +280,7 @@ class Not_Gate(Gate):
                     ),
                 )
             ),
-        },
+        ],
     )
     width: float = 35
     height: float = 26
