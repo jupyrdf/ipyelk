@@ -3,9 +3,11 @@
 
 import os
 import re
+import setuptools
+import warnings
+
 from pathlib import Path
 
-import setuptools
 
 READTHEDOCS = os.environ.get("READTHEDOCS", None) == "True"
 
@@ -35,10 +37,8 @@ for file in ALL_FILES:
     if re.search(pat, file):
         remote_entries.append(file)
 num_remotes = len(remote_entries)
-if not READTHEDOCS:
-    assert (
-        num_remotes == 1
-    ), f"expect _exactly one_ remoteEntry.*.js$ found {num_remotes}"
+if not READTHEDOCS and num_remotes != 1:
+    warnings.warn(f"expect _exactly one_ remoteEntry.*.js$ found {num_remotes}")
 
 EXT_FILES[str(SHARE)] += ["install.json"]
 
