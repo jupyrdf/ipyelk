@@ -3,7 +3,7 @@
 import textwrap
 from typing import Dict, List, Optional, Set, Type, Union
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, validator, PrivateAttr
 
 from .registry import Registry
 
@@ -133,9 +133,25 @@ class ShapeElement(BaseElement):
 
 
 class UnionNodePort(ShapeElement):
-    pass
+    key: Optional[str] = Field(None, description="A non-elkjson schema property used to provide scoped lookup from their parent's context", exclude=True)
+    _parent: Optional["Node"] = PrivateAttr(None)
 
+    def set_parent(self, parent: Optional["Node"]):
+        assert (
+            self._parent is None or self._parent is parent
+        ), "Incoming port owned by different node"
+        self._parent = parent
+        return self
 
+    def get_parent(self)->Optional["Node"]:
+        return self._parent
+
+    def set_key(self, key: Optional[str]):
+        assert (
+            self.key is None or self.key == key
+        ), "Key has already been set"
+        self.key = key
+        return self
 class Edge(BaseElement):
     properties: EdgeProperties = Field(default_factory=EdgeProperties)
     source: UnionNodePort = Field(...)
@@ -145,20 +161,20 @@ class Edge(BaseElement):
         excluded = ["source", "target"]
 
     def points(self):
-        u = self.source if isinstance(self.source, Node) else self.source.parent
-        v = self.target if isinstance(self.target, Node) else self.target.parent
+        u = self.source if isinstance(self.source, Node) else self.source.get_parent()
+        v = self.target if isinstance(self.target, Node) else self.target.get_parent()
         return u, v
 
     def dict(self, **kwargs):
         data = super().dict(**kwargs)
 
         if isinstance(self.source, Port):
-            data["source"] = Registry.get_id(self.source.parent)
+            data["source"] = Registry.get_id(self.source.get_parent())
             data["sourcePort"] = Registry.get_id(self.source)
         else:
             data["source"] = Registry.get_id(self.source)
         if isinstance(self.target, Port):
-            data["target"] = Registry.get_id(self.target.parent)
+            data["target"] = Registry.get_id(self.target.get_parent())
             data["targetPort"] = Registry.get_id(self.target)
         else:
             data["target"] = Registry.get_id(self.target)
@@ -181,13 +197,11 @@ class Label(ShapeElement):
 
 
 class Port(UnionNodePort):
-    parent: Optional["Node"] = Field(default=None, exclude=True)
-
     class Config:
         copy_on_model_validation = False
 
         # non-pydantic configs
-        excluded = ["parent"]
+        excluded = ["parent", "key"]
 
     def dict(self, **kwargs):
         if self.properties.shape is None:
@@ -201,7 +215,7 @@ class Port(UnionNodePort):
 
     def _get_id(self) -> Optional[str]:
         if self.id is None:
-            parent_id = Registry.get_id(self.parent)
+            parent_id = Registry.get_id(self.get_parent())
             self_id = Registry.get_id(self)
             if parent_id is not None and self_id is not None:
                 return ".".join([parent_id, self_id])
@@ -209,28 +223,33 @@ class Port(UnionNodePort):
 
 
 class Node(UnionNodePort):
-    ports: Dict[str, Port] = Field(default_factory=dict)
-    children: Dict[str, "Node"] = Field(default_factory=dict)
+    ports: List[Port] = Field(default_factory=list)
+    children: List["Node"] = Field(default_factory=list)
     edges: Set[Edge] = Field(default_factory=set)
 
     class Config:
         copy_on_model_validation = False
 
         # non-pydantic configs
-        excluded = ["metadata"]
-        to_list = ["children", "ports", "edges"]
+        excluded = ["metadata", "parent", "key"]
+        to_list = ["edges"]
 
     def __init__(self, **data):
         super().__init__(**data)
-        for key, port in self.ports.items():
-            port_parent(self, port)
+        # for port in self.ports:
+        #     port.set_parent(self)
 
-    def __getattr__(self, key):
-        if key in self.children:
-            return self.children.get(key)
-        if key in self.ports:
-            return self.ports.get(key)
-        # TODO decide on bad magic to create a port if it doesn't exist?
+        # for child in self.children:
+        #     child.set_parent(self)
+
+    def __getattr__(self, key:str):
+        try:
+            return self.get_child(key)
+        except NotFoundError:
+            try:
+                return self.get_port(key)
+            except NotFoundError:
+                pass
         raise AttributeError
 
     def dict(self, **kwargs):
@@ -248,22 +267,70 @@ class Node(UnionNodePort):
                 data[key] = value
         return data
 
-    def add_child(self, child: "Node", key: str) -> "Node":
-        self.children[key] = child
+    def add_child(self, child: "Node", key: Optional[str]=None) -> "Node":
+        self.children.append(child.set_parent(self).set_key(key))
         return child
 
-    def remove_child(self, child: "Node", key: str = ""):
-        for key, value in self.children.items():
-            if value is child:
-                break
+    def remove_child(self, child: "Node"):
+        """Remove the specified child from the children list as well as it's
+        parent reference.
+
+        :param child: Child node to remove
+        :raises NotFoundError: If the child is not currently part of the
+        node's children
+        :return: The child that was removed
+        """
+        try:
+            self.children.remove(child)
+            child.set_parent(None)
+        except ValueError as E:
+            raise NotFoundError("Child element not found") from E
+        return child
+
+    def get_child(self, key:str)->"Node":
+        """Method to iterate through children and find a match based on `key`
+
+        :param key: key to match
+        :raises NotFoundError: If unable to find a matching child
+        :raises NonUniqueKeyError: If found multiple children with the same key
+        :return: matching child
+        """
+        matches = []
+        for child in self.children:
+            if key == child.key:
+                matches.append(child)
+        found = len(matches)
+        if found == 1:
+            return matches[0]
+        elif found == 0:
+            raise NotFoundError("Child not found")
         else:
-            raise ValueError("Child element not found")
-        self.children.pop(key)
-        return child
+            raise NonUniqueKeyError(f"{key} is not unique. Found {found} matching children.")
 
-    def add_port(self, port: Port, key) -> Port:
-        self.ports[key] = port_parent(self, port)
+
+    def add_port(self, port: Port, key:Optional[str]=None) -> Port:
+        self.ports.append(port.set_parent(self).set_key(key))
         return port
+
+    def get_port(self, key:str)->Port:
+        """Method to iterate through ports and find a match based on `key`
+
+        :param key: key to match
+        :raises NotFoundError: If unable to find a matching port
+        :raises NonUniqueKeyError: If found multiple ports with the same key
+        :return: matching port
+        """
+        matches = []
+        for port in self.ports:
+            if key == port.key:
+                matches.append(port)
+        found = len(matches)
+        if found == 1:
+            return matches[0]
+        elif found == 0:
+            raise NotFoundError("Port not found")
+        else:
+            raise NonUniqueKeyError(f"{key} is not unique. Found {found} matching ports.")
 
     def add_edge(
         self,
@@ -279,7 +346,9 @@ class Node(UnionNodePort):
         return edge
 
     def __setattr__(self, key, value):
-        if isinstance(value, Port):
+        if key == "_parent":
+            super().__setattr__(key, value)
+        elif isinstance(value, Port):
             self.add_port(port=value, key=key)
         elif isinstance(value, Node):
             self.add_child(child=value, key=key)
@@ -287,13 +356,11 @@ class Node(UnionNodePort):
             super().__setattr__(key, value)
 
 
-def port_parent(node: Node, port: Port) -> Port:
-    assert (
-        port.parent is None or port.parent is node
-    ), "Incoming port owned by different node"
-    port.parent = node
-    return port
+class NotFoundError(Exception):
+    pass
 
+class NonUniqueKeyError(Exception):
+    pass
 
 Label.update_forward_refs()
 Port.update_forward_refs()

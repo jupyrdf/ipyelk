@@ -32,8 +32,8 @@ def Containment(identifier: str, r=6) -> ConnectorDef:
     return ConnectorDef(
         identifier=identifier,
         element=Node(
-            children={
-                "0": Node(
+            children=[
+                Node(
                     properties=ElementProperties(
                         shape=Circle(
                             radius=r,
@@ -42,17 +42,17 @@ def Containment(identifier: str, r=6) -> ConnectorDef:
                         )
                     )
                 ),
-                "1": Node(
+                Node(
                     properties=ElementProperties(
                         shape=Path.from_list([(0, 0), (2 * r, 0)]),
                     )
                 ),
-                "2": Node(
+                Node(
                     properties=ElementProperties(
                         shape=Path.from_list([(r, -r), (r, r)]),
                     )
                 ),
-            }
+            ]
         ),
         correction=Point(x=-1, y=0),
         offset=Point(x=-2 * r, y=0),

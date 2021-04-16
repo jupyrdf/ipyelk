@@ -80,7 +80,7 @@ class Record(Node):
 
     def dict(self, **kwargs):
         # TODO need ability to resize the min width based on label/child max width
-        for key, child in self.children.items():
+        for child in self.children:
             child.layoutOptions = merge(
                 opt.OptionsWidget(
                     options=[

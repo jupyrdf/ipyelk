@@ -58,10 +58,10 @@ class MarkFactory(BaseModel):
                 g.add_node(
                     nx_node,
                     mark=nx_node,
-                    elkjson=node.dict(exclude={"children", "edges"}),
+                    elkjson=node.dict(exclude={"children", "edges", "parent"}),
                 )
 
-            for key, child in get_children(node).items():
+            for child in get_children(node):
                 nx_child = self._add(child, g, tree, follow_edges=follow_edges)
                 tree.add_edge(nx_node, nx_child)
 
@@ -76,7 +76,7 @@ class MarkFactory(BaseModel):
                             g.add_node(
                                 nx_pt,
                                 mark=nx_pt,
-                                elkjson=pt.dict(exclude={"children", "edges"}),
+                                elkjson=pt.dict(exclude={"children", "edges", "parent"}),
                             )
 
                 assert isinstance(edge, Edge), f"Expected Edge type not {type(edge)}"
@@ -98,13 +98,5 @@ class MarkFactory(BaseModel):
         return (g, tree)
 
 
-def get_nodes(nodes):
-    if isinstance(nodes, Node):
-        nodes = [nodes]
-    for node in nodes:
-        yield node
-        yield from get_children(node)
-
-
-def get_children(node: Node) -> Dict[str, Node]:
-    return getattr(node, "children", {})
+def get_children(node: Node) -> Node:
+    return getattr(node, "children", [])

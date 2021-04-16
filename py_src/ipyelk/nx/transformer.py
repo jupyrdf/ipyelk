@@ -567,12 +567,13 @@ def split_mark_data(data: Dict) -> Tuple[Optional[elements.Mark], Dict]:
     mark = data.get("mark", None)
     if isinstance(mark, elements.Mark):
         if "elkjson" not in data:
-            data["elkjson"] = mark.to_json()
+            data["elkjson"] = mark.dict(exclude={"children", "edges"})
         return mark, data["elkjson"]
     return mark, data
 
 
 def get_port_list(node) -> List[elements.Port]:
     if isinstance(node, elements.Mark):
-        return list(node.element.ports.values())
+        if isinstance(node.element, elements.Node):
+            return list(node.element.ports)
     return []
