@@ -13,11 +13,11 @@ from .elements import (
 from .extended import Compartment, Partition, Record
 from .mark_factory import Mark, MarkFactory
 from .registry import Registry
-from .symbol import ConnectorDef, Symbol
+from .symbol import EndpointSymbol, Symbol
 
 __all__ = [
     "Compartment",
-    "ConnectorDef",
+    "EndpointSymbol",
     "Edge",
     "EdgeProperties",
     "ElementMetadata",

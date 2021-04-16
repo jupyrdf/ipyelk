@@ -10,7 +10,7 @@ from typing import Dict, List, Optional
 from uuid import uuid4
 
 from ...diagram import layout_options as opt
-from ...elements import ElementProperties, ElementShape, Node, Symbol
+from ...elements import ElementProperties, ElementShape, Node, Port, Symbol
 
 
 class Gate(Symbol):
@@ -36,10 +36,11 @@ class Gate(Symbol):
             },
         ]
 
-    def get_ports(self, id=None) -> Dict:
-        return {
-            key: {
+    def get_ports(self, id=None) -> List[Port]:
+        return [
+            {
                 "id": f"{id}.{key}",
+                "key": str(key),
                 "width": 0.1,
                 "height": 0.1,
                 "layoutOptions": opt.OptionsWidget(
@@ -47,7 +48,7 @@ class Gate(Symbol):
                 ).value,
             }
             for key, value in self.ports.items()
-        }
+        ]
 
     def get_layoutOptions(self) -> Dict:
         return opt.OptionsWidget(
@@ -85,8 +86,6 @@ class Gate(Symbol):
 class XOR_Gate(Gate):
     identifier: str = "xor_gate"
     element: Node = Node(
-        # width=36,
-        # height=26,
         children=[
             Node(
                 properties=ElementProperties(

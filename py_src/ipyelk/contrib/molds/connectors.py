@@ -4,11 +4,11 @@ from ...elements import ElementProperties, Node
 
 # from ...diagram.shapes.shapes import Circle, Path, Point
 from ...elements.shapes import Circle, Path, Point
-from ...elements.symbol import ConnectorDef
+from ...elements.symbol import EndpointSymbol
 
 
-def Rhomb(identifier: str, r: float = 6) -> ConnectorDef:
-    return ConnectorDef(
+def Rhomb(identifier: str, r: float = 6) -> EndpointSymbol:
+    return EndpointSymbol(
         identifier=identifier,
         element=Node(
             properties=ElementProperties(
@@ -28,8 +28,8 @@ def Rhomb(identifier: str, r: float = 6) -> ConnectorDef:
     )
 
 
-def Containment(identifier: str, r=6) -> ConnectorDef:
-    return ConnectorDef(
+def Containment(identifier: str, r=6) -> EndpointSymbol:
+    return EndpointSymbol(
         identifier=identifier,
         element=Node(
             children=[
@@ -59,8 +59,8 @@ def Containment(identifier: str, r=6) -> ConnectorDef:
     )
 
 
-def StraightArrow(identifier: str, r=6, closed=False) -> ConnectorDef:
-    return ConnectorDef(
+def StraightArrow(identifier: str, r=6, closed=False) -> EndpointSymbol:
+    return EndpointSymbol(
         identifier=identifier,
         element=Node(
             properties=ElementProperties(
@@ -72,8 +72,8 @@ def StraightArrow(identifier: str, r=6, closed=False) -> ConnectorDef:
     )
 
 
-def ThinArrow(identifier: str, r=6, closed=False) -> ConnectorDef:
-    return ConnectorDef(
+def ThinArrow(identifier: str, r=6, closed=False) -> EndpointSymbol:
+    return EndpointSymbol(
         identifier=identifier,
         element=Node(
             properties=ElementProperties(
@@ -85,8 +85,8 @@ def ThinArrow(identifier: str, r=6, closed=False) -> ConnectorDef:
     )
 
 
-def FatArrow(identifier: str, r=6, closed=False) -> ConnectorDef:
-    return ConnectorDef(
+def FatArrow(identifier: str, r=6, closed=False) -> EndpointSymbol:
+    return EndpointSymbol(
         identifier=identifier,
         element=Node(
             properties=ElementProperties(
@@ -98,5 +98,7 @@ def FatArrow(identifier: str, r=6, closed=False) -> ConnectorDef:
     )
 
 
-def Space(identifier: str, r=6) -> ConnectorDef:
-    return ConnectorDef(identifier=identifier, element=Node(), offset=Point(x=-r, y=0))
+def Space(identifier: str, r=6) -> EndpointSymbol:
+    return EndpointSymbol(
+        identifier=identifier, element=Node(), offset=Point(x=-r, y=0)
+    )

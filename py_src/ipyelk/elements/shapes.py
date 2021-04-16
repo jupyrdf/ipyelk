@@ -10,7 +10,7 @@ from .elements import ElementShape, add_excluded_fields
 
 
 class Path(ElementShape):
-    use: str = ""
+    use: str = Field(..., description="SVG path string")
     type: str = "node:path"
 
     @classmethod

@@ -26,34 +26,40 @@ class ElementMetadata(BaseModel):
     pass
 
 
-class ElementShape(BaseModel):
+class BaseShape(BaseModel):
     type: Optional[str]
     use: Optional[str]
+
+
+class BaseProperties(BaseModel):
+    cssClasses: str = Field("", description="whitespace separated list of css classes")
+    shape: Optional[BaseShape]
+    selectable: Optional[bool]
+
+
+class ElementShape(BaseShape):
     x: Optional[float]
     y: Optional[float]
     width: Optional[float]
     height: Optional[float]
 
 
-class ElementProperties(BaseModel):
-    cssClasses: str = ""
+class ElementProperties(BaseProperties):
     shape: Optional[ElementShape]
-    selectable: Optional[bool]
 
 
-class EdgeShape(ElementShape):
+class EdgeShape(BaseShape):
     start: Optional[str]
     end: Optional[str]
 
 
-class EdgeProperties(ElementProperties):
+class EdgeProperties(BaseProperties):
     shape: Optional[EdgeShape]
 
 
 class BaseElement(BaseModel):
     id: Optional[str] = Field(None)  # required for final elk json schema
     labels: List["Label"] = Field(default_factory=list)
-    properties: ElementProperties = Field(default_factory=ElementProperties)
     layoutOptions: Dict = Field(default_factory=dict)
     metadata: ElementMetadata = Field(default_factory=ElementMetadata)
 
@@ -111,6 +117,7 @@ class ShapeElement(BaseElement):
     y: Optional[float]
     width: Optional[float]
     height: Optional[float]
+    properties: ElementProperties = Field(default_factory=ElementProperties)
 
     def dict(self, **kwargs):
         data = super().dict(**kwargs)
@@ -132,7 +139,7 @@ class ShapeElement(BaseElement):
         return data
 
 
-class UnionNodePort(ShapeElement):
+class HierarchicalElement(ShapeElement):
     key: Optional[str] = Field(
         None,
         description="Non-elkjson schema property used to provide lookup from parent",
@@ -158,8 +165,8 @@ class UnionNodePort(ShapeElement):
 
 class Edge(BaseElement):
     properties: EdgeProperties = Field(default_factory=EdgeProperties)
-    source: UnionNodePort = Field(...)
-    target: UnionNodePort = Field(...)
+    source: HierarchicalElement = Field(...)
+    target: HierarchicalElement = Field(...)
 
     class Config:
         excluded = ["source", "target"]
@@ -200,7 +207,7 @@ class Label(ShapeElement):
         ]
 
 
-class Port(UnionNodePort):
+class Port(HierarchicalElement):
     class Config:
         copy_on_model_validation = False
 
@@ -226,7 +233,7 @@ class Port(UnionNodePort):
         return self.id
 
 
-class Node(UnionNodePort):
+class Node(HierarchicalElement):
     ports: List[Port] = Field(default_factory=list)
     children: List["Node"] = Field(default_factory=list)
     edges: Set[Edge] = Field(default_factory=set)
@@ -299,10 +306,7 @@ class Node(UnionNodePort):
         :raises NonUniqueKeyError: If found multiple children with the same key
         :return: matching child
         """
-        matches = []
-        for child in self.children:
-            if key == child.key:
-                matches.append(child)
+        matches = [child for child in self.children if key == child.key]
         found = len(matches)
         if found == 1:
             return matches[0]
@@ -325,10 +329,7 @@ class Node(UnionNodePort):
         :raises NonUniqueKeyError: If found multiple ports with the same key
         :return: matching port
         """
-        matches = []
-        for port in self.ports:
-            if key == port.key:
-                matches.append(port)
+        matches = [port for port in self.ports if key == port.key]
         found = len(matches)
         if found == 1:
             return matches[0]
@@ -376,6 +377,6 @@ Port.update_forward_refs()
 Edge.update_forward_refs()
 BaseElement.update_forward_refs()
 Node.update_forward_refs()
-UnionNodePort.update_forward_refs()
+HierarchicalElement.update_forward_refs()
 EdgeShape.update_forward_refs()
 EdgeProperties.update_forward_refs()
