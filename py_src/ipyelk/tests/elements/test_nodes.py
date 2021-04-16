@@ -13,7 +13,7 @@ def test_add_port():
     key = "port"
     n = Node()
     p = n.add_port(Port(), key)
-    assert p.parent is n, "Expect port parent to be the node"
+    assert p.get_parent() is n, "Expect port parent to be the node"
     assert n.ports[key] is p, "Expect node port dict to return same port"
     n.dict()
 
