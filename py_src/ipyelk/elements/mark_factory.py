@@ -1,6 +1,6 @@
 # Copyright (c) 2021 Dane Freeman.
 # Distributed under the terms of the Modified BSD License.
-from typing import Any, Dict, Optional
+from typing import Any, Optional
 
 import networkx as nx
 from pydantic import BaseModel, Field
@@ -76,7 +76,9 @@ class MarkFactory(BaseModel):
                             g.add_node(
                                 nx_pt,
                                 mark=nx_pt,
-                                elkjson=pt.dict(exclude={"children", "edges", "parent"}),
+                                elkjson=pt.dict(
+                                    exclude={"children", "edges", "parent"}
+                                ),
                             )
 
                 assert isinstance(edge, Edge), f"Expected Edge type not {type(edge)}"

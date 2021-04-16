@@ -3,7 +3,7 @@
 import textwrap
 from typing import Dict, List, Optional, Set, Type, Union
 
-from pydantic import BaseModel, Field, validator, PrivateAttr
+from pydantic import BaseModel, Field, PrivateAttr
 
 from .registry import Registry
 
@@ -133,7 +133,11 @@ class ShapeElement(BaseElement):
 
 
 class UnionNodePort(ShapeElement):
-    key: Optional[str] = Field(None, description="A non-elkjson schema property used to provide scoped lookup from their parent's context", exclude=True)
+    key: Optional[str] = Field(
+        None,
+        description="Non-elkjson schema property used to provide lookup from parent",
+        exclude=True,
+    )
     _parent: Optional["Node"] = PrivateAttr(None)
 
     def set_parent(self, parent: Optional["Node"]):
@@ -143,15 +147,15 @@ class UnionNodePort(ShapeElement):
         self._parent = parent
         return self
 
-    def get_parent(self)->Optional["Node"]:
+    def get_parent(self) -> Optional["Node"]:
         return self._parent
 
     def set_key(self, key: Optional[str]):
-        assert (
-            self.key is None or self.key == key
-        ), "Key has already been set"
+        assert self.key is None or self.key == key, "Key has already been set"
         self.key = key
         return self
+
+
 class Edge(BaseElement):
     properties: EdgeProperties = Field(default_factory=EdgeProperties)
     source: UnionNodePort = Field(...)
@@ -242,7 +246,7 @@ class Node(UnionNodePort):
         # for child in self.children:
         #     child.set_parent(self)
 
-    def __getattr__(self, key:str):
+    def __getattr__(self, key: str):
         try:
             return self.get_child(key)
         except NotFoundError:
@@ -267,7 +271,7 @@ class Node(UnionNodePort):
                 data[key] = value
         return data
 
-    def add_child(self, child: "Node", key: Optional[str]=None) -> "Node":
+    def add_child(self, child: "Node", key: Optional[str] = None) -> "Node":
         self.children.append(child.set_parent(self).set_key(key))
         return child
 
@@ -287,7 +291,7 @@ class Node(UnionNodePort):
             raise NotFoundError("Child element not found") from E
         return child
 
-    def get_child(self, key:str)->"Node":
+    def get_child(self, key: str) -> "Node":
         """Method to iterate through children and find a match based on `key`
 
         :param key: key to match
@@ -305,14 +309,15 @@ class Node(UnionNodePort):
         elif found == 0:
             raise NotFoundError("Child not found")
         else:
-            raise NonUniqueKeyError(f"{key} is not unique. Found {found} matching children.")
+            raise NonUniqueKeyError(
+                f"{key} is not unique. Found {found} matching children."
+            )
 
-
-    def add_port(self, port: Port, key:Optional[str]=None) -> Port:
+    def add_port(self, port: Port, key: Optional[str] = None) -> Port:
         self.ports.append(port.set_parent(self).set_key(key))
         return port
 
-    def get_port(self, key:str)->Port:
+    def get_port(self, key: str) -> Port:
         """Method to iterate through ports and find a match based on `key`
 
         :param key: key to match
@@ -330,7 +335,9 @@ class Node(UnionNodePort):
         elif found == 0:
             raise NotFoundError("Port not found")
         else:
-            raise NonUniqueKeyError(f"{key} is not unique. Found {found} matching ports.")
+            raise NonUniqueKeyError(
+                f"{key} is not unique. Found {found} matching ports."
+            )
 
     def add_edge(
         self,
@@ -359,8 +366,10 @@ class Node(UnionNodePort):
 class NotFoundError(Exception):
     pass
 
+
 class NonUniqueKeyError(Exception):
     pass
+
 
 Label.update_forward_refs()
 Port.update_forward_refs()
