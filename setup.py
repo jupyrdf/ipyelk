@@ -31,7 +31,8 @@ pat = re.compile("remoteEntry.*.js$")
 for file in ALL_FILES:
     if re.search(pat, file):
         remote_entries.append(file)
-assert len(remote_entries) == 1, "expect _exactly one_ remoteEntry.*.js$"
+num_remotes = len(remote_entries)
+assert num_remotes == 1, f"expect _exactly one_ remoteEntry.*.js$ found {num_remotes}"
 
 EXT_FILES[str(SHARE)] += ["install.json"]
 
