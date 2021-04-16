@@ -114,6 +114,8 @@ env_specs:
       - sphinx
       - sphinx-autobuild
       - sphinx-autodoc-typehints
+      - sqlalchemy <1.4
+      - docutils <0.17
 
   _lint:
     description: linting/formatting environment. not actually created.
