@@ -1,67 +1,57 @@
 # Copyright (c) 2021 Dane Freeman.
 # Distributed under the terms of the Modified BSD License.
+import abc
 import textwrap
 from typing import Dict, List, Optional, Set, Type, Union
 
 from pydantic import BaseModel, Field, PrivateAttr
 
+from .common import add_excluded_fields
 from .registry import Registry
-
-
-def add_excluded_fields(kwargs: Dict, excluded: List) -> Dict:
-    """Shim function to help manipulate excluded fields from the `dict`
-    method"""
-
-    exclude = kwargs.pop("exclude", None) or set()
-    if isinstance(exclude, set):
-        for i in excluded:
-            exclude.add(i)
-    else:
-        raise TypeError(f"TODO handle other types of exclude e.g. {type(exclude)}")
-    kwargs["exclude"] = exclude
-    return kwargs
+from .shapes import BaseShape, EdgeShape, LabelShape, NodeShape, PortShape
 
 
 class ElementMetadata(BaseModel):
-    pass
-
-
-class BaseShape(BaseModel):
-    type: Optional[str]
-    use: Optional[str]
+    """An empty metadata structure, subclass and add your own attributes using
+    pydantic to have validated element metadata. This metadata will not be used
+    for layout purposes but potentially useful for maintaining annotations about
+    the elements for downstream applications.
+    """
 
 
 class BaseProperties(BaseModel):
     cssClasses: str = Field("", description="whitespace separated list of css classes")
     shape: Optional[BaseShape]
-    selectable: Optional[bool]
 
 
-class ElementShape(BaseShape):
-    x: Optional[float]
-    y: Optional[float]
-    width: Optional[float]
-    height: Optional[float]
+class NodeProperties(BaseProperties):
+    shape: Optional[NodeShape]
+    hidden: Optional[bool] = Field(
+        None, description="Specifies if the node and it's children are hidden"
+    )
 
 
-class ElementProperties(BaseProperties):
-    shape: Optional[ElementShape]
+class LabelProperties(BaseProperties):
+    shape: Optional[LabelShape]
+    selectable: Optional[bool] = Field(
+        False, description="Specifies if label is individually selectable"
+    )
 
 
-class EdgeShape(BaseShape):
-    start: Optional[str]
-    end: Optional[str]
+class PortProperties(BaseProperties):
+    shape: Optional[PortShape]
 
 
 class EdgeProperties(BaseProperties):
     shape: Optional[EdgeShape]
 
 
-class BaseElement(BaseModel):
+class BaseElement(BaseModel, abc.ABC):
     id: Optional[str] = Field(None)  # required for final elk json schema
     labels: List["Label"] = Field(default_factory=list)
     layoutOptions: Dict = Field(default_factory=dict)
     metadata: ElementMetadata = Field(default_factory=ElementMetadata)
+    properties: BaseProperties = Field(default_factory=BaseProperties)
 
     class Config:
         copy_on_model_validation = False
@@ -112,12 +102,11 @@ class BaseElement(BaseModel):
         return self.id
 
 
-class ShapeElement(BaseElement):
+class ShapeElement(BaseElement, abc.ABC):
     x: Optional[float]
     y: Optional[float]
     width: Optional[float]
     height: Optional[float]
-    properties: ElementProperties = Field(default_factory=ElementProperties)
 
     def dict(self, **kwargs):
         data = super().dict(**kwargs)
@@ -139,7 +128,7 @@ class ShapeElement(BaseElement):
         return data
 
 
-class HierarchicalElement(ShapeElement):
+class HierarchicalElement(ShapeElement, abc.ABC):
     key: Optional[str] = Field(
         None,
         description="Non-elkjson schema property used to provide lookup from parent",
@@ -194,10 +183,10 @@ class Edge(BaseElement):
 
 
 class Label(ShapeElement):
-    text: str = " "  # completely empty strings exclude label in node sizing
-    properties: ElementProperties = Field(
-        default_factory=lambda: ElementProperties(selectable=False)
-    )
+    text: str = Field(
+        " ", description="Text shown for label"
+    )  # completely empty strings exclude label in node sizing
+    properties: LabelProperties = Field(default_factory=LabelProperties)
 
     def wrap(self, **kwargs) -> List["Label"]:
         data = self.dict()
@@ -208,21 +197,13 @@ class Label(ShapeElement):
 
 
 class Port(HierarchicalElement):
+    properties: PortProperties = Field(default_factory=PortProperties)
+
     class Config:
         copy_on_model_validation = False
 
         # non-pydantic configs
         excluded = ["parent", "key"]
-
-    def dict(self, **kwargs):
-        if self.properties.shape is None:
-            self.properties.shape = ElementShape(type="port")
-        else:
-            if self.properties.shape.type is None:
-                self.properties.shape.type = "port"
-            assert "port" in self.properties.shape.type
-        data = super().dict(**kwargs)
-        return data
 
     def _get_id(self) -> Optional[str]:
         if self.id is None:
@@ -237,6 +218,7 @@ class Node(HierarchicalElement):
     ports: List[Port] = Field(default_factory=list)
     children: List["Node"] = Field(default_factory=list)
     edges: Set[Edge] = Field(default_factory=set)
+    properties: NodeProperties = Field(default_factory=NodeProperties)
 
     class Config:
         copy_on_model_validation = False
@@ -245,13 +227,13 @@ class Node(HierarchicalElement):
         excluded = ["metadata", "parent", "key"]
         to_list = ["edges"]
 
-    def __init__(self, **data):
+    def __init__(self, **data):  # type: ignore
         super().__init__(**data)
-        # for port in self.ports:
-        #     port.set_parent(self)
+        for port in self.ports:
+            port.set_parent(self)
 
-        # for child in self.children:
-        #     child.set_parent(self)
+        for child in self.children:
+            child.set_parent(self)
 
     def __getattr__(self, key: str):
         try:

@@ -9,7 +9,7 @@ import traitlets as T
 from ipywidgets import CallbackDispatcher, DOMWidget, widget_serialization
 
 from .._version import EXTENSION_NAME, EXTENSION_SPEC_VERSION
-from ..elements.symbol import Symbol, symbol_serialization
+from ..elements.symbol import SymbolSpec, symbol_serialization
 from ..layouting.elkjs import ElkJS
 from ..schema import ElkSchemaValidator
 from ..trait_types import Schema
@@ -25,17 +25,17 @@ class ElkDiagram(DOMWidget):
     <https://github.com/kieler/elkjs>`_ and display the returned `mark_layout`
     using `sprotty <https://github.com/eclipse/sprotty>`_.
 
-    :ivar value: Input elk json
-    :vartype value: Dict
-    :ivar mark_layout: Resulting layout from current layouter e.g. elkjs
-    :vartype mark_layout: Dict
-    :ivar selected: elk ids of selected marks
-    :vartype selected: Tuple[str]
-    :ivar hovered: elk id of currently hovered mark
+    :param value: Input elk json
+    :type value: Dict
+    :param mark_layout: Resulting layout from current layouter e.g. elkjs
+    :type mark_layout: Dict
+    :param selected: elk ids of selected marks
+    :type selected: Tuple[str]
+    :param hovered: elk id of currently hovered mark
     :vartype hovered: str
-    :ivar layouter: A layouter to add position and sizes to marks in the incoming
+    :param layouter: A layouter to add position and sizes to marks in the incoming
         elk json
-    :vartype layouter: ElkJS
+    :type layouter: ElkJS
 
     """
 
@@ -47,9 +47,7 @@ class ElkDiagram(DOMWidget):
     _view_module_version = T.Unicode(EXTENSION_SPEC_VERSION).tag(sync=True)
 
     value = Schema(ElkSchemaValidator).tag(sync=True)
-    symbols = T.Dict(value_trait=T.Instance(Symbol), kw={}).tag(
-        sync=True, **symbol_serialization
-    )
+    symbols = T.Instance(SymbolSpec, kw={}).tag(sync=True, **symbol_serialization)
     mark_layout: Dict = T.Dict().tag(sync=True)
     selected: Tuple = T.Tuple().tag(sync=True)
     hovered: str = T.Unicode(allow_none=True, default_value=None).tag(sync=True)
@@ -106,10 +104,9 @@ class ElkDiagram(DOMWidget):
     ):
         """Center Diagram View on specified model ids
 
-        :param model_ids: [description], defaults to None
-        :type model_ids: List[str], optional
-        :type animate: bool, optional
-        :type retain_zoom: bool, optional
+        :param model_ids: list of elk model id strings, defaults to None
+        :param animate: specify is the view animates to the given marks
+        :param retain_zoom: specify if the current zoom level is maintained
         """
         self.send(
             {
@@ -127,7 +124,13 @@ class ElkDiagram(DOMWidget):
         max_zoom: float = None,
         padding: float = None,
     ):
-        """Pan/Zoom the Diagram View to focus on particular model ids"""
+        """Pan/Zoom the Diagram View to focus on particular model ids
+
+        :param model_ids: list of elk model id strings, defaults to None
+        :param animate: specify is the view animates to the given marks
+        :param max_zoom: specify if the max zoom level
+        :param padding: specify if the viewport padding around the marks
+        """
         self.send(
             {
                 "action": "fit",

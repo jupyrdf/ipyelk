@@ -10,16 +10,11 @@ from typing import Dict, List, Optional
 from uuid import uuid4
 
 from ...diagram import layout_options as opt
-from ...elements import ElementProperties, ElementShape, Node, Port, Symbol
+from ...elements import Node, NodeProperties, Port, Symbol, SymbolSpec, shapes
 
 
 class Gate(Symbol):
     ports: Dict = {"a": "WEST", "b": "WEST", "out": "EAST"}
-
-    def get_shape_props(self) -> Dict:
-        return {
-            "use": self.identifier,
-        }
 
     def get_labels(self, id=None) -> List:
         return [
@@ -64,14 +59,13 @@ class Gate(Symbol):
     @classmethod
     def make_defs(cls, symbols: Optional[List[Symbol]] = None) -> Dict[str, "Symbol"]:
         symbols = [c() for c in cls.__subclasses__()]  # type: ignore
-        return super().make_defs(symbols=symbols)
+        return SymbolSpec().add(*symbols)
 
     def node(self, **kwargs) -> Node:
         """Create a Node element that uses this symbol"""
         return Node(
-            properties=ElementProperties(
-                shape=ElementShape(
-                    type="node:use",
+            properties=NodeProperties(
+                shape=shapes.Use(
                     use=self.identifier,
                 )
             ),
@@ -88,9 +82,8 @@ class XOR_Gate(Gate):
     element: Node = Node(
         children=[
             Node(
-                properties=ElementProperties(
-                    shape=ElementShape(
-                        type="node:svg",
+                properties=NodeProperties(
+                    shape=shapes.SVG(
                         use="""<path xmlns="http://www.w3.org/2000/svg" d="M
                         221.07742, 179.18841 C 251.75683,179.18841
                         255.13373,193.04183 255.13373,193.04183 C
@@ -104,9 +97,8 @@ class XOR_Gate(Gate):
                 )
             ),
             Node(
-                properties=ElementProperties(
-                    shape=ElementShape(
-                        type="node:svg",
+                properties=NodeProperties(
+                    shape=shapes.SVG(
                         use="""<path xmlns="http://www.w3.org/2000/svg" d="M
                         215.71747,180.2604 C 226.02507,193.20675 215.71747,205.90571
                         215.71747,205.90571"/>""",
@@ -128,9 +120,8 @@ class And_Gate(Gate):
         # height=26,
         children=[
             Node(
-                properties=ElementProperties(
-                    shape=ElementShape(
-                        type="node:svg",
+                properties=NodeProperties(
+                    shape=shapes.SVG(
                         use="""<path xmlns="http://www.w3.org/2000/svg" d="M
                         291.82342,319.35468  L 291.82342,346.31327 C
                         337.96707,348.73263 339.04172,316.76251
@@ -153,9 +144,8 @@ class Or_Gate(Gate):
         # height=26,
         children=[
             Node(
-                properties=ElementProperties(
-                    shape=ElementShape(
-                        type="node:svg",
+                properties=NodeProperties(
+                    shape=shapes.SVG(
                         use="""<path d="M 286.89693,404.03872 C
                         317.57634,404.03872 320.95324,417.89214
                         320.95324,417.89214 C 316.47922,434.28168
@@ -181,9 +171,8 @@ class Nor_Gate(Gate):
         # height=26,
         children=[
             Node(
-                properties=ElementProperties(
-                    shape=ElementShape(
-                        type="node:svg",
+                properties=NodeProperties(
+                    shape=shapes.SVG(
                         use="""<path xmlns="http://www.w3.org/2000/svg" d="M
                         286.50598,446.11044 C 317.18539,446.11044
                         320.56229,459.96386 320.56229,459.96386 L
@@ -197,9 +186,8 @@ class Nor_Gate(Gate):
                 )
             ),
             Node(
-                properties=ElementProperties(
-                    shape=ElementShape(
-                        type="node:svg",
+                properties=NodeProperties(
+                    shape=shapes.SVG(
                         use="""<path xmlns="http://www.w3.org/2000/svg" d="M
                         254.10886 234.75238 A 4.7229962 4.7229962 0 1 1
                         244.66287,234.75238 A 4.7229962 4.7229962 0 1 1
@@ -221,9 +209,8 @@ class Nand_Gate(Gate):
     element: Node = Node(
         children=[
             Node(
-                properties=ElementProperties(
-                    shape=ElementShape(
-                        type="node:svg",
+                properties=NodeProperties(
+                    shape=shapes.SVG(
                         use="""`<path xmlns="http://www.w3.org/2000/svg" d="M
                         219.98902,54.008713 L 219.98902,80.967304 C
                         266.13267,83.386665 267.20732,51.416541
@@ -234,9 +221,8 @@ class Nand_Gate(Gate):
                 )
             ),
             Node(
-                properties=ElementProperties(
-                    shape=ElementShape(
-                        type="node:svg",
+                properties=NodeProperties(
+                    shape=shapes.SVG(
                         use="""<path xmlns="http://www.w3.org/2000/svg" d="M
                         254.10886 234.75238 A 4.7229962 4.7229962 0 1 1
                         244.66287,234.75238 A 4.7229962 4.7229962 0 1 1
@@ -259,9 +245,8 @@ class Not_Gate(Gate):
         # height=26,
         children=[
             Node(
-                properties=ElementProperties(
-                    shape=ElementShape(
-                        type="node:svg",
+                properties=NodeProperties(
+                    shape=shapes.SVG(
                         use="""<path xmlns="http://www.w3.org/2000/svg" d="M
                         291.48301,543.49359 L 291.48301,528.99086 L 315.53386,542.87663
                         L 291.49576,556.85361 z"/>""",
@@ -269,9 +254,8 @@ class Not_Gate(Gate):
                 )
             ),
             Node(
-                properties=ElementProperties(
-                    shape=ElementShape(
-                        type="node:svg",
+                properties=NodeProperties(
+                    shape=shapes.SVG(
                         use="""<path xmlns="http://www.w3.org/2000/svg" d="M 254.10886
                         234.75238 A 4.7229962 4.7229962 0 1 1  244.66287,234.75238 A
                         4.7229962 4.7229962 0 1 1  254.10886 234.75238 z"

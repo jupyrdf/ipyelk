@@ -94,14 +94,14 @@ export class ElkEdgeView extends PolylineEdgeView {
     return <path d={path} />;
   }
 
-  protected getAnchorCorrection(
+  protected getAnchorOffset(
     id: string | undefined,
     context: ElkModelRenderer,
     r: number
   ): Point {
     let connection = context.getConnector(id);
-    if (connection?.correction) {
-      const p = connection.correction;
+    if (connection?.symbol_offset) {
+      const p = connection.symbol_offset;
       return {
         x: p.x * Math.cos(r) - p.y * Math.sin(r),
         y: p.x * Math.sin(r) + p.y * Math.cos(r)
@@ -116,8 +116,8 @@ export class ElkEdgeView extends PolylineEdgeView {
     r: number
   ): Point {
     let connection = context.getConnector(id);
-    if (connection?.offset) {
-      const p = connection.offset;
+    if (connection?.path_offset) {
+      const p = connection.path_offset;
       return {
         x: p.x * Math.cos(r) - p.y * Math.sin(r),
         y: p.x * Math.sin(r) + p.y * Math.cos(r)
@@ -143,7 +143,7 @@ export class ElkEdgeView extends PolylineEdgeView {
       const p2 = segments[0];
       let r = angleOfPoint({ x: p1.x - p2.x, y: p1.y - p2.y });
 
-      correction = this.getAnchorCorrection(start, context, r);
+      correction = this.getAnchorOffset(start, context, r);
 
       let x = p2.x - correction.x;
       let y = p2.y - correction.y;
@@ -163,7 +163,7 @@ export class ElkEdgeView extends PolylineEdgeView {
       const p1 = segments[segments.length - 2];
       const p2 = segments[segments.length - 1];
       let r = angleOfPoint({ x: p1.x - p2.x, y: p1.y - p2.y });
-      correction = this.getAnchorCorrection(end, context, r);
+      correction = this.getAnchorOffset(end, context, r);
 
       let x = p2.x - correction.x;
       let y = p2.y - correction.y;

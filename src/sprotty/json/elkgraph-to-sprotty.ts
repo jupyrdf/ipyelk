@@ -97,8 +97,8 @@ export class ElkGraphJsonToSprotty {
    */
   private transformSymbols(symbols: IElkSymbols, idPrefix: string): SSymbolsSchema {
     let children = [];
-    for (const key in symbols) {
-      children.push(this.transformSymbol(key, symbols[key], idPrefix));
+    for (const key in symbols.library) {
+      children.push(this.transformSymbol(key, symbols.library[key], idPrefix));
     }
 
     const sSymbols = <SSymbolsSchema>{
@@ -119,7 +119,10 @@ export class ElkGraphJsonToSprotty {
       children = [this.transformSymbolElement(element)];
     }
     this.symbolsIds[id] = `${idPrefix}_${id}`;
-    if (symbol.hasOwnProperty('correction') || symbol.hasOwnProperty('offset')) {
+    if (
+      symbol.hasOwnProperty('symbol_offset') ||
+      symbol.hasOwnProperty('path_offset')
+    ) {
       this.connectors[id] = <SElkConnectorSymbol>symbol;
     }
 
@@ -139,6 +142,7 @@ export class ElkGraphJsonToSprotty {
       id: elkNode.id,
       position: this.pos(elkNode),
       size: this.size(elkNode),
+      cssClasses: getClasses(elkNode),
       children: [],
       properties: elkNode.properties,
       type: getType(elkNode?.properties?.shape?.type, 'node')

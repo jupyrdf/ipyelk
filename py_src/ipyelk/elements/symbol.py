@@ -1,7 +1,7 @@
 # Copyright (c) 2021 Dane Freeman.
 # Distributed under the terms of the Modified BSD License.
 
-from typing import Dict, List
+from typing import Dict
 
 from ipywidgets import DOMWidget
 from pydantic import BaseModel, Field
@@ -20,45 +20,72 @@ class Symbol(BaseModel):
     x: float = Field(0, title="X", description="Viewbox X Position")
     y: float = Field(0, title="Y", description="Viewbox Y Position")
 
-    @classmethod
-    def make_defs(cls, symbols: List["Symbol"]) -> Dict[str, "Symbol"]:
-        """Take a list of symbols and return the def dictionary
-
-        :param classes: Subclasses of Shape. If `None` use the subclasses of
-        the current class.
-        :return: Def Dictionary
-        """
-        library = {}
-        for instance in symbols:
-            assert (
-                instance.identifier not in library
-            ), f"Identifier should be unique. {instance.identifier} is duplicated"
-            library[instance.identifier] = instance
-        return library
-
 
 class EndpointSymbol(Symbol):
-    offset: Point = Field(
+    path_offset: Point = Field(
         default_factory=Point, description="Moves the endpoint of the path"
     )
-    correction: Point = Field(
+    symbol_offset: Point = Field(
         default_factory=Point, description="Moves the origin of the symbol"
     )
-    width: float = 0
-    height: float = 0
+    width: float = Field(0, title="Width", description="Viewbox width")
+    height: float = Field(0, title="Height", description="Viewbox height")
 
 
-def symbols_to_json(symbols: Dict[str, Symbol], widget: DOMWidget):
-    """[summary]
+class SymbolSpec(BaseModel):
+    """A set of symbols with unique identifiers"""
 
-    :param defs: [description]
-    :type defs: Dict[str, Def]
-    :param diagram: [description]
-    :type diagram: [type]
-    :return: [description]
-    :rtype: [type]
+    library: Dict[str, Symbol] = Field(
+        default_factory=dict,
+        description="Mapping of unique symbol identifiers to a symbol",
+    )
+
+    def add(self, *symbols: Symbol) -> "SymbolSpec":
+        """Add a series of symbols to the library
+
+        :return: current SymbolSpec
+        """
+        for symbol in symbols:
+            assert (
+                symbol.identifier not in self.library
+            ), f"Identifier should be unique. {symbol.identifier} is duplicated"
+            self.library[symbol.identifier] = symbol
+        return self
+
+    def __getitem__(self, key: str) -> str:
+        """Test is key is an identifier for a symbol in the library and returns
+        that key
+
+        :param key: potential symbol identifer
+        :return: symbol identifier
+        """
+        if key not in self.library:
+            raise KeyError(
+                f"`{key}` is not a symbol identifier currently in the library"
+            )
+        return key
+
+    def merge(self, *specs: "SymbolSpec") -> "SymbolSpec":
+        """Merge a series of `SymbolSpec`s into a new `SymbolSpec`
+
+        :param specs: series of `SymbolSpecs`
+        :return: new SymbolSpec
+        """
+        new = SymbolSpec()
+        new.add(*self.library.values())
+        for spec in specs:
+            new.add(*spec.library.values())
+        return new
+
+
+def symbols_to_json(symbolspec: SymbolSpec, widget: DOMWidget):
+    """Function to serialize a dictionary of symbols for use in a diagram
+
+    :param defs: dictionary of Symbols
+    :param diagram: elk diagram widget
+    :return: json dictionary
     """
-    return {f"{k}": v.dict(exclude_none=True) for k, v in symbols.items()}
+    return symbolspec.dict(exclude_none=True)
 
 
 symbol_serialization = {"to_json": symbols_to_json}

@@ -2,16 +2,74 @@
 # Distributed under the terms of the Modified BSD License.
 # from typing import Dict, List, Optional
 
+from typing import Optional, Set
+
 from ipywidgets import DOMWidget
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, validator
 
-# from ipyelk.diagram.elk_model import strip_none
-from .elements import ElementShape, add_excluded_fields
+from .common import add_excluded_fields
 
 
-class Path(ElementShape):
-    use: str = Field(..., description="SVG path string")
+class Point(BaseModel):
+    x: float = 0
+    y: float = 0
+
+    def __init__(self, x=0, y=0):
+        super().__init__(x=x, y=y)
+
+
+class BaseShape(BaseModel):
+    type: Optional[str]
+
+
+class EdgeShape(BaseShape):
+    type: Optional[str] = "edge"
+    start: Optional[str]
+    end: Optional[str]
+
+
+class ElementShape(BaseShape):
+    x: Optional[float]
+    y: Optional[float]
+    width: Optional[float]
+    height: Optional[float]
+
+    @classmethod
+    def valid_subtypes(cls) -> Set[str]:
+        """Iterate over subclasses and extracts the known `type` defaults"""
+        return set(c.__fields__["type"].default for c in cls.__subclasses__())
+
+    @validator("type")
+    def subtype_validator(cls, v):
+        """Checks that there is a subclass that defines the `type`
+        """
+        subtypes = cls.valid_subtypes()
+        if v not in subtypes:
+            raise ValueError("Unexpected Subtype")
+        return v
+
+
+class PortShape(ElementShape):
+    type: Optional[str] = "port"
+    use: Optional[str] = Field(None, description="Symbol Identifier")
+
+
+class LabelShape(ElementShape):
+    type: Optional[str] = "label"
+
+
+class Icon(LabelShape):
+    type: str = "label:icon"
+    use: str = Field(..., description="Symbol Identifier")
+
+
+class NodeShape(ElementShape):
+    use: Optional[str] = Field(None, description="Meaning is specialized in subclasses")
+
+
+class Path(NodeShape):
     type: str = "node:path"
+    use: str = Field(..., description="SVG path string")
 
     @classmethod
     def from_list(cls, segments, closed=False):
@@ -21,9 +79,9 @@ class Path(ElementShape):
         return Path(use=d)
 
 
-class Circle(ElementShape):
-    radius: float = 0
+class Circle(NodeShape):
     type: str = "node:round"
+    radius: float = 0
 
     def dict(self, **kwargs):
         self.width = self.radius * 2
@@ -36,22 +94,15 @@ class Circle(ElementShape):
         return data
 
 
-class SVG(ElementShape):
-    use: str = ""
+class SVG(NodeShape):
     type: str = "node:svg"
-
-    def get_shape_props(self):
-        props = super().get_shape_props()
-        if self.value:
-            props.update({"use": str(self.value)})
-        return props
+    use: str = Field(..., description="String representing raw svg")
 
 
-class Ellipse(ElementShape):
+class Ellipse(NodeShape):
+    type: str = "node:round"
     rx: float = 0
     ry: float = 0
-
-    type: str = "node:round"
 
     class Config:
         excluded = ["metadata"]
@@ -67,11 +118,11 @@ class Ellipse(ElementShape):
         return data
 
 
-class Diamond(ElementShape):
+class Diamond(NodeShape):
     type: str = "node:diamond"
 
 
-class Comment(ElementShape):
+class Comment(NodeShape):
     type: str = "node:comment"
     use: str = Field(str(15), description="The size of the cornor notch as a string")
 
@@ -81,41 +132,28 @@ class Comment(ElementShape):
         return data
 
 
-class Rect(ElementShape):
+class Rect(NodeShape):
     type: str = "node"
 
 
-class Use(ElementShape):
+class Use(NodeShape):
     type: str = "node:use"
-    use: str = Field(..., description="Identifier to use for a reference")
-
-    def get_shape_props(self):
-        props = super().get_shape_props()
-        props.update({"use": str(self.value)})
-        return props
+    use: str = Field(..., description="Symbol identifier to use")
 
 
-class Point(BaseModel):
-    x: float = 0
-    y: float = 0
-
-    def __init__(self, x=0, y=0):
-        super().__init__(x=x, y=y)
-
-
-class Image(ElementShape):
+class Image(NodeShape):
     type: str = "node:image"
     use: str = Field(..., description="Image URL")
 
 
-class ForeignObject(ElementShape):
+class ForeignObject(NodeShape):
     type: str = "node:foreignobject"
     use: str = Field(..., description="Foreign object html")
 
 
-class Widget(ElementShape):
+class Widget(NodeShape):
     type: str = "node:widget"
-    widget: DOMWidget = None
+    widget: DOMWidget = Field(description="Ipywidgets as Foreign object html")
 
     class Config:
         arbitrary_types_allowed = True
@@ -127,27 +165,6 @@ class Widget(ElementShape):
         return data
 
 
-class HTML(ElementShape):
+class HTML(NodeShape):
     type: str = "node:html"
     use: str = Field(..., description="HTML code")
-
-
-class Icon(ElementShape):
-    type: str = "label:icon"
-    use: str = " "
-
-    def __call__(self):
-        # TODO make label?
-        pass
-
-    def to_json(self, id=None):
-        """Returns a valid elk node dictionary"""
-        data = super().to_json(id=id)
-        data["text"] = " "  # can't be none or completely empty string
-        return data
-
-    def get_shape_props(self):
-        props = super().get_shape_props()
-        if self.value:
-            props.update({"use": str(self.value)})
-        return props

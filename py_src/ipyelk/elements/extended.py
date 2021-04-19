@@ -6,7 +6,8 @@ from pydantic import Field
 
 from ..diagram import layout_options as opt
 from ..util import merge
-from .elements import Edge, ElementProperties, ElementShape, Label, Node
+from .elements import Edge, Label, LabelProperties, Node
+from .shapes import Icon
 
 record_opts = opt.OptionsWidget(
     options=[
@@ -76,7 +77,10 @@ class Partition(Node):
 
 class Record(Node):
     layoutOptions: Dict = Field(default_factory=lambda: {**record_opts})
-    width: float = Field(default=80)
+    width: float = Field(
+        default=80, description="Width needs to be shared by all children "
+    )
+    min_height: float = Field(default=20, description="Minimum height of a compartment")
 
     def dict(self, **kwargs):
         # TODO need ability to resize the min width based on label/child max width
@@ -85,7 +89,9 @@ class Record(Node):
                 opt.OptionsWidget(
                     options=[
                         opt.NodeSizeConstraints(),
-                        opt.NodeSizeMinimum(width=int(self.width), height=20),
+                        opt.NodeSizeMinimum(
+                            width=int(self.width), height=self.min_height
+                        ),
                     ]
                 ).value,
                 child.layoutOptions,
@@ -94,9 +100,9 @@ class Record(Node):
 
 
 class Compartment(Record):
-    headings: List[str] = ""
+    headings: List[str] = Field(default_factory=list)
     content: List[str] = Field(default_factory=list)
-    bullet_shape: Optional[ElementShape] = None
+    bullet_shape: Optional[Icon] = None
 
     def dict(self, **kwargs):
         if self.headings or self.content:
@@ -107,7 +113,7 @@ class Compartment(Record):
         bullet_label = []
         if self.bullet_shape:
             bullet_label = Label(
-                properties=ElementProperties(shape=self.bullet_shape),
+                properties=LabelProperties(shape=self.bullet_shape),
                 layoutOptions=bullet_opts,
                 selectable=True,
             )
@@ -128,7 +134,7 @@ class Compartment(Record):
                 text=text,
                 layoutOptions=content_label_opts,
                 labels=bullet_label,
-                properties=ElementProperties(selectable=True),
+                properties=LabelProperties(selectable=True),
             )
             for text in self.content
         ]

@@ -16,10 +16,12 @@ export interface IElkSymbol extends SModelElementSchema {
 }
 
 export interface IElkSymbols {
-  [key: string]: IElkSymbol;
+  library: {
+    [key: string]: IElkSymbol;
+  };
 }
 
 export interface SElkConnectorSymbol extends IElkSymbol {
-  offset: Point;
-  correction: Point;
+  path_offset: Point;
+  symbol_offset: Point;
 }

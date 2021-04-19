@@ -8,12 +8,13 @@ from ...diagram import layout_options as opt
 from ...elements import (
     Edge,
     EdgeProperties,
-    ElementProperties,
     Label,
     Node,
+    NodeProperties,
     Partition,
     Port,
     Symbol,
+    SymbolSpec,
     shapes,
 )
 from ..molds import connectors, structures
@@ -29,14 +30,14 @@ heading_label_opts = opt.OptionsWidget(
 
 node_opts = opt.OptionsWidget(options=[opt.NodeSizeConstraints()]).value
 
-small_port_shape = shapes.Rect(type="port", width=0, height=0)
+small_port_shape = shapes.PortShape(width=0, height=0)
 
 
 # symbols
 arrow_head = connectors.StraightArrow("arrow", r=4)
 init_state = Symbol(
     identifier="initial-state",
-    element=Node(properties=ElementProperties(shape=shapes.Circle(radius=6))),
+    element=Node(properties=NodeProperties(shape=shapes.Circle(radius=6))),
     width=12,
     height=12,
 )
@@ -55,7 +56,7 @@ final_state = Symbol(
 
 
 class Activity(Node):
-    properties: ElementProperties = ElementProperties(shape=shapes.Ellipse())
+    properties: NodeProperties = NodeProperties(shape=shapes.Ellipse())
 
     @classmethod
     def make(cls, text, container=False):
@@ -65,7 +66,7 @@ class Activity(Node):
                     Label(text=text, layoutOptions=heading_label_opts),
                 ],
                 layoutOptions=node_opts,
-                properties=ElementProperties(
+                properties=NodeProperties(
                     shape=shapes.Rect(), cssClasses="activity-container"
                 ),
             )
@@ -80,13 +81,13 @@ class Activity(Node):
 
 
 class Merge(Node):
-    properties: ElementProperties = ElementProperties(
+    properties: NodeProperties = NodeProperties(
         cssClasses="activity-filled", shape=shapes.Rect(width=50, height=10)
     )
 
 
 class Decision(Node):
-    properties: ElementProperties = ElementProperties(
+    properties: NodeProperties = NodeProperties(
         shape=shapes.Diamond(width=20, height=20)
     )
 
@@ -125,19 +126,19 @@ class Decision(Node):
 
 
 class Join(Node):
-    properties: ElementProperties = ElementProperties(
+    properties: NodeProperties = NodeProperties(
         cssClasses="activity-filled", shape=shapes.Rect(width=50, height=10)
     )
 
 
 class StartActivity(Node):
-    properties: ElementProperties = ElementProperties(
+    properties: NodeProperties = NodeProperties(
         shape=shapes.Use(use=init_state.identifier, width=12, height=12)
     )
 
 
 class EndActivity(Node):
-    properties: ElementProperties = ElementProperties(
+    properties: NodeProperties = NodeProperties(
         shape=shapes.Use(use=final_state.identifier, width=12, height=12)
     )
 
@@ -148,17 +149,15 @@ class SimpleArrow(Edge):
 
 class ActivityDiagram(Partition):
     # TODO flesh out ideas of encapsulating diagram defs / styles / elements
-    symbols: Dict[str, Symbol] = Symbol.make_defs(
-        [
-            init_state,
-            exit_state,
-            final_state,
-            arrow_head,
-        ]
+    symbols: SymbolSpec = SymbolSpec().add(
+        init_state,
+        exit_state,
+        final_state,
+        arrow_head,
     )
 
     style: Dict[str, Dict] = {
-        " .final-state > g > g > g:nth-child(2)": {
+        " .final-state .inner-circle": {
             "fill": "var(--jp-elk-node-stroke)",
         },
         " .activity-filled .elknode": {
