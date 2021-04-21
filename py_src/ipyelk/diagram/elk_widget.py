@@ -3,20 +3,41 @@
 # Copyright (c) 2021 Dane Freeman.
 # Distributed under the terms of the Modified BSD License.
 
-from typing import List
+from typing import Dict, List, Tuple
 
 import traitlets as T
 from ipywidgets import CallbackDispatcher, DOMWidget, widget_serialization
 
 from .._version import EXTENSION_NAME, EXTENSION_SPEC_VERSION
+from ..elements.symbol import SymbolSpec, symbol_serialization
 from ..layouting.elkjs import ElkJS
 from ..schema import ElkSchemaValidator
 from ..trait_types import Schema
-from .symbol.defs import Def, def_serialization
 
 
 class ElkDiagram(DOMWidget):
-    """Jupyterlab widget for interacting with ELK diagrams"""
+    """Jupyterlab widget for displaying and interacting with diagrams generated
+    from elk json.
+
+    Setting the instance's `value` traitlet to valid `elk json
+    <https://www.eclipse.org/elk/documentation/tooldevelopers/
+    graphdatastructure/jsonformat.html>`_  will call the `elkjs layout method
+    <https://github.com/kieler/elkjs>`_ and display the returned `mark_layout`
+    using `sprotty <https://github.com/eclipse/sprotty>`_.
+
+    :param value: Input elk json
+    :type value: Dict
+    :param mark_layout: Resulting layout from current layouter e.g. elkjs
+    :type mark_layout: Dict
+    :param selected: elk ids of selected marks
+    :type selected: Tuple[str]
+    :param hovered: elk id of currently hovered mark
+    :vartype hovered: str
+    :param layouter: A layouter to add position and sizes to marks in the incoming
+        elk json
+    :type layouter: ElkJS
+
+    """
 
     _model_name = T.Unicode("ELKDiagramModel").tag(sync=True)
     _model_module = T.Unicode(EXTENSION_NAME).tag(sync=True)
@@ -26,13 +47,11 @@ class ElkDiagram(DOMWidget):
     _view_module_version = T.Unicode(EXTENSION_SPEC_VERSION).tag(sync=True)
 
     value = Schema(ElkSchemaValidator).tag(sync=True)
-    defs = T.Dict(value_trait=T.Instance(Def), kw={}).tag(
-        sync=True, **def_serialization
-    )
-    mark_layout = T.Dict().tag(sync=True)
-    selected = T.Tuple().tag(sync=True)
-    hovered = T.Unicode(allow_none=True, default_value=None).tag(sync=True)
-    layouter = T.Instance(ElkJS, kw={}).tag(sync=True, **widget_serialization)
+    symbols = T.Instance(SymbolSpec, kw={}).tag(sync=True, **symbol_serialization)
+    mark_layout: Dict = T.Dict().tag(sync=True)
+    selected: Tuple = T.Tuple().tag(sync=True)
+    hovered: str = T.Unicode(allow_none=True, default_value=None).tag(sync=True)
+    layouter: ElkJS = T.Instance(ElkJS, kw={}).tag(sync=True, **widget_serialization)
 
     def __init__(self, *value, **kwargs):
         if value:
@@ -85,10 +104,9 @@ class ElkDiagram(DOMWidget):
     ):
         """Center Diagram View on specified model ids
 
-        :param model_ids: [description], defaults to None
-        :type model_ids: List[str], optional
-        :type animate: bool, optional
-        :type retain_zoom: bool, optional
+        :param model_ids: list of elk model id strings, defaults to None
+        :param animate: specify is the view animates to the given marks
+        :param retain_zoom: specify if the current zoom level is maintained
         """
         self.send(
             {
@@ -106,7 +124,13 @@ class ElkDiagram(DOMWidget):
         max_zoom: float = None,
         padding: float = None,
     ):
-        """Pan/Zoom the Diagram View to focus on particular model ids"""
+        """Pan/Zoom the Diagram View to focus on particular model ids
+
+        :param model_ids: list of elk model id strings, defaults to None
+        :param animate: specify is the view animates to the given marks
+        :param max_zoom: specify if the max zoom level
+        :param padding: specify if the viewport padding around the marks
+        """
         self.send(
             {
                 "action": "fit",

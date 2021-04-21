@@ -1,12 +1,13 @@
 # Copyright (c) 2021 Dane Freeman.
 # Distributed under the terms of the Modified BSD License.
-from dataclasses import field
 from typing import Dict, List, Optional, Type
 
-from ...diagram import layout_options as opt
-from ...diagram.symbol import Symbol
-from ...transform import merge
-from .elements import Edge, Label, Node, element
+from pydantic import Field
+
+from ..diagram import layout_options as opt
+from ..util import merge
+from .elements import Edge, Label, LabelProperties, Node
+from .shapes import Icon
 
 record_opts = opt.OptionsWidget(
     options=[
@@ -57,9 +58,8 @@ def is_edge(edge) -> bool:
         return False
 
 
-@element
 class Partition(Node):
-    default_edge: Type[Edge] = field(default=Edge)
+    default_edge: Type[Edge] = Field(default=Edge)
 
     def __getitem__(self, key):
         if isinstance(key, slice):
@@ -75,43 +75,48 @@ class Partition(Node):
             return edge
 
 
-@element
 class Record(Node):
-    layoutOptions: Dict = field(default_factory=lambda: {**record_opts})
-    width: float = field(default=80)
+    layoutOptions: Dict = Field(default_factory=lambda: {**record_opts})
+    width: float = Field(
+        default=80, description="Width needs to be shared by all children "
+    )
+    min_height: float = Field(default=20, description="Minimum height of a compartment")
 
-    def to_json(self):
+    def dict(self, **kwargs):
         # TODO need ability to resize the min width based on label/child max width
         for child in self.children:
             child.layoutOptions = merge(
                 opt.OptionsWidget(
                     options=[
                         opt.NodeSizeConstraints(),
-                        opt.NodeSizeMinimum(width=self.width, height=20),
+                        opt.NodeSizeMinimum(
+                            width=int(self.width), height=self.min_height
+                        ),
                     ]
                 ).value,
                 child.layoutOptions,
             )
-        return super().to_json()
+        return super().dict(**kwargs)
 
 
-@element
 class Compartment(Record):
-    headings: List[str] = ""
-    content: List[str] = field(default_factory=list)
-    bullet_shape: Optional[Symbol] = None
+    headings: List[str] = Field(default_factory=list)
+    content: List[str] = Field(default_factory=list)
+    bullet_shape: Optional[Icon] = None
 
-    def to_json(self):
-        # TODO generalize label creation and merging with the upstream to_json
-        # result
+    def dict(self, **kwargs):
         if self.headings or self.content:
             self.labels = self._make_labels()
-        return super().to_json()
+        return super().dict(**kwargs)
 
     def _make_labels(self):
         bullet_label = []
         if self.bullet_shape:
-            bullet_label = Label(shape=self.bullet_shape, layoutOptions=bullet_opts)
+            bullet_label = Label(
+                properties=LabelProperties(shape=self.bullet_shape),
+                layoutOptions=bullet_opts,
+                selectable=True,
+            )
         if self.headings and not self.content:
             heading_label_opts = center_label_opts
             heading_cls = "compartment_title"
@@ -125,7 +130,12 @@ class Compartment(Record):
             for i, text in enumerate(self.headings)
         ]
         content = [
-            Label(text=text, layoutOptions=content_label_opts, labels=bullet_label)
+            Label(
+                text=text,
+                layoutOptions=content_label_opts,
+                labels=bullet_label,
+                properties=LabelProperties(selectable=True),
+            )
             for text in self.content
         ]
         return heading + content

@@ -8,7 +8,7 @@
 # flake8: noqa
 from collections import namedtuple
 from dataclasses import dataclass
-from typing import Any, Callable, Dict, List, Optional, Type, TypeVar, cast
+from typing import Any, Callable, Dict, List, Optional, Type, TypeVar, Union, cast
 
 # Sentinel Value for tracking the root node in the Elk JSON
 ElkRoot = namedtuple("ElkRootNode", [])()
@@ -19,8 +19,20 @@ ElkNullElement = namedtuple("ElkNullElement", [])()
 T = TypeVar("T")
 
 
-def strip_none(result: dict) -> dict:
-    return {key: value for key, value in result.items() if value is not None}
+def strip_none(data: Dict) -> Dict:
+    if not isinstance(data, dict):
+        return data
+    result: Dict = {}
+    for key, value in data.items():
+        if isinstance(value, dict):
+            value = strip_none(value)
+        if isinstance(value, (dict, list)) and len(value) == 0:
+            value = None  # empty
+        if value is None:
+            continue
+        # populate key value pair
+        result[key] = value
+    return result
 
 
 def from_list(f: Callable[[Any], T], x: Any) -> List[T]:
@@ -101,17 +113,13 @@ class Elk:
 @dataclass
 class ElkProperties:
     cssClasses: Optional[str] = None
-    type: Optional[str] = None
-    shape: Optional[Dict[str, str or float]] = None
+    shape: Optional[Dict[str, Union[str, float]]] = None
+    selectable: Optional[bool] = None
 
     @staticmethod
     def from_dict(obj: Any) -> "ElkProperties":
         assert isinstance(obj, dict)
         cssClasses = from_union([from_str, from_none], obj.get("cssClasses"))
-        type = from_union(
-            [from_str, from_none],
-            obj.get("type"),
-        )
         shape = from_union(
             [
                 lambda x: from_dict(
@@ -121,16 +129,16 @@ class ElkProperties:
             ],
             obj.get("shape"),
         )
+        selectable = from_union([from_bool, from_none], obj.get("selectable"))
         return ElkProperties(
             cssClasses=cssClasses,
-            type=type,
             shape=shape,
+            selectable=selectable,
         )
 
     def to_dict(self) -> dict:
         result: dict = {}
         result["cssClasses"] = from_union([from_str, from_none], self.cssClasses)
-        result["type"] = from_union([from_str, from_none], self.type)
         result["shape"] = from_union(
             [
                 lambda x: from_dict(
@@ -140,6 +148,7 @@ class ElkProperties:
             ],
             self.shape,
         )
+        result["selectable"] = from_union([from_bool, from_none], self.selectable)
         return strip_none(result)
 
 

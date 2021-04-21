@@ -16,8 +16,8 @@ import {
 } from 'sprotty';
 
 import { JLModelSource } from './diagram-server';
-import { SElkConnectorDef } from './json/defs';
-import { SDefGraphSchema } from './json/elkgraph-to-sprotty';
+import { SElkConnectorSymbol } from './json/symbols';
+import { SSymbolGraphSchema } from './json/elkgraph-to-sprotty';
 import { ElkNode } from './sprotty-model';
 import { VNode } from 'snabbdom/vnode';
 import { WidgetModel, DOMWidgetView } from '@jupyter-widgets/base';
@@ -126,14 +126,14 @@ export class ElkModelRenderer extends ModelRenderer {
     };
   }
 
-  getConnector(id): SElkConnectorDef {
-    let connector: SElkConnectorDef = this.source.elkToSprotty?.connectors[id];
+  getConnector(id): SElkConnectorSymbol {
+    let connector: SElkConnectorSymbol = this.source.elkToSprotty?.connectors[id];
     return connector;
   }
 
   hrefID(id: string): string | undefined {
     if (id) {
-      return this.source.elkToSprotty.defsIds[id];
+      return this.source.elkToSprotty.symbolsIds[id];
     }
   }
 }
@@ -153,12 +153,12 @@ function getPosition(element: BoundsAware & SChildElement): Point {
   };
 }
 
-export class SDefModelFactory extends SModelFactory {
-  protected initializeRoot(root: SModelRoot, schema: SDefGraphSchema): SModelRoot {
+export class SSymbolModelFactory extends SModelFactory {
+  protected initializeRoot(root: SModelRoot, schema: SSymbolGraphSchema): SModelRoot {
     root = super.initializeRoot(root, schema);
 
-    if ((root as any)?.defs) {
-      (root as any).defs.children = schema.defs.children.map(childSchema =>
+    if ((root as any)?.symbols) {
+      (root as any).symbols.children = schema.symbols.children.map(childSchema =>
         this.createElement(childSchema, root)
       );
     }

@@ -3,23 +3,23 @@ name: ipyelk
 commands:
   postBuild:
     description: do what binder does
-    unix: &setup python postBuild
-    windows: *setup
+    unix: python postBuild
+    windows: python postBuild
 
   watch:
     description: set up processes for live development
-    unix: &watch python -m scripts.lab watch
-    windows: *watch
+    unix: python -m scripts.lab watch
+    windows: python -m scripts.lab watch
 
   lab:
     description: launch lab
-    unix: &lab jupyter lab --no-browser --debug
-    windows: *lab
+    unix: jupyter lab --no-browser --debug
+    windows: jupyter lab --no-browser --debug
 
   lab:build:
     description: do a regular lab build
-    unix: &labBuild python -m scripts.lab build
-    windows: *labBuild
+    unix: python -m scripts.lab build
+    windows: python -m scripts.lab build
 
   ext:pack:
     description: ensure built tarballs, a little finicky
@@ -60,11 +60,9 @@ env_specs:
       - python >=3.7,<3.8.0a0
       - twine
       - wheel
+      - rope
 
   ipyelk:
-    description: binder environment
-    channels:
-      - https://conda.anaconda.org/conda-forge
     packages:
       - async-lru >=1,<2
       - bqplot >=0.12.20
@@ -76,8 +74,10 @@ env_specs:
       - networkx
       - nodejs >=14,<15
       - pandas
+      - pydantic
       - python >=3.7
-
+    channels:
+      - https://conda.anaconda.org/conda-forge
   atest:
     description: acceptance test environment (kept separate because firefox)
     platforms:
@@ -114,6 +114,8 @@ env_specs:
       - sphinx
       - sphinx-autobuild
       - sphinx-autodoc-typehints
+      - sqlalchemy <1.4
+      - docutils <0.17
 
   _lint:
     description: linting/formatting environment. not actually created.
@@ -122,6 +124,7 @@ env_specs:
       - isort
       - pyflakes
       - flake8
+      - mypy
 
   _utest:
     description: unit test environment. not actually created.

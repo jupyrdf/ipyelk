@@ -36,7 +36,8 @@
   --jp-elk-transition: 0.1s ease-in;
 }
 
-.jp-ElkView .elkdefs > symbol {
+/* firefox doesnt apply style correctly with the addition of .jp-ElkView */
+symbol.elksymbol {
   overflow: visible;
 }
 
@@ -96,11 +97,21 @@
   transition: stroke stroke-width var(--jp-elk-transition);
 }
 
+.jp-ElkView .elklabel.mouseover {
+  fill: var(--jp-elk-stroke-hover);
+  transition: fill stroke var(--jp-elk-transition);
+}
+
 .jp-ElkView .elknode.selected.mouseover,
 .jp-ElkView .elkport.selected.mouseover,
 .jp-ElkView .elkedge.selected.mouseover,
 .jp-ElkView .elkedge.selected.mouseover .elkarrow {
   stroke-width: var(--jp-elk-stroke-width-hover);
   stroke: var(--jp-elk-stroke-hover-selected);
+  transition: fill stroke var(--jp-elk-transition);
+}
+
+.jp-ElkView .elklabel.selected.mouseover {
+  fill: var(--jp-elk-stroke-hover-selected);
   transition: fill stroke var(--jp-elk-transition);
 }

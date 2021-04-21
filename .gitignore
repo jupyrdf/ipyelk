@@ -23,6 +23,7 @@ var/
 *.egg-info/
 .installed.cfg
 *.egg
+.mypy_cache
 
 # PyInstaller
 #  Usually these files are written by a python script from a template
@@ -151,15 +152,12 @@ $RECYCLE.BIN/
 **/node_modules/
 py_src/ipyelk/nbextension/static/index.*
 py_src/ipyelk/labextension/*.tgz
+py_src/ipyelk/labextension
 **/.yarn-packages/
 
 # Coverage data
 # -------------
 **/coverage/
-
-# generated files
-py_src/ipyelk/schema/*.json
-py_src/ipyelk/labextension/
 
 # editors
 .idea/

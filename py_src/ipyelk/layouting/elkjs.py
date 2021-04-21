@@ -26,7 +26,8 @@ class LayoutRequest:
 
 
 class ElkJS(DOMWidget):
-    """Jupyterlab widget for interacting with ELK diagrams"""
+    """Jupyterlab widget for calling `elkjs <https://github.com/kieler/elkjs>`_
+    layout given a valid elkjson dictionary"""
 
     _model_name = T.Unicode("ELKLayoutModel").tag(sync=True)
     _model_module = T.Unicode(EXTENSION_NAME).tag(sync=True)
@@ -44,11 +45,8 @@ class ElkJS(DOMWidget):
         asyncio.create_task(self._process_requests())
         asyncio.create_task(self._process_responses())
 
-    @T.default("_value")
-    def _default_value(self):
-        return {"id": "root"}
-
-    async def layout(self, value):
+    async def layout(self, value: Dict):
+        """Pass the value to `elkjs <https://github.com/kieler/elkjs>`_ layout"""
         future = asyncio.Future()
         request = LayoutRequest(payload=value)
         self._futures[request.id] = future

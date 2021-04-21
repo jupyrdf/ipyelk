@@ -42,12 +42,12 @@ function svgStr(point: Point) {
 @injectable()
 export class ElkNodeView extends RectangularNodeView {
   render(node: ElkNode, context: ElkModelRenderer): VNode | undefined {
-    if (!this.isDef(node) && !this.isVisible(node, context)) {
+    if (!this.isSymbol(node) && !this.isVisible(node, context)) {
       return;
     }
     let mark = this.renderMark(node, context);
-    if (!this.isDef(node)) {
-      // skip marking extra classes on def nodes
+    if (!this.isSymbol(node)) {
+      // skip marking extra classes on symbol nodes
       setClass(mark, 'elknode', true);
       setClass(mark, 'mouseover', node.hoverFeedback);
       setClass(mark, 'selected', node.selected);
@@ -77,8 +77,8 @@ export class ElkNodeView extends RectangularNodeView {
    *
    * @param node
    */
-  isDef(node: ElkNode): boolean {
-    return node?.properties?.isDef == true;
+  isSymbol(node: ElkNode): boolean {
+    return node?.properties?.isSymbol == true;
   }
 }
 
@@ -180,8 +180,8 @@ export class ElkUseNodeView extends ElkNodeView {
 @injectable()
 export class ElkSVGNodeView extends ElkNodeView {
   renderMark(node: ElkNode, context: ElkModelRenderer): VNode {
-    let x = node.properties?.shape?.x;
-    let y = node.properties?.shape?.y;
+    let x = node.properties?.shape?.x || 0;
+    let y = node.properties?.shape?.y || 0;
     return JSX.createElement(
       'g',
       {
@@ -231,12 +231,12 @@ export class ElkForeignObjectNodeView extends ElkNodeView {
 @injectable()
 export class ElkHTMLNodeView extends ElkNodeView {
   render(node: ElkNode, context: ElkModelRenderer): VNode | undefined {
-    if (!this.isDef(node) && !this.isVisible(node, context)) {
+    if (!this.isSymbol(node) && !this.isVisible(node, context)) {
       return;
     }
     let mark = this.renderMark(node, context);
-    if (!this.isDef(node)) {
-      // skip marking extra classes on def nodes
+    if (!this.isSymbol(node)) {
+      // skip marking extra classes on symbol nodes
       setClass(mark, 'elknode', true);
       setClass(mark, 'mouseover', node.hoverFeedback);
       setClass(mark, 'selected', node.selected);
@@ -268,6 +268,8 @@ export class ElkPortView extends RectangularNodeView {
       mark = (
         <use
           class-elkport={true}
+          width={port.size.width}
+          height={port.size.height}
           class-mouseover={port.hoverFeedback}
           class-selected={port.selected}
           href={'#' + href}
@@ -311,6 +313,8 @@ export class ElkLabelView extends ShapeView {
       mark = (
         <use
           class-elklabel={true}
+          class-mouseover={label.hoverFeedback}
+          class-selected={label.selected}
           href={'#' + href}
           width={label.size.width}
           height={label.size.height}
@@ -318,11 +322,18 @@ export class ElkLabelView extends ShapeView {
       );
       setClass(mark, use, true);
     } else {
-      mark = <text class-elklabel={true}>{label.text}</text>;
+      mark = (
+        <text
+          class-elklabel={true}
+          class-selected={label.selected}
+          class-mouseover={label.hoverFeedback}
+        >
+          {label.text}
+        </text>
+      );
     }
 
     if (label.labels?.length) {
-      console.log('sub labeling to do...');
       let icon: ElkLabel = label.labels[0];
       let use = icon?.properties?.shape?.use;
       let href = context.hrefID(use);
@@ -347,6 +358,8 @@ export class ElkLabelView extends ShapeView {
           <use
             transform={`translate(${iconPos.x} ${iconPos.y})`}
             class-elklabel={true}
+            class-mouseover={label.hoverFeedback}
+            class-selected={label.selected}
             href={'#' + href}
             width={icon.size.width}
             height={icon.size.height}

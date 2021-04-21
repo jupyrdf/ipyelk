@@ -14,4 +14,5 @@ dependencies:
   - networkx
   - nodejs >=14,<15
   - pandas
+  - pydantic
   - python >=3.7

@@ -20,11 +20,12 @@
     "resolveJsonModule": true,
     "rootDir": "src",
     "skipLibCheck": true,
+    "sourceMap": true,
     "strict": true,
     "strictNullChecks": false,
     "target": "es2017",
-    "types": ["reflect-metadata"],
-    "tsBuildInfoFile": "lib/.tsbuildinfo"
+    "tsBuildInfoFile": "lib/.tsbuildinfo",
+    "types": ["reflect-metadata"]
   },
   "include": ["src/**/*"]
 }

@@ -7,12 +7,14 @@ from typing import Dict, Hashable, List, Optional, Union
 import ipywidgets as W
 import traitlets as T
 
+from . import elements
 from .diagram import ElkDiagram, ElkLabel, ElkNode, ElkPort
 from .diagram.elk_model import ElkGraphElement
 from .diagram.elk_text_sizer import ElkTextSizer, size_labels
 from .exceptions import ElkDuplicateIDError, ElkRegistryError
 from .schema import ElkSchemaValidator
 from .trait_types import Schema
+from .util import listed
 
 
 @dataclass(frozen=True)
@@ -22,7 +24,8 @@ class Edge:
     target: Hashable
     target_port: Optional[Hashable]
     owner: Hashable
-    data: Optional[Dict]
+    data: Dict
+    mark: Optional[elements.Mark]
 
     def __hash__(self):
         return hash((self.source, self.source_port, self.target, self.target_port))
@@ -32,11 +35,14 @@ class Edge:
 class Port:
     node: Hashable
     elkport: ElkPort
+    mark: Optional[elements.Mark]
 
     def __hash__(self):
         return hash(tuple([hash(self.node), hash(self.elkport.id)]))
 
 
+# TODO investigating following pattern for various map
+# https://github.com/pandas-dev/pandas/issues/33025#issuecomment-699636759
 NodeMap = Dict[Hashable, ElkNode]
 EdgeMap = Dict[Hashable, List[Edge]]
 PortMap = Dict[Hashable, Port]
@@ -56,7 +62,7 @@ class ElkTransformer(W.Widget):
     _elk_to_item: Dict[str, Hashable] = None
     _item_to_elk: Dict[Hashable, str] = None
 
-    text_sizer: ElkTextSizer = T.Instance(ElkTextSizer, allow_none=True)
+    text_sizer: ElkTextSizer = T.Instance(ElkTextSizer, allow_none=True, kw={})
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -66,16 +72,20 @@ class ElkTransformer(W.Widget):
     async def transform(self) -> ElkNode:
         """Generate elk json"""
         top = ElkNode(**self.source)
-        # bulk calculate label sizes
-        await size_labels(self.text_sizer, collect_labels([top]))
         return top
 
     @T.default("value")
     def _default_value(self):
         return {"id": self.ELK_ROOT_ID}
 
-    async def _refresh(self):
+    async def _refresh(self, debug=False):
+        text_sizer = self.text_sizer
+        if debug:
+            self.text_sizer = None
+
         root_node = await self.transform()
+        # bulk calculate label sizes
+        await size_labels(self.text_sizer, collect_labels([root_node]))
         value = root_node.to_dict()
 
         # forces redraw on the frontend by creating to new label
@@ -84,6 +94,7 @@ class ElkTransformer(W.Widget):
 
         value["labels"] = labels
         self.value = value
+        self.text_sizer = text_sizer
 
     @T.observe("source")
     def refresh(self, change: T.Bunch = None):
@@ -106,14 +117,23 @@ class ElkTransformer(W.Widget):
             ) from E
 
     def to_id(self, item: Hashable) -> str:
-        """Use original objects to find elk id"""
+        """Use original objects to find elk id
+
+        :param item: item to convert to the elk identifier
+        :raises ElkRegistryError: If unable to find item in the registry
+        :return: elk identifier
+        """
         try:
             return self._item_to_elk[item]
         except KeyError as E:
             raise ElkRegistryError(f"Item `{item}` not in elk id registry.") from E
 
     def connect(self, view: ElkDiagram) -> T.link:
-        """Connect the output value of this transformer to a diagram"""
+        """Connect the output elk json value of this transformer to a diagram
+
+        :param view: Elk diagram to link elk json values.
+        :return: traitlet link
+        """
         return T.dlink((self, "value"), (view, "value"))
 
     def register(self, element: Union[str, ElkGraphElement], item: Hashable):
@@ -139,55 +159,6 @@ class ElkTransformer(W.Widget):
         self._item_to_elk: Dict[Hashable, str] = {}
 
 
-def merge(d1: Optional[Dict], d2: Optional[Dict]) -> Optional[Dict]:
-    """Merge two dictionaries while first testing if either are `None`.
-    The first dictionary's keys take precedence over the second dictionary.
-    If the final merged dictionary is empty `None` is returned.
-
-    :param d1: primary dictionary
-    :type d1: Optional[Dict]
-    :param d2: secondary dictionary
-    :type d2: Optional[Dict]
-    :return: merged dictionary
-    :rtype: Dict
-    """
-    if d1 is None:
-        d1 = {}
-    elif not isinstance(d1, dict):
-        d1 = d1.to_dict()
-    if d2 is None:
-        d2 = {}
-    elif not isinstance(d2, dict):
-        d2 = d2.to_dict()
-
-    cl1 = d1.get("cssClasses", "")
-    cl2 = d2.get("cssClasses", "")
-    cl = " ".join(sorted(set([*cl1.split(), *cl2.split()]))).strip()
-
-    value = {**d2, **d1}  # right most wins if duplicated keys
-
-    # if either had cssClasses, update that
-    if cl:
-        value["cssClasses"] = cl
-
-    if value:
-        return value
-
-
-def listed(values: Optional[List]) -> List:
-    """Checks if incoming `values` is None then either returns a new list or
-    original value.
-
-    :param values: List of values
-    :type values: Optional[List]
-    :return: List of values or empty list
-    :rtype: List
-    """
-    if values is None:
-        return []
-    return values
-
-
 def collect_labels(
     nodes: List[ElkNode], recurse: bool = True, include_sized: bool = False
 ) -> List[ElkLabel]:
@@ -204,7 +175,7 @@ def collect_labels(
     :return: [description]
     :rtype: List[ElkLabel]
     """
-    labels = []
+    labels: List[ElkLabel] = []
 
     def include(label):
         return include_sized or not bool(label.width or label.height)

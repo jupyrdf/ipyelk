@@ -12,7 +12,7 @@ import {
   LocalModelSource,
   Viewport
 } from 'sprotty';
-import { ElkGraphJsonToSprotty, SDefGraphSchema } from './json/elkgraph-to-sprotty';
+import { ElkGraphJsonToSprotty, SSymbolGraphSchema } from './json/elkgraph-to-sprotty';
 import { ManagerBase } from '@jupyter-widgets/base';
 import { Widget } from '@lumino/widgets';
 // import { WidgetManager } from '@jupyter-widgets/jupyterlab-manager';
@@ -22,9 +22,13 @@ export class JLModelSource extends LocalModelSource {
   widget_manager: ManagerBase<Widget>;
   // widget_manager: WidgetManager;
 
-  async updateLayout(layout, defs, idPrefix: string) {
+  async updateLayout(layout, symbols, idPrefix: string) {
     this.elkToSprotty = new ElkGraphJsonToSprotty();
-    let sGraph: SDefGraphSchema = this.elkToSprotty.transform(layout, defs, idPrefix);
+    let sGraph: SSymbolGraphSchema = this.elkToSprotty.transform(
+      layout,
+      symbols,
+      idPrefix
+    );
     await this.updateModel(sGraph);
     // TODO this promise resolves before ModelViewer rendering is done. need to hook into postprocessing
   }

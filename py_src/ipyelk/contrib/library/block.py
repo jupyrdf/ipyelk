@@ -1,12 +1,12 @@
 # Copyright (c) 2021 Dane Freeman.
 # Distributed under the terms of the Modified BSD License.
-from dataclasses import field
-from typing import ClassVar, Dict, Type
+from typing import Dict, Type
+
+from pydantic import Field
 
 from ...diagram import layout_options as opt
-from ...diagram.symbol import Def
-from ..elements import Edge, Partition, Record, element
-from ..shapes import connectors
+from ...elements import Edge, EdgeProperties, Partition, Record, SymbolSpec
+from ..molds import connectors
 
 content_label_opts = opt.OptionsWidget(
     options=[opt.NodeLabelPlacement(horizontal="left", vertical="center")]
@@ -33,52 +33,45 @@ compart_opts = opt.OptionsWidget(
 ).value
 
 
-@element
 class Block(Record):
     pass
 
 
-@element
 class Composition(Edge):
-    shape_start: ClassVar[str] = "composition"
+    properties: EdgeProperties = EdgeProperties(shape={"start": "composition"})
 
 
-@element
 class Aggregation(Edge):
-    shape_start: ClassVar[str] = "aggregation"
+    properties: EdgeProperties = EdgeProperties(shape={"start": "aggregation"})
 
 
-@element
 class Containment(Edge):
-    shape_start: ClassVar[str] = "containment"
+    properties: EdgeProperties = EdgeProperties(shape={"start": "containment"})
 
 
-@element
 class DirectedAssociation(Edge):
-    shape_end: ClassVar[str] = "directed_association"
+    properties: EdgeProperties = EdgeProperties(shape={"end": "directed_association"})
 
 
-@element
 class Association(Edge):
     pass
 
 
-@element
 class Generalization(Edge):
-    shape_start: ClassVar[str] = "generalization"
+    properties: EdgeProperties = EdgeProperties(shape={"start": "generalization"})
 
 
-@element
 class BlockDiagram(Partition):
     # TODO flesh out ideas of encapsulating diagram defs / styles / elements
-    defs: ClassVar[Dict[str, Def]] = {
-        "composition": connectors.Rhomb(r=4),
-        "aggregation": connectors.Rhomb(r=4),
-        "containment": connectors.Containment(r=4),
-        "directed_association": connectors.StraightArrow(r=4),
-        "generalization": connectors.StraightArrow(r=4, closed=True),
-    }
-    style: ClassVar[Dict[str, Def]] = {
+    symbols: SymbolSpec = SymbolSpec().add(
+        connectors.Rhomb(identifier="composition", r=4),
+        connectors.Rhomb(identifier="aggregation", r=4),
+        connectors.Containment(identifier="containment", r=4),
+        connectors.StraightArrow(identifier="directed_association", r=4),
+        connectors.StraightArrow(identifier="generalization", r=4, closed=True),
+    )
+
+    style: Dict[str, Dict] = {
         " .elklabel.compartment_title_1": {
             "font-weight": "bold",
         },
@@ -102,4 +95,4 @@ class BlockDiagram(Partition):
             "fill": "transparent",
         },
     }
-    default_edge: Type[Edge] = field(default=Association)
+    default_edge: Type[Edge] = Field(default=Association)

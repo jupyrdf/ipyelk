@@ -1,12 +1,23 @@
 # Copyright (c) 2021 Dane Freeman.
 # Distributed under the terms of the Modified BSD License.
-from dataclasses import field
-from typing import ClassVar, Dict, Type
+from typing import Dict, Type
+
+from pydantic import Field
 
 from ...diagram import layout_options as opt
-from ...diagram.symbol import Def, Symbol, symbols
-from ..elements import Edge, Label, Node, Partition, Port, element
-from ..shapes import connectors, shapes
+from ...elements import (
+    Edge,
+    EdgeProperties,
+    Label,
+    Node,
+    NodeProperties,
+    Partition,
+    Port,
+    Symbol,
+    SymbolSpec,
+    shapes,
+)
+from ..molds import connectors, structures
 
 center_label_opts = opt.OptionsWidget(
     options=[opt.NodeLabelPlacement(horizontal="center", vertical="center")]
@@ -19,12 +30,33 @@ heading_label_opts = opt.OptionsWidget(
 
 node_opts = opt.OptionsWidget(options=[opt.NodeSizeConstraints()]).value
 
-small_port_shape = symbols.Rect(width=0, height=0)
+small_port_shape = shapes.PortShape(width=0, height=0)
 
 
-@element
+# symbols
+arrow_head = connectors.StraightArrow("arrow", r=4)
+init_state = Symbol(
+    identifier="initial-state",
+    element=Node(properties=NodeProperties(shape=shapes.Circle(radius=6))),
+    width=12,
+    height=12,
+)
+exit_state = Symbol(
+    identifier="exit-state",
+    element=structures.XCircle(radius=6),
+    width=12,
+    height=12,
+)
+final_state = Symbol(
+    identifier="final-state",
+    element=structures.DoubleCircle(radius=6),
+    width=12,
+    height=12,
+)
+
+
 class Activity(Node):
-    shape: ClassVar[Symbol] = symbols.Ellipse()
+    properties: NodeProperties = NodeProperties(shape=shapes.Ellipse())
 
     @classmethod
     def make(cls, text, container=False):
@@ -34,9 +66,10 @@ class Activity(Node):
                     Label(text=text, layoutOptions=heading_label_opts),
                 ],
                 layoutOptions=node_opts,
-                properties={"cssClasses": "activity-container"},
+                properties=NodeProperties(
+                    shape=shapes.Rect(), cssClasses="activity-container"
+                ),
             )
-            mark.shape = None
             return mark
 
         return cls(
@@ -47,30 +80,33 @@ class Activity(Node):
         )
 
 
-@element
 class Merge(Node):
-    shape: ClassVar[Symbol] = symbols.Rect(width=50, height=10)
-    _css_classes = ["activity-filled"]
+    properties: NodeProperties = NodeProperties(
+        cssClasses="activity-filled", shape=shapes.Rect(width=50, height=10)
+    )
 
 
-@element
 class Decision(Node):
-    shape: ClassVar[Symbol] = symbols.Diamond(width=20, height=20)
+    properties: NodeProperties = NodeProperties(
+        shape=shapes.Diamond(width=20, height=20)
+    )
 
-    def __post_init__(self, *args, **kwargs):
-        super().__post_init__(*args, *kwargs)
+    def __init__(self, **data):
+        super().__init__(**data)
 
         def port_opts(side):
             return opt.OptionsWidget(options=[opt.PortSide(value=side)]).value
 
         self.add_port(
             key="input",
-            port=Port(shape=small_port_shape, layoutOptions=port_opts("NORTH")),
+            port=Port(
+                properties={"shape": small_port_shape}, layoutOptions=port_opts("NORTH")
+            ),
         )
         self.add_port(
             key="true",
             port=Port(
-                shape=small_port_shape,
+                properties={"shape": small_port_shape},
                 labels=[Label(text="true")],
                 layoutOptions=port_opts("WEST"),
             ),
@@ -78,7 +114,7 @@ class Decision(Node):
         self.add_port(
             key="false",
             port=Port(
-                shape=small_port_shape,
+                properties={"shape": small_port_shape},
                 labels=[Label(text="false")],
                 layoutOptions=port_opts("EAST"),
             ),
@@ -89,38 +125,39 @@ class Decision(Node):
         ).value
 
 
-@element
 class Join(Node):
-    shape: ClassVar[Symbol] = symbols.Rect(width=50, height=10)
-    _css_classes = ["activity-filled"]
+    properties: NodeProperties = NodeProperties(
+        cssClasses="activity-filled", shape=shapes.Rect(width=50, height=10)
+    )
 
 
-@element
 class StartActivity(Node):
-    shape: ClassVar[Symbol] = symbols.Use(value="initial-state", width=12, height=12)
+    properties: NodeProperties = NodeProperties(
+        shape=shapes.Use(use=init_state.identifier, width=12, height=12)
+    )
 
 
-@element
 class EndActivity(Node):
-    shape: ClassVar[Symbol] = symbols.Use(value="final-state", width=12, height=12)
+    properties: NodeProperties = NodeProperties(
+        shape=shapes.Use(use=final_state.identifier, width=12, height=12)
+    )
 
 
-@element
 class SimpleArrow(Edge):
-    shape_end: ClassVar[str] = "arrow"
+    properties: EdgeProperties = EdgeProperties(shape={"end": arrow_head.identifier})
 
 
-@element
 class ActivityDiagram(Partition):
     # TODO flesh out ideas of encapsulating diagram defs / styles / elements
-    defs: ClassVar[Dict[str, Def]] = {
-        "initial-state": Def(children=[symbols.Circle(radius=6)]),
-        "final-state": shapes.DoubleCircle(radius=6),
-        "exit-state": shapes.XCircle(radius=6),
-        "arrow": connectors.StraightArrow(r=4),
-    }
-    style: ClassVar[Dict[str, Def]] = {
-        " .final-state > g:nth-child(2)": {
+    symbols: SymbolSpec = SymbolSpec().add(
+        init_state,
+        exit_state,
+        final_state,
+        arrow_head,
+    )
+
+    style: Dict[str, Dict] = {
+        " .final-state .inner-circle": {
             "fill": "var(--jp-elk-node-stroke)",
         },
         " .activity-filled .elknode": {
@@ -130,4 +167,4 @@ class ActivityDiagram(Partition):
             "rx": "var(--jp-code-font-size)",
         },
     }
-    default_edge: Type[Edge] = field(default=SimpleArrow)
+    default_edge: Type[Edge] = Field(default=SimpleArrow)

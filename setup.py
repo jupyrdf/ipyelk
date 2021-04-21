@@ -1,10 +1,15 @@
 # Copyright (c) 2021 Dane Freeman.
 # Distributed under the terms of the Modified BSD License.
 
+import os
 import re
+import setuptools
+import warnings
+
 from pathlib import Path
 
-import setuptools
+
+READTHEDOCS = os.environ.get("READTHEDOCS", None) == "True"
 
 HERE = Path(__file__).parent
 EXT = HERE / "py_src" / "ipyelk" / "labextension"
@@ -26,9 +31,14 @@ for ext_path in [EXT] + [d for d in EXT.rglob("*") if d.is_dir()]:
 
 ALL_FILES = sum(EXT_FILES.values(), [])
 
-assert (
-    len([p for p in ALL_FILES if "remoteEntry" in str(p)]) == 1
-), "expected _exactly one_ remoteEntry.*.js"
+remote_entries = []
+pat = re.compile("remoteEntry.*.js$")
+for file in ALL_FILES:
+    if re.search(pat, file):
+        remote_entries.append(file)
+num_remotes = len(remote_entries)
+if not READTHEDOCS and num_remotes != 1:
+    warnings.warn(f"expect _exactly one_ remoteEntry.*.js$ found {num_remotes}")
 
 EXT_FILES[str(SHARE)] += ["install.json"]
 

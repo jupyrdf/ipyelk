@@ -15,6 +15,7 @@ export interface ElkPoint {
 }
 
 export interface Shape {
+  type?: string;
   use?: string;
   start?: string;
   end?: string;
@@ -25,9 +26,9 @@ export interface Shape {
 }
 export interface ElkProperties {
   cssClasses?: string;
-  type?: string;
   shape?: Shape;
-  isDef?: boolean;
+  isSymbol?: boolean;
+  selectable?: boolean;
 }
 
 export interface ElkGraphElement {

@@ -57,7 +57,7 @@ export class ELKDiagramModel extends DOMWidgetModel {
       _view_name: ELKDiagramView.view_name,
       _view_module_version: VERSION,
       value: DEFAULT_VALUE,
-      defs: {},
+      symbols: {},
       mark_layout: {},
       layouter: {}
     };
@@ -148,7 +148,7 @@ export class ELKDiagramView extends DOMWidgetView {
     this.model.on('change:hovered', this.updateHover, this);
     this.model.on('change:interaction', this.interaction_mode_changed, this);
     this.model.on('msg:custom', this.handleMessage, this);
-    this.model.on('change:defs', this.diagramLayout, this);
+    this.model.on('change:symbols', this.diagramLayout, this);
     this.touch(); //to sync back the diagram state
 
     // Register Action Handlers
@@ -252,8 +252,8 @@ export class ELKDiagramView extends DOMWidgetView {
 
   async diagramLayout() {
     let layout = this.model.get('mark_layout');
-    let defs = this.model.get('defs');
-    await this.source.updateLayout(layout, defs, this.div_id);
+    let symbols = this.model.get('symbols');
+    await this.source.updateLayout(layout, symbols, this.div_id);
     this.model.layoutUpdated.emit();
   }
 

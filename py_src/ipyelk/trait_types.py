@@ -1,7 +1,6 @@
 # Copyright (c) 2021 Dane Freeman.
 # Distributed under the terms of the Modified BSD License.
 
-import dataclasses
 import json
 from typing import List
 
@@ -30,12 +29,3 @@ class Schema(traitlets.Any):
                 msg += f"\n\t\t{json.dumps(error.instance)[:70]}"
             raise traitlets.TraitError(msg)
         return value
-
-
-class Dataclass(traitlets.Instance):
-    def __init__(self, klass, *args, **kwargs):
-        assert dataclasses.is_dataclass(klass), "Klass must be a dataclass"
-        super().__init__(klass, *args, **kwargs)
-
-    def to_json(self, value):
-        return dataclasses.asdict(value)
