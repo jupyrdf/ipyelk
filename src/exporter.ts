@@ -8,7 +8,7 @@ import { unpack_models as deserialize } from '@jupyter-widgets/base';
 
 import { ELK_DEBUG, NAME, VERSION } from './tokens';
 
-import { ELKDiagramModel } from './display_widget';
+import { ELKViewerModel } from './display_widget';
 
 import elkRawCSS from '!!raw-loader!../style/diagram.css';
 
@@ -64,7 +64,7 @@ export class ELKExporterModel extends WidgetModel {
     return this.get('enabled') || true;
   }
 
-  get diagram(): ELKDiagramModel {
+  get diagram(): ELKViewerModel {
     return this.get('diagram');
   }
 
@@ -98,7 +98,7 @@ export class ELKExporterModel extends WidgetModel {
   }
 
   is_an_elkmodel(model: WidgetModel) {
-    return model instanceof ELKDiagramModel;
+    return model instanceof ELKViewerModel;
   }
 
   _on_app_changed() {
@@ -107,7 +107,7 @@ export class ELKExporterModel extends WidgetModel {
     if (app?.on != null) {
       app.on('change:raw_css', this._schedule_update, this);
       const children: WidgetModel[] = app.get('children') || [];
-      const diagrams = children.filter(this.is_an_elkmodel) as ELKDiagramModel[];
+      const diagrams = children.filter(this.is_an_elkmodel) as ELKViewerModel[];
       if (diagrams.length && diagrams[0].layoutUpdated) {
         diagrams[0].layoutUpdated.connect(this._schedule_update, this);
       } else {

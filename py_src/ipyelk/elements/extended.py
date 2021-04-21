@@ -4,7 +4,7 @@ from typing import Dict, List, Optional, Type
 
 from pydantic import Field
 
-from ..diagram import layout_options as opt
+from ..model import layout_options as opt
 from ..util import merge
 from .elements import Edge, Label, LabelProperties, Node
 from .shapes import Icon

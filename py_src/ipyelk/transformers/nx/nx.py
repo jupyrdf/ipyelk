@@ -5,8 +5,8 @@ from typing import Dict, Hashable, List, Optional, Tuple
 
 import networkx as nx
 
-from ..diagram.elk_model import ElkNode, ElkRoot
-from ..transform import NodeMap
+from ...model.model import ElkNode, ElkRoot
+from ..mappings import NodeMap
 
 
 def compact(array: Optional[List]) -> Optional[List]:

@@ -4,7 +4,7 @@
 import ipywidgets as W
 import traitlets as T
 
-from .styled_widget import StyledWidget
+from ..styled_widget import StyledWidget
 
 
 class Toolbar(W.HBox, StyledWidget):

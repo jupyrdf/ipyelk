@@ -1,6 +1,7 @@
 # Copyright (c) 2021 Dane Freeman.
 # Distributed under the terms of the Modified BSD License.
 from .elements import (
+    BaseElement,
     Edge,
     EdgeProperties,
     ElementMetadata,
@@ -18,6 +19,7 @@ from .shapes import EdgeShape, LabelShape, NodeShape, PortShape
 from .symbol import EndpointSymbol, Symbol, SymbolSpec
 
 __all__ = [
+    "BaseElement",
     "Compartment",
     "Edge",
     "EdgeProperties",

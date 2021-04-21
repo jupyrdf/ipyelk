@@ -6,6 +6,7 @@ from typing import Dict, List, Optional, Set, Type, Union
 
 from pydantic import BaseModel, Field, PrivateAttr
 
+from ..exceptions import NotFoundError, NotUniqueError
 from .common import add_excluded_fields
 from .registry import Registry
 from .shapes import BaseShape, EdgeShape, LabelShape, NodeShape, PortShape
@@ -47,7 +48,13 @@ class EdgeProperties(BaseProperties):
 
 
 class BaseElement(BaseModel, abc.ABC):
-    id: Optional[str] = Field(None)  # required for final elk json schema
+    id: Optional[str] = Field(
+        None,
+        description=(
+            "Must be a unique identifier for valid elk json. "
+            "If not provided it can be generated."
+        ),
+    )
     labels: List["Label"] = Field(default_factory=list)
     layoutOptions: Dict = Field(default_factory=dict)
     metadata: ElementMetadata = Field(default_factory=ElementMetadata)
@@ -55,6 +62,8 @@ class BaseElement(BaseModel, abc.ABC):
 
     class Config:
         copy_on_model_validation = False
+
+        excluded = ["metadata"]
 
     def __hash__(self):
         return hash(id(self))
@@ -158,7 +167,7 @@ class Edge(BaseElement):
     target: HierarchicalElement = Field(...)
 
     class Config:
-        excluded = ["source", "target"]
+        excluded = ["metadata", "source", "target"]
 
     def points(self):
         u = self.source if isinstance(self.source, Node) else self.source.get_parent()
@@ -169,16 +178,15 @@ class Edge(BaseElement):
         data = super().dict(**kwargs)
 
         if isinstance(self.source, Port):
-            data["source"] = Registry.get_id(self.source.get_parent())
-            data["sourcePort"] = Registry.get_id(self.source)
+            data["sources"] = [self.source.get_parent()._get_id()]
+            data["sourcePort"] = self.source._get_id()
         else:
-            data["source"] = Registry.get_id(self.source)
+            data["sources"] = [self.source._get_id()]
         if isinstance(self.target, Port):
-            data["target"] = Registry.get_id(self.target.get_parent())
-            data["targetPort"] = Registry.get_id(self.target)
+            data["targets"] = [self.target.get_parent()._get_id()]
+            data["targetPort"] = self.target._get_id()
         else:
-            data["target"] = Registry.get_id(self.target)
-
+            data["targets"] = [self.target._get_id()]
         return data
 
 
@@ -203,7 +211,7 @@ class Port(HierarchicalElement):
         copy_on_model_validation = False
 
         # non-pydantic configs
-        excluded = ["parent", "key"]
+        excluded = ["metadata", "parent", "key"]
 
     def _get_id(self) -> Optional[str]:
         if self.id is None:
@@ -251,12 +259,12 @@ class Node(HierarchicalElement):
         for key in self.Config.to_list:
             if key in data:
                 value = data[key]
-                if isinstance(value, (set,)):
+                if isinstance(value, (set, list, tuple)):
                     value = list(value)
                 elif isinstance(value, dict):
                     value = list(data[key].values())
                 else:
-                    raise TypeError(f"Need to handle converting {type(value)}")
+                    raise TypeError(f"Need to handle converting {key}:{type(value)}")
                 data[key] = value
         return data
 
@@ -285,7 +293,7 @@ class Node(HierarchicalElement):
 
         :param key: key to match
         :raises NotFoundError: If unable to find a matching child
-        :raises NonUniqueKeyError: If found multiple children with the same key
+        :raises NotUniqueError: If found multiple children with the same key
         :return: matching child
         """
         matches = [child for child in self.children if key == child.key]
@@ -295,7 +303,7 @@ class Node(HierarchicalElement):
         elif found == 0:
             raise NotFoundError("Child not found")
         else:
-            raise NonUniqueKeyError(
+            raise NotUniqueError(
                 f"{key} is not unique. Found {found} matching children."
             )
 
@@ -308,7 +316,7 @@ class Node(HierarchicalElement):
 
         :param key: key to match
         :raises NotFoundError: If unable to find a matching port
-        :raises NonUniqueKeyError: If found multiple ports with the same key
+        :raises NotUniqueError: If found multiple ports with the same key
         :return: matching port
         """
         matches = [port for port in self.ports if key == port.key]
@@ -318,9 +326,7 @@ class Node(HierarchicalElement):
         elif found == 0:
             raise NotFoundError("Port not found")
         else:
-            raise NonUniqueKeyError(
-                f"{key} is not unique. Found {found} matching ports."
-            )
+            raise NotUniqueError(f"{key} is not unique. Found {found} matching ports.")
 
     def add_edge(
         self,
@@ -344,14 +350,6 @@ class Node(HierarchicalElement):
             self.add_child(child=value, key=key)
         else:
             super().__setattr__(key, value)
-
-
-class NotFoundError(Exception):
-    pass
-
-
-class NonUniqueKeyError(Exception):
-    pass
 
 
 Label.update_forward_refs()

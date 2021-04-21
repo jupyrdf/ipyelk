@@ -5,7 +5,7 @@ from typing import List
 import ipywidgets as W
 import traitlets as T
 
-from ..elk_model import ElkNode, ElkPort
+from ..model import ElkNode, ElkPort
 from .selection_widgets import LayoutOptionWidget, SpacingOptionWidget
 
 PORT_CONSTRAINT_OPTIONS = {

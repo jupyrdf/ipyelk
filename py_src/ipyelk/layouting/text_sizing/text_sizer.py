@@ -10,9 +10,9 @@ from typing import Dict, List, Optional, Union
 import traitlets as T
 from async_lru import alru_cache
 
-from .._version import EXTENSION_NAME, EXTENSION_SPEC_VERSION
-from ..styled_widget import StyledWidget
-from .elk_model import ElkLabel, ElkProperties
+from ..._version import EXTENSION_NAME, EXTENSION_SPEC_VERSION
+from ...model.model import ElkLabel, ElkProperties
+from ...styled_widget import StyledWidget
 
 
 @dataclass
@@ -43,7 +43,7 @@ class SizingRequest:
         return {"value": self.text.text, "cssClasses": css_classes, "id": self.id}
 
 
-class ElkTextSizer(StyledWidget):
+class TextSizer(StyledWidget):
     """Jupyterlab widget for getting rendered text sizes from the DOM"""
 
     _model_name = T.Unicode("ELKTextSizerModel").tag(sync=True)
@@ -143,7 +143,7 @@ class ElkTextSizer(StyledWidget):
             self._response_queue.task_done()
 
 
-async def size_labels(text_sizer: Optional[ElkTextSizer], labels: List[ElkLabel]):
+async def size_labels(text_sizer: Optional[TextSizer], labels: List[ElkLabel]):
     """Run a list of ElkLabels through to the TextSizer measurer
 
     :param labels: [description]

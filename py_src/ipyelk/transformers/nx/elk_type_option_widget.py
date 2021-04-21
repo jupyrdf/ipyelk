@@ -4,8 +4,8 @@ from typing import Dict
 
 import traitlets as T
 
-from ..diagram.elk_model import ElkEdge, ElkLabel, ElkNode, ElkPort, ElkRoot
-from ..diagram.layout_options import LayoutOptionWidget, OptionsWidget
+from ...model.layout_options import LayoutOptionWidget, OptionsWidget
+from ...model.model import ElkEdge, ElkLabel, ElkNode, ElkPort, ElkRoot
 
 
 # TODO Layout dictionary widget needs to be reimplemented to allow more flexible

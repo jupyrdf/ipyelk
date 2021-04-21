@@ -11,6 +11,7 @@ from ipywidgets import DOMWidget
 
 from .._version import EXTENSION_NAME, EXTENSION_SPEC_VERSION
 from ..schema import validate_elk_json
+from .engine import LayoutEngine
 
 
 @dataclass
@@ -25,7 +26,7 @@ class LayoutRequest:
         }
 
 
-class ElkJS(DOMWidget):
+class ElkJS(DOMWidget, LayoutEngine):
     """Jupyterlab widget for calling `elkjs <https://github.com/kieler/elkjs>`_
     layout given a valid elkjson dictionary"""
 
@@ -78,10 +79,25 @@ class ElkJS(DOMWidget):
         while True:
             response = await self._response_queue.get()
             future = self._futures[response["id"]]
-            future.set_result(response["payload"])
+            future.set_result(santize_keys(response["payload"]))
             self._response_queue.task_done()
 
     def _handle_response(self, _, content, buffers):
         """Method to process messages back from the browser and resolve measurements"""
         if content.get("event", "") == "layout":
             asyncio.create_task(self._response_queue.put(content))
+
+
+def santize_keys(data, exclude=["$H"]):
+    """Strip out the extra `$H` keys that elkjs uses during the layout processing"""
+    # pop keys out of dict
+    if isinstance(data, dict):
+        for k in exclude:
+            data.pop(k, None)
+
+    attrs = ["children", "labels", "edges", "ports"]
+    for attr in attrs:
+        values = data.get(attr, [])
+        if values:
+            data[attr] = [santize_keys(v, exclude) for v in values]
+    return data

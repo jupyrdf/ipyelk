@@ -7,10 +7,9 @@ from typing import Dict, Hashable, List, Optional, Set, Tuple, Type, Union
 import networkx as nx
 import traitlets as T
 
-import ipyelk.diagram.layout_options as opt
-
-from .. import elements
-from ..diagram.elk_model import (
+from ... import elements
+from ...model import layout_options as opt
+from ...model.model import (
     ElkEdge,
     ElkExtendedEdge,
     ElkGraphElement,
@@ -20,8 +19,9 @@ from ..diagram.elk_model import (
     ElkProperties,
     ElkRoot,
 )
-from ..transform import Edge, EdgeMap, ElkTransformer, NodeMap, Port, PortMap
-from ..util import merge
+from ...util import merge
+from ..abstract_transformer import AbstractTransformer
+from ..mappings import Edge, EdgeMap, NodeMap, Port, PortMap
 from .nx import (
     build_hierarchy,
     compact,
@@ -32,7 +32,7 @@ from .nx import (
 )
 
 
-class XELK(ElkTransformer):
+class XELK(AbstractTransformer):
     """NetworkX source graphs to a valid ELK JSON dictionary structure
 
     :param source: Tuple of NetworkX graphs. The first graph contains

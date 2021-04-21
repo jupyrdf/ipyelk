@@ -42,35 +42,57 @@ import { PromiseDelegate } from '@lumino/coreutils';
 const DEFAULT_VALUE = { id: 'root' };
 const POLL = 300;
 
-export class ELKViewerModel extends DOMWidgetModel {
+export class ELKDiagramModel extends DOMWidgetModel {
   static model_name = 'ELKViewerModel';
 
-  layoutUpdated = new Signal<ELKViewerModel, void>(this);
+  layoutUpdated = new Signal<ELKDiagramModel, void>(this);
 
   defaults() {
     let defaults = {
       ...super.defaults(),
 
-      _model_name: ELKViewerModel.model_name,
+      _model_name: ELKDiagramModel.model_name,
       _model_module_version: VERSION,
       _view_module: NAME,
-      _view_name: ELKViewerView.view_name,
+      _view_name: ELKDiagramView.view_name,
       _view_module_version: VERSION,
+      value: DEFAULT_VALUE,
       symbols: {},
-      mark_layout: DEFAULT_VALUE
+      mark_layout: {},
+      layouter: {}
     };
     return defaults;
   }
 
   initialize(attributes: any, options: any) {
     super.initialize(attributes, options);
+    this.on('change:value', this.value_changed, this);
+
+    this.value_changed().catch(err => console.error(err));
+  }
+
+  async value_changed() {
+    let rootNode = this.get('value');
+    let layoutEngine: any = await this.layoutEngine(); // TODO need layoutEngine interface
+    let result;
+    if (layoutEngine) {
+      result = await layoutEngine.layout(rootNode);
+    } else {
+      result = rootNode;
+    }
+    this.set('mark_layout', result);
+  }
+
+  async layoutEngine() {
+    let mid = this.get('layouter').replace('IPY_MODEL_', '');
+    return await this.widget_manager.get_model(mid);
   }
 }
 
-export class ELKViewerView extends DOMWidgetView {
+export class ELKDiagramView extends DOMWidgetView {
   static view_name = 'ELKViewerView';
 
-  model: ELKViewerModel;
+  model: ELKDiagramModel;
   source: JLModelSource;
   container: any;
   private div_id: string;
@@ -188,6 +210,22 @@ export class ELKViewerView extends DOMWidgetView {
       default:
         break;
     }
+  }
+
+  /**
+   * Dictionary of events and handlers
+   */
+  events(): { [e: string]: string } {
+    return { click: '_handle_click' };
+  }
+
+  /**
+   * Handles when the button is clicked.
+   */
+  _handle_click(event) {
+    // event.preventDefault();
+    this.model.layoutUpdated.emit();
+    this.send({ event: 'click', id: this.model.get('hovered') });
   }
 
   updateSelected() {

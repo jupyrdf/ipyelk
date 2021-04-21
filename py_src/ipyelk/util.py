@@ -2,7 +2,7 @@
 # Distributed under the terms of the Modified BSD License.
 from typing import Dict, List, Optional
 
-from ipyelk.diagram.elk_model import strip_none
+from .model.model import strip_none
 
 
 def to_dict(obj):

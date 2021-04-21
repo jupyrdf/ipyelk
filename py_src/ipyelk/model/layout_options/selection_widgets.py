@@ -6,7 +6,7 @@ from typing import Dict, Hashable, List, Type, Union
 import ipywidgets as W
 import traitlets as T
 
-from ..elk_model import ElkGraphElement
+from ..model import ElkGraphElement
 
 
 class LayoutOptionWidget(W.VBox):

@@ -41,8 +41,7 @@ class ElementShape(BaseShape):
 
     @validator("type")
     def subtype_validator(cls, v):
-        """Checks that there is a subclass that defines the `type`
-        """
+        """Checks that there is a subclass that defines the `type`"""
         subtypes = cls.valid_subtypes()
         if v not in subtypes:
             raise ValueError("Unexpected Subtype")
