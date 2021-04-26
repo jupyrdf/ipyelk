@@ -7,9 +7,11 @@ from typing import Dict, Hashable, List, Optional, Set, Tuple, Type, Union
 import networkx as nx
 import traitlets as T
 
-from ... import elements
-from ...model import layout_options as opt
-from ...model.model import (
+from ...util import merge
+from .. import elements
+from ..abstract_transformer import AbstractTransformer
+from ..elements import layout_options as opt
+from ..elements.layout_options.model import (
     ElkEdge,
     ElkExtendedEdge,
     ElkGraphElement,
@@ -19,8 +21,6 @@ from ...model.model import (
     ElkProperties,
     ElkRoot,
 )
-from ...util import merge
-from ..abstract_transformer import AbstractTransformer
 from ..mappings import Edge, EdgeMap, NodeMap, Port, PortMap
 from .nx import (
     build_hierarchy,

@@ -6,7 +6,7 @@ from typing import List
 import ipywidgets as W
 import traitlets as T
 
-from ..model import ElkEdge, ElkLabel
+from .model import ElkEdge, ElkLabel
 from .selection_widgets import LayoutOptionWidget, SpacingOptionWidget
 
 EDGE_LABEL_OPTIONS = {

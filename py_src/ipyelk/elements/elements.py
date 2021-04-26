@@ -2,14 +2,14 @@
 # Distributed under the terms of the Modified BSD License.
 import abc
 import textwrap
-from typing import Dict, List, Optional, Set, Type, Union
+from typing import Dict, List, Optional, Type, Union
 
 from pydantic import BaseModel, Field, PrivateAttr
 
 from ..exceptions import NotFoundError, NotUniqueError
 from .common import add_excluded_fields
 from .registry import Registry
-from .shapes import BaseShape, EdgeShape, LabelShape, NodeShape, PortShape
+from .shapes import BaseShape, EdgeShape, LabelShape, NodeShape, Point, PortShape
 
 
 class ElementMetadata(BaseModel):
@@ -33,7 +33,7 @@ class NodeProperties(BaseProperties):
 
 
 class LabelProperties(BaseProperties):
-    shape: Optional[LabelShape]
+    shape: LabelShape = Field(default_factory=LabelShape)
     selectable: Optional[bool] = Field(
         False, description="Specifies if label is individually selectable"
     )
@@ -47,7 +47,7 @@ class EdgeProperties(BaseProperties):
     shape: Optional[EdgeShape]
 
 
-class BaseElement(BaseModel, abc.ABC):
+class IDElement(BaseModel, abc.ABC):
     id: Optional[str] = Field(
         None,
         description=(
@@ -55,6 +55,44 @@ class BaseElement(BaseModel, abc.ABC):
             "If not provided it can be generated."
         ),
     )
+
+    def __hash__(self):
+        return hash(id(self))
+
+    def __eq__(self, other):
+        return id(self) == id(other)
+
+    def dict(self, **kwargs) -> Dict:
+        """Shimming in the ability to have excluded fields by default. This
+        should be removeable in future versions of pydantic
+        """
+        excluded = getattr(self.Config, "excluded", [])
+        if excluded:
+            kwargs = add_excluded_fields(kwargs, excluded)
+        data = super().dict(**kwargs)
+        data["id"] = self.get_id()
+
+        # mechanism to convert some fields to a list representation if needed
+        for key in getattr(self.Config, "to_list", []):
+            if key in data:
+                value = data[key]
+                if isinstance(value, (set, list, tuple)):
+                    value = list(value)
+                elif isinstance(value, dict):
+                    value = list(data[key].values())
+                else:
+                    raise TypeError(f"Need to handle converting {key}:{type(value)}")
+                data[key] = value
+
+        return data
+
+    def get_id(self) -> str:
+        if self.id is not None:
+            return self.id
+        return Registry.get_id(self)
+
+
+class BaseElement(IDElement, abc.ABC):
     labels: List["Label"] = Field(default_factory=list)
     layoutOptions: Dict = Field(default_factory=dict)
     metadata: ElementMetadata = Field(default_factory=ElementMetadata)
@@ -64,12 +102,6 @@ class BaseElement(BaseModel, abc.ABC):
         copy_on_model_validation = False
 
         excluded = ["metadata"]
-
-    def __hash__(self):
-        return hash(id(self))
-
-    def __eq__(self, other):
-        return id(self) == id(other)
 
     def add_class(self, className: str) -> "BaseElement":
         """
@@ -93,22 +125,6 @@ class BaseElement(BaseModel, abc.ABC):
             dom_classes.difference(set([className]))
         ).strip()
         return self
-
-    def dict(self, **kwargs) -> Dict:
-        """Shimming in the ability to have excluded fields by default. This
-        should be removeable in future versions of pydantic
-        """
-        excluded = getattr(self.Config, "excluded", [])
-        if excluded:
-            kwargs = add_excluded_fields(kwargs, excluded)
-        data = super().dict(**kwargs)
-        data["id"] = self._get_id()
-        return data
-
-    def _get_id(self) -> Optional[str]:
-        if self.id is None:
-            return Registry.get_id(self)
-        return self.id
 
 
 class ShapeElement(BaseElement, abc.ABC):
@@ -161,10 +177,32 @@ class HierarchicalElement(ShapeElement, abc.ABC):
         return self
 
 
+class EdgeSection(IDElement):
+    startPoint: Point
+    endPoint: Point
+    bendPoints: List[Point] = Field(None, description="array of {x,y} pairs")
+    incomingShape: Optional[str] = Field(
+        None, description="node and / or port identifier"
+    )
+    outgoingShape: Optional[str] = Field(
+        None, description="node and / or port identifier"
+    )
+    incomingSections: Optional[List[str]] = Field(
+        None, description="array of edge section identifiers"
+    )
+    outgoingSections: Optional[List[str]] = Field(
+        None, description="array of edge section identifiers"
+    )
+
+
 class Edge(BaseElement):
     properties: EdgeProperties = Field(default_factory=EdgeProperties)
     source: HierarchicalElement = Field(...)
     target: HierarchicalElement = Field(...)
+    sections: List[EdgeSection] = Field(
+        default_factory=list,
+        description="Captures the routing of an edge through a drawing",
+    )
 
     class Config:
         excluded = ["metadata", "source", "target"]
@@ -178,15 +216,15 @@ class Edge(BaseElement):
         data = super().dict(**kwargs)
 
         if isinstance(self.source, Port):
-            data["sources"] = [self.source.get_parent()._get_id()]
-            data["sourcePort"] = self.source._get_id()
+            data["sources"] = [self.source.get_parent().get_id()]
+            data["sourcePort"] = self.source.get_id()
         else:
-            data["sources"] = [self.source._get_id()]
+            data["sources"] = [self.source.get_id()]
         if isinstance(self.target, Port):
-            data["targets"] = [self.target.get_parent()._get_id()]
-            data["targetPort"] = self.target._get_id()
+            data["targets"] = [self.target.get_parent().get_id()]
+            data["targetPort"] = self.target.get_id()
         else:
-            data["targets"] = [self.target._get_id()]
+            data["targets"] = [self.target.get_id()]
         return data
 
 
@@ -213,7 +251,7 @@ class Port(HierarchicalElement):
         # non-pydantic configs
         excluded = ["metadata", "parent", "key"]
 
-    def _get_id(self) -> Optional[str]:
+    def get_id(self) -> Optional[str]:
         if self.id is None:
             parent_id = Registry.get_id(self.get_parent())
             self_id = Registry.get_id(self)
@@ -225,7 +263,7 @@ class Port(HierarchicalElement):
 class Node(HierarchicalElement):
     ports: List[Port] = Field(default_factory=list)
     children: List["Node"] = Field(default_factory=list)
-    edges: Set[Edge] = Field(default_factory=set)
+    edges: List[Edge] = Field(default_factory=list)
     properties: NodeProperties = Field(default_factory=NodeProperties)
 
     class Config:
@@ -233,7 +271,6 @@ class Node(HierarchicalElement):
 
         # non-pydantic configs
         excluded = ["metadata", "parent", "key"]
-        to_list = ["edges"]
 
     def __init__(self, **data):  # type: ignore
         super().__init__(**data)
@@ -252,21 +289,6 @@ class Node(HierarchicalElement):
             except NotFoundError:
                 pass
         raise AttributeError
-
-    def dict(self, **kwargs):
-        data = super().dict(**kwargs)
-
-        for key in self.Config.to_list:
-            if key in data:
-                value = data[key]
-                if isinstance(value, (set, list, tuple)):
-                    value = list(value)
-                elif isinstance(value, dict):
-                    value = list(data[key].values())
-                else:
-                    raise TypeError(f"Need to handle converting {key}:{type(value)}")
-                data[key] = value
-        return data
 
     def add_child(self, child: "Node", key: Optional[str] = None) -> "Node":
         self.children.append(child.set_parent(self).set_key(key))
@@ -338,7 +360,8 @@ class Node(HierarchicalElement):
         # ancestor of the two endpoints the actual owner of the edge will be
         # calculated later
         edge = cls(source=source, target=target)
-        self.edges.add(edge)
+        # TODO uniqueness of edge?
+        self.edges.append(edge)
         return edge
 
     def __setattr__(self, key, value):

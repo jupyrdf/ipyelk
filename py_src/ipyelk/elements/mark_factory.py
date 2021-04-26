@@ -46,7 +46,7 @@ class Mark(BaseModel):
 
     def get_id(self):
         with self.context:
-            return self.element._get_id()
+            return self.element.get_id()
 
 
 class MarkFactory(BaseModel):

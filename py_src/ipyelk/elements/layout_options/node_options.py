@@ -6,7 +6,7 @@ from typing import List
 import ipywidgets as W
 import traitlets as T
 
-from ..model import ElkLabel, ElkNode
+from .model import ElkLabel, ElkNode
 from .selection_widgets import LayoutOptionWidget
 
 HIERARCHY_HANDLING = {

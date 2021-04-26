@@ -14,3 +14,7 @@ class NotFoundError(Exception):
 
 class NotUniqueError(Exception):
     pass
+
+
+class BrokenPipe(Exception):
+    pass

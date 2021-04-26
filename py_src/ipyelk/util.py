@@ -2,7 +2,12 @@
 # Distributed under the terms of the Modified BSD License.
 from typing import Dict, List, Optional
 
-from .model.model import strip_none
+from .elements.layout_options.model import strip_none
+
+
+def safely_unobserve(item, handler):
+    if hasattr(item, "unobserve"):
+        item.unobserve(handler=handler)
 
 
 def to_dict(obj):

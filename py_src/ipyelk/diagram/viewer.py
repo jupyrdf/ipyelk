@@ -1,100 +1,54 @@
-"""Widget for interacting with ELK rendered using Sprotty
-"""
 # Copyright (c) 2021 Dane Freeman.
 # Distributed under the terms of the Modified BSD License.
 
-from typing import Dict, List, Tuple
+from typing import Tuple
 
+import ipywidgets as W
 import traitlets as T
-from ipywidgets import DOMWidget
+from ipywidgets.widgets.trait_types import TypedTuple
 
-from .._version import EXTENSION_NAME, EXTENSION_SPEC_VERSION
-from ..elements.symbol import SymbolSpec, symbol_serialization
-
-# TODO reconnect schema check after adding edge type
-# from ..schema import ElkSchemaValidator
-# from ..trait_types import Schema
+from ..pipes import MarkElementWidget
 
 
-class Viewer(DOMWidget):
-    """Jupyterlab widget for displaying and interacting with views generated
-    from elk json.
+class Tool(W.Widget):
+    pass
 
-    Setting the instance's `value` traitlet to valid `elk json
-    <https://www.eclipse.org/elk/documentation/tooldevelopers/
-    graphdatastructure/jsonformat.html>`_  will call the `elkjs layout method
-    <https://github.com/kieler/elkjs>`_ and display the returned `mark_layout`
-    using `sprotty <https://github.com/eclipse/sprotty>`_.
 
-    :param mark_layout: Input elk json layout
-    :type mark_layout: Dict
-    :param selected: elk ids of selected marks
-    :type selected: Tuple[str]
-    :param hovered: elk id of currently hovered mark
-    :type hovered: str
-    :param symbols: Symbol mapping to use for rendering
-    :type symbols: SymbolSpec
+class Highlighter(W.Widget):
+    cssClasses = T.Unicode(default_value="")
+    marks = T.List()  # list of ids?
+    name = T.Unicode()
 
-    """
 
-    _model_name = T.Unicode("ELKViewerModel").tag(sync=True)
-    _model_module = T.Unicode(EXTENSION_NAME).tag(sync=True)
-    _model_module_version = T.Unicode(EXTENSION_SPEC_VERSION).tag(sync=True)
-    _view_name = T.Unicode("ELKViewerView").tag(sync=True)
-    _view_module = T.Unicode(EXTENSION_NAME).tag(sync=True)
-    _view_module_version = T.Unicode(EXTENSION_SPEC_VERSION).tag(sync=True)
+class Viewer(W.Widget):
+    tools: Tuple[Tool] = T.List(T.Instance(Tool)).tag(
+        sync=True, **W.widget_serialization
+    )
+    source: MarkElementWidget = T.Instance(MarkElementWidget, allow_none=True).tag(
+        sync=True, **W.widget_serialization
+    )
 
-    symbols = T.Instance(SymbolSpec, kw={}).tag(sync=True, **symbol_serialization)
-    # mark_layout: Dict = Schema(ElkSchemaValidator).tag(sync=True)
-    mark_layout: Dict = T.Dict().tag(sync=True)
-    selected: Tuple = T.Tuple().tag(sync=True)
-    hovered: str = T.Unicode(allow_none=True, default_value=None).tag(sync=True)
+    selected: Tuple[str] = TypedTuple(trait=T.Unicode()).tag(
+        sync=True
+    )  # list element ids currently selected
+    hovered: str = T.Unicode().tag(sync=True)  # list element ids currently hovered
 
-    @T.default("mark_layout")
-    def _default_value(self):
-        return {"id": "root"}
+    highlighters: Tuple[Highlighter] = TypedTuple(trait=T.Instance(Highlighter)).tag(
+        sync=True, **W.widget_serialization
+    )
+    viewed: Tuple[str] = TypedTuple(trait=T.Unicode()).tag(
+        sync=True
+    )  # list element ids in the current view bounding box
 
-    def center(
-        self,
-        model_ids: List[str] = None,
-        animate: bool = None,
-        retain_zoom: bool = None,
-    ):
-        """Center Diagram View on specified model ids
+    zoom = T.Float(allow_none=True).tag(sync=True)
+    origin = T.Tuple(T.Float(), T.Float(), allow_none=True).tag(sync=True)
+    bounds = T.Tuple(T.Float(), T.Float(), allow_none=True).tag(sync=True)
 
-        :param model_ids: list of elk model id strings, defaults to None
-        :param animate: specify is the view animates to the given marks
-        :param retain_zoom: specify if the current zoom level is maintained
-        """
-        self.send(
-            {
-                "action": "center",
-                "model_id": model_ids,
-                "animate": True if animate is None else animate,
-                "retain_zoom": False if retain_zoom is None else retain_zoom,
-            }
-        )
+    def fit(self):
+        pass
 
-    def fit(
-        self,
-        model_ids: List[str] = None,
-        animate: bool = None,
-        max_zoom: float = None,
-        padding: float = None,
-    ):
-        """Pan/Zoom the Diagram View to focus on particular model ids
+    def center(self):
+        pass
 
-        :param model_ids: list of elk model id strings, defaults to None
-        :param animate: specify is the view animates to the given marks
-        :param max_zoom: specify if the max zoom level
-        :param padding: specify if the viewport padding around the marks
-        """
-        self.send(
-            {
-                "action": "fit",
-                "model_id": model_ids,
-                "animate": True if animate is None else animate,
-                "max_zoom": max_zoom,
-                "padding": padding,
-            }
-        )
+    def to_element(self):
+        map(self.source.from_id, self.selected)

@@ -9,7 +9,7 @@ import { Message } from '@lumino/messaging';
 import { Widget } from '@lumino/widgets';
 import { Signal } from '@lumino/signaling';
 
-import { DOMWidgetModel, DOMWidgetView } from '@jupyter-widgets/base';
+import { DOMWidgetModel, DOMWidgetView, unpack_models as deserialize } from '@jupyter-widgets/base';
 // import { WidgetManager } from '@jupyter-widgets/jupyterlab-manager';
 // import { ManagerBase } from '@jupyter-widgets/base';
 
@@ -39,12 +39,14 @@ import {
 import { ToolTYPES } from './tools/types';
 import { PromiseDelegate } from '@lumino/coreutils';
 
-const DEFAULT_VALUE = { id: 'root' };
 const POLL = 300;
 
 export class ELKViewerModel extends DOMWidgetModel {
   static model_name = 'ELKViewerModel';
-
+  static serializers = {
+    ...DOMWidgetModel.serializers,
+    source: { deserialize },
+  };
   layoutUpdated = new Signal<ELKViewerModel, void>(this);
 
   defaults() {
@@ -57,7 +59,7 @@ export class ELKViewerModel extends DOMWidgetModel {
       _view_name: ELKViewerView.view_name,
       _view_module_version: VERSION,
       symbols: {},
-      mark_layout: DEFAULT_VALUE
+      source: null,
     };
     return defaults;
   }
@@ -84,6 +86,18 @@ export class ELKViewerView extends DOMWidgetView {
   initialize(parameters: any) {
     super.initialize(parameters);
     this.pWidget.addClass(ELK_CSS.widget_class);
+    this.on('change:source', this.on_source_changed, this);
+    this.on_source_changed();
+  }
+  async on_source_changed() {
+    // TODO disconnect old ones
+    console.log('todo sprotty');
+    let source = this.model.get('source');
+    if (source){
+
+      source.on("change:value", this.diagramLayout, this);
+      this.diagramLayout()
+    }
   }
 
   async render() {
@@ -121,7 +135,7 @@ export class ELKViewerView extends DOMWidgetView {
     this.feedbackDispatcher = container.get<FeedbackActionDispatcher>(
       ToolTYPES.IFeedbackActionDispatcher
     );
-    this.model.on('change:mark_layout', this.diagramLayout, this);
+    // this.model.on('change:mark_layout', this.diagramLayout, this);
     this.model.on('change:selected', this.updateSelected, this);
     this.model.on('change:hovered', this.updateHover, this);
     this.model.on('change:interaction', this.interaction_mode_changed, this);
@@ -213,8 +227,12 @@ export class ELKViewerView extends DOMWidgetView {
   }
 
   async diagramLayout() {
-    let layout = this.model.get('mark_layout');
+    let layout = this.model.get('source')?.get("value");
     let symbols = this.model.get('symbols');
+    if (layout == null || symbols == null){
+      // bailing
+      return null
+    }
     await this.source.updateLayout(layout, symbols, this.div_id);
     this.model.layoutUpdated.emit();
   }

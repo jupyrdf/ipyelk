@@ -4,10 +4,12 @@
 
 from .diagram import Diagram
 from .export import Exporter
+from .sprotty_viewer import SprottyViewer
 from .viewer import Viewer
 
 __all__ = [
     "Diagram",
-    "Viewer",
     "Exporter",
+    "SprottyViewer",
+    "Viewer",
 ]

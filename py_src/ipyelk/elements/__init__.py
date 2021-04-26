@@ -5,6 +5,7 @@ from .elements import (
     Edge,
     EdgeProperties,
     ElementMetadata,
+    HierarchicalElement,
     Label,
     LabelProperties,
     Node,
@@ -15,6 +16,7 @@ from .elements import (
 from .extended import Compartment, Partition, Record
 from .mark_factory import Mark, MarkFactory
 from .registry import Registry
+from .serialization import elk_serialization, symbol_serialization
 from .shapes import EdgeShape, LabelShape, NodeShape, PortShape
 from .symbol import EndpointSymbol, Symbol, SymbolSpec
 
@@ -27,7 +29,9 @@ __all__ = [
     "EdgeShape",
     "ElementMetadata",
     "ElementShape",
+    "elk_serialization",
     "EndpointSymbol",
+    "HierarchicalElement",
     "Label",
     "LabelProperties",
     "LabelShape",
@@ -42,6 +46,7 @@ __all__ = [
     "PortShape",
     "Record",
     "Registry",
+    "symbol_serialization",
     "Symbol",
     "SymbolSpec",
 ]
