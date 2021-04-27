@@ -43,7 +43,7 @@ export class ELKTextSizerModel extends DOMWidgetModel {
   ) {
     super.initialize(attributes, options);
     ELK_DEBUG && console.warn('ELK Test Sizer Init');
-    this.on('msg:custom', this.measure, this);
+    this.on('msg:custom', this.on_message, this);
     (<any>window).sizer = this;
     ELK_DEBUG && console.warn('ELK Text Done Init');
   }
@@ -82,11 +82,16 @@ export class ELKTextSizerModel extends DOMWidgetModel {
     return element;
   }
 
+  on_message(content){
+    // TODO check content message and decide if should call `measure`
+    this.measure();
+  }
+
   /**
    * Method to take a list of texts and build SVG Text Elements to attach to the DOM
    * @param content message measure request
    */
-  measure(content) {
+  measure() {
     const rootNode: ElkNode = this.get("source")?.get("value")
     let value: DOMWidgetModel = this.get("value"); // target output
     if (rootNode == null || value == null){
@@ -164,17 +169,20 @@ function createSVGElement(tag: string): SVGElement {
 }
 
 function get_labels(el:any): ElkLabel[] {
-  let labels:ElkLabel[] =  el?.labels || [];
+  let labels:ElkLabel[] = []
+  if (el?.labels){
+    labels.push(...el?.labels)
+  }
 
-    for (let child of el?.children || []){
-      labels.push(...get_labels(child))
-    }
-    for (let edge of el?.edges || []){
-      labels.push(...get_labels(edge))
-    }
-    for (let label of el?.labels || []){
-      labels.push(...get_labels(label))
-    }
+  for (let child of el?.children || []){
+    labels.push(...get_labels(child))
+  }
+  for (let edge of el?.edges || []){
+    labels.push(...get_labels(edge))
+  }
+  for (let label of el?.labels || []){
+    labels.push(...get_labels(label))
+  }
 
 
   return labels

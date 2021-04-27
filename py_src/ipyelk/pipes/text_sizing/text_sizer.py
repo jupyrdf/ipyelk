@@ -30,14 +30,16 @@ class TextSizer(Pipe):
 
 
 def size(label: Label):
+    shape = label.properties.get_shape()()
     if label.width is None:
-        label.properties.shape.width = 10 * len(label.text)
+        shape.width = 10 * len(label.text)
     if label.height is None:
-        label.properties.shape.height = 10
+        shape.height = 10
 
 
 def size_nested_label(label: Label) -> Label:
-    shape = label.properties.shape
+
+    shape = label.properties.get_shape()
     width = label.width or shape.width or 0
     height = label.height or shape.height or 0
 

@@ -23,6 +23,20 @@ class ElementMetadata(BaseModel):
 class BaseProperties(BaseModel):
     cssClasses: str = Field("", description="whitespace separated list of css classes")
     shape: Optional[BaseShape]
+    key: Optional[str] = Field(
+        None, description="Used to provide lookup functionality from owner"
+    )
+
+    def get_shape(self) -> BaseShape:
+        if self.shape is None:
+            field = self.__fields__["shape"]
+            cls = (
+                field.default_factory
+                if field.default_factory is not None
+                else field.type_
+            )
+            self.shape = cls()
+        return self.shape
 
 
 class NodeProperties(BaseProperties):
@@ -31,20 +45,32 @@ class NodeProperties(BaseProperties):
         None, description="Specifies if the node and it's children are hidden"
     )
 
+    def get_shape(self) -> NodeShape:
+        return super().get_shape()
+
 
 class LabelProperties(BaseProperties):
-    shape: LabelShape = Field(default_factory=LabelShape)
+    shape: Optional[LabelShape]
     selectable: Optional[bool] = Field(
         False, description="Specifies if label is individually selectable"
     )
+
+    def get_shape(self) -> LabelShape:
+        return super().get_shape()
 
 
 class PortProperties(BaseProperties):
     shape: Optional[PortShape]
 
+    def get_shape(self) -> PortShape:
+        return super().get_shape()
+
 
 class EdgeProperties(BaseProperties):
     shape: Optional[EdgeShape]
+
+    def get_shape(self) -> EdgeShape:
+        return super().get_shape()
 
 
 class IDElement(BaseModel, abc.ABC):
@@ -154,11 +180,6 @@ class ShapeElement(BaseElement, abc.ABC):
 
 
 class HierarchicalElement(ShapeElement, abc.ABC):
-    key: Optional[str] = Field(
-        None,
-        description="Non-elkjson schema property used to provide lookup from parent",
-        exclude=True,
-    )
     _parent: Optional["Node"] = PrivateAttr(None)
 
     def set_parent(self, parent: Optional["Node"]):
@@ -172,8 +193,10 @@ class HierarchicalElement(ShapeElement, abc.ABC):
         return self._parent
 
     def set_key(self, key: Optional[str]):
-        assert self.key is None or self.key == key, "Key has already been set"
-        self.key = key
+        assert (
+            self.properties.key is None or self.properties.key == key
+        ), "Key has already been set"
+        self.properties.key = key
         return self
 
 
@@ -215,16 +238,21 @@ class Edge(BaseElement):
     def dict(self, **kwargs):
         data = super().dict(**kwargs)
 
-        if isinstance(self.source, Port):
-            data["sources"] = [self.source.get_parent().get_id()]
-            data["sourcePort"] = self.source.get_id()
-        else:
-            data["sources"] = [self.source.get_id()]
-        if isinstance(self.target, Port):
-            data["targets"] = [self.target.get_parent().get_id()]
-            data["targetPort"] = self.target.get_id()
-        else:
-            data["targets"] = [self.target.get_id()]
+        data["sources"] = [self.source.get_id()]
+        data["targets"] = [self.target.get_id()]
+
+        # if isinstance(self.source, Port):
+        #     print("sourePorting")
+        #     data["sources"] = [self.source.get_parent().get_id()]
+        #     data["sourcePort"] = self.source.get_id()
+        # else:
+        #     data["sources"] = [self.source.get_id()]
+        # if isinstance(self.target, Port):
+        #     print("targetPorting")
+        #     data["targets"] = [self.target.get_parent().get_id()]
+        #     data["targetPort"] = self.target.get_id()
+        # else:
+        #     data["targets"] = [self.target.get_id()]
         return data
 
 
@@ -318,7 +346,7 @@ class Node(HierarchicalElement):
         :raises NotUniqueError: If found multiple children with the same key
         :return: matching child
         """
-        matches = [child for child in self.children if key == child.key]
+        matches = [child for child in self.children if key == child.properties.key]
         found = len(matches)
         if found == 1:
             return matches[0]
@@ -341,7 +369,7 @@ class Node(HierarchicalElement):
         :raises NotUniqueError: If found multiple ports with the same key
         :return: matching port
         """
-        matches = [port for port in self.ports if key == port.key]
+        matches = [port for port in self.ports if key == port.properties.key]
         found = len(matches)
         if found == 1:
             return matches[0]
@@ -356,9 +384,9 @@ class Node(HierarchicalElement):
         target: Union["Node", Port],
         cls: Type[Edge] = Edge,
     ) -> Edge:
-        # for elk to layout correctly, edges must be owned by some common
-        # ancestor of the two endpoints the actual owner of the edge will be
-        # calculated later
+        # for elk to layout correctly, edges must be owned by their lowest
+        # common ancestor of the two endpoints the actual proper owner of the
+        # edge may be calculated later
         edge = cls(source=source, target=target)
         # TODO uniqueness of edge?
         self.edges.append(edge)

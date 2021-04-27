@@ -1,3 +1,4 @@
+from collections import namedtuple
 from typing import Dict, Hashable, Iterator, Optional
 
 import ipywidgets as W
@@ -5,11 +6,14 @@ import networkx as nx
 import traitlets as T
 
 from ipyelk.elements import Edge, HierarchicalElement, Label, Node, Port, Registry
-from ipyelk.elements.serialization import build_edge, build_shape_map, iter_elements
+from ipyelk.elements.serialization import build_shape_map, iter_elements
 
 from .. import diagram
 from ..elements import layout_options as opt
+from ..exceptions import NotFoundError
 from ..pipes import BrowserTextSizer, ElkJS, Pipe, Pipeline
+
+SENTINEL = namedtuple("Sentinel", [])
 
 root_opts = opt.OptionsWidget(
     options=[
@@ -17,7 +21,7 @@ root_opts = opt.OptionsWidget(
     ],
 ).value
 label_opts = opt.OptionsWidget(
-    options=[opt.NodeLabelPlacement(horizontal="center", vertical="center")]
+    options=[opt.NodeLabelPlacement(horizontal="center")]
 ).value
 node_opts = opt.OptionsWidget(
     options=[
@@ -44,6 +48,7 @@ class NetworkxPipe(Pipe):
         if not root.layoutOptions:
             root.layoutOptions = root_opts
 
+        # add graph nodes
         nodes = []
         for n, d in graph.nodes(data=True):
             el = from_nx_node(n, d)
@@ -68,9 +73,10 @@ class NetworkxPipe(Pipe):
                 parent = u if isinstance(u, Node) else el_map[u]
                 child = v if isinstance(v, Node) else el_map[v]
                 parent.children.append(child)
+
+            # add element edges
             for u, v, d in graph.edges(data=True):
-                e_dict = {**d, "source": u, "target": v}
-                edge = build_edge(e_dict, el_map)
+                edge = process_endpoints(u, v, d, el_map)
                 owner = get_owner(edge, hierarchy, el_map)
                 owner.edges.append(edge)
 
@@ -98,6 +104,71 @@ class Diagram(diagram.Diagram):
     @T.default("pipe")
     def _default_Pipe(self):
         return NXElkPipe()
+
+
+def process_endpoints(
+    u: Hashable, v: Hashable, data: Dict, el_map: Dict[str, HierarchicalElement]
+) -> Edge:
+    """Process the edge (u,v,data) for `sourcePort` `targetPort` and return Edge
+
+    :param u: nx edge source
+    :param v: nx edge target
+    :param data: nx edge data
+    :param el_map: Element map
+    :return: new edge
+    """
+    # check data if it contains "sourcePort" or "targetPort" and point to the
+    # appropriate `source` and `target`
+    ends = {
+        "source": get_endpoint(el_map, u),
+        "target": get_endpoint(el_map, v),
+    }
+    for key, pt in ends.items():
+        for attr in [key + "Port", "port"]:
+            if attr in data:
+                print(attr)
+                port = get_endpoint(el_map, pt, data[attr])
+                assert isinstance(port, Port)
+                ends[key] = port
+                break  # don't try other attr combinations
+    edge_dict = {**data, **ends}
+    return Edge(**edge_dict)
+
+
+def get_endpoint(
+    el_map: Dict[str, HierarchicalElement], pt: Hashable, port_key=SENTINEL
+) -> HierarchicalElement:
+    if not isinstance(pt, HierarchicalElement):
+        pt = el_map[str(pt)]  # must at least be an identifier in the element map
+    if port_key is SENTINEL:
+        return pt  # no need to try and resolve a port
+
+    # easy check
+    if isinstance(port_key, Port):
+        assert port_key._parent is pt, "Expected port parent to be given endpoint"
+        return port_key
+    assert isinstance(pt, Node), f"Expect endpoint to be a `Node` not `{type(pt)}`"
+
+    # attempt to find port using `port_key`
+    try:
+        port = pt.get_port(key=port_key)
+    except NotFoundError as e:
+        if port_key in el_map:
+            el = el_map[port_key]  # port_key was a global id
+            if isinstance(el, Port) and el._parent is pt:
+                return el
+            else:
+                # TODO a new exception type?
+                raise ValueError(
+                    (
+                        "Given `port_key:{port_key}`} maps to an global element "
+                        "that isn't consistent with the edge."
+                    )
+                ) from e
+
+        # okay to make a new port?
+        port = pt.add_port(Port(width=5, height=5), key=port_key)
+    return port
 
 
 def from_nx_node(n: Hashable, d: Dict) -> Node:
@@ -187,7 +258,7 @@ def lca(
     return ancestor
 
 
-def get_owner(edge: Edge, hierarchy, el_map) -> HierarchicalElement:
+def get_owner(edge: Edge, hierarchy: nx.DiGraph, el_map) -> HierarchicalElement:
     u = edge.source
     v = edge.target
     return lca(hierarchy, u, v, el_map)
