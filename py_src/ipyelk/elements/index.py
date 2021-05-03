@@ -1,7 +1,7 @@
 # Copyright (c) 2021 Dane Freeman.
 # Distributed under the terms of the Modified BSD License.
 
-from typing import Dict, Iterator, Optional, Set, Tuple
+from typing import Dict, Iterator, Optional, Set, Tuple, Mapping, List
 
 from pydantic import BaseModel, Field
 
@@ -35,7 +35,6 @@ class VisIndex(BaseModel):
         )
 
     def get(self, key) -> Tuple[HierarchicalElement, str]:
-
         return self.hidden.get(key), self.last_visible.get(key)
 
     def __len__(self):
@@ -43,10 +42,9 @@ class VisIndex(BaseModel):
 
 
 class ElementIndex(BaseModel):
-    elements: Dict[str, HierarchicalElement]
-    vis_index: Optional[VisIndex]  # Dict[str, BaseElement]
+    elements: Mapping[str, BaseElement]
 
-    def get(self, key: str) -> HierarchicalElement:
+    def get(self, key: str) -> BaseElement:
         if key in self.elements:
             return self.elements[key]
         # make slack port / tag edge as slack as well...
@@ -55,14 +53,29 @@ class ElementIndex(BaseModel):
     def __getitem__(self, key):
         return self.get(key)
 
-    def items(self) -> Iterator[Tuple[str, HierarchicalElement]]:
+    def items(self) -> Iterator[Tuple[str, BaseElement]]:
         for key, value in self.elements.items():
             yield key, value
 
     @classmethod
+    def from_els(cls, *els: BaseElement) -> "ElementIndex":
+
+        elements = {
+            el.get_id(): el
+            for el in iter_elements(*els)
+        }
+        return cls(
+            elements=elements,
+        )
+
+class HierarchicalIndex(ElementIndex):
+    elements: Mapping[str, HierarchicalElement]
+    vis_index: Optional[VisIndex]  # Dict[str, BaseElement]
+
+    @classmethod
     def from_els(
         cls, *els: BaseElement, vis_index: Optional[VisIndex] = None
-    ) -> "ElementIndex":
+    ) -> "HierarchicalIndex":
 
         elements = {
             el.get_id(): el
@@ -78,9 +91,23 @@ class ElementIndex(BaseModel):
         for node_id, edges in edges_map.items():
             node = self.get(node_id)
             assert isinstance(node, Node)
-            node.edges = [self.build_edge(e) for e in edges]
+            result = []
+            for e in edges:
+                edge = self.build_edge(e)
+                if edge:
+                    result.append(edge)
+            node.edges = result
 
-    def build_edge(self, edge: Dict) -> Edge:
+    def build_edge(self, edge: Dict) -> Optional[Edge]:
+        """Build the edge
+
+        If the source and target are on the same Node don't return an edge
+
+        :param edge: [description]
+        :type edge: Dict
+        :return: [description]
+        :rtype: Optional[Edge]
+        """
         source = edge.get("source")
         if source is None:
             source = edge["sources"][0]
@@ -89,6 +116,9 @@ class ElementIndex(BaseModel):
             target = edge["targets"][0]
 
         slack_edge = False
+        if self.is_null_edge(source, target):
+            return None
+
         if self.is_hidden(source):
             source = self.make_port(source)
             slack_edge = True
@@ -114,6 +144,7 @@ class ElementIndex(BaseModel):
         # get old hidden element and the id of it's last visible ancestor
         hidden_el, last_visible_id = self.vis_index.get(key)
         node = self.get(last_visible_id)
+        assert isinstance(node, Node)
         try:
             port = node.get_port(key)
         except NotFoundError:
@@ -125,6 +156,27 @@ class ElementIndex(BaseModel):
 
     def is_hidden(self, key):
         return key not in self.elements
+
+    def is_null_edge(self, source, target)->bool:
+        source_node = self.get_visible_node(source)
+        target_node = self.get_visible_node(target)
+        return source_node is target_node
+
+
+    def get_visible_node(self, el_id:str)->Node:
+        """Gets the visible node associated with the given el_id
+
+        :param key: element id
+        :return: Closest Visible Node
+        """
+        if self.is_hidden(el_id) and self.vis_index:
+            _, el_id = self.vis_index.get(el_id)
+        element = self.get(el_id)
+        if isinstance(element, Port):
+            element = element._parent
+        assert isinstance(element, Node)
+        return element
+
 
 
 def iter_elements(*els: BaseElement) -> Iterator[BaseElement]:

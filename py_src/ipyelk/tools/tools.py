@@ -20,35 +20,6 @@ class ToolButton(W.Button):
         raise NotImplementedError("Subclasses should implement the tool handler")
 
 
-class ToggleCollapsedBtn(ToolButton):
-    @T.default("description")
-    def _default_description(self):
-        return "Toggle Collapsed"
-
-    def toggle(self, node: Node):
-        """Toggle the `hidden` state for the given networkx node"""
-        node.properties.hidden = not node.properties.hidden
-        # tree = self.app.transformer.source[1]
-        # state = tree.nodes[node].get("hidden", False)
-        # tree.nodes[node]["hidden"] = not state
-
-    def handler(self, *args):
-        should_refresh = False
-        for selected in self.app.selected:
-            for node in self.get_related(selected):
-                self.toggle(node)
-                should_refresh = True
-
-        # trigger refresh if needed
-        if should_refresh:
-            self.app.refresh()
-
-    def get_related(self, node):
-        tree = self.app.transformer.source[1]
-        if tree and node in tree:
-            return tree.neighbors(node)
-        return []
-
 
 class FitBtn(ToolButton):
     @T.default("description")

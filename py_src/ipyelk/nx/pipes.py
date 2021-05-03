@@ -11,7 +11,7 @@ from .. import diagram
 from ..elements import (
     EMPTY_SENTINEL,
     Edge,
-    ElementIndex,
+    HierarchicalIndex,
     HierarchicalElement,
     Label,
     Node,
@@ -73,7 +73,7 @@ class NXLoader(Loader):
 
         context = Registry()
         with context:
-            el_map = ElementIndex.from_els(*nodes)
+            el_map = HierarchicalIndex.from_els(*nodes)
 
             # nest elements based on hierarchical edges
             for u, v in hierarchy.edges():
@@ -129,7 +129,7 @@ class NetworkxPipe(Pipe):
 
         context = Registry()
         with context:
-            el_map = ElementIndex.from_els(*nodes)
+            el_map = HierarchicalIndex.from_els(*nodes)
 
             # nest elements based on hierarchical edges
             for u, v in hierarchy.edges():
@@ -177,7 +177,7 @@ class Diagram(diagram.Diagram):
 
 
 def process_endpoints(
-    u: Hashable, v: Hashable, data: Dict, el_map: ElementIndex
+    u: Hashable, v: Hashable, data: Dict, el_map: HierarchicalIndex
 ) -> Edge:
     """Process the edge (u,v,data) for `sourcePort` `targetPort` and return Edge
 
@@ -205,7 +205,7 @@ def process_endpoints(
 
 
 def get_endpoint(
-    el_map: ElementIndex, pt: Hashable, port_key=EMPTY_SENTINEL
+    el_map: HierarchicalIndex, pt: Hashable, port_key=EMPTY_SENTINEL
 ) -> HierarchicalElement:
     if not isinstance(pt, HierarchicalElement):
         pt = el_map.get(str(pt))  # must at least be an identifier in the element map
@@ -293,7 +293,7 @@ def get_root(hierarchy):
         return root
 
 
-def as_in_hierarchy(node: HierarchicalElement, hierarchy, el_map: ElementIndex):
+def as_in_hierarchy(node: HierarchicalElement, hierarchy, el_map: HierarchicalIndex):
     # TODO need to handle if given a port or node
     if isinstance(node, Port):
         node = node._parent
@@ -316,7 +316,7 @@ def lca(
     hierarchy: nx.DiGraph,
     node1: HierarchicalElement,
     node2: HierarchicalElement,
-    el_map: ElementIndex,
+    el_map: HierarchicalIndex,
 ) -> HierarchicalElement:
     node1 = as_in_hierarchy(node1, hierarchy, el_map)
     node2 = as_in_hierarchy(node2, hierarchy, el_map)
@@ -328,7 +328,7 @@ def lca(
 
 
 def get_owner(
-    edge: Edge, hierarchy: nx.DiGraph, el_map: ElementIndex
+    edge: Edge, hierarchy: nx.DiGraph, el_map: HierarchicalIndex
 ) -> HierarchicalElement:
     u = edge.source
     v = edge.target

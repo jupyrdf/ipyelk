@@ -2,7 +2,7 @@
 # Distributed under the terms of the Modified BSD License.
 
 from .tool import Loader, Tool
-from .view_tools import Hover, Painter, Pan, Selection, ToggleCollapsedTool, Zoom
+from .view_tools import Hover, Painter, Pan, Selection, Zoom
 
 # from .tools import ToggleCollapsedBtn, ToolButton
 
@@ -14,7 +14,7 @@ __all__ = [
     "Painter",
     "Pan",
     "Zoom",
-    "ToggleCollapsedTool",
+    # "ToggleCollapsedTool",
     # "ToggleCollapsedBtn",
     # "ToolButton"
 ]

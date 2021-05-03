@@ -1,12 +1,13 @@
 # Copyright (c) 2021 Dane Freeman.
 # Distributed under the terms of the Modified BSD License.
 
-from ipywidgets import DOMWidget
-from pydantic import BaseModel
 from typing import Dict, Optional
 
+from ipywidgets import DOMWidget
+from pydantic import BaseModel
+
 from .elements import Node
-from .index import ElementIndex, VisIndex
+from .index import HierarchicalIndex, VisIndex
 
 
 def pop_edges(data, edges=None):
@@ -33,7 +34,7 @@ def from_elkjson(data, vis_index: VisIndex = None):
     # pop_edges currently mutates `data` by popping the edge dict
     edges_map = pop_edges(data)  # dict of node.id to edge list
     root = Node(**data)  # new element hierarchy without edges
-    el_map = ElementIndex.from_els(
+    el_map = HierarchicalIndex.from_els(
         root, vis_index=vis_index
     )  # get mapping of ids to elements
     el_map.link_edges(edges_map)

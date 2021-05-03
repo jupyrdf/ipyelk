@@ -1,8 +1,12 @@
 # Copyright (c) 2021 Dane Freeman.
 # Distributed under the terms of the Modified BSD License.
 import traitlets as T
-from ipywidgets.widgets.trait_types import TypedTuple
 
+from ipywidgets.widgets.trait_types import TypedTuple
+from typing import Iterator
+
+from ..elements import ElementIndex, BaseElement
+from ..pipes import Pipe
 from .tool import Tool
 
 
@@ -11,8 +15,6 @@ class Selection(Tool):
         sync=True
     )  # list element ids currently selected
 
-    def to_element(self):
-        map(self.source.from_id, self.selected)
 
 
 class Hover(Tool):
@@ -32,26 +34,3 @@ class Painter(Tool):
     cssClasses = T.Unicode(default_value="")
     marks = T.List()  # list of ids?
     name = T.Unicode()
-
-
-class ToggleCollapsedTool(Tool):
-    selection = T.Instance(Selection)
-
-    def handler(self, *args):
-        value: Node = self.tee.inlet.value
-        should_refresh = False
-        for selected in self.app.selected:
-            for node in self.get_related(selected):
-                self.toggle(node)
-                should_refresh = True
-
-        # trigger refresh if needed
-        if should_refresh:
-            self.app.refresh()
-
-    def get_related(self, node):
-        value: Node = self.tee.inlet.value
-        tree = self.app.transformer.source[1]
-        if tree and node in tree:
-            return tree.neighbors(node)
-        return []

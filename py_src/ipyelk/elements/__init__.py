@@ -17,7 +17,7 @@ from .elements import (
     exclude_layout,
 )
 from .extended import Compartment, Partition, Record
-from .index import ElementIndex, VisIndex
+from .index import ElementIndex, HierarchicalIndex, VisIndex
 from .mark_factory import Mark, MarkFactory
 from .registry import Registry
 from .serialization import elk_serialization, from_elkjson, symbol_serialization
@@ -41,6 +41,7 @@ __all__ = [
     "exclude_layout",
     "from_elkjson",
     "HierarchicalElement",
+    "HierarchicalIndex",
     "Label",
     "LabelProperties",
     "LabelShape",

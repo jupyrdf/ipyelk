@@ -53,9 +53,12 @@ class Diagram(StyledWidget):
 
     @T.default("pipe")
     def _default_Pipe(self):
-        from ..pipes.flow import DefaultFlow
+        from .flow import DefaultFlow
+        return DefaultFlow().link_selection(self.view.selection)
 
-        return DefaultFlow()
+    @T.default("tools")
+    def _default_tools(self):
+        return self.pipe.get_tools()
 
     @T.observe("view")
     def _update_children(self, change: T.Bunch = None):

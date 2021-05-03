@@ -7,18 +7,28 @@ from typing import Tuple
 import ipywidgets as W
 import traitlets as T
 
-from ..elements import EMPTY_SENTINEL, Node, elk_serialization
+from ..elements import EMPTY_SENTINEL, Node, elk_serialization, ElementIndex, BaseElement, HierarchicalElement
 from ..exceptions import BrokenPipe
 
 
 class MarkElementWidget(W.DOMWidget):
     value = T.Instance(Node, allow_none=True).tag(sync=True, **elk_serialization)
+    _index = T.Instance(ElementIndex, allow_none=True)
 
-    def to_id(self):
-        pass
+    @T.observe("value")
+    def reset_index(self, change=None):
+        self._index=None
 
-    def from_id(self):
-        pass
+    def get_index(self)->ElementIndex:
+        if self._index is None:
+            self._index = ElementIndex.from_els(self.value)
+        return self._index
+
+    def to_id(self, element:BaseElement):
+        return element.get_id()
+
+    def from_id(self, key)->HierarchicalElement:
+        return self.get_index().get(key)
 
 
 class SyncedMarkElementWidget(MarkElementWidget):
@@ -29,6 +39,7 @@ class Pipe(W.Widget):
     enabled: bool = T.Bool(default_value=True)
     inlet: MarkElementWidget = T.Instance(MarkElementWidget, kw={})
     outlet: MarkElementWidget = T.Instance(MarkElementWidget, kw={})
+    dirty: bool = T.Bool(default_value=True)
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -40,7 +51,9 @@ class Pipe(W.Widget):
     async def run(self):
         # do work
         self.outlet = self.inlet
-        return self.outlet
+
+    def get_tools(self)->Tuple:
+        return tuple()
 
 
 class SyncedInletPipe(Pipe):
@@ -74,21 +87,28 @@ class Pipeline(SyncedOutletPipe):
 
         self.schedule_run()
 
-    async def run(self, start_pipe=None, value=EMPTY_SENTINEL):
-        pipes = self.pipes
-        if start_pipe and start_pipe in pipes:
-            start = pipes.index(start_pipe)
-            pipes = pipes[start:]
-
-        if value is not EMPTY_SENTINEL:
-            pipes[0].inlet.value = value
-
-        num_steps = len(pipes)
+    async def run(self):
+        self.check_dirty()
 
         # Look at enabled pipes
-        for i, pipe in enumerate(pipes):
-            # TODO use i for reporting processing stage
-            await pipe.run()
+        for i, pipe in enumerate(self.pipes):
+            # TODO use i and num_steps for reporting processing stage
+            if pipe.dirty:
+                await pipe.run()
+                pipe.dirty = False
+                print(i, pipe.dirty)
+        self.dirty = False
+
+    def check_dirty(self)->bool:
+        # check dirty pipes and propagate dirty to downstream pipes
+        dirty = self.dirty
+        for pipe in self.pipes:
+            if pipe.dirty:
+                dirty = True
+
+            if dirty and not pipe.dirty:
+                pipe.dirty = dirty
+        return dirty
 
     def check(self) -> bool:
         """Checks inlets and outlets of the pipeline and raises error is not connected
