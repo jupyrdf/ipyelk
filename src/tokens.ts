@@ -22,6 +22,10 @@ export interface IELKFitMessage {
   padding?: number;
 }
 
+export interface IRunMessage {
+  action: 'run';
+}
+
 export const ELK_CSS = {
   label: 'elklabel',
   widget_class: 'jp-ElkView',

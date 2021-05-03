@@ -7,7 +7,7 @@ from typing import Tuple
 import ipywidgets as W
 import traitlets as T
 
-from ..elements import Node, elk_serialization
+from ..elements import EMPTY_SENTINEL, Node, elk_serialization
 from ..exceptions import BrokenPipe
 
 
@@ -26,8 +26,9 @@ class SyncedMarkElementWidget(MarkElementWidget):
 
 
 class Pipe(W.Widget):
-    source: MarkElementWidget = T.Instance(MarkElementWidget, kw={})
-    value: MarkElementWidget = T.Instance(MarkElementWidget, kw={})
+    enabled: bool = T.Bool(default_value=True)
+    inlet: MarkElementWidget = T.Instance(MarkElementWidget, kw={})
+    outlet: MarkElementWidget = T.Instance(MarkElementWidget, kw={})
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -38,60 +39,71 @@ class Pipe(W.Widget):
 
     async def run(self):
         # do work
-        self.value = self.source
-        return self.value
+        self.outlet = self.inlet
+        return self.outlet
 
 
-class SyncedSourcePipe(Pipe):
-    source = T.Instance(MarkElementWidget, kw={}).tag(
+class SyncedInletPipe(Pipe):
+    inlet = T.Instance(MarkElementWidget, kw={}).tag(
         sync=True, **W.widget_serialization
     )
 
 
-class SyncedValuePipe(Pipe):
-    value = T.Instance(MarkElementWidget, kw={}).tag(
+class SyncedOutletPipe(Pipe):
+    outlet = T.Instance(MarkElementWidget, kw={}).tag(
         sync=True, **W.widget_serialization
     )
 
 
-class SyncedPipe(SyncedValuePipe, SyncedSourcePipe):
-    """Both source and value are synced with the browser"""
+class SyncedPipe(SyncedOutletPipe, SyncedInletPipe):
+    """Both inlet and value are synced with the browser"""
 
 
-class Pipeline(SyncedValuePipe):
+class Pipeline(SyncedOutletPipe):
     pipes: Tuple[Pipe] = T.List(T.Instance(Pipe), kw={}).tag(
         sync=True, **W.widget_serialization
     )
 
-    @T.observe("pipes", "source")
+    @T.observe("pipes", "inlet")
     def _update_pipes(self, change=None):
-        prev = self.source
+        prev = self.inlet
         for pipe in self.pipes:
-            pipe.source = prev
-            prev = pipe.value
-        self.value = prev
+            pipe.inlet = prev
+            prev = pipe.outlet
+        self.outlet = prev
 
         self.schedule_run()
 
-    async def run(self):
-        for i, pipe in enumerate(self.pipes):
+    async def run(self, start_pipe=None, value=EMPTY_SENTINEL):
+        pipes = self.pipes
+        if start_pipe and start_pipe in pipes:
+            start = pipes.index(start_pipe)
+            pipes = pipes[start:]
+
+        if value is not EMPTY_SENTINEL:
+            pipes[0].inlet.value = value
+
+        num_steps = len(pipes)
+
+        # Look at enabled pipes
+        for i, pipe in enumerate(pipes):
             # TODO use i for reporting processing stage
             await pipe.run()
 
     def check(self) -> bool:
-        """Checks sources and values of the pipeline and raises error is not connected
+        """Checks inlets and outlets of the pipeline and raises error is not connected
 
         :raises BrokenPipe: Disconnected pipes
         :return: True if no errors in pipeline
         """
         broken = []
-        prev = self.source
+        prev = self.inlet
         for i, pipe in enumerate(self.pipes):
-            if prev is not pipe.source:
+            if prev is not pipe.inlet:
                 broken.append((i - 1, i))
-            prev = pipe.value
+            prev = pipe.outlet
 
-        if prev is not self.value:
+        if prev is not self.outlet:
             broken.append((i, i + 1))
 
         if broken:

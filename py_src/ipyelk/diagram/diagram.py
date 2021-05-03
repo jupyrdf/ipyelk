@@ -10,8 +10,9 @@ import traitlets as T
 # from ..json.util import iter_elements
 from ..pipes import Pipe
 from ..styled_widget import StyledWidget
+from ..tools import Tool
 from .sprotty_viewer import SprottyViewer
-from .viewer import Tool, Viewer
+from .viewer import Viewer
 
 
 class Diagram(StyledWidget):
@@ -50,6 +51,12 @@ class Diagram(StyledWidget):
     def _default_view(self):
         return SprottyViewer()
 
+    @T.default("pipe")
+    def _default_Pipe(self):
+        from ..pipes.flow import DefaultFlow
+
+        return DefaultFlow()
+
     @T.observe("view")
     def _update_children(self, change: T.Bunch = None):
         """Handle if the viewer instance changes by reobserving handler
@@ -75,9 +82,8 @@ class Diagram(StyledWidget):
 
     # @T.observe("pipe", "view")
     def _update_view_sources(self):
-        self.log.warning(self.pipe.value)
-        self.pipe.source = self.source
-        self.view.source = self.pipe.value
+        self.pipe.inlet = self.source
+        self.view.source = self.pipe.outlet
 
     @T.observe("pipe")
     def _change_pipe(self, change):
@@ -101,7 +107,7 @@ class Diagram(StyledWidget):
         layout = None
         try:
             await self.pipe.run()
-            layout = self.pipe.value.value
+            layout = self.pipe.outlet.value
         except Exception as e:
             self.e = e
             self.log.exception(e)

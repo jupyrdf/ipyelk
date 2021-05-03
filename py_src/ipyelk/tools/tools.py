@@ -5,6 +5,7 @@
 import ipywidgets as W
 import traitlets as T
 
+from ...elements import Node
 from ..app import Elk, ElkDiagram
 
 
@@ -24,11 +25,12 @@ class ToggleCollapsedBtn(ToolButton):
     def _default_description(self):
         return "Toggle Collapsed"
 
-    def toggle(self, node):
+    def toggle(self, node: Node):
         """Toggle the `hidden` state for the given networkx node"""
-        tree = self.app.transformer.source[1]
-        state = tree.nodes[node].get("hidden", False)
-        tree.nodes[node]["hidden"] = not state
+        node.properties.hidden = not node.properties.hidden
+        # tree = self.app.transformer.source[1]
+        # state = tree.nodes[node].get("hidden", False)
+        # tree.nodes[node]["hidden"] = not state
 
     def handler(self, *args):
         should_refresh = False

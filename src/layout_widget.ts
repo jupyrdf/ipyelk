@@ -9,14 +9,10 @@ import { unpack_models as deserialize } from '@jupyter-widgets/base';
 // import Worker from '!!worker-loader!elkjs/lib/elk-worker.min.js';
 import Worker from '!!worker-loader!elkjs/lib/elk-worker.js';
 import * as ELK from 'elkjs/lib/elk-api';
-import { NAME, VERSION, ELK_DEBUG } from './tokens';
+import { NAME, VERSION, ELK_DEBUG, IRunMessage } from './tokens';
 
 import { ElkNode } from './sprotty/json/elkgraph-json';
 export { ELKTextSizerModel, ELKTextSizerView } from './measure_text';
-
-// export interface MarkElementWidget {
-//   value
-// }
 
 
 const TheElk = new ELK.default({
@@ -82,8 +78,8 @@ export class ELKLayoutModel extends DOMWidgetModel {
   static model_name = 'ELKLayoutModel';
   static serializers = {
     ...DOMWidgetModel.serializers,
-    source: { deserialize },
-    value: { deserialize }
+    inlet: { deserialize },
+    outlet: { deserialize }
   };
 
   protected _elk: ELK.ELK;
@@ -96,16 +92,17 @@ export class ELKLayoutModel extends DOMWidgetModel {
       _view_module: NAME,
       _model_name: ELKLayoutModel.model_name,
       _model_module_version: VERSION,
-      source: null,
-      value: null
+      inlet: null,
+      outlet: null
     };
     return defaults;
   }
 
   initialize(attributes: any, options: any) {
     super.initialize(attributes, options);
-    this.on('change:source', this.on_source_changed, this);
-    this.on_source_changed();
+    // this.on('change:inlet', this.onInletChanged, this);
+    // this.onInletChanged();
+    this.on('msg:custom', this.handleMessage, this);
   }
 
   protected ensureElk() {
@@ -114,19 +111,14 @@ export class ELKLayoutModel extends DOMWidgetModel {
     }
   }
 
-  async on_source_changed() {
-    // TODO disconnect old ones
-    console.log('todo elk layout');
-    let source = this.get('source');
-    if (source){
-
-      source.on("change:value", this.layout, this);
-      this.layout()
-    }
-    console.log(source);
-
+  handleMessage(content:IRunMessage){
+    // check message and decide if should call `measure`
+    switch (content.action) {
+      case "run":
+        this.layout();
+          break;
+      }
   }
-
 
   async layout() {
     // There looks like a bug with how elkjs failing to process edge properties
@@ -134,19 +126,26 @@ export class ELKLayoutModel extends DOMWidgetModel {
     // on the information passed in `properties` from ipyelk to sprotty so this
     // will strip them before calling elk and then reapply after
     // const {rootNode} = this;
-    const rootNode: ELK.ElkNode = this.get("source")?.get("value")
-    let value: DOMWidgetModel = this.get("value"); // target output
-    if (rootNode == null || value == null){
+    const rootNode: ELK.ElkNode = this.get("inlet")?.get("value")
+    let outlet: DOMWidgetModel = this.get("outlet"); // target output
+    if (rootNode == null || outlet == null){
       return null
     }
     let propmap = collectProperties(rootNode);
     // strip properties out
     this.ensureElk();
-    let result = await this._elk.layout(rootNode);
-    // reapply properties
-    applyProperties(result, propmap);
-    value.set("value", {...result});
-    value.save_changes();
+    let result;
+    try {
+      result = await this._elk.layout(rootNode);
+      // reapply properties
+      applyProperties(result, propmap);
+    } catch (error) {
+      result = {};
+      console.error(error);
+    }
+
+    outlet.set("value", {...result});
+    outlet.save_changes();
     return result;
   }
 }

@@ -5,23 +5,25 @@ from .base import (
     MarkElementWidget,
     Pipe,
     Pipeline,
+    SyncedInletPipe,
     SyncedMarkElementWidget,
+    SyncedOutletPipe,
     SyncedPipe,
-    SyncedSourcePipe,
-    SyncedValuePipe,
 )
 from .elkjs import ElkJS
-from .text_sizing import BrowserTextSizer, TextSizer
+from .text_sizer import BrowserTextSizer, TextSizer
+from .visibility import VisibilityPipe
 
 __all__ = [
+    "BrowserTextSizer",
+    "ElkJS",
+    "MarkElementWidget",
     "Pipe",
     "Pipeline",
-    "MarkElementWidget",
     "SyncedMarkElementWidget",
-    "SyncedSourcePipe",
-    "SyncedValuePipe",
     "SyncedPipe",
-    "BrowserTextSizer",
+    "SyncedInletPipe",
+    "SyncedOutletPipe",
     "TextSizer",
-    "ElkJS",
+    "VisibilityPipe",
 ]

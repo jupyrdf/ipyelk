@@ -5,7 +5,7 @@
 
 import { DOMWidgetModel, DOMWidgetView } from '@jupyter-widgets/base';
 import { unpack_models as deserialize } from '@jupyter-widgets/base';
-import { NAME, VERSION, ELK_CSS, ELK_DEBUG } from './tokens';
+import { NAME, VERSION, ELK_CSS, ELK_DEBUG, IRunMessage } from './tokens';
 import { ElkNode, ElkLabel } from './sprotty/json/elkgraph-json';
 // import { ElkNode } from './sprotty/sprotty-model';
 
@@ -13,8 +13,8 @@ export class ELKTextSizerModel extends DOMWidgetModel {
   static model_name = 'ELKTextSizerModel';
   static serializers = {
     ...DOMWidgetModel.serializers,
-    source: { deserialize },
-    value: { deserialize }
+    inlet: { deserialize },
+    outlet: { deserialize }
   };
 
   defaults() {
@@ -27,8 +27,8 @@ export class ELKTextSizerModel extends DOMWidgetModel {
       _view_name: ELKTextSizerView.view_name,
       _view_module_version: VERSION,
       id: String(Math.random()),
-      source: null,
-      value: null,
+      inlet: null,
+      outlet: null,
     };
     return defaults;
   }
@@ -43,7 +43,7 @@ export class ELKTextSizerModel extends DOMWidgetModel {
   ) {
     super.initialize(attributes, options);
     ELK_DEBUG && console.warn('ELK Test Sizer Init');
-    this.on('msg:custom', this.on_message, this);
+    this.on('msg:custom', this.handleMessage, this);
     (<any>window).sizer = this;
     ELK_DEBUG && console.warn('ELK Text Done Init');
   }
@@ -82,9 +82,13 @@ export class ELKTextSizerModel extends DOMWidgetModel {
     return element;
   }
 
-  on_message(content){
-    // TODO check content message and decide if should call `measure`
-    this.measure();
+  handleMessage(content:IRunMessage){
+    // check message and decide if should call `measure`
+    switch (content.action) {
+      case "run":
+        this.measure();
+          break;
+      }
   }
 
   /**
@@ -92,9 +96,9 @@ export class ELKTextSizerModel extends DOMWidgetModel {
    * @param content message measure request
    */
   measure() {
-    const rootNode: ElkNode = this.get("source")?.get("value")
-    let value: DOMWidgetModel = this.get("value"); // target output
-    if (rootNode == null || value == null){
+    const rootNode: ElkNode = this.get("inlet")?.get("value")
+    let outlet: DOMWidgetModel = this.get("outlet"); // target output
+    if (rootNode == null || outlet == null){
       return null
     }
     console.log(rootNode);
@@ -125,8 +129,8 @@ export class ELKTextSizerModel extends DOMWidgetModel {
 
       this.read_sizes(texts, elements);
       console.log('setting value after labels have been sized... probably');
-      value.set("value", {...rootNode});
-      value.save_changes();
+      outlet.set("value", {...rootNode});
+      outlet.save_changes();
       if (!ELK_DEBUG) {
         document.body.removeChild(el);
       }

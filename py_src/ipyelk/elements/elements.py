@@ -7,9 +7,12 @@ from typing import Dict, List, Optional, Type, Union
 from pydantic import BaseModel, Field, PrivateAttr
 
 from ..exceptions import NotFoundError, NotUniqueError
-from .common import add_excluded_fields
+from .common import CounterContextManager, add_excluded_fields
 from .registry import Registry
 from .shapes import BaseShape, EdgeShape, LabelShape, NodeShape, Point, PortShape
+
+exclude_hidden = CounterContextManager()
+exclude_layout = CounterContextManager()
 
 
 class ElementMetadata(BaseModel):
@@ -26,6 +29,9 @@ class BaseProperties(BaseModel):
     key: Optional[str] = Field(
         None, description="Used to provide lookup functionality from owner"
     )
+    hidden: Optional[bool] = Field(
+        None, description="Specifies if the element and it's nested elements are hidden"
+    )
 
     def get_shape(self) -> BaseShape:
         if self.shape is None:
@@ -41,9 +47,6 @@ class BaseProperties(BaseModel):
 
 class NodeProperties(BaseProperties):
     shape: Optional[NodeShape]
-    hidden: Optional[bool] = Field(
-        None, description="Specifies if the node and it's children are hidden"
-    )
 
     def get_shape(self) -> NodeShape:
         return super().get_shape()
@@ -127,7 +130,7 @@ class BaseElement(IDElement, abc.ABC):
     class Config:
         copy_on_model_validation = False
 
-        excluded = ["metadata"]
+        excluded = ["metadata", "labels"]
 
     def add_class(self, className: str) -> "BaseElement":
         """
@@ -151,6 +154,15 @@ class BaseElement(IDElement, abc.ABC):
             dom_classes.difference(set([className]))
         ).strip()
         return self
+
+    def dict(self, **kwargs):
+        data = super().dict(**kwargs)
+        data["labels"] = list_visible(self.labels, **kwargs)
+        return data
+
+
+def list_visible(els: List[BaseElement], **kwargs):
+    return [el.dict(**kwargs) for el in els if not el.properties.hidden]
 
 
 class ShapeElement(BaseElement, abc.ABC):
@@ -176,6 +188,9 @@ class ShapeElement(BaseElement, abc.ABC):
         if data.get("height", None) is None and height is not None:
             data["height"] = height
 
+        # if exclude_layout.active:
+        #     for attr in ["x", "y", "width", "height"]:
+        #         data[attr] = None
         return data
 
 
@@ -222,8 +237,7 @@ class Edge(BaseElement):
     properties: EdgeProperties = Field(default_factory=EdgeProperties)
     source: HierarchicalElement = Field(...)
     target: HierarchicalElement = Field(...)
-    sections: List[EdgeSection] = Field(
-        default_factory=list,
+    sections: Optional[List[EdgeSection]] = Field(
         description="Captures the routing of an edge through a drawing",
     )
 
@@ -237,22 +251,11 @@ class Edge(BaseElement):
 
     def dict(self, **kwargs):
         data = super().dict(**kwargs)
-
         data["sources"] = [self.source.get_id()]
         data["targets"] = [self.target.get_id()]
-
-        # if isinstance(self.source, Port):
-        #     print("sourePorting")
-        #     data["sources"] = [self.source.get_parent().get_id()]
-        #     data["sourcePort"] = self.source.get_id()
-        # else:
-        #     data["sources"] = [self.source.get_id()]
-        # if isinstance(self.target, Port):
-        #     print("targetPorting")
-        #     data["targets"] = [self.target.get_parent().get_id()]
-        #     data["targetPort"] = self.target.get_id()
-        # else:
-        #     data["targets"] = [self.target.get_id()]
+        if exclude_layout.active:
+            for attr in ["sections"]:
+                data[attr] = None
         return data
 
 
@@ -298,7 +301,7 @@ class Node(HierarchicalElement):
         copy_on_model_validation = False
 
         # non-pydantic configs
-        excluded = ["metadata", "parent", "key"]
+        excluded = ["metadata", "parent", "key", "ports", "children", "edges"]
 
     def __init__(self, **data):  # type: ignore
         super().__init__(**data)
@@ -317,6 +320,13 @@ class Node(HierarchicalElement):
             except NotFoundError:
                 pass
         raise AttributeError
+
+    def dict(self, **kwargs):
+        data = super().dict(**kwargs)
+        data["ports"] = list_visible(self.ports, **kwargs)
+        data["children"] = list_visible(self.children, **kwargs)
+        data["edges"] = list_visible(self.edges, **kwargs)
+        return data
 
     def add_child(self, child: "Node", key: Optional[str] = None) -> "Node":
         self.children.append(child.set_parent(self).set_key(key))

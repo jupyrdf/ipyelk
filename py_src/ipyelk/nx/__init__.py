@@ -5,9 +5,10 @@
 # from .transformer import XELK
 
 # __all__ = ["XELK", "XELKTypedLayout"]
-from .pipes import Diagram, NXSource
+from .pipes import Diagram, NXLoader, NXSource
 
 __all__ = [
     "Diagram",
     "NXSource",
+    "NXLoader",
 ]

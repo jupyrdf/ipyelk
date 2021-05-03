@@ -46,6 +46,11 @@ export class ELKViewerModel extends DOMWidgetModel {
   static serializers = {
     ...DOMWidgetModel.serializers,
     source: { deserialize },
+    selection: {deserialize},
+    hover: {deserialize},
+    painter: {deserialize},
+    zoom: {deserialize},
+    pan: {deserialize},
   };
   layoutUpdated = new Signal<ELKViewerModel, void>(this);
 
@@ -91,10 +96,8 @@ export class ELKViewerView extends DOMWidgetView {
   }
   async on_source_changed() {
     // TODO disconnect old ones
-    console.log('todo sprotty');
     let source = this.model.get('source');
     if (source){
-
       source.on("change:value", this.diagramLayout, this);
       this.diagramLayout()
     }
@@ -136,11 +139,16 @@ export class ELKViewerView extends DOMWidgetView {
       ToolTYPES.IFeedbackActionDispatcher
     );
     // this.model.on('change:mark_layout', this.diagramLayout, this);
-    this.model.on('change:selected', this.updateSelected, this);
-    this.model.on('change:hovered', this.updateHover, this);
+    this.model.on('change:selection', this.updateSelectedTool, this);
+    this.model.on('change:hover', this.updateHoverTool, this);
     this.model.on('change:interaction', this.interaction_mode_changed, this);
     this.model.on('msg:custom', this.handleMessage, this);
     this.model.on('change:symbols', this.diagramLayout, this);
+
+    // init for the first time
+    this.updateSelectedTool();
+    this.updateHoverTool();
+
     this.touch(); //to sync back the diagram state
 
     // Register Action Handlers
@@ -187,16 +195,24 @@ export class ELKViewerView extends DOMWidgetView {
     switch (action.kind) {
       case SelectAction.KIND:
         this.source.getSelected().then(ids => {
-          this.model.set('selected', ids);
-          this.touch();
+          let selection = this.model.get("selection")
+          if (selection != null){
+            selection.set('ids', ids);
+            selection.save_changes();
+          }
         });
+        break;
       case SelectionResult.KIND:
         break;
       case HoverFeedbackAction.KIND:
         let hoverFeedback: HoverFeedbackAction = action as HoverFeedbackAction;
         if (hoverFeedback.mouseIsOver) {
-          this.model.set('hovered', hoverFeedback.mouseoverElement);
-          this.touch();
+          let hover = this.model.get("hover")
+          if (hover != null){
+            hover.set("ids", hoverFeedback.mouseoverElement);
+            hover.save_changes();
+          }
+
         }
         break;
       default:
@@ -204,21 +220,40 @@ export class ELKViewerView extends DOMWidgetView {
     }
   }
 
+  updateSelectedTool(){
+    let selection = this.model.get('selection');
+    if (selection != null){
+      selection.on('change:ids', this.updateSelected, this);
+    }
+  }
   updateSelected() {
-    let selected: string[] = this.model.get('selected');
-    let old_selected: string[] = this.model.previous('selected');
-    let exiting: string[] = difference(old_selected, selected);
-    let entering: string[] = difference(selected, old_selected);
-    this.actionDispatcher.dispatch(new SelectAction(entering, exiting));
+    let selection = this.model.get('selection')
+    if (selection != null){
+        let selected: string[] = selection.get('ids');
+        let old_selected: string[] = selection.previous('ids');
+        let exiting: string[] = difference(old_selected, selected);
+        let entering: string[] = difference(selected, old_selected);
+        this.actionDispatcher.dispatch(new SelectAction(entering, exiting));
+    }
+  }
+
+  updateHoverTool(){
+    let hover = this.model.get('hover');
+    if (hover != null){
+      hover.on('change:ids', this.updateHover, this);
+    }
   }
 
   updateHover() {
-    let hovered: string = this.model.get('hovered');
-    let old_hovered: string = this.model.previous('hovered');
-    this.actionDispatcher.dispatchAll([
-      new HoverFeedbackAction(hovered, true),
-      new HoverFeedbackAction(old_hovered, false)
-    ]);
+    let hover = this.model.get("hover")
+    if (hover != null){
+      let hovered: string = hover.get('ids');
+      let old_hovered: string = hover.previous('ids');
+      this.actionDispatcher.dispatchAll([
+        new HoverFeedbackAction(hovered, true),
+        new HoverFeedbackAction(old_hovered, false)
+      ]);
+    }
   }
 
   async interaction_mode_changed() {

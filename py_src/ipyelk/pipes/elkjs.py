@@ -18,13 +18,13 @@ class ElkJS(SyncedPipe):
 
     async def run(self):
         # watch once
-        if self.value is None:
+        if self.outlet is None:
             return
 
-        future_value = wait_for_change(self.value, "value")
-
         # signal to browser and wait for done
+        future_value = wait_for_change(self.outlet, "value")
+        self.send({"action": "run"})
 
         # wait to return until
         await future_value
-        return self.value
+        return self.outlet

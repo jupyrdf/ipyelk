@@ -1,19 +1,35 @@
-from collections import namedtuple
+# Copyright (c) 2021 Dane Freeman.
+# Distributed under the terms of the Modified BSD License.
+
 from typing import Dict, Hashable, Iterator, Optional
 
 import ipywidgets as W
 import networkx as nx
 import traitlets as T
 
-from ipyelk.elements import Edge, HierarchicalElement, Label, Node, Port, Registry
-from ipyelk.elements.serialization import build_shape_map, iter_elements
-
 from .. import diagram
+from ..elements import (
+    EMPTY_SENTINEL,
+    Edge,
+    ElementIndex,
+    HierarchicalElement,
+    Label,
+    Node,
+    Port,
+    Registry,
+    index,
+)
 from ..elements import layout_options as opt
 from ..exceptions import NotFoundError
-from ..pipes import BrowserTextSizer, ElkJS, Pipe, Pipeline
-
-SENTINEL = namedtuple("Sentinel", [])
+from ..pipes import (
+    BrowserTextSizer,
+    ElkJS,
+    MarkElementWidget,
+    Pipe,
+    Pipeline,
+    VisibilityPipe,
+)
+from ..tools import Loader
 
 root_opts = opt.OptionsWidget(
     options=[
@@ -30,20 +46,11 @@ node_opts = opt.OptionsWidget(
 ).value
 
 
-class NXSource(W.Widget):
-    graph: nx.MultiDiGraph = T.Instance(nx.MultiDiGraph)
-    hierarchy: nx.DiGraph = T.Instance(nx.DiGraph, allow_none=True)
-
-
-class NetworkxPipe(Pipe):
-    source: NXSource = T.Instance(NXSource, allow_none=True)
-
-    async def run(self):
-        """Run method"""
-        # the things to make the stuff
-        # self.value = elements
-        graph = self.source.graph
-        hierarchy = process_hierarchy(graph, self.source.hierarchy)
+class NXLoader(Loader):
+    def load(
+        self, graph: nx.MultiDiGraph, hierarchy: Optional[nx.DiGraph] = None
+    ) -> MarkElementWidget:
+        hierarchy = process_hierarchy(graph, hierarchy)
         root: Node = get_root(hierarchy)
         if not root.layoutOptions:
             root.layoutOptions = root_opts
@@ -66,12 +73,12 @@ class NetworkxPipe(Pipe):
 
         context = Registry()
         with context:
-            el_map = build_shape_map(*nodes)
+            el_map = ElementIndex.from_els(*nodes)
 
             # nest elements based on hierarchical edges
             for u, v in hierarchy.edges():
-                parent = u if isinstance(u, Node) else el_map[u]
-                child = v if isinstance(v, Node) else el_map[v]
+                parent = u if isinstance(u, Node) else el_map.get(u)
+                child = v if isinstance(v, Node) else el_map.get(v)
                 parent.children.append(child)
 
             # add element edges
@@ -80,21 +87,84 @@ class NetworkxPipe(Pipe):
                 owner = get_owner(edge, hierarchy, el_map)
                 owner.edges.append(edge)
 
-                for el in iter_elements(root):
-                    el.id = el.get_id()
+            for el in index.iter_elements(root):
+                el.id = el.get_id()
 
-        self.value.value = root
+        return MarkElementWidget(value=root)
+
+
+class NXSource(W.Widget):
+    graph: nx.MultiDiGraph = T.Instance(nx.MultiDiGraph)
+    hierarchy: nx.DiGraph = T.Instance(nx.DiGraph, allow_none=True)
+
+
+class NetworkxPipe(Pipe):
+    inlet: NXSource = T.Instance(NXSource, allow_none=True)
+
+    async def run(self):
+        """Run method"""
+        # the things to make the stuff
+        # self.value = elements
+        graph = self.inlet.graph
+        hierarchy = process_hierarchy(graph, self.inlet.hierarchy)
+        root: Node = get_root(hierarchy)
+        if not root.layoutOptions:
+            root.layoutOptions = root_opts
+
+        # add graph nodes
+        nodes = []
+        for n, d in graph.nodes(data=True):
+            el = from_nx_node(n, d)
+            if not el.layoutOptions:
+                el.layoutOptions = node_opts
+            nodes.append(el)
+            if not el.labels:
+                el.labels.append(Label(text=el.id, layoutOptions=label_opts))
+
+        # add hierarchy nodes
+        for n, d in hierarchy.nodes(data=True):
+            if n not in graph:
+                el = from_nx_node(n, d)
+                nodes.append(el)
+
+        context = Registry()
+        with context:
+            el_map = ElementIndex.from_els(*nodes)
+
+            # nest elements based on hierarchical edges
+            for u, v in hierarchy.edges():
+                parent = u if isinstance(u, Node) else el_map.get(u)
+                child = v if isinstance(v, Node) else el_map.get(v)
+                parent.children.append(child)
+
+            # add element edges
+            for u, v, d in graph.edges(data=True):
+                edge = process_endpoints(u, v, d, el_map)
+                owner = get_owner(edge, hierarchy, el_map)
+                owner.edges.append(edge)
+
+            for el in index.iter_elements(root):
+                el.id = el.get_id()
+
+        self.outlet.value = root
 
 
 class NXElkPipe(Pipeline):
-    source: NXSource = T.Instance(NXSource, allow_none=True)
+    inlet: NXSource = T.Instance(NXSource, allow_none=True)
 
     @T.default("pipes")
-    def _default_Pipes(self):
+    def _default_pipes(self):
         return [
             NetworkxPipe(),
             BrowserTextSizer(),
+            # Toolcollapser(),
+            VisibilityPipe(
+                # tool = ToolCollapser(),
+            ),
             ElkJS(),
+            # SprottyViewer(),
+            # Downselect(),
+            # MiniSprottyViewer(),
         ]
 
 
@@ -107,7 +177,7 @@ class Diagram(diagram.Diagram):
 
 
 def process_endpoints(
-    u: Hashable, v: Hashable, data: Dict, el_map: Dict[str, HierarchicalElement]
+    u: Hashable, v: Hashable, data: Dict, el_map: ElementIndex
 ) -> Edge:
     """Process the edge (u,v,data) for `sourcePort` `targetPort` and return Edge
 
@@ -126,7 +196,6 @@ def process_endpoints(
     for key, pt in ends.items():
         for attr in [key + "Port", "port"]:
             if attr in data:
-                print(attr)
                 port = get_endpoint(el_map, pt, data[attr])
                 assert isinstance(port, Port)
                 ends[key] = port
@@ -136,11 +205,11 @@ def process_endpoints(
 
 
 def get_endpoint(
-    el_map: Dict[str, HierarchicalElement], pt: Hashable, port_key=SENTINEL
+    el_map: ElementIndex, pt: Hashable, port_key=EMPTY_SENTINEL
 ) -> HierarchicalElement:
     if not isinstance(pt, HierarchicalElement):
-        pt = el_map[str(pt)]  # must at least be an identifier in the element map
-    if port_key is SENTINEL:
+        pt = el_map.get(str(pt))  # must at least be an identifier in the element map
+    if port_key is EMPTY_SENTINEL:
         return pt  # no need to try and resolve a port
 
     # easy check
@@ -154,7 +223,7 @@ def get_endpoint(
         port = pt.get_port(key=port_key)
     except NotFoundError as e:
         if port_key in el_map:
-            el = el_map[port_key]  # port_key was a global id
+            el = el_map.get(port_key)  # port_key was a global id
             if isinstance(el, Port) and el._parent is pt:
                 return el
             else:
@@ -224,7 +293,7 @@ def get_root(hierarchy):
         return root
 
 
-def as_in_hierarchy(node: HierarchicalElement, hierarchy, el_map):
+def as_in_hierarchy(node: HierarchicalElement, hierarchy, el_map: ElementIndex):
     # TODO need to handle if given a port or node
     if isinstance(node, Port):
         node = node._parent
@@ -247,7 +316,7 @@ def lca(
     hierarchy: nx.DiGraph,
     node1: HierarchicalElement,
     node2: HierarchicalElement,
-    el_map: Dict[str, HierarchicalElement],
+    el_map: ElementIndex,
 ) -> HierarchicalElement:
     node1 = as_in_hierarchy(node1, hierarchy, el_map)
     node2 = as_in_hierarchy(node2, hierarchy, el_map)
@@ -258,7 +327,9 @@ def lca(
     return ancestor
 
 
-def get_owner(edge: Edge, hierarchy: nx.DiGraph, el_map) -> HierarchicalElement:
+def get_owner(
+    edge: Edge, hierarchy: nx.DiGraph, el_map: ElementIndex
+) -> HierarchicalElement:
     u = edge.source
     v = edge.target
     return lca(hierarchy, u, v, el_map)
