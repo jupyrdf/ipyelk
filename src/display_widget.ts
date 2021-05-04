@@ -9,7 +9,11 @@ import { Message } from '@lumino/messaging';
 import { Widget } from '@lumino/widgets';
 import { Signal } from '@lumino/signaling';
 
-import { DOMWidgetModel, DOMWidgetView, unpack_models as deserialize } from '@jupyter-widgets/base';
+import {
+  DOMWidgetModel,
+  DOMWidgetView,
+  unpack_models as deserialize
+} from '@jupyter-widgets/base';
 // import { WidgetManager } from '@jupyter-widgets/jupyterlab-manager';
 // import { ManagerBase } from '@jupyter-widgets/base';
 
@@ -46,11 +50,11 @@ export class ELKViewerModel extends DOMWidgetModel {
   static serializers = {
     ...DOMWidgetModel.serializers,
     source: { deserialize },
-    selection: {deserialize},
-    hover: {deserialize},
-    painter: {deserialize},
-    zoom: {deserialize},
-    pan: {deserialize},
+    selection: { deserialize },
+    hover: { deserialize },
+    painter: { deserialize },
+    zoom: { deserialize },
+    pan: { deserialize }
   };
   layoutUpdated = new Signal<ELKViewerModel, void>(this);
 
@@ -64,7 +68,7 @@ export class ELKViewerModel extends DOMWidgetModel {
       _view_name: ELKViewerView.view_name,
       _view_module_version: VERSION,
       symbols: {},
-      source: null,
+      source: null
     };
     return defaults;
   }
@@ -97,9 +101,9 @@ export class ELKViewerView extends DOMWidgetView {
   async on_source_changed() {
     // TODO disconnect old ones
     let source = this.model.get('source');
-    if (source){
-      source.on("change:value", this.diagramLayout, this);
-      this.diagramLayout()
+    if (source) {
+      source.on('change:value', this.diagramLayout, this);
+      this.diagramLayout();
     }
   }
 
@@ -195,8 +199,8 @@ export class ELKViewerView extends DOMWidgetView {
     switch (action.kind) {
       case SelectAction.KIND:
         this.source.getSelected().then(ids => {
-          let selection = this.model.get("selection")
-          if (selection != null){
+          let selection = this.model.get('selection');
+          if (selection != null) {
             selection.set('ids', ids);
             selection.save_changes();
           }
@@ -207,12 +211,11 @@ export class ELKViewerView extends DOMWidgetView {
       case HoverFeedbackAction.KIND:
         let hoverFeedback: HoverFeedbackAction = action as HoverFeedbackAction;
         if (hoverFeedback.mouseIsOver) {
-          let hover = this.model.get("hover")
-          if (hover != null){
-            hover.set("ids", hoverFeedback.mouseoverElement);
+          let hover = this.model.get('hover');
+          if (hover != null) {
+            hover.set('ids', hoverFeedback.mouseoverElement);
             hover.save_changes();
           }
-
         }
         break;
       default:
@@ -220,33 +223,33 @@ export class ELKViewerView extends DOMWidgetView {
     }
   }
 
-  updateSelectedTool(){
+  updateSelectedTool() {
     let selection = this.model.get('selection');
-    if (selection != null){
+    if (selection != null) {
       selection.on('change:ids', this.updateSelected, this);
     }
   }
   updateSelected() {
-    let selection = this.model.get('selection')
-    if (selection != null){
-        let selected: string[] = selection.get('ids');
-        let old_selected: string[] = selection.previous('ids');
-        let exiting: string[] = difference(old_selected, selected);
-        let entering: string[] = difference(selected, old_selected);
-        this.actionDispatcher.dispatch(new SelectAction(entering, exiting));
+    let selection = this.model.get('selection');
+    if (selection != null) {
+      let selected: string[] = selection.get('ids');
+      let old_selected: string[] = selection.previous('ids');
+      let exiting: string[] = difference(old_selected, selected);
+      let entering: string[] = difference(selected, old_selected);
+      this.actionDispatcher.dispatch(new SelectAction(entering, exiting));
     }
   }
 
-  updateHoverTool(){
+  updateHoverTool() {
     let hover = this.model.get('hover');
-    if (hover != null){
+    if (hover != null) {
       hover.on('change:ids', this.updateHover, this);
     }
   }
 
   updateHover() {
-    let hover = this.model.get("hover")
-    if (hover != null){
+    let hover = this.model.get('hover');
+    if (hover != null) {
       let hovered: string = hover.get('ids');
       let old_hovered: string = hover.previous('ids');
       this.actionDispatcher.dispatchAll([
@@ -262,11 +265,11 @@ export class ELKViewerView extends DOMWidgetView {
   }
 
   async diagramLayout() {
-    let layout = this.model.get('source')?.get("value");
+    let layout = this.model.get('source')?.get('value');
     let symbols = this.model.get('symbols');
-    if (layout == null || symbols == null){
+    if (layout == null || symbols == null) {
       // bailing
-      return null
+      return null;
     }
     await this.source.updateLayout(layout, symbols, this.div_id);
     this.model.layoutUpdated.emit();

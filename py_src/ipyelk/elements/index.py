@@ -1,7 +1,7 @@
 # Copyright (c) 2021 Dane Freeman.
 # Distributed under the terms of the Modified BSD License.
 
-from typing import Dict, Iterator, Optional, Set, Tuple, Mapping, List
+from typing import Dict, Iterator, Mapping, Optional, Set, Tuple
 
 from pydantic import BaseModel, Field
 
@@ -60,13 +60,11 @@ class ElementIndex(BaseModel):
     @classmethod
     def from_els(cls, *els: BaseElement) -> "ElementIndex":
 
-        elements = {
-            el.get_id(): el
-            for el in iter_elements(*els)
-        }
+        elements = {el.get_id(): el for el in iter_elements(*els)}
         return cls(
             elements=elements,
         )
+
 
 class HierarchicalIndex(ElementIndex):
     elements: Mapping[str, HierarchicalElement]
@@ -157,13 +155,12 @@ class HierarchicalIndex(ElementIndex):
     def is_hidden(self, key):
         return key not in self.elements
 
-    def is_null_edge(self, source, target)->bool:
+    def is_null_edge(self, source, target) -> bool:
         source_node = self.get_visible_node(source)
         target_node = self.get_visible_node(target)
         return source_node is target_node
 
-
-    def get_visible_node(self, el_id:str)->Node:
+    def get_visible_node(self, el_id: str) -> Node:
         """Gets the visible node associated with the given el_id
 
         :param key: element id
@@ -176,7 +173,6 @@ class HierarchicalIndex(ElementIndex):
             element = element._parent
         assert isinstance(element, Node)
         return element
-
 
 
 def iter_elements(*els: BaseElement) -> Iterator[BaseElement]:

@@ -28,7 +28,7 @@ export class ELKTextSizerModel extends DOMWidgetModel {
       _view_module_version: VERSION,
       id: String(Math.random()),
       inlet: null,
-      outlet: null,
+      outlet: null
     };
     return defaults;
   }
@@ -82,13 +82,13 @@ export class ELKTextSizerModel extends DOMWidgetModel {
     return element;
   }
 
-  handleMessage(content:IRunMessage){
+  handleMessage(content: IRunMessage) {
     // check message and decide if should call `measure`
     switch (content.action) {
-      case "run":
+      case 'run':
         this.measure();
-          break;
-      }
+        break;
+    }
   }
 
   /**
@@ -96,14 +96,13 @@ export class ELKTextSizerModel extends DOMWidgetModel {
    * @param content message measure request
    */
   measure() {
-    const rootNode: ElkNode = this.get("inlet")?.get("value")
-    let outlet: DOMWidgetModel = this.get("outlet"); // target output
-    if (rootNode == null || outlet == null){
-      return null
+    const rootNode: ElkNode = this.get('inlet')?.get('value');
+    let outlet: DOMWidgetModel = this.get('outlet'); // target output
+    if (rootNode == null || outlet == null) {
+      return null;
     }
     console.log(rootNode);
     let texts: ElkLabel[] = get_labels(rootNode);
-
 
     ELK_DEBUG && console.warn('ELK Text Sizer Measure', texts);
     const el: HTMLElement = this.make_container();
@@ -126,10 +125,9 @@ export class ELKTextSizerModel extends DOMWidgetModel {
 
     // Callback to take measurements and remove element from DOM
     window.requestAnimationFrame(() => {
-
       this.read_sizes(texts, elements);
       console.log('setting value after labels have been sized... probably');
-      outlet.set("value", {...rootNode});
+      outlet.set('value', { ...rootNode });
       outlet.save_changes();
       if (!ELK_DEBUG) {
         document.body.removeChild(el);
@@ -153,10 +151,9 @@ export class ELKTextSizerModel extends DOMWidgetModel {
       label.height = size.height;
 
       i++;
-      }
+    }
   }
 }
-
 
 export class ELKTextSizerView extends DOMWidgetView {
   static view_name = 'ELKTextSizerView';
@@ -172,22 +169,21 @@ function createSVGElement(tag: string): SVGElement {
   return document.createElementNS('http://www.w3.org/2000/svg', tag);
 }
 
-function get_labels(el:any): ElkLabel[] {
-  let labels:ElkLabel[] = []
-  if (el?.labels){
-    labels.push(...el?.labels)
+function get_labels(el: any): ElkLabel[] {
+  let labels: ElkLabel[] = [];
+  if (el?.labels) {
+    labels.push(...el?.labels);
   }
 
-  for (let child of el?.children || []){
-    labels.push(...get_labels(child))
+  for (let child of el?.children || []) {
+    labels.push(...get_labels(child));
   }
-  for (let edge of el?.edges || []){
-    labels.push(...get_labels(edge))
+  for (let edge of el?.edges || []) {
+    labels.push(...get_labels(edge));
   }
-  for (let label of el?.labels || []){
-    labels.push(...get_labels(label))
+  for (let label of el?.labels || []) {
+    labels.push(...get_labels(label));
   }
 
-
-  return labels
+  return labels;
 }

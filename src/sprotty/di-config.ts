@@ -59,8 +59,7 @@ import {
   IVNodePostprocessor,
   ViewRegistry
 } from 'sprotty';
-import updateModule from "./update";
-
+import updateModule from './update';
 
 import { JLModelSource } from './diagram-server';
 import * as v from './views';

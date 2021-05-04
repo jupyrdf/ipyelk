@@ -5,7 +5,6 @@
 import ipywidgets as W
 import traitlets as T
 
-from ...elements import Node
 from ..app import Elk, ElkDiagram
 
 
@@ -18,7 +17,6 @@ class ToolButton(W.Button):
 
     def handler(self, *args):
         raise NotImplementedError("Subclasses should implement the tool handler")
-
 
 
 class FitBtn(ToolButton):

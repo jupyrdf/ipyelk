@@ -14,7 +14,6 @@ import { NAME, VERSION, ELK_DEBUG, IRunMessage } from './tokens';
 import { ElkNode } from './sprotty/json/elkgraph-json';
 export { ELKTextSizerModel, ELKTextSizerView } from './measure_text';
 
-
 const TheElk = new ELK.default({
   workerFactory: () => {
     ELK_DEBUG && console.warn('ELK Worker created');
@@ -111,13 +110,13 @@ export class ELKLayoutModel extends DOMWidgetModel {
     }
   }
 
-  handleMessage(content:IRunMessage){
+  handleMessage(content: IRunMessage) {
     // check message and decide if should call `measure`
     switch (content.action) {
-      case "run":
+      case 'run':
         this.layout();
-          break;
-      }
+        break;
+    }
   }
 
   async layout() {
@@ -126,10 +125,10 @@ export class ELKLayoutModel extends DOMWidgetModel {
     // on the information passed in `properties` from ipyelk to sprotty so this
     // will strip them before calling elk and then reapply after
     // const {rootNode} = this;
-    const rootNode: ELK.ElkNode = this.get("inlet")?.get("value")
-    let outlet: DOMWidgetModel = this.get("outlet"); // target output
-    if (rootNode == null || outlet == null){
-      return null
+    const rootNode: ELK.ElkNode = this.get('inlet')?.get('value');
+    let outlet: DOMWidgetModel = this.get('outlet'); // target output
+    if (rootNode == null || outlet == null) {
+      return null;
     }
     let propmap = collectProperties(rootNode);
     // strip properties out
@@ -144,7 +143,7 @@ export class ELKLayoutModel extends DOMWidgetModel {
       console.error(error);
     }
 
-    outlet.set("value", {...result});
+    outlet.set('value', { ...result });
     outlet.save_changes();
     return result;
   }

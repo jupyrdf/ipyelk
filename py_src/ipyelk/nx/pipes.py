@@ -11,8 +11,8 @@ from .. import diagram
 from ..elements import (
     EMPTY_SENTINEL,
     Edge,
-    HierarchicalIndex,
     HierarchicalElement,
+    HierarchicalIndex,
     Label,
     Node,
     Port,

@@ -7,7 +7,13 @@ from typing import Tuple
 import ipywidgets as W
 import traitlets as T
 
-from ..elements import EMPTY_SENTINEL, Node, elk_serialization, ElementIndex, BaseElement, HierarchicalElement
+from ..elements import (
+    BaseElement,
+    ElementIndex,
+    HierarchicalElement,
+    Node,
+    elk_serialization,
+)
 from ..exceptions import BrokenPipe
 
 
@@ -17,17 +23,17 @@ class MarkElementWidget(W.DOMWidget):
 
     @T.observe("value")
     def reset_index(self, change=None):
-        self._index=None
+        self._index = None
 
-    def get_index(self)->ElementIndex:
+    def get_index(self) -> ElementIndex:
         if self._index is None:
             self._index = ElementIndex.from_els(self.value)
         return self._index
 
-    def to_id(self, element:BaseElement):
+    def to_id(self, element: BaseElement):
         return element.get_id()
 
-    def from_id(self, key)->HierarchicalElement:
+    def from_id(self, key) -> HierarchicalElement:
         return self.get_index().get(key)
 
 
@@ -52,7 +58,7 @@ class Pipe(W.Widget):
         # do work
         self.outlet = self.inlet
 
-    def get_tools(self)->Tuple:
+    def get_tools(self) -> Tuple:
         return tuple()
 
 
@@ -96,10 +102,9 @@ class Pipeline(SyncedOutletPipe):
             if pipe.dirty:
                 await pipe.run()
                 pipe.dirty = False
-                print(i, pipe.dirty)
         self.dirty = False
 
-    def check_dirty(self)->bool:
+    def check_dirty(self) -> bool:
         # check dirty pipes and propagate dirty to downstream pipes
         dirty = self.dirty
         for pipe in self.pipes:

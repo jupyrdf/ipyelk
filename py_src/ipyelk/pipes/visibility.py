@@ -1,30 +1,30 @@
 # Copyright (c) 2021 Dane Freeman.
 # Distributed under the terms of the Modified BSD License.
 
+import traitlets as T
+
 from ..elements import (
+    BaseElement,
+    Node,
     Registry,
     VisIndex,
     exclude_hidden,
     exclude_layout,
     from_elkjson,
     index,
-    Node,
-    BaseElement,
-    ElementIndex,
 )
-from .base import Pipe
-
-import traitlets as T
 
 # from ..elements import Node
-from ..tools import Tool, Selection
+from ..tools import Selection, Tool
+from .base import Pipe
+
 # from .view_tools import Selection
 
 
 class ToggleCollapsedTool(Tool):
-    selection:Selection = T.Instance(Selection)
+    selection: Selection = T.Instance(Selection)
 
-    def handler(self, *args):
+    async def run(self):
         should_refresh = False
         index = self.tee.inlet.get_index()
         for selected in map(index.get, self.selection.ids):
@@ -36,8 +36,7 @@ class ToggleCollapsedTool(Tool):
         if should_refresh:
             self.tee.dirty = True
 
-    def get_related(self, element:BaseElement):
-        print("get_related", element.id)
+    def get_related(self, element: BaseElement):
         if isinstance(element, Node):
             return element.children
 
@@ -45,7 +44,6 @@ class ToggleCollapsedTool(Tool):
 
     def toggle(self, element: BaseElement):
         """Toggle the `hidden` state for the given Node"""
-        print('vis', id(element), element.id, not element.properties.hidden)
         element.properties.hidden = not element.properties.hidden
 
 
@@ -63,7 +61,6 @@ class VisibilityPipe(Pipe):
         root = self.inlet.value
         # generate an index of hidden elements
         vis_index = VisIndex.from_els(root)
-        print("hidden  #", len(vis_index))
 
         # TODO check if a change occurred
         if len(vis_index):
