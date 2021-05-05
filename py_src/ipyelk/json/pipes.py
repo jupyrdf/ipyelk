@@ -7,14 +7,17 @@ import traitlets as T
 from .. import diagram
 
 # from ..schema.validator import validate_elk_json
-from ..elements import from_elkjson
-from ..pipes import BrowserTextSizer, ElkJS, MarkElementWidget, Pipe, Pipeline
+from ..elements import convert_elkjson
+from ..pipes import BrowserTextSizer, ElkJS, MarkElementWidget, Pipe, Pipeline, flows
 from ..tools import Loader
 
 
 class ElkJSONLoader(Loader):
     def load(self, data: Dict) -> MarkElementWidget:
-        return MarkElementWidget(value=from_elkjson(data))
+        return MarkElementWidget(
+            value=convert_elkjson(data),
+            flow=(flows.Layout,),
+        )
 
 
 class ElkJSONPipe(Pipe):
@@ -26,7 +29,7 @@ class ElkJSONPipe(Pipe):
 
     async def run(self) -> MarkElementWidget:
         """Generate elk json"""
-        self.outlet.value = from_elkjson(self.inlet)
+        self.outlet.value = convert_elkjson(self.inlet)
         return self.outlet
 
 

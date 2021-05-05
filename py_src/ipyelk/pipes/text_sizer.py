@@ -7,6 +7,7 @@ import traitlets as T
 from .._version import EXTENSION_NAME, EXTENSION_SPEC_VERSION
 from ..elements import Label, index
 from ..styled_widget import StyledWidget
+from . import flows as F
 from .base import Pipe, SyncedPipe
 from .util import wait_for_change
 
@@ -14,14 +15,31 @@ from .util import wait_for_change
 class TextSizer(Pipe):
     """simple rule of thumb width height guesser"""
 
+    @T.default("observes")
+    def _default_observes(self):
+        return (
+            F.Text.text,
+            F.Text.size_css,
+            F.Layout,
+        )
+
+    @T.default("reports")
+    def _default_reports(self):
+        return (F.Text.size,)
+
     async def run(self):
         if self.value is None:
+            return
+
+        if not any(o in self.inlet.changes for o in self.observes):
             return
 
         # make copy of source value?
         for el in index.iter_elements(self.source.value):
             if isinstance(el, Label):
                 size(el)
+
+        self.outlet.changes = tuple(set(*self.outlet.changes, *self.reports))
         return self.value
 
 
@@ -51,7 +69,7 @@ def size_nested_label(label: Label) -> Label:
     return label
 
 
-class BrowserTextSizer(SyncedPipe, StyledWidget):
+class BrowserTextSizer(SyncedPipe, StyledWidget, TextSizer):
     """Jupyterlab widget for getting rendered text sizes from the DOM"""
 
     _model_name = T.Unicode("ELKTextSizerModel").tag(sync=True)

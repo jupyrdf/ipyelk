@@ -2,57 +2,33 @@
 # Distributed under the terms of the Modified BSD License.
 
 import traitlets as T
+from ipywidgets.widgets.trait_types import TypedTuple
 
 from ..elements import (
-    BaseElement,
-    Node,
     Registry,
     VisIndex,
+    convert_elkjson,
     exclude_hidden,
     exclude_layout,
-    from_elkjson,
     index,
 )
-
-# from ..elements import Node
-from ..tools import Selection, Tool
+from . import flows as F
 from .base import Pipe
-
-# from .view_tools import Selection
-
-
-class ToggleCollapsedTool(Tool):
-    selection: Selection = T.Instance(Selection)
-
-    async def run(self):
-        should_refresh = False
-        index = self.tee.inlet.get_index()
-        for selected in map(index.get, self.selection.ids):
-            for element in self.get_related(selected):
-                self.toggle(element)
-                should_refresh = True
-
-        # trigger refresh if needed
-        if should_refresh:
-            self.tee.dirty = True
-
-    def get_related(self, element: BaseElement):
-        if isinstance(element, Node):
-            return element.children
-
-        return []
-
-    def toggle(self, element: BaseElement):
-        """Toggle the `hidden` state for the given Node"""
-        element.properties.hidden = not element.properties.hidden
 
 
 class VisibilityPipe(Pipe):
-    collapser = T.Instance(ToggleCollapsedTool)
 
-    @T.default("collapser")
-    def _default_collapser(self):
-        return ToggleCollapsedTool(tee=self)
+    observes = TypedTuple(
+        T.Unicode(),
+        default_value=(
+            F.AnyHidden,
+            F.Layout,
+        ),
+    )
+
+    @T.default("reports")
+    def _default_reports(self):
+        return (F.Layout,)
 
     async def run(self):
         if self.outlet is None or self.inlet is None:
@@ -71,7 +47,7 @@ class VisibilityPipe(Pipe):
             # new root node with slack edges / ports introduced due to hidden
             # elements
             with Registry():
-                value = from_elkjson(data, vis_index)
+                value = convert_elkjson(data, vis_index)
 
                 for el in index.iter_elements(value):
                     el.id = el.get_id()

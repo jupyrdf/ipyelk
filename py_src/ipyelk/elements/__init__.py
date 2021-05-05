@@ -20,13 +20,14 @@ from .extended import Compartment, Partition, Record
 from .index import ElementIndex, HierarchicalIndex, VisIndex
 from .mark_factory import Mark, MarkFactory
 from .registry import Registry
-from .serialization import elk_serialization, from_elkjson, symbol_serialization
+from .serialization import convert_elkjson, elk_serialization, symbol_serialization
 from .shapes import EdgeShape, LabelShape, NodeShape, PortShape
 from .symbol import EndpointSymbol, Symbol, SymbolSpec
 
 __all__ = [
     "BaseElement",
     "Compartment",
+    "convert_elkjson",
     "Edge",
     "EdgeProperties",
     "EdgeProperties",
@@ -39,7 +40,6 @@ __all__ = [
     "EndpointSymbol",
     "exclude_hidden",
     "exclude_layout",
-    "from_elkjson",
     "HierarchicalElement",
     "HierarchicalIndex",
     "Label",

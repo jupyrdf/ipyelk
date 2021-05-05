@@ -1,8 +1,10 @@
 # Copyright (c) 2021 Dane Freeman.
 # Distributed under the terms of the Modified BSD License.
 
+from .collapser import ToggleCollapsedTool
+from .painter import Painter
 from .tool import Loader, Tool
-from .view_tools import Hover, Painter, Pan, Selection, Zoom
+from .view_tools import Hover, Pan, Selection, Zoom
 
 # from .tools import ToggleCollapsedBtn, ToolButton
 
@@ -14,7 +16,7 @@ __all__ = [
     "Painter",
     "Pan",
     "Zoom",
-    # "ToggleCollapsedTool",
+    "ToggleCollapsedTool",
     # "ToggleCollapsedBtn",
     # "ToolButton"
 ]

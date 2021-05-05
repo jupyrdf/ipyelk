@@ -1,11 +1,12 @@
 # Copyright (c) 2021 Dane Freeman.
 # Distributed under the terms of the Modified BSD License.
-
 import asyncio
+import re
 from typing import Tuple
 
 import ipywidgets as W
 import traitlets as T
+from ipywidgets.widgets.trait_types import TypedTuple
 
 from ..elements import (
     BaseElement,
@@ -20,6 +21,7 @@ from ..exceptions import BrokenPipe
 class MarkElementWidget(W.DOMWidget):
     value = T.Instance(Node, allow_none=True).tag(sync=True, **elk_serialization)
     _index = T.Instance(ElementIndex, allow_none=True)
+    flow = TypedTuple(T.Unicode(), kw={})
 
     @T.observe("value")
     def reset_index(self, change=None):
@@ -46,20 +48,32 @@ class Pipe(W.Widget):
     inlet: MarkElementWidget = T.Instance(MarkElementWidget, kw={})
     outlet: MarkElementWidget = T.Instance(MarkElementWidget, kw={})
     dirty: bool = T.Bool(default_value=True)
+    observes: Tuple[str] = TypedTuple(T.Unicode(), kw={})
+    reports: Tuple[str] = TypedTuple(T.Unicode(), kw={})
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-    def schedule_run(self, change: T.Bunch = None):
+    def schedule_run(self, change: T.Bunch = None) -> asyncio.Task:
         # schedule task on loop
-        asyncio.create_task(self.run())
+        return asyncio.create_task(self.run())
 
     async def run(self):
         # do work
-        self.outlet = self.inlet
+        self.outlet.value = self.inlet.value
 
-    def get_tools(self) -> Tuple:
-        return tuple()
+    def check_dirty(self) -> bool:
+        flow = self.inlet.flow
+
+        if any(any(re.match(f"^{obs}$", f) for f in flow) for obs in self.observes):
+            # mark this pipe as dirty so will run
+            self.dirty = True
+            # add this pipes reporting to the outlet flow
+            flow = tuple(set([*flow, *self.reports]))
+        else:
+            self.dirty = False
+        self.outlet.flow = flow
+        return self.dirty
 
 
 class SyncedInletPipe(Pipe):
@@ -102,18 +116,27 @@ class Pipeline(SyncedOutletPipe):
             if pipe.dirty:
                 await pipe.run()
                 pipe.dirty = False
+            else:
+                pipe.outlet.value = pipe.inlet.value
         self.dirty = False
 
     def check_dirty(self) -> bool:
-        # check dirty pipes and propagate dirty to downstream pipes
-        dirty = self.dirty
+        # check pipes and propagate flow to downstream pipes
+        observes = set()
+        reports = set()
         for pipe in self.pipes:
-            if pipe.dirty:
-                dirty = True
+            if pipe.check_dirty():
+                observes |= set(pipe.observes)
+                reports |= set(pipe.reports)
+        # pipeline is dirty if flows are added to reports from subpipes
+        if len(reports):
+            self.dirty = True
+        else:
+            self.dirty = False
 
-            if dirty and not pipe.dirty:
-                pipe.dirty = dirty
-        return dirty
+        self.observe = tuple(observes)
+        self.reports = tuple(reports)
+        return self.dirty
 
     def check(self) -> bool:
         """Checks inlets and outlets of the pipeline and raises error is not connected

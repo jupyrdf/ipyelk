@@ -10,7 +10,7 @@ from .elements import Node
 from .index import HierarchicalIndex, VisIndex
 
 
-def pop_edges(data, edges=None):
+def pop_edges(data: Dict, edges=None):
     if edges is None:
         edges = {}
 
@@ -21,7 +21,7 @@ def pop_edges(data, edges=None):
     return edges
 
 
-def apply_edges(data, edges):
+def apply_edges(data: Dict, edges):
     node_id = data["id"]
     if node_id in edges:
         data["edges"] = edges.get(node_id)
@@ -30,7 +30,7 @@ def apply_edges(data, edges):
     return edges
 
 
-def from_elkjson(data, vis_index: VisIndex = None):
+def convert_elkjson(data: Dict, vis_index: VisIndex = None) -> Node:
     # pop_edges currently mutates `data` by popping the edge dict
     edges_map = pop_edges(data)  # dict of node.id to edge list
     root = Node(**data)  # new element hierarchy without edges
@@ -59,7 +59,7 @@ def to_json(model: Optional[BaseModel], widget: DOMWidget) -> Optional[Dict]:
 def from_elk_json(js: Optional[Dict], manager) -> Optional[Node]:
     if not js:
         return None
-    return from_elkjson(js)
+    return convert_elkjson(js)
 
 
 elk_serialization = {"to_json": to_json, "from_json": from_elk_json}

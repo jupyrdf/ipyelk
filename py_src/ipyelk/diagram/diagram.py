@@ -10,7 +10,7 @@ import traitlets as T
 # from ..json.util import iter_elements
 from ..pipes import Pipe
 from ..styled_widget import StyledWidget
-from ..tools import Tool
+from ..tools import ToggleCollapsedTool, Tool
 from .sprotty_viewer import SprottyViewer
 from .viewer import Viewer
 
@@ -46,6 +46,7 @@ class Diagram(StyledWidget):
         super().__init__(*args, **kwargs)
         self._update_children()
         self.add_class("jp-ElkApp")
+        self._update_tool_on_done()
 
     @T.default("view")
     def _default_view(self):
@@ -55,11 +56,15 @@ class Diagram(StyledWidget):
     def _default_Pipe(self):
         from .flow import DefaultFlow
 
-        return DefaultFlow().link_selection(self.view.selection)
+        return DefaultFlow()
 
     @T.default("tools")
     def _default_tools(self):
-        tools = self.pipe.get_tools()
+        # self.view.selection.tee = self
+        tools = [
+            self.view.selection,
+            ToggleCollapsedTool(selection=self.view.selection),
+        ]
         for tool in tools:
             tool.on_done = self.refresh
         return tools
@@ -78,14 +83,15 @@ class Diagram(StyledWidget):
             # self.toolbar
         ]
 
-        # if change:
-        #     # uninstall old observers
-        #     safely_unobserve(change.old, "selected")
-        #     safely_unobserve(change.old, "hovered")
-
-        # if self.viewer:  # also change.new
-        #     self.viewer.observe(self._handle_selected, "selected")
-        #     self.viewer.observe(self._handle_hovered, "hovered")
+    @T.observe("tools")
+    def _update_tool_on_done(self, change=None):
+        if change and change.old:
+            for tool in change.old:
+                tool.tee = None
+                tool.on_done = None
+        for tool in self.tools:
+            tool.tee = self.pipe
+            tool.on_done = self.refresh
 
     # @T.observe("pipe", "view")
     def _update_view_sources(self):
@@ -120,9 +126,5 @@ class Diagram(StyledWidget):
             self.log.exception(e)
             raise e
         self.view.source.value = layout
-
-    # def register_marks(self, root: Node):
-    #     # TODO is this a thing or is it owned at the view level.... do we care
-    #     # about elkids or the `marks` they represent
-    #     for el in iter_elements(root):
-    #         self.register(Mark(element=el, context=self.context))
+        # self.pipe.inlet.value = layout
+        self.pipe.inlet.flow = tuple()
