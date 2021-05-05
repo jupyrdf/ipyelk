@@ -242,6 +242,8 @@ class Edge(BaseElement):
     )
 
     class Config:
+        copy_on_model_validation = False
+
         excluded = ["metadata", "source", "target"]
 
     def points(self):
@@ -309,6 +311,7 @@ class Node(HierarchicalElement):
             port.set_parent(self)
 
         for child in self.children:
+            print("set parent", id(self), self.id, id(child), child.id)
             child.set_parent(self)
 
     def __getattr__(self, key: str):

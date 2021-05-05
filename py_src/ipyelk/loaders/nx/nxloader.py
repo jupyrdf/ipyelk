@@ -66,7 +66,7 @@ class NXLoader(Loader):
             for u, v in hierarchy.edges():
                 parent = u if isinstance(u, Node) else el_map.get(u)
                 child = v if isinstance(v, Node) else el_map.get(v)
-                parent.children.append(child)
+                parent.add_child(child)
 
             # add element edges
             for u, v, d in graph.edges(data=True):

@@ -8,39 +8,8 @@ import ipywidgets as W
 import traitlets as T
 from ipywidgets.widgets.trait_types import TypedTuple
 
-from ..elements import (
-    BaseElement,
-    ElementIndex,
-    HierarchicalElement,
-    Node,
-    elk_serialization,
-)
 from ..exceptions import BrokenPipe
-
-
-class MarkElementWidget(W.DOMWidget):
-    value = T.Instance(Node, allow_none=True).tag(sync=True, **elk_serialization)
-    _index = T.Instance(ElementIndex, allow_none=True)
-    flow = TypedTuple(T.Unicode(), kw={})
-
-    @T.observe("value")
-    def reset_index(self, change=None):
-        self._index = None
-
-    def get_index(self) -> ElementIndex:
-        if self._index is None:
-            self._index = ElementIndex.from_els(self.value)
-        return self._index
-
-    def to_id(self, element: BaseElement):
-        return element.get_id()
-
-    def from_id(self, key) -> HierarchicalElement:
-        return self.get_index().get(key)
-
-
-class SyncedMarkElementWidget(MarkElementWidget):
-    value = T.Instance(Node, allow_none=True).tag(sync=True, **elk_serialization)
+from .marks import MarkElementWidget
 
 
 class Pipe(W.Widget):
@@ -102,6 +71,7 @@ class Pipeline(SyncedOutletPipe):
         prev = self.inlet
         for pipe in self.pipes:
             pipe.inlet = prev
+            pipe.outlet.index = pipe.inlet.index
             prev = pipe.outlet
         self.outlet = prev
 

@@ -38,7 +38,7 @@ class VisibilityPipe(Pipe):
         # generate an index of hidden elements
         vis_index = VisIndex.from_els(root)
 
-        # TODO check if a change occurred
+        # Check if any elements are hidden
         if len(vis_index):
             # serialize the elements excluding hidden
             with exclude_hidden, exclude_layout:

@@ -7,10 +7,13 @@ from pydantic import BaseModel, Field
 
 from ..exceptions import NotFoundError
 from .common import EMPTY_SENTINEL
-from .elements import BaseElement, Edge, HierarchicalElement, Node, Port
+from .elements import BaseElement, Edge, HierarchicalElement, Label, Node, Port
 
 
 class VisIndex(BaseModel):
+    class Config:
+        copy_on_model_validation = False
+
     # mapping of old visabile elements ids to old elements
     hidden: Dict[str, BaseElement]
     # mapping of old visabile element ids to it's closest visible ancestor id
@@ -44,6 +47,9 @@ class VisIndex(BaseModel):
 class ElementIndex(BaseModel):
     elements: Mapping[str, BaseElement]
 
+    class Config:
+        copy_on_model_validation = False
+
     def get(self, key: str) -> BaseElement:
         if key in self.elements:
             return self.elements[key]
@@ -64,6 +70,32 @@ class ElementIndex(BaseModel):
         return cls(
             elements=elements,
         )
+
+    def iter_types(self, *types):
+        for key, value in self.items():
+            if isinstance(value, types):
+                yield key, value
+
+    def nodes(self) -> Iterator[Tuple[str, Node]]:
+        yield from self.iter_types(Node)
+
+    def edges(self) -> Iterator[Tuple[str, Edge]]:
+        yield from self.iter_types(Edge)
+
+    def labels(self) -> Iterator[Tuple[str, Label]]:
+        yield from self.iter_types(Label)
+
+    def ports(self) -> Iterator[Tuple[str, Port]]:
+        yield from self.iter_types(Port)
+
+    def roots(self) -> Node:
+        roots = []
+        for key, node in self.nodes():
+            if not node._parent:
+                roots.append(node)
+        # TODO handle multiple roots by making one higher level root?
+        # assert len(roots) == 1, "Multiple roots"
+        return roots
 
 
 class HierarchicalIndex(ElementIndex):

@@ -126,5 +126,5 @@ class Diagram(StyledWidget):
             self.log.exception(e)
             raise e
         self.view.source.value = layout
-        # self.pipe.inlet.value = layout
+        self.pipe.inlet.value = layout
         self.pipe.inlet.flow = tuple()
