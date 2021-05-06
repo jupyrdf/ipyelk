@@ -5,11 +5,11 @@
 import ipywidgets as W
 import traitlets as T
 
-from ..app import Elk, ElkDiagram
+from ..diagram import Diagram
 
 
 class ToolButton(W.Button):
-    app: Elk = T.Instance(Elk)
+    diagram: Diagram = T.Instance(Diagram)
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -25,5 +25,4 @@ class FitBtn(ToolButton):
         return "Fit"
 
     def handler(self, *args):
-        diagram: ElkDiagram = self.app.diagram
-        diagram.fit()
+        self.diagram.view.fit()

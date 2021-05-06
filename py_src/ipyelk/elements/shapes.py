@@ -37,14 +37,17 @@ class ElementShape(BaseShape):
     @classmethod
     def valid_subtypes(cls) -> Set[str]:
         """Iterate over subclasses and extracts the known `type` defaults"""
-        return set(c.__fields__["type"].default for c in cls.__subclasses__())
+        return set(c.__fields__["type"].default for c in cls.__subclasses__()) | {
+            cls.__fields__["type"].default,
+            None,
+        }
 
     @validator("type")
     def subtype_validator(cls, v):
         """Checks that there is a subclass that defines the `type`"""
         subtypes = cls.valid_subtypes()
         if v not in subtypes:
-            raise ValueError("Unexpected Subtype")
+            raise ValueError(f"Unexpected Subtype: `{v}` not in `{subtypes}`")
         return v
 
 

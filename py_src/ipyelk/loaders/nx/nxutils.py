@@ -80,10 +80,11 @@ def get_endpoint(
     return port
 
 
-def from_nx_node(n: Hashable, d: Dict) -> Node:
+def from_nx_node(n: Hashable, g: nx.Graph) -> Node:
     if isinstance(n, Node):
         el = n
     else:
+        d = g.nodes[n]
         el = Node(**d)
         if el.id is None:
             el.id = str(n)
@@ -110,6 +111,11 @@ def process_hierarchy(graph, hierarchy: Optional[nx.DiGraph]) -> nx.DiGraph:
         # copy graph to avoid mutation
         hierarchy = hierarchy.copy(as_view=False)
 
+    # check graph and add any missing nodes
+    for n in graph.nodes():
+        if n not in hierarchy:
+            hierarchy.add_node(n)
+
     if not single_root(hierarchy):
         # add new root and connect old roots to new root
         root = Node()
@@ -119,11 +125,6 @@ def process_hierarchy(graph, hierarchy: Optional[nx.DiGraph]) -> nx.DiGraph:
         for n in iter_nx_sources(hierarchy):
             if n != root:
                 hierarchy.add_edge(root, n)
-
-    # check graph and add direction parentage to root if needed
-    for n in graph.nodes():
-        if n not in hierarchy:
-            hierarchy.add_edge(root, n)
 
     return hierarchy
 

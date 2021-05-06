@@ -79,8 +79,17 @@ class ElementIndex(BaseModel):
     def nodes(self) -> Iterator[Tuple[str, Node]]:
         yield from self.iter_types(Node)
 
-    def edges(self) -> Iterator[Tuple[str, Edge]]:
-        yield from self.iter_types(Edge)
+    def edges(
+        self,
+        source: HierarchicalElement = EMPTY_SENTINEL,
+        target: HierarchicalElement = EMPTY_SENTINEL,
+    ) -> Iterator[Tuple[str, Edge]]:
+        for key, edge in self.iter_types(Edge):
+            if source is not EMPTY_SENTINEL and edge.source is not source:
+                continue
+            if target is not EMPTY_SENTINEL and edge.target is not target:
+                continue
+            yield key, edge
 
     def labels(self) -> Iterator[Tuple[str, Label]]:
         yield from self.iter_types(Label)
@@ -231,7 +240,7 @@ def iter_elements(*els: BaseElement) -> Iterator[BaseElement]:
     :param el: current element
     :yield: sub element
     """
-    for el in els:
+    for el in set(els):
         yield el
         if isinstance(el, Node):
             yield from iter_elements(*el.children)

@@ -49,3 +49,4 @@ class MarkElementWidget(W.DOMWidget):
             self.index.elements = ElementIndex.from_els(self.value)
         else:
             self.index.elements.update(ElementIndex.from_els(self.value))
+        return self

@@ -38,24 +38,21 @@ class NXLoader(Loader):
         self, graph: nx.MultiDiGraph, hierarchy: Optional[nx.DiGraph] = None
     ) -> MarkElementWidget:
         hierarchy = process_hierarchy(graph, hierarchy)
-        root: Node = get_root(hierarchy)
-        if not root.layoutOptions:
-            root.layoutOptions = root_opts
 
         # add graph nodes
         nodes = []
-        for n, d in graph.nodes(data=True):
-            el = from_nx_node(n, d)
+        for n in graph.nodes():
+            el = from_nx_node(n, graph)
             if not el.layoutOptions:
                 el.layoutOptions = node_opts
             nodes.append(el)
             if not el.labels:
-                el.labels.append(Label(text=el.id, layoutOptions=label_opts))
+                el.labels.append(Label(text=el.get_id(), layoutOptions=label_opts))
 
         # add hierarchy nodes
-        for n, d in hierarchy.nodes(data=True):
+        for n in hierarchy.nodes():
             if n not in graph:
-                el = from_nx_node(n, d)
+                el = from_nx_node(n, hierarchy)
                 nodes.append(el)
 
         context = Registry()
@@ -73,6 +70,13 @@ class NXLoader(Loader):
                 edge = process_endpoints(u, v, d, el_map)
                 owner = get_owner(edge, hierarchy, el_map)
                 owner.edges.append(edge)
+
+            root: Node = get_root(hierarchy)
+            if not isinstance(root, Node):
+                root = el_map.get(root)
+
+            if not root.layoutOptions:
+                root.layoutOptions = root_opts
 
             for el in index.iter_elements(root):
                 el.id = el.get_id()
