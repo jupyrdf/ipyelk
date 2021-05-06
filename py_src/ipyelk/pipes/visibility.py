@@ -34,7 +34,7 @@ class VisibilityPipe(Pipe):
         if self.outlet is None or self.inlet is None:
             return
 
-        root = self.inlet.value
+        root = self.inlet.index.root
         # generate an index of hidden elements
         vis_index = VisIndex.from_els(root)
 
@@ -53,6 +53,6 @@ class VisibilityPipe(Pipe):
                     el.id = el.get_id()
             self.outlet.value = value
         else:
-            self.outlet.value = self.inlet.value
+            self.outlet.value = root
 
         return self.outlet

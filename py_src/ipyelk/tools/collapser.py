@@ -16,24 +16,17 @@ class ToggleCollapsedTool(Tool):
 
     @T.default("reports")
     def _default_reports(self):
-        return (
-            F.Node.hidden,
-            F.Layout,
-        )
+        return (F.Node.hidden,)
 
     async def run(self):
         should_refresh = False
-        index = self.tee.inlet.get_index()
-        for selected in map(index.get, self.selection.ids):
-            print("selected", selected.id)
+        index = self.tee.inlet.index
+        for selected in map(index.from_id, self.selection.ids):
             for element in self.get_related(selected):
-                hidden = self.toggle(element)
-                print("toggle", element.id, hidden)
-
+                self.toggle(element)
                 should_refresh = True
 
         # trigger refresh if needed
-        print("should_refresh", should_refresh)
         if should_refresh:
             self.tee.inlet.flow = self.reports
 

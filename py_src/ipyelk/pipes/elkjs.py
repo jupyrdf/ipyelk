@@ -32,4 +32,4 @@ class ElkJS(SyncedPipe):
 
         # wait to return until
         await future_value
-        return self.outlet
+        self.outlet.persist()

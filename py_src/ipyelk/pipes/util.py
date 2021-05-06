@@ -12,8 +12,8 @@ def wait_for_change(widget, value):
 
     def getvalue(change):
         # make the new value available
-        future.set_result(change.new)
         widget.unobserve(getvalue, value)
+        future.set_result(change.new)
 
     widget.observe(getvalue, value)
     return future

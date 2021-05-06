@@ -28,10 +28,7 @@ class TextSizer(Pipe):
         return (F.Text.size,)
 
     async def run(self):
-        if self.value is None:
-            return
-
-        if not any(o in self.inlet.changes for o in self.observes):
+        if self.inlet.value is None:
             return
 
         # make copy of source value?
@@ -80,7 +77,7 @@ class BrowserTextSizer(SyncedPipe, StyledWidget, TextSizer):
     _view_module_version = T.Unicode(EXTENSION_SPEC_VERSION).tag(sync=True)
 
     async def run(self):
-        """Go measure some dom"""
+        """Go measure some DOM"""
         # watch once
         if self.outlet is None:
             return
@@ -90,5 +87,7 @@ class BrowserTextSizer(SyncedPipe, StyledWidget, TextSizer):
         self.send({"action": "run"})
 
         # wait to return until
+        # TODO if there is no change to the input text the
+        # outlet value doesn't trigger
         await future_value
-        return self.outlet
+        self.outlet.persist()

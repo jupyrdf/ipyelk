@@ -88,14 +88,32 @@ class ElementIndex(BaseModel):
     def ports(self) -> Iterator[Tuple[str, Port]]:
         yield from self.iter_types(Port)
 
-    def roots(self) -> Node:
+    def root(self) -> Node:
         roots = []
         for key, node in self.nodes():
             if not node._parent:
                 roots.append(node)
         # TODO handle multiple roots by making one higher level root?
-        # assert len(roots) == 1, "Multiple roots"
-        return roots
+        assert len(roots) == 1, "Multiple roots"
+        return roots[0]
+
+    def update(self, other: "ElementIndex"):
+        fields = [
+            "properties",
+            "layoutOptions",
+            "x",
+            "y",
+            "width",
+            "height",
+            "sections",
+            "text",
+        ]
+        for key, e2 in other.items():
+            e1 = self.get(key)
+            if type(e1) == type(e2):
+                for field in fields:
+                    if hasattr(e1, field) and hasattr(e2, field):
+                        setattr(e1, field, getattr(e2, field))
 
 
 class HierarchicalIndex(ElementIndex):

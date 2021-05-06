@@ -65,6 +65,7 @@ class Pipeline(SyncedOutletPipe):
     pipes: Tuple[Pipe] = T.List(T.Instance(Pipe), kw={}).tag(
         sync=True, **W.widget_serialization
     )
+    # TODO need to keep track of the run task and cancel / debounce as needed
 
     @T.observe("pipes", "inlet")
     def _update_pipes(self, change=None):
@@ -84,7 +85,10 @@ class Pipeline(SyncedOutletPipe):
         for i, pipe in enumerate(self.pipes):
             # TODO use i and num_steps for reporting processing stage
             if pipe.dirty:
-                await pipe.run()
+                try:
+                    await pipe.run()
+                except Exception:
+                    self.log.exception(f"error running pipe {i}: {type(pipe)}")
                 pipe.dirty = False
             else:
                 pipe.outlet.value = pipe.inlet.value
@@ -119,6 +123,7 @@ class Pipeline(SyncedOutletPipe):
         for i, pipe in enumerate(self.pipes):
             if prev is not pipe.inlet:
                 broken.append((i - 1, i))
+            assert pipe.outlet.index is pipe.inlet.index
             prev = pipe.outlet
 
         if prev is not self.outlet:

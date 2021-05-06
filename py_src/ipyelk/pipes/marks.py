@@ -18,9 +18,7 @@ class MarkIndex(W.DOMWidget):
     elements: ElementIndex = T.Instance(ElementIndex, allow_none=True)
     context: Registry = T.Instance(Registry, kw={})
 
-    def update(self, *elements):
-        self.elements = ElementIndex.from_els(*elements)
-        return self
+    _root: Node = None
 
     def to_id(self, element: BaseElement):
         return element.get_id()
@@ -28,12 +26,26 @@ class MarkIndex(W.DOMWidget):
     def from_id(self, key) -> HierarchicalElement:
         return self.elements.get(key)
 
+    @property
+    def root(self) -> Node:
+        if self._root is None:
+            self._update_root()
+        return self._root
+
+    @T.observe("elements")
+    def _update_root(self, change=None):
+        self._root = None
+        if change:
+            self._root = self.elements.root()
+
 
 class MarkElementWidget(W.DOMWidget):
     value = T.Instance(Node, allow_none=True).tag(sync=True, **elk_serialization)
-    index = T.Instance(MarkIndex)
+    index = T.Instance(MarkIndex, kw={})
     flow = TypedTuple(T.Unicode(), kw={})
 
-    @T.default("index")
-    def _default_index(self):
-        return MarkIndex().update(self.value)
+    def persist(self):
+        if self.index.elements is None:
+            self.index.elements = ElementIndex.from_els(self.value)
+        else:
+            self.index.elements.update(ElementIndex.from_els(self.value))

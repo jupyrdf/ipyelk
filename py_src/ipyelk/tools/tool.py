@@ -24,16 +24,23 @@ class Tool(W.Widget):
         task = asyncio.create_task(self.run())
 
         # callback
-        if callable(self.on_done):
-            task.add_done_callback(self.on_done)
+        task.add_done_callback(self._finished)
 
         if self.tee:
             self.tee.inlet.flow = self.reports
 
     async def run(self):
-        # mark clamped pipe as dirty
-        if self.tee:
-            self.tee.dirty = True
+        raise NotImplementedError()
+
+    def _finished(self, future: asyncio.Future):
+        try:
+            future.result()
+            if callable(self.on_done):
+                self.on_done()
+        except asyncio.CancelledError:
+            pass  # cancellation should not log an error
+        except Exception:
+            self.log.exception(f"Error running tool: {type(self)}")
 
 
 class Loader(Tool):
