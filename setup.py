@@ -3,11 +3,10 @@
 
 import os
 import re
-import setuptools
 import warnings
-
 from pathlib import Path
 
+import setuptools
 
 READTHEDOCS = os.environ.get("READTHEDOCS", None) == "True"
 

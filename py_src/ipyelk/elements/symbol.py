@@ -3,7 +3,6 @@
 
 from typing import Dict
 
-from ipywidgets import DOMWidget
 from pydantic import BaseModel, Field
 
 from .elements import Node
@@ -76,16 +75,3 @@ class SymbolSpec(BaseModel):
         for spec in specs:
             new.add(*spec.library.values())
         return new
-
-
-def symbols_to_json(symbolspec: SymbolSpec, widget: DOMWidget):
-    """Function to serialize a dictionary of symbols for use in a diagram
-
-    :param defs: dictionary of Symbols
-    :param diagram: elk diagram widget
-    :return: json dictionary
-    """
-    return symbolspec.dict(exclude_none=True)
-
-
-symbol_serialization = {"to_json": symbols_to_json}

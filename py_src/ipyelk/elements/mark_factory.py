@@ -44,6 +44,10 @@ class Mark(BaseModel):
     def set_edge_selector(self, u, v, key):
         self.selector = (u, v, key)
 
+    def get_id(self):
+        with self.context:
+            return self.element.get_id()
+
 
 class MarkFactory(BaseModel):
     registry: Registry = Field(default_factory=Registry)
