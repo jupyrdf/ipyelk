@@ -3,13 +3,12 @@
 
 from .collapser import ToggleCollapsedTool
 from .painter import Painter
-from .tool import Loader, Tool
+from .tool import Tool
 from .view_tools import Hover, Pan, Selection, Zoom
 
 # from .tools import ToggleCollapsedBtn, ToolButton
 
 __all__ = [
-    "Loader",
     "Tool",
     "Selection",
     "Hover",

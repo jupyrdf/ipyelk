@@ -129,6 +129,9 @@ export class ELKTextSizerModel extends DOMWidgetModel {
       console.log('setting value after labels have been sized... probably');
       outlet.set('value', { ...rootNode });
       outlet.save_changes();
+      // outlet.on_some_change(["value"], ()=>1,this);
+      // let echo = ()=>console.log(1)
+      // outlet.save('value', {});
       if (!ELK_DEBUG) {
         document.body.removeChild(el);
       }
@@ -172,9 +175,16 @@ function createSVGElement(tag: string): SVGElement {
 function get_labels(el: any): ElkLabel[] {
   let labels: ElkLabel[] = [];
   if (el?.labels) {
-    labels.push(...el?.labels);
+    for (let label of el.labels as ElkLabel[]){
+      // size only those labels without a width or a height set
+      if (!label?.width || !label?.height){
+        labels.push(label);
+      }
+    }
   }
-
+  for (let child of el?.ports || []) {
+    labels.push(...get_labels(child));
+  }
   for (let child of el?.children || []) {
     labels.push(...get_labels(child));
   }

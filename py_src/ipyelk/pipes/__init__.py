@@ -6,6 +6,7 @@ from .elkjs import ElkJS
 from .marks import MarkElementWidget, MarkIndex
 from .text_sizer import BrowserTextSizer, TextSizer
 from .visibility import VisibilityPipe
+from .valid import ValidationPipe
 
 __all__ = [
     "BrowserTextSizer",
@@ -18,5 +19,6 @@ __all__ = [
     "SyncedOutletPipe",
     "SyncedPipe",
     "TextSizer",
+    "ValidationPipe",
     "VisibilityPipe",
 ]

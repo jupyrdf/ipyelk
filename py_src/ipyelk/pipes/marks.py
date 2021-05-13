@@ -3,6 +3,7 @@
 import ipywidgets as W
 import traitlets as T
 from ipywidgets.widgets.trait_types import TypedTuple
+from typing import Tuple
 
 from ..elements import (
     BaseElement,
@@ -40,13 +41,22 @@ class MarkIndex(W.DOMWidget):
 
 
 class MarkElementWidget(W.DOMWidget):
-    value = T.Instance(Node, allow_none=True).tag(sync=True, **elk_serialization)
-    index = T.Instance(MarkIndex, kw={})
-    flow = TypedTuple(T.Unicode(), kw={})
+    value:Node = T.Instance(Node, allow_none=True).tag(sync=True, **elk_serialization)
+    index:MarkIndex = T.Instance(MarkIndex, kw={})
+    flow:Tuple[str] = TypedTuple(T.Unicode(), kw={})
 
     def persist(self):
         if self.index.elements is None:
-            self.index.elements = ElementIndex.from_els(self.value)
+            self.build_index()
         else:
             self.index.elements.update(ElementIndex.from_els(self.value))
         return self
+
+    def build_index(self)->ElementIndex:
+        if self.value is None:
+            index = ElementIndex()
+        else:
+            with self.index.context:
+                index = ElementIndex.from_els(self.value)
+        self.index.elements = index
+        return self.index.elements

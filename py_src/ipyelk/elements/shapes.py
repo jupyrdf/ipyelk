@@ -33,6 +33,7 @@ class ElementShape(BaseShape):
     y: Optional[float]
     width: Optional[float]
     height: Optional[float]
+    use: Optional[str] = Field(None, description="Meaning is specialized in subclasses")
 
     @classmethod
     def valid_subtypes(cls) -> Set[str]:
@@ -58,6 +59,7 @@ class PortShape(ElementShape):
 
 class LabelShape(ElementShape):
     type: Optional[str] = "label"
+    use: Optional[str] = Field(None, description="Symbol Identifier")
 
 
 class Icon(LabelShape):
@@ -66,7 +68,7 @@ class Icon(LabelShape):
 
 
 class NodeShape(ElementShape):
-    use: Optional[str] = Field(None, description="Meaning is specialized in subclasses")
+    pass
 
 
 class Path(NodeShape):

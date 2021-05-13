@@ -1,15 +1,15 @@
 # Copyright (c) 2021 Dane Freeman.
 # Distributed under the terms of the Modified BSD License.
 
-from typing import Optional
-
 import networkx as nx
 
+from typing import Optional, Dict
+
 from ...diagram import Diagram
-from ...elements import HierarchicalIndex, Label, Node, Registry, index
+from ...elements import HierarchicalIndex, Label, Node, Registry, index, EMPTY_SENTINEL
 from ...elements import layout_options as opt
 from ...pipes import MarkElementWidget, flows
-from ...tools import Loader
+from ..loader import Loader
 from .nxutils import (
     from_nx_node,
     get_owner,
@@ -18,24 +18,12 @@ from .nxutils import (
     process_hierarchy,
 )
 
-root_opts = opt.OptionsWidget(
-    options=[
-        opt.HierarchyHandling(),
-    ],
-).value
-label_opts = opt.OptionsWidget(
-    options=[opt.NodeLabelPlacement(horizontal="center")]
-).value
-node_opts = opt.OptionsWidget(
-    options=[
-        opt.NodeSizeConstraints(),
-    ],
-).value
+
 
 
 class NXLoader(Loader):
     def load(
-        self, graph: nx.MultiDiGraph, hierarchy: Optional[nx.DiGraph] = None
+        self, graph: nx.MultiDiGraph, hierarchy: Optional[nx.DiGraph] = None,
     ) -> MarkElementWidget:
         hierarchy = process_hierarchy(graph, hierarchy)
 
@@ -44,10 +32,10 @@ class NXLoader(Loader):
         for n in graph.nodes():
             el = from_nx_node(n, graph)
             if not el.layoutOptions:
-                el.layoutOptions = node_opts
+                el.layoutOptions = self.default_node_opts
             nodes.append(el)
             if not el.labels:
-                el.labels.append(Label(text=el.get_id(), layoutOptions=label_opts))
+                el.labels.append(Label(text=el.get_id(), layoutOptions=self.default_label_opts))
 
         # add hierarchy nodes
         for n in hierarchy.nodes():
@@ -76,7 +64,7 @@ class NXLoader(Loader):
                 root = el_map.get(root)
 
             if not root.layoutOptions:
-                root.layoutOptions = root_opts
+                root.layoutOptions = self.default_root_opts
 
             for el in index.iter_elements(root):
                 el.id = el.get_id()

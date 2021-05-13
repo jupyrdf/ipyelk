@@ -54,5 +54,4 @@ class VisibilityPipe(Pipe):
             self.outlet.value = value
         else:
             self.outlet.value = root
-
         return self.outlet

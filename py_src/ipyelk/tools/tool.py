@@ -42,7 +42,3 @@ class Tool(W.Widget):
         except Exception:
             self.log.exception(f"Error running tool: {type(self)}")
 
-
-class Loader(Tool):
-    def load(self) -> MarkElementWidget:
-        pass

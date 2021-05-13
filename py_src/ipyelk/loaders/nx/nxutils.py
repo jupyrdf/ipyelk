@@ -170,7 +170,11 @@ def lca(
 
 def get_owner(
     edge: Edge, hierarchy: nx.DiGraph, el_map: HierarchicalIndex
-) -> HierarchicalElement:
+) -> Node:
     u = edge.source
     v = edge.target
-    return lca(hierarchy, u, v, el_map)
+    owner = lca(hierarchy, u, v, el_map)
+    if isinstance(owner, Port):
+        owner = owner.get_parent()
+    assert isinstance(owner, Node)
+    return owner

@@ -8,7 +8,7 @@ import ipywidgets as W
 import traitlets as T
 
 # from ..json.util import iter_elements
-from ..pipes import Pipe
+from ..pipes import Pipe, MarkElementWidget, flows as F
 from ..styled_widget import StyledWidget
 from ..tools import ToggleCollapsedTool, Tool
 from .sprotty_viewer import SprottyViewer
@@ -31,7 +31,7 @@ class Diagram(StyledWidget):
     """
 
     # style = t.Dict()
-    source = T.Any(allow_none=True)
+    source = T.Instance(MarkElementWidget, kw={})
 
     pipe = T.Instance(Pipe).tag(sync=True, **W.widget_serialization)
     view: Viewer = T.Instance(Viewer).tag(sync=True, **W.widget_serialization)
@@ -93,12 +93,12 @@ class Diagram(StyledWidget):
             tool.tee = self.pipe
             tool.on_done = self.refresh
 
-    # @T.observe("pipe", "view")
     def _update_view_sources(self):
+        self.source.flow = (F.Layout,)
         self.pipe.inlet = self.source
         self.view.source = self.pipe.outlet
 
-    @T.observe("pipe")
+    @T.observe("pipe", "source")
     def _change_pipe(self, change):
         self._update_view_sources()
 

@@ -2,6 +2,7 @@
 """
 # Copyright (c) 2021 Dane Freeman.
 # Distributed under the terms of the Modified BSD License.
+import asyncio
 import traitlets as T
 
 from .._version import EXTENSION_NAME, EXTENSION_SPEC_VERSION
@@ -75,6 +76,7 @@ class BrowserTextSizer(SyncedPipe, StyledWidget, TextSizer):
     _view_name = T.Unicode("ELKTextSizerView").tag(sync=True)
     _view_module = T.Unicode(EXTENSION_NAME).tag(sync=True)
     _view_module_version = T.Unicode(EXTENSION_SPEC_VERSION).tag(sync=True)
+    _task: asyncio.Future = None
 
     async def run(self):
         """Go measure some DOM"""
@@ -82,8 +84,13 @@ class BrowserTextSizer(SyncedPipe, StyledWidget, TextSizer):
         if self.outlet is None:
             return
 
+        if self._task:
+            self._task.cancel()
+
         # signal to browser and wait for done
         future_value = wait_for_change(self.outlet, "value")
+        self._task = future_value
+
         self.send({"action": "run"})
 
         # wait to return until

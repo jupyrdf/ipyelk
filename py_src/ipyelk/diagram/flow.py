@@ -3,17 +3,15 @@
 
 import traitlets as T
 
-from ..pipes import BrowserTextSizer, ElkJS, Pipeline, VisibilityPipe
+from ..pipes import BrowserTextSizer, ElkJS, Pipeline, VisibilityPipe, ValidationPipe
 
 
 class DefaultFlow(Pipeline):
     @T.default("pipes")
     def _default_pipes(self):
         return [
+            ValidationPipe(),
             BrowserTextSizer(),
             VisibilityPipe(),
             ElkJS(),
-            # SprottyViewer(),
-            # Downselect(),
-            # MiniSprottyViewer(),
         ]

@@ -4,18 +4,18 @@ from typing import Dict, Type
 
 from pydantic import Field
 
-from ...diagram import layout_options as opt
 from ...elements import (
     Edge,
     EdgeProperties,
     Label,
+    layout_options as opt,
     Node,
     NodeProperties,
     Partition,
     Port,
+    shapes,
     Symbol,
     SymbolSpec,
-    shapes,
 )
 from ..molds import connectors, structures
 

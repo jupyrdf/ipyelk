@@ -17,7 +17,7 @@ from .elements import (
     exclude_layout,
 )
 from .extended import Compartment, Partition, Record
-from .index import ElementIndex, HierarchicalIndex, VisIndex
+from .index import ElementIndex, HierarchicalIndex, VisIndex, IDReport, EdgeReport
 from .mark_factory import Mark, MarkFactory
 from .registry import Registry
 from .serialization import convert_elkjson, elk_serialization, symbol_serialization
@@ -26,11 +26,13 @@ from .symbol import EndpointSymbol, Symbol, SymbolSpec
 
 __all__ = [
     "BaseElement",
+    "check_ids"
     "Compartment",
     "convert_elkjson",
     "Edge",
     "EdgeProperties",
     "EdgeProperties",
+    "EdgeReport",
     "EdgeShape",
     "ElementIndex",
     "ElementMetadata",
@@ -42,6 +44,7 @@ __all__ = [
     "exclude_layout",
     "HierarchicalElement",
     "HierarchicalIndex",
+    "IDReport",
     "Label",
     "LabelProperties",
     "LabelShape",

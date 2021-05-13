@@ -1,7 +1,7 @@
 # Copyright (c) 2021 Dane Freeman.
 # Distributed under the terms of the Modified BSD License.
 import re
-from typing import Dict, Hashable, List, Type, Union
+from typing import Dict, List, Type, Union
 
 import ipywidgets as W
 import traitlets as T
@@ -10,7 +10,7 @@ from .model import ElkGraphElement
 
 
 class LayoutOptionWidget(W.VBox):
-    identifier: Hashable = None
+    identifier: str = None
     metadata_provider: str = None
     applies_to: List[ElkGraphElement] = None
     group: str = None

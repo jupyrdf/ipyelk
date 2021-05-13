@@ -84,13 +84,18 @@ class Pipeline(SyncedOutletPipe):
         # Look at enabled pipes
         for i, pipe in enumerate(self.pipes):
             # TODO use i and num_steps for reporting processing stage
+            p_name = f"pipe {i}: {type(pipe)}"
             if pipe.dirty:
+                self.log.warning(f"Running {p_name}")
                 try:
                     await pipe.run()
-                except Exception:
-                    self.log.exception(f"error running pipe {i}: {type(pipe)}")
+                except Exception as err:
+                    self.log.exception(f"Error running {p_name}")
+                    raise err
                 pipe.dirty = False
+                self.log.warning(f"Done running {p_name}")
             else:
+                self.log.warning(f"Passthrough {p_name}")
                 pipe.outlet.value = pipe.inlet.value
         self.dirty = False
 

@@ -7,7 +7,7 @@ from ..diagram import Diagram
 # from ..schema.validator import validate_elk_json
 from ..elements import convert_elkjson
 from ..pipes import MarkElementWidget, flows
-from ..tools import Loader
+from .loader import Loader
 
 
 class ElkJSONLoader(Loader):

@@ -1,23 +1,54 @@
 # Copyright (c) 2021 Dane Freeman.
 # Distributed under the terms of the Modified BSD License.
+import networkx as nx
 
-from typing import Dict, Iterator, Mapping, Optional, Set, Tuple
-
+from collections import defaultdict
+from networkx.algorithms import hierarchy
+from numpy import isin
 from pydantic import BaseModel, Field
+from typing import Dict, Iterator, Mapping, Optional, Set, Tuple, List, Type
 
 from ..exceptions import NotFoundError
 from .common import EMPTY_SENTINEL
 from .elements import BaseElement, Edge, HierarchicalElement, Label, Node, Port
 
 
+class IDReport(BaseModel):
+    duplicated: Dict[str, List[BaseElement]] = Field(default_factory=dict, description="Mapping of elements with a non unique id")
+    null_ids: List[BaseElement] = Field(default_factory=list, description="Elements without an id")
+
+    class Config:
+        copy_on_model_validation = False
+
+    def __bool__(self):
+        return len(self.duplicated) + len(self.null_ids) > 0
+
+    def message(self):
+        msg = []
+        if self.duplicated:
+            msg.append("duplicated ids:")
+            [msg.append("\t{eid}") for eid in self.duplicated.keys()]
+        if self.null_ids:
+            msg.append("elements missing an id:")
+            [msg.append("\t{el}") for el in self.null_ids]
+        return "\n".join(msg)
+
+
+class EdgeReport(BaseModel):
+    orphans: Set[Node] = Field(default_factory=set, description="elements that are referenced in an edge but not in the element hierarchy")
+    lca_mismatch: Dict[Edge, Tuple[Node, Optional[Node]]] = Field(default_factory=dict, description="edges that have a mismatched lowest common ancestor")
+
+    class Config:
+        copy_on_model_validation = False
+
+
+
 class VisIndex(BaseModel):
     class Config:
         copy_on_model_validation = False
 
-    # mapping of old visabile elements ids to old elements
-    hidden: Dict[str, BaseElement]
-    # mapping of old visabile element ids to it's closest visible ancestor id
-    last_visible: Dict[str, str]
+    hidden: Dict[str, BaseElement] = Field(default_factory=dict, description="mapping of old visabile elements ids to old elements")
+    last_visible: Dict[str, str] = Field(default_factory=dict, description="mapping of old visabile element ids to it's closest visible ancestor id")
 
     slack_edge_style: Set[str] = Field({"slack-edge"})
     slack_port_style: Set[str] = Field({"slack-port"})
@@ -45,7 +76,7 @@ class VisIndex(BaseModel):
 
 
 class ElementIndex(BaseModel):
-    elements: Mapping[str, BaseElement]
+    elements: Mapping[str, BaseElement] = Field(default_factory=dict)
 
     class Config:
         copy_on_model_validation = False
@@ -124,9 +155,71 @@ class ElementIndex(BaseModel):
                     if hasattr(e1, field) and hasattr(e2, field):
                         setattr(e1, field, getattr(e2, field))
 
+    def check_ids(self, *els)->IDReport:
+        ids = {}
+        duplicated: Dict[str, List[BaseElement]]= defaultdict(list)
+        null_ids: List[BaseElement] = []
+
+        for el in iter_elements(self.root(), *els):
+            if el.id is None:
+                null_ids.append(el)
+                continue
+            eid = el.get_id()
+            if eid in ids:
+                duplicated[eid].append(el)
+            else:
+                ids[eid] = el
+
+        for eid, value in duplicated.items():
+            value.append(ids[eid])
+
+        return IDReport(
+            duplicated=duplicated,
+            null_ids=null_ids,
+        )
+
+    def check_edges(self)->EdgeReport:
+        from ..loaders.nx.nxutils import get_owner
+
+        orphans: Set[Node] = set()
+        lca_mismatch: Dict[Edge, Tuple[Node, Node]] = {}
+
+        root = self.root()
+        hierarchy = nx.DiGraph()
+        hierarchy.add_edges_from(iter_hierarchy(root, types=(HierarchicalElement,)))
+        el_map = HierarchicalIndex.from_els(root)
+
+        # build orphaned set of nodes
+        for el, edge in iter_edges(root):
+            orphaned = False
+            for endpt in (edge.source, edge.target):
+                if endpt.get_id() not in self.elements:
+                    # get the top ancestor of endpt and add to the orphan set
+                    ancestor = get_ancestor(endpt)
+                    assert isinstance(ancestor, Node)
+                    orphans.add(ancestor)
+                    orphaned = True
+            if orphaned:
+                # to become top level edge
+                lca_mismatch[edge] = (el, None)
+
+        # check
+        for el, edge in iter_edges(root, *orphans):
+            if edge in lca_mismatch:
+                # skip edge processing if associated with an orphaned node
+                continue
+            owner = get_owner(edge, hierarchy=hierarchy, el_map=el_map)
+            if el is not owner:
+                lca_mismatch[edge] = (el, owner)
+
+        return EdgeReport(
+            orphans=orphans,
+            lca_mismatch=lca_mismatch,
+        )
+
 
 class HierarchicalIndex(ElementIndex):
-    elements: Mapping[str, HierarchicalElement]
+    elements: Mapping[str, HierarchicalElement] = Field(default_factory=dict)
     vis_index: Optional[VisIndex]  # Dict[str, BaseElement]
 
     @classmethod
@@ -134,11 +227,16 @@ class HierarchicalIndex(ElementIndex):
         cls, *els: BaseElement, vis_index: Optional[VisIndex] = None
     ) -> "HierarchicalIndex":
 
-        elements = {
-            el.get_id(): el
-            for el in iter_elements(*els)
-            if isinstance(el, HierarchicalElement)
-        }
+        elements = {}
+        for el in iter_elements(*els):
+            if isinstance(el, HierarchicalElement):
+                eid = el.get_id()
+                elements[eid] = el
+        # elements = {
+        #     el.get_id(): el
+        #     for el in iter_elements(*els)
+        #     if isinstance(el, HierarchicalElement)
+        # }
         return cls(
             elements=elements,
             vis_index=vis_index,
@@ -272,8 +370,21 @@ def iter_visible(
         yield from iter_visible(*el.labels, hidden=hidden, last_visible=last_visible)
 
 
+def iter_edges(*els: Node) -> Iterator[Tuple[Node, Edge]]:
+    """Iterate over BaseElements that follow the `Node` hierarchy and return
+    edges and their parent
+
+    :param el: current element
+    :yield: owning Node, Edge
+    """
+    for el in set(els):
+        for edge in el.edges:
+            yield el, edge
+        yield from iter_edges(*el.children)
+
+
 def iter_hierarchy(
-    *els: BaseElement, root=EMPTY_SENTINEL
+    *els: BaseElement, root=EMPTY_SENTINEL, types:Tuple[Type[BaseElement]]=(BaseElement,)
 ) -> Iterator[Tuple[BaseElement, BaseElement]]:
     """Iterate over BaseElements that follow the `Node` hierarchy
 
@@ -282,9 +393,18 @@ def iter_hierarchy(
     """
     for el in els:
         if root is not EMPTY_SENTINEL:
-            yield root, el
+            if isinstance(el, types):
+                yield root, el
         if isinstance(el, Node):
-            yield from iter_hierarchy(*el.children, root=el)
+            yield from iter_hierarchy(*el.children, root=el, types=types)
             yield from iter_hierarchy(*el.ports, root=el)
             yield from iter_hierarchy(*el.edges, root=el)
         yield from iter_hierarchy(*el.labels, root=el)
+
+
+def get_ancestor(element:HierarchicalElement)->HierarchicalElement:
+    parent = element.get_parent()
+    if parent is None:
+        return element
+    else:
+        return get_ancestor(parent)

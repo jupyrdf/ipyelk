@@ -59,7 +59,13 @@ def is_edge(edge) -> bool:
 
 
 class Partition(Node):
-    default_edge: Type[Edge] = Field(default=Edge)
+    default_edge: Type[Edge] = Field(default=Edge, description="default edge style to apply")
+
+    class Config:
+        copy_on_model_validation = False
+
+        # non-pydantic configs
+        excluded = ["metadata", "ports", "children", "edges", "default_edge"]
 
     def __getitem__(self, key):
         if isinstance(key, slice):

@@ -200,7 +200,7 @@ class HierarchicalElement(ShapeElement, abc.ABC):
     def set_parent(self, parent: Optional["Node"]):
         assert (
             self._parent is None or self._parent is parent
-        ), "Incoming port owned by different node"
+        ), f"{self.__class__.__name__} owned by different node"
         self._parent = parent
         return self
 
@@ -282,7 +282,7 @@ class Port(HierarchicalElement):
         copy_on_model_validation = False
 
         # non-pydantic configs
-        excluded = ["metadata", "parent", "key"]
+        excluded = ["metadata"]
 
     def get_id(self) -> Optional[str]:
         if self.id is None:
@@ -303,7 +303,7 @@ class Node(HierarchicalElement):
         copy_on_model_validation = False
 
         # non-pydantic configs
-        excluded = ["metadata", "parent", "key", "ports", "children", "edges"]
+        excluded = ["metadata", "ports", "children", "edges"]
 
     def __init__(self, **data):  # type: ignore
         super().__init__(**data)
