@@ -1,4 +1,8 @@
-/** back porting to fix duplicate ids
+/**
+ * Copyright (c) 2021 Dane Freeman.
+ * Distributed under the terms of the Modified BSD License.
+ * FIX BELOW FROM:
+ * back porting to fix duplicate ids
  * https://github.com/eclipse/sprotty/pull/209/files
  * remove after next sprotty release > 0.9
  */

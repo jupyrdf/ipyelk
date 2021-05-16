@@ -1,13 +1,14 @@
 # Copyright (c) 2021 Dane Freeman.
 # Distributed under the terms of the Modified BSD License.
-from pydantic.networks import int_domain_regex
-import traitlets as T
-from ipywidgets.widgets.trait_types import TypedTuple
 from typing import Dict
 
-from ..elements import BaseElement, ElementIndex, EdgeReport, IDReport, convert_elkjson
+import traitlets as T
+from ipywidgets.widgets.trait_types import TypedTuple
+
+from ..elements import EdgeReport, IDReport
 from . import flows as F
 from .base import Pipe
+from .marks import MarkIndex
 
 
 class ValidationPipe(Pipe):
@@ -23,22 +24,26 @@ class ValidationPipe(Pipe):
     errors = T.Dict(kw={})
 
     async def run(self):
-        with self.inlet.index.context:
-            self.get_reports()
+        index: MarkIndex = self.inlet.build_index()
+        with index.context:
+            self.get_reports(index)
             self.errors = self.collect_errors()
             if self.errors:
                 raise ValueError("Inlet value is not valid")
-            self.apply_fixes()
-            self.inlet.build_index()
-            self.outlet.value = self.inlet.index.root
+            self.apply_fixes(index)
 
-    def get_reports(self):
-        element_index: ElementIndex = self.inlet.build_index()
-        self.edge_report = element_index.check_edges()
-        self.id_report = element_index.check_ids(*self.edge_report.orphans)
+            self.outlet.value = self.inlet.index.root
+            self.get_reports(self.outlet.build_index())
+            self.errors = self.collect_errors()
+            if self.errors:
+                raise ValueError("Outlet value is not valid")
+
+    def get_reports(self, index: MarkIndex):
+        self.edge_report = index.elements.check_edges()
+        self.id_report = index.elements.check_ids(*self.edge_report.orphans)
         self.schema_report = {}  # TODO run elkjson schema validator
 
-    def collect_errors(self)->Dict:
+    def collect_errors(self) -> Dict:
         errors = {}
         if self.id_report.duplicated:
             errors["Nonunique Element Ids"] = self.id_report.duplicated
@@ -56,19 +61,18 @@ class ValidationPipe(Pipe):
             errors["Schema Error"] = self.schema_report
         return errors
 
-    def apply_fixes(self):
-        index = self.inlet.index
-
+    def apply_fixes(self, index: MarkIndex):
+        root = index.root
         if self.id_report.null_ids and self.fix_null_id:
             self.log.warning(f"fixing {len(self.id_report.null_ids)} ids")
             for el in self.id_report.null_ids:
                 el.id = el.get_id()
-        root = index.root
+
         if self.edge_report.orphans and self.fix_orphans:
             for el in self.edge_report.orphans:
                 root.add_child(el)
 
-        if self.edge_report.lca_mismatch and not self.fix_edge_owners:
+        if self.edge_report.lca_mismatch and self.fix_edge_owners:
             for edge, (old, new) in self.edge_report.lca_mismatch.items():
                 old.edges.remove(edge)
                 if new is None:

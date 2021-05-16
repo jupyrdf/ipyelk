@@ -261,7 +261,6 @@ export class ELKViewerView extends DOMWidgetView {
 
   async interaction_mode_changed() {
     // let interaction = this.model.get('interaction');
-    // console.log('interaction ', interaction);
   }
 
   async diagramLayout() {

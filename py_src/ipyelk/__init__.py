@@ -4,7 +4,7 @@
 from ._version import __version__
 from .diagram import Diagram, Viewer
 from .loaders import from_elkjson, from_nx
-from .pipes import Pipe, Pipeline, MarkElementWidget
+from .pipes import MarkElementWidget, Pipe, Pipeline
 
 
 def _jupyter_labextension_paths():

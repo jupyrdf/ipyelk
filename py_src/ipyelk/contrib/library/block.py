@@ -4,8 +4,9 @@ from typing import Dict, Type
 
 from pydantic import Field
 
-from ...diagram import layout_options as opt
 from ...elements import Edge, EdgeProperties, Partition, Record, SymbolSpec
+from ...elements import layout_options as opt
+from ...elements import merge_excluded
 from ..molds import connectors
 
 content_label_opts = opt.OptionsWidget(
@@ -63,6 +64,10 @@ class Generalization(Edge):
 
 class BlockDiagram(Partition):
     # TODO flesh out ideas of encapsulating diagram defs / styles / elements
+    class Config:
+        copy_on_model_validation = False
+        excluded = merge_excluded(Partition, "symbols", "style")
+
     symbols: SymbolSpec = SymbolSpec().add(
         connectors.Rhomb(identifier="composition", r=4),
         connectors.Rhomb(identifier="aggregation", r=4),

@@ -21,7 +21,7 @@ class ElkJSONLoader(Loader):
 
 
 class ElkJSONPipe(Pipe):
-    """ Transform data into the form required by the Diagram. """
+    """Transform data into the form required by the Diagram."""
 
     _version: str = "v1"
 

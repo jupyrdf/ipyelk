@@ -15,6 +15,11 @@ exclude_hidden = CounterContextManager()
 exclude_layout = CounterContextManager()
 
 
+def merge_excluded(cls: Type[BaseModel], *fields: str) -> List[str]:
+    base = set(getattr(cls.Config, "excluded", []))
+    return list(base | set(fields))
+
+
 class ElementMetadata(BaseModel):
     """An empty metadata structure, subclass and add your own attributes using
     pydantic to have validated element metadata. This metadata will not be used
@@ -130,7 +135,7 @@ class BaseElement(IDElement, abc.ABC):
     class Config:
         copy_on_model_validation = False
 
-        excluded = ["metadata", "labels"]
+        excluded = merge_excluded(IDElement, "metadata", "labels")
 
     def add_class(self, className: str) -> "BaseElement":
         """
@@ -243,8 +248,7 @@ class Edge(BaseElement):
 
     class Config:
         copy_on_model_validation = False
-
-        excluded = ["metadata", "source", "target"]
+        excluded = merge_excluded(BaseElement, "source", "target")
 
     def points(self):
         u = self.source if isinstance(self.source, Node) else self.source.get_parent()
@@ -282,7 +286,7 @@ class Port(HierarchicalElement):
         copy_on_model_validation = False
 
         # non-pydantic configs
-        excluded = ["metadata"]
+        excluded = merge_excluded(HierarchicalElement)
 
     def get_id(self) -> Optional[str]:
         if self.id is None:
@@ -303,7 +307,7 @@ class Node(HierarchicalElement):
         copy_on_model_validation = False
 
         # non-pydantic configs
-        excluded = ["metadata", "ports", "children", "edges"]
+        excluded = merge_excluded(HierarchicalElement, "ports", "children", "edges")
 
     def __init__(self, **data):  # type: ignore
         super().__init__(**data)

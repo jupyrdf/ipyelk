@@ -3,7 +3,7 @@
 
 import traitlets as T
 
-from ..pipes import BrowserTextSizer, ElkJS, Pipeline, VisibilityPipe, ValidationPipe
+from ..pipes import BrowserTextSizer, ElkJS, Pipeline, ValidationPipe, VisibilityPipe
 
 
 class DefaultFlow(Pipeline):

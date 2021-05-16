@@ -8,7 +8,8 @@ import ipywidgets as W
 import traitlets as T
 
 # from ..json.util import iter_elements
-from ..pipes import Pipe, MarkElementWidget, flows as F
+from ..pipes import MarkElementWidget, Pipe
+from ..pipes import flows as F
 from ..styled_widget import StyledWidget
 from ..tools import ToggleCollapsedTool, Tool
 from .sprotty_viewer import SprottyViewer

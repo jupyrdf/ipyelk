@@ -168,9 +168,7 @@ def lca(
     return ancestor
 
 
-def get_owner(
-    edge: Edge, hierarchy: nx.DiGraph, el_map: HierarchicalIndex
-) -> Node:
+def get_owner(edge: Edge, hierarchy: nx.DiGraph, el_map: HierarchicalIndex) -> Node:
     u = edge.source
     v = edge.target
     owner = lca(hierarchy, u, v, el_map)

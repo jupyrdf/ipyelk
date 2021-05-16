@@ -1,3 +1,8 @@
+/**
+ * Copyright (c) 2021 Dane Freeman.
+ * Distributed under the terms of the Modified BSD License.
+ * FIX BELOW FROM:
+ */
 /********************************************************************************
  * Copyright (c) 2017-2020 TypeFox and others.
  *

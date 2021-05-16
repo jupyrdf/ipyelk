@@ -1,13 +1,12 @@
 # Copyright (c) 2021 Dane Freeman.
 # Distributed under the terms of the Modified BSD License.
 
+from typing import Optional
+
 import networkx as nx
 
-from typing import Optional, Dict
-
 from ...diagram import Diagram
-from ...elements import HierarchicalIndex, Label, Node, Registry, index, EMPTY_SENTINEL
-from ...elements import layout_options as opt
+from ...elements import HierarchicalIndex, Label, Node, Registry, index
 from ...pipes import MarkElementWidget, flows
 from ..loader import Loader
 from .nxutils import (
@@ -19,11 +18,11 @@ from .nxutils import (
 )
 
 
-
-
 class NXLoader(Loader):
     def load(
-        self, graph: nx.MultiDiGraph, hierarchy: Optional[nx.DiGraph] = None,
+        self,
+        graph: nx.MultiDiGraph,
+        hierarchy: Optional[nx.DiGraph] = None,
     ) -> MarkElementWidget:
         hierarchy = process_hierarchy(graph, hierarchy)
 
@@ -31,11 +30,9 @@ class NXLoader(Loader):
         nodes = []
         for n in graph.nodes():
             el = from_nx_node(n, graph)
-            if not el.layoutOptions:
-                el.layoutOptions = self.default_node_opts
             nodes.append(el)
             if not el.labels:
-                el.labels.append(Label(text=el.get_id(), layoutOptions=self.default_label_opts))
+                el.labels.append(Label(text=el.get_id()))
 
         # add hierarchy nodes
         for n in hierarchy.nodes():
@@ -63,14 +60,11 @@ class NXLoader(Loader):
             if not isinstance(root, Node):
                 root = el_map.get(root)
 
-            if not root.layoutOptions:
-                root.layoutOptions = self.default_root_opts
-
             for el in index.iter_elements(root):
                 el.id = el.get_id()
 
         return MarkElementWidget(
-            value=root,
+            value=self.apply_layout_defaults(root),
             flow=(flows.Layout,),
         )
 

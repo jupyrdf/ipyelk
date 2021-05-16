@@ -11,7 +11,7 @@ from .viewer import Viewer
 
 
 class Exporter(W.Widget):
-    """ exports elk diagrams """
+    """exports elk diagrams"""
 
     _model_name = T.Unicode("ELKExporterModel").tag(sync=True)
     _model_module = T.Unicode(EXTENSION_NAME).tag(sync=True)

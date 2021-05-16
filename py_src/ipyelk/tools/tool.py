@@ -7,7 +7,7 @@ import ipywidgets as W
 import traitlets as T
 from ipywidgets.widgets.trait_types import TypedTuple
 
-from ..pipes import MarkElementWidget, Pipe
+from ..pipes import Pipe
 
 
 class Tool(W.Widget):
@@ -41,4 +41,3 @@ class Tool(W.Widget):
             pass  # cancellation should not log an error
         except Exception:
             self.log.exception(f"Error running tool: {type(self)}")
-

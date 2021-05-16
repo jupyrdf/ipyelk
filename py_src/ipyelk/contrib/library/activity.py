@@ -8,15 +8,15 @@ from ...elements import (
     Edge,
     EdgeProperties,
     Label,
-    layout_options as opt,
     Node,
     NodeProperties,
     Partition,
     Port,
-    shapes,
     Symbol,
     SymbolSpec,
 )
+from ...elements import layout_options as opt
+from ...elements import shapes
 from ..molds import connectors, structures
 
 center_label_opts = opt.OptionsWidget(
@@ -149,22 +149,28 @@ class SimpleArrow(Edge):
 
 class ActivityDiagram(Partition):
     # TODO flesh out ideas of encapsulating diagram defs / styles / elements
-    symbols: SymbolSpec = SymbolSpec().add(
-        init_state,
-        exit_state,
-        final_state,
-        arrow_head,
+    symbols: SymbolSpec = Field(
+        SymbolSpec().add(
+            init_state,
+            exit_state,
+            final_state,
+            arrow_head,
+        ),
+        exclude=True,
     )
 
-    style: Dict[str, Dict] = {
-        " .final-state .inner-circle": {
-            "fill": "var(--jp-elk-node-stroke)",
+    style: Dict[str, Dict] = Field(
+        {
+            " .final-state .inner-circle": {
+                "fill": "var(--jp-elk-node-stroke)",
+            },
+            " .activity-filled .elknode": {
+                "fill": "var(--jp-elk-node-stroke)",
+            },
+            " .activity-container > .elknode": {
+                "rx": "var(--jp-code-font-size)",
+            },
         },
-        " .activity-filled .elknode": {
-            "fill": "var(--jp-elk-node-stroke)",
-        },
-        " .activity-container > .elknode": {
-            "rx": "var(--jp-code-font-size)",
-        },
-    }
+        exclude=True,
+    )
     default_edge: Type[Edge] = Field(default=SimpleArrow)

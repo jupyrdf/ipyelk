@@ -19,13 +19,27 @@ class Pipe(W.Widget):
     dirty: bool = T.Bool(default_value=True)
     observes: Tuple[str] = TypedTuple(T.Unicode(), kw={})
     reports: Tuple[str] = TypedTuple(T.Unicode(), kw={})
+    _task: asyncio.Future = None
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
     def schedule_run(self, change: T.Bunch = None) -> asyncio.Task:
         # schedule task on loop
-        return asyncio.create_task(self.run())
+        if self._task:
+            self._task.cancel()
+        self._task = asyncio.create_task(self.run())
+
+        self._task.add_done_callback(self._post_run)
+        return self._task
+
+    def _post_run(self, future: asyncio.Future):
+        try:
+            future.exception()
+        except asyncio.CancelledError:
+            pass
+        except Exception as E:
+            raise E
 
     async def run(self):
         # do work

@@ -101,7 +101,7 @@ export class ELKTextSizerModel extends DOMWidgetModel {
     if (rootNode == null || outlet == null) {
       return null;
     }
-    console.log(rootNode);
+    ELK_DEBUG && console.log('Root Node:', rootNode);
     let texts: ElkLabel[] = get_labels(rootNode);
 
     ELK_DEBUG && console.warn('ELK Text Sizer Measure', texts);
@@ -126,12 +126,8 @@ export class ELKTextSizerModel extends DOMWidgetModel {
     // Callback to take measurements and remove element from DOM
     window.requestAnimationFrame(() => {
       this.read_sizes(texts, elements);
-      console.log('setting value after labels have been sized... probably');
       outlet.set('value', { ...rootNode });
       outlet.save_changes();
-      // outlet.on_some_change(["value"], ()=>1,this);
-      // let echo = ()=>console.log(1)
-      // outlet.save('value', {});
       if (!ELK_DEBUG) {
         document.body.removeChild(el);
       }
@@ -175,9 +171,9 @@ function createSVGElement(tag: string): SVGElement {
 function get_labels(el: any): ElkLabel[] {
   let labels: ElkLabel[] = [];
   if (el?.labels) {
-    for (let label of el.labels as ElkLabel[]){
+    for (let label of el.labels as ElkLabel[]) {
       // size only those labels without a width or a height set
-      if (!label?.width || !label?.height){
+      if (!label?.width || !label?.height) {
         labels.push(label);
       }
     }
