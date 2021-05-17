@@ -38,6 +38,9 @@ class BaseProperties(BaseModel):
         None, description="Specifies if the element and it's nested elements are hidden"
     )
 
+    class Config:
+        copy_on_model_validation = False
+
     def get_shape(self) -> BaseShape:
         if self.shape is None:
             field = self.__fields__["shape"]

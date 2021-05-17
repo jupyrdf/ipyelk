@@ -7,7 +7,7 @@ import networkx as nx
 
 from ...diagram import Diagram
 from ...elements import HierarchicalIndex, Label, Node, Registry, index
-from ...pipes import MarkElementWidget, flows
+from ...pipes import MarkElementWidget
 from ..loader import Loader
 from .nxutils import (
     from_nx_node,
@@ -65,7 +65,6 @@ class NXLoader(Loader):
 
         return MarkElementWidget(
             value=self.apply_layout_defaults(root),
-            flow=(flows.Layout,),
         )
 
 

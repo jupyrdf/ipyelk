@@ -13,7 +13,7 @@ from .marks import MarkIndex
 
 class ValidationPipe(Pipe):
 
-    observes = TypedTuple(T.Unicode(), default_value=(F.Anythinglayout,))
+    observes = TypedTuple(T.Unicode(), default_value=(F.New,))
     reports = TypedTuple(T.Unicode(), default_value=(F.Layout,))
     fix_null_id = T.Bool(default_value=True)
     fix_edge_owners = T.Bool(default_value=True)

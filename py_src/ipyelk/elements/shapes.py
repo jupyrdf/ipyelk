@@ -14,12 +14,18 @@ class Point(BaseModel):
     x: float = 0
     y: float = 0
 
+    class Config:
+        copy_on_model_validation = False
+
     def __init__(self, x=0, y=0):
         super().__init__(x=x, y=y)
 
 
 class BaseShape(BaseModel):
     type: Optional[str]
+
+    class Config:
+        copy_on_model_validation = False
 
 
 class EdgeShape(BaseShape):
@@ -109,6 +115,7 @@ class Ellipse(NodeShape):
     ry: float = 0
 
     class Config:
+        copy_on_model_validation = False
         excluded = ["metadata"]
 
     def dict(self, **kwargs):
@@ -160,6 +167,7 @@ class Widget(NodeShape):
     widget: DOMWidget = Field(description="Ipywidgets as Foreign object html")
 
     class Config:
+        copy_on_model_validation = False
         arbitrary_types_allowed = True
 
     def dict(self, **kwargs):

@@ -7,6 +7,7 @@ import { DOMWidgetModel, DOMWidgetView } from '@jupyter-widgets/base';
 import { unpack_models as deserialize } from '@jupyter-widgets/base';
 import { NAME, VERSION, ELK_CSS, ELK_DEBUG, IRunMessage } from './tokens';
 import { ElkNode, ElkLabel } from './sprotty/json/elkgraph-json';
+import { random } from 'lodash';
 // import { ElkNode } from './sprotty/sprotty-model';
 
 export class ELKTextSizerModel extends DOMWidgetModel {
@@ -126,7 +127,9 @@ export class ELKTextSizerModel extends DOMWidgetModel {
     // Callback to take measurements and remove element from DOM
     window.requestAnimationFrame(() => {
       this.read_sizes(texts, elements);
-      outlet.set('value', { ...rootNode });
+      let output = { ...rootNode };
+      output['out'] = random();
+      outlet.set('value', output);
       outlet.save_changes();
       if (!ELK_DEBUG) {
         document.body.removeChild(el);

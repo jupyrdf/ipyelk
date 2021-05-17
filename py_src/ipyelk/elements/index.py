@@ -91,6 +91,22 @@ class VisIndex(BaseModel):
     def __len__(self):
         return len(self.hidden)
 
+    def port_factory(self, **kwargs) -> Port:
+        port = Port(**kwargs)
+        if port.width is None:
+            port.width = 5
+        if port.height is None:
+            port.height = 5
+        for c in self.slack_port_style:
+            port.add_class(c)
+        return port
+
+    def edge_factory(self, *, slack_edge=False, **kwargs) -> Edge:
+        edge = Edge(**kwargs)
+        if slack_edge:
+            [edge.add_class(c) for c in self.slack_edge_style]
+        return edge
+
 
 class ElementIndex(BaseModel):
     elements: Mapping[str, BaseElement] = Field(default_factory=dict)
@@ -236,7 +252,7 @@ class ElementIndex(BaseModel):
 
 class HierarchicalIndex(ElementIndex):
     elements: Mapping[str, HierarchicalElement] = Field(default_factory=dict)
-    vis_index: Optional[VisIndex]  # Dict[str, BaseElement]
+    vis_index: VisIndex = Field(default_factory=VisIndex)
 
     @classmethod
     def from_els(
@@ -248,6 +264,8 @@ class HierarchicalIndex(ElementIndex):
             for el in iter_elements(*els)
             if isinstance(el, HierarchicalElement)
         }
+        if vis_index is None:
+            vis_index = VisIndex()
         return cls(
             elements=elements,
             vis_index=vis_index,
@@ -297,10 +315,7 @@ class HierarchicalIndex(ElementIndex):
             target = self.get(target)
 
         edge_dict = {**edge, "source": source, "target": target}
-        edge = Edge(**edge_dict)
-        if slack_edge and self.vis_index:
-            [edge.add_class(c) for c in self.vis_index.slack_edge_style]
-        return edge
+        return self.vis_index.edge_factory(**edge_dict, slack_edge=slack_edge)
 
     def make_port(self, key: str) -> Port:
         if self.vis_index is None:
@@ -314,9 +329,7 @@ class HierarchicalIndex(ElementIndex):
         try:
             port = node.get_port(key)
         except NotFoundError:
-            port = Port(id=key)
-            for c in self.vis_index.slack_port_style:
-                port.add_class(c)
+            port = self.vis_index.port_factory(id=key)
             node.add_port(port, key=key)
         return port
 

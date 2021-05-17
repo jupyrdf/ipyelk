@@ -49,3 +49,4 @@ AnyHidden = ".*.hidden"
 ColorCSS = ".*.cssClasses-colors"
 Anythinglayout = "((?!.*cssClasses-colors).)*"  # exclude matches on css color
 Layout = "layout"
+New = "new"

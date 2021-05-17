@@ -40,14 +40,12 @@ class Diagram(StyledWidget):
         sync=True, **W.widget_serialization
     )
 
-    _task: asyncio.Task = None
     # symbols
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self._update_children()
         self.add_class("jp-ElkApp")
-        self._update_tool_on_done()
 
     @T.default("view")
     def _default_view(self):
@@ -59,16 +57,23 @@ class Diagram(StyledWidget):
 
         return DefaultFlow()
 
+    def add_tool(self, tool: Tool) -> Tool:
+        tool.tee = self.pipe
+        tool.on_done = self.refresh
+        return tool
+
+    def remove_tool(self, tool: Tool) -> Tool:
+        tool.tee = None
+        tool.on_done = None
+        return tool
+
     @T.default("tools")
     def _default_tools(self):
-        # self.view.selection.tee = self
         tools = [
             self.view.selection,
             ToggleCollapsedTool(selection=self.view.selection),
         ]
-        for tool in tools:
-            tool.on_done = self.refresh
-        return tools
+        return [self.add_tool(tool) for tool in tools]
 
     @T.observe("view")
     def _update_children(self, change: T.Bunch = None):
@@ -84,18 +89,8 @@ class Diagram(StyledWidget):
             # self.toolbar
         ]
 
-    @T.observe("tools")
-    def _update_tool_on_done(self, change=None):
-        if change and change.old:
-            for tool in change.old:
-                tool.tee = None
-                tool.on_done = None
-        for tool in self.tools:
-            tool.tee = self.pipe
-            tool.on_done = self.refresh
-
     def _update_view_sources(self):
-        self.source.flow = (F.Layout,)
+        self.source.flow = (F.New,)
         self.pipe.inlet = self.source
         self.view.source = self.pipe.outlet
 
@@ -104,28 +99,17 @@ class Diagram(StyledWidget):
         self._update_view_sources()
 
     # @T.observe("source")
-    def refresh(self, change: T.Bunch = None):
+    def refresh(self, change: T.Bunch = None) -> asyncio.Task:
         """Create asynchronous refresh task"""
         self.log.debug("Refreshing diagram")
-        # remove previous refresh task if still pending
-        if self._task and not self._task.done():
-            self._task.cancel()
-        self._task = asyncio.create_task(self._arefresh(change))
+        task: asyncio.Task = self.pipe.schedule_run()
 
-    async def _arefresh(self, change: T.Bunch = None):
-        """[summary]
-
-        :param change: [description], defaults to None
-        :type change: T.Bunch, optional
-        """
-        layout = None
-        try:
-            await self.pipe.run()
+        def update_view(future: asyncio.Task):
+            future.exception()
             layout = self.pipe.outlet.value
-        except Exception as e:
-            self.e = e
-            self.log.exception(e)
-            raise e
-        self.view.source.value = layout
-        self.pipe.inlet.value = layout
-        self.pipe.inlet.flow = tuple()
+            self.view.source.value = layout
+            self.pipe.inlet.value = layout
+            self.pipe.inlet.flow = tuple()
+
+        task.add_done_callback(update_view)
+        return task

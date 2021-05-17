@@ -17,14 +17,19 @@ class Tool(W.Widget):
     on_done = T.Any(allow_none=True)  # callback when done
     disable = T.Bool(default_value=False).tag(sync=True, **W.widget_serialization)
     reports = TypedTuple(T.Unicode(), kw={})
+    _task: asyncio.Future = None
 
     def handler(self, *args):
         """Handler callback for running the tool"""
+        # canel old work if needed
+        if self._task:
+            self._task.cancel()
+
         # schedule work
-        task = asyncio.create_task(self.run())
+        self._task = asyncio.create_task(self.run())
 
         # callback
-        task.add_done_callback(self._finished)
+        self._task.add_done_callback(self._finished)
 
         if self.tee:
             self.tee.inlet.flow = self.reports

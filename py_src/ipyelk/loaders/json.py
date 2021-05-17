@@ -6,7 +6,7 @@ from ..diagram import Diagram
 
 # from ..schema.validator import validate_elk_json
 from ..elements import convert_elkjson
-from ..pipes import MarkElementWidget, flows
+from ..pipes import MarkElementWidget
 from .loader import Loader
 
 
@@ -14,7 +14,6 @@ class ElkJSONLoader(Loader):
     def load(self, data: Dict) -> MarkElementWidget:
         return MarkElementWidget(
             value=convert_elkjson(data),
-            flow=(flows.Layout,),
         )
 
 
