@@ -10,6 +10,7 @@ from ipywidgets import DOMWidget
 
 from .._version import EXTENSION_NAME, EXTENSION_SPEC_VERSION
 from ..elements import SymbolSpec, symbol_serialization
+from ..tools import CenterTool, FitTool
 from .viewer import Viewer
 
 # TODO reconnect schema check after adding edge type
@@ -91,3 +92,11 @@ class SprottyViewer(DOMWidget, Viewer):
                 "padding": padding,
             }
         )
+
+    @T.default("fit_tool")
+    def _default_fit_tool(self) -> FitTool:
+        return FitTool(handler=lambda *_: self.fit(model_ids=self.selection.ids))
+
+    @T.default("center_tool")
+    def _default_center_tool(self) -> CenterTool:
+        return CenterTool(handler=lambda *_: self.center(model_ids=self.selection.ids))

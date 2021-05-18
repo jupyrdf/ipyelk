@@ -32,7 +32,7 @@ class Loader(Tool):
     default_edge_opts: Optional[Dict[str, str]] = T.Dict(EDGE_OPTS, allow_none=True)
 
     def load(self) -> MarkElementWidget:
-        pass
+        raise NotImplementedError("Subclasses should implement their behavior")
 
     def apply_layout_defaults(self, root: Node) -> Node:
         for el in index.iter_elements(root):
@@ -56,3 +56,12 @@ class Loader(Tool):
             return dict()
         else:
             return dict(**opts)
+
+    def clear_defaults(self) -> "Loader":
+        """Removes the current default layout options for the loader"""
+        self.default_node_opts = None
+        self.default_root_opts = None
+        self.default_label_opts = None
+        self.default_port_opts = None
+        self.default_edge_opts = None
+        return self

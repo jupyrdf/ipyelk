@@ -1,9 +1,10 @@
 # Copyright (c) 2021 Dane Freeman.
 # Distributed under the terms of the Modified BSD License.
 
+import ipywidgets as W
 import traitlets as T
 
-from ..elements import BaseElement, Node
+from ..elements import BaseElement, Compartment, Node
 from ..pipes import flows as F
 
 # from ..elements import Node
@@ -18,10 +19,15 @@ class ToggleCollapsedTool(Tool):
     def _default_reports(self):
         return (F.Node.hidden,)
 
+    @T.default("ui")
+    def _default_ui(self) -> W.DOMWidget:
+        btn = W.Button(description="Toggle Collapsed")
+        btn.on_click(self.handler)
+        return btn
+
     async def run(self):
         should_refresh = False
-        index = self.tee.inlet.index
-        for selected in map(index.from_id, self.selection.ids):
+        for selected in self.selection.elements():
             for element in self.get_related(selected):
                 self.toggle(element)
                 should_refresh = True
@@ -31,8 +37,11 @@ class ToggleCollapsedTool(Tool):
             self.tee.inlet.flow = self.reports
 
     def get_related(self, element: BaseElement):
-        if isinstance(element, Node):
+        if isinstance(element, Compartment):
+            return element.get_parent().children[1:]
+        elif isinstance(element, Node):
             return element.children
+
         return []
 
     def toggle(self, element: BaseElement) -> bool:

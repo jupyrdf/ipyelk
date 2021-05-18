@@ -97,15 +97,21 @@ class VisIndex(BaseModel):
             port.width = 5
         if port.height is None:
             port.height = 5
-        for c in self.slack_port_style:
-            port.add_class(c)
+        port.add_class(*self.slack_port_style)
         return port
 
     def edge_factory(self, *, slack_edge=False, **kwargs) -> Edge:
         edge = Edge(**kwargs)
         if slack_edge:
-            [edge.add_class(c) for c in self.slack_edge_style]
+            edge.add_class(*self.slack_edge_style)
         return edge
+
+    def clear_slack(self, *elements: BaseElement):
+        for el in iter_elements(*elements):
+            if isinstance(el, Port):
+                el.remove_class(*self.slack_port_style)
+            elif isinstance(el, Edge):
+                el.remove_class(*self.slack_edge_style)
 
 
 class ElementIndex(BaseModel):
@@ -115,10 +121,13 @@ class ElementIndex(BaseModel):
         copy_on_model_validation = False
 
     def get(self, key: str) -> BaseElement:
-        if key in self.elements:
+        try:
+            if key in self.elements:
+                return self.elements[key]
+            # make slack port / tag edge as slack as well...
             return self.elements[key]
-        # make slack port / tag edge as slack as well...
-        return self.elements[key]
+        except KeyError as err:
+            raise NotFoundError(f"Element with id:{key} not in index") from err
 
     def __getitem__(self, key):
         return self.get(key)
@@ -410,7 +419,7 @@ def iter_edges(*els: Node) -> Iterator[Tuple[Node, Edge]]:
 def iter_hierarchy(
     *els: BaseElement,
     root=EMPTY_SENTINEL,
-    types: Tuple[Type[BaseElement]] = (BaseElement,)
+    types: Tuple[Type[BaseElement]] = (BaseElement,),
 ) -> Iterator[Tuple[BaseElement, BaseElement]]:
     """Iterate over BaseElements that follow the `Node` hierarchy
 

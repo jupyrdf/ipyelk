@@ -32,3 +32,8 @@ class Exporter(W.Widget):
     )
     strip_ids = T.Bool(default_value=True).tag(sync=True)
     add_xml_header = T.Bool(default_value=True).tag(sync=True)
+
+    @T.observe("diagram")
+    def _set_viewer(self, change):
+        if change and isinstance(change.new, Diagram):
+            self.viewer = change.new.view

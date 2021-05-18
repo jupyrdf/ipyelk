@@ -13,7 +13,7 @@ from .loader import Loader
 class ElkJSONLoader(Loader):
     def load(self, data: Dict) -> MarkElementWidget:
         return MarkElementWidget(
-            value=convert_elkjson(data),
+            value=self.apply_layout_defaults(convert_elkjson(data)),
         )
 
 

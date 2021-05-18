@@ -1,16 +1,20 @@
 # Copyright (c) 2021 Dane Freeman.
 # Distributed under the terms of the Modified BSD License.
 
+from collections import defaultdict
+from itertools import chain
+
 import ipywidgets as W
 import traitlets as T
 
 from ..styled_widget import StyledWidget
+from .tool import Tool
 
 
 class Toolbar(W.HBox, StyledWidget):
     """Toolbar for an Elk App"""
 
-    commands = T.List(T.Instance(W.Widget), kw={})
+    tools = T.List(T.Instance(Tool), kw={})
     close_btn: W.Button = T.Instance(W.Button)
     on_close = T.Any(
         default_value=None
@@ -41,10 +45,15 @@ class Toolbar(W.HBox, StyledWidget):
         shown = "visible" if callable(self.on_close) else "hidden"
         self.close_btn.layout.visibility = shown
 
-    @T.observe("commands")
+    @T.observe("tools")
     def _update_children(self, change: T.Bunch = None):
-        self.children = self.commands + [self.close_btn]
+        order = defaultdict(list)
+        for tool in self.tools:
+            if isinstance(tool.ui, W.DOMWidget):
+                order[tool.priority].append(tool.ui)
+        tools = list(chain(*[values for k, values in sorted(order.items())]))
+        self.children = tools + [self.close_btn]
 
         # only have widgets shown if commands are specified or a on_close callback
-        shown = "visible" if self.commands or callable(self.on_close) else "hidden"
+        shown = "visible" if self.tools or callable(self.on_close) else "hidden"
         self.layout.visibility = shown

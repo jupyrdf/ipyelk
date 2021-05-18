@@ -38,20 +38,20 @@ class VisibilityPipe(Pipe):
         # generate an index of hidden elements
         vis_index = VisIndex.from_els(root)
 
-        # Check if any elements are hidden
-        if len(vis_index):
-            # serialize the elements excluding hidden
-            with exclude_hidden, exclude_layout:
-                data = root.dict()
+        # clear old slack css classes from elements
+        vis_index.clear_slack(root)
 
-            # new root node with slack edges / ports introduced due to hidden
-            # elements
-            with Registry():
-                value = convert_elkjson(data, vis_index)
+        # serialize the elements excluding hidden
+        with exclude_hidden, exclude_layout:
+            data = root.dict()
 
-                for el in index.iter_elements(value):
-                    el.id = el.get_id()
-            self.outlet.value = value
-        else:
-            self.outlet.value = root
+        # new root node with slack edges / ports introduced due to hidden
+        # elements
+        with Registry():
+            value = convert_elkjson(data, vis_index)
+
+            for el in index.iter_elements(value):
+                el.id = el.get_id()
+        self.outlet.value = value
+
         return self.outlet

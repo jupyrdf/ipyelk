@@ -32,7 +32,12 @@ class ValidationPipe(Pipe):
                 raise ValueError("Inlet value is not valid")
             self.apply_fixes(index)
 
-            self.outlet.value = self.inlet.index.root
+            value = self.inlet.index.root
+            if value is self.outlet.value:
+                # force refresh if same instance
+                self.outlet._notify_trait("value", None, value)
+            else:
+                self.outlet.value = value
             self.get_reports(self.outlet.build_index())
             self.errors = self.collect_errors()
             if self.errors:

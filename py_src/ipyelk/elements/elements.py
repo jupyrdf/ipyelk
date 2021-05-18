@@ -140,18 +140,18 @@ class BaseElement(IDElement, abc.ABC):
 
         excluded = merge_excluded(IDElement, "metadata", "labels")
 
-    def add_class(self, className: str) -> "BaseElement":
+    def add_class(self, *className: str) -> "BaseElement":
         """
         Adds a class to the top level element of the widget.
 
         Doesn't add the class if it already exists.
         """
         dom_classes = set(self.properties.cssClasses.split(" "))
-        dom_classes.add(className)
+        dom_classes |= set(className)
         self.properties.cssClasses = " ".join(dom_classes).strip()
         return self
 
-    def remove_class(self, className: str) -> "BaseElement":
+    def remove_class(self, *className: str) -> "BaseElement":
         """
         Removes a class from the top level element of the widget.
 
@@ -159,7 +159,7 @@ class BaseElement(IDElement, abc.ABC):
         """
         dom_classes = set(self.properties.cssClasses.split(" "))
         self.properties.cssClasses = " ".join(
-            dom_classes.difference(set([className]))
+            dom_classes.difference(set(className))
         ).strip()
         return self
 
@@ -205,10 +205,11 @@ class ShapeElement(BaseElement, abc.ABC):
 class HierarchicalElement(ShapeElement, abc.ABC):
     _parent: Optional["Node"] = PrivateAttr(None)
 
-    def set_parent(self, parent: Optional["Node"]):
-        assert (
-            self._parent is None or self._parent is parent
-        ), f"{self.__class__.__name__} owned by different node"
+    def set_parent(self, parent: Optional["Node"] = None):
+        if parent is not None:
+            assert (
+                self._parent is None or self._parent is parent
+            ), f"{self.__class__.__name__} owned by different node"
         self._parent = parent
         return self
 
@@ -351,8 +352,7 @@ class Node(HierarchicalElement):
         :return: The child that was removed
         """
         try:
-            self.children.remove(child)
-            child.set_parent(None)
+            self.children.remove(child.set_parent())
         except ValueError as E:
             raise NotFoundError("Child element not found") from E
         return child

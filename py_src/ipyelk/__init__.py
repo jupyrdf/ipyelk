@@ -3,7 +3,14 @@
 
 from ._version import __version__
 from .diagram import Diagram, Viewer
-from .loaders import from_elkjson, from_nx
+from .loaders import (
+    ElementLoader,
+    ElkJSONLoader,
+    Loader,
+    NXLoader,
+    from_elkjson,
+    from_nx,
+)
 from .pipes import MarkElementWidget, Pipe, Pipeline
 
 
@@ -14,10 +21,14 @@ def _jupyter_labextension_paths():
 __all__ = [
     "__version__",
     "Diagram",
-    "Viewer",
+    "ElementLoader",
+    "ElkJSONLoader",
+    "from_elkjson",
+    "from_nx",
+    "Loader",
+    "MarkElementWidget",
+    "NXLoader",
     "Pipe",
     "Pipeline",
-    "from_nx",
-    "from_elkjson",
-    "MarkElementWidget",
+    "Viewer",
 ]
