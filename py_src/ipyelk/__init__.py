@@ -12,6 +12,7 @@ from .loaders import (
     from_nx,
 )
 from .pipes import MarkElementWidget, Pipe, Pipeline
+from .tools import Tool
 
 
 def _jupyter_labextension_paths():
@@ -30,5 +31,6 @@ __all__ = [
     "NXLoader",
     "Pipe",
     "Pipeline",
+    "Tool",
     "Viewer",
 ]

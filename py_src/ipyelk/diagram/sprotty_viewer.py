@@ -46,7 +46,7 @@ class SprottyViewer(DOMWidget, Viewer):
     _view_module = T.Unicode(EXTENSION_NAME).tag(sync=True)
     _view_module_version = T.Unicode(EXTENSION_SPEC_VERSION).tag(sync=True)
 
-    symbols = T.Instance(SymbolSpec, kw={}).tag(sync=True, **symbol_serialization)
+    symbols:SymbolSpec = T.Instance(SymbolSpec, kw={}).tag(sync=True, **symbol_serialization)
 
     def center(
         self,

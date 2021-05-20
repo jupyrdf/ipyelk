@@ -5,7 +5,9 @@ from .collapser import ToggleCollapsedTool
 from .painter import Painter
 from .tool import Tool, ToolButton
 from .toolbar import Toolbar
-from .view_tools import CenterTool, FitTool, Hover, Pan, Selection, Zoom
+from .view_tools import CenterTool, FitTool, Hover, Pan, Selection, Zoom, SetTool
+
+from .progress import PipelineProgressBar
 
 # from .tools import ToggleCollapsedBtn, ToolButton
 
@@ -15,7 +17,9 @@ __all__ = [
     "Hover",
     "Painter",
     "Pan",
+    "PipelineProgressBar",
     "Selection",
+    "SetTool",
     "ToggleCollapsedTool",
     "Tool",
     "Toolbar",

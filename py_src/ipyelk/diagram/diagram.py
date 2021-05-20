@@ -2,17 +2,18 @@
 # Distributed under the terms of the Modified BSD License.
 
 import asyncio
-from typing import Tuple, Type
-
+from ipyelk.elements import symbol
+from ipyelk.tools import progress
 import ipywidgets as W
 import traitlets as T
 
-# from ..json.util import iter_elements
+from typing import Tuple, Type, List
+
+from ..elements import SymbolSpec, symbol_serialization
 from ..exceptions import NotFoundError, NotUniqueError
-from ..pipes import MarkElementWidget, Pipe
-from ..pipes import flows as F
+from ..pipes import MarkElementWidget, Pipe, flows as F
 from ..styled_widget import StyledWidget
-from ..tools import ToggleCollapsedTool, Tool, Toolbar
+from ..tools import ToggleCollapsedTool, Tool, Toolbar, PipelineProgressBar
 from .sprotty_viewer import SprottyViewer
 from .viewer import Viewer
 
@@ -31,18 +32,15 @@ class Diagram(StyledWidget):
 
     :param toolbar: Toolar for widget
     """
+    source:MarkElementWidget = T.Instance(MarkElementWidget, kw={})
 
-    # style = t.Dict()
-    source = T.Instance(MarkElementWidget, kw={})
-
-    pipe = T.Instance(Pipe).tag(sync=True, **W.widget_serialization)
+    pipe:Pipe = T.Instance(Pipe).tag(sync=True, **W.widget_serialization)
     view: Viewer = T.Instance(Viewer).tag(sync=True, **W.widget_serialization)
     tools: Tuple[Tool] = W.trait_types.TypedTuple(T.Instance(Tool)).tag(
         sync=True, **W.widget_serialization
     )
     toolbar: Toolbar = T.Instance(Toolbar, kw={})
-
-    # symbols
+    symbols:SymbolSpec = T.Instance(SymbolSpec, kw={}).tag(sync=True, **symbol_serialization)
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -50,15 +48,25 @@ class Diagram(StyledWidget):
         self._update_children()
         self._update_tools()
 
+    @T.default("layout")
+    def _default_layout(self):
+        return {"height": "100%"}
+
     @T.default("view")
     def _default_view(self):
-        return SprottyViewer()
+        view = SprottyViewer(
+            symbols = self.symbols
+        )
+        T.link((self, 'symbols'), (view, "symbols"))
+        return view
 
     @T.default("pipe")
     def _default_Pipe(self):
         from .flow import DefaultFlow
-
-        return DefaultFlow()
+        progress_bar = self.get_tool(PipelineProgressBar)
+        return DefaultFlow(
+            on_progress = progress_bar.update
+        )
 
     @T.observe("view")
     def _update_children(self, change: T.Bunch = None):
@@ -81,12 +89,13 @@ class Diagram(StyledWidget):
         self._update_view_sources()
 
     @T.default("tools")
-    def _default_tools(self):
+    def _default_tools(self)->List[Tool]:
         return [
             self.view.selection,
             self.view.fit_tool,
             self.view.center_tool,
             ToggleCollapsedTool(selection=self.view.selection),
+            PipelineProgressBar(),
         ]
 
     @T.observe("tools")
@@ -115,6 +124,16 @@ class Diagram(StyledWidget):
             raise NotFoundError(f"No tool matching type {tool_type}")
 
         return matches[0]
+
+    def register_tool(self, tool: Tool) -> "Diagram":
+        #TODO inject dependencies smarter...
+        traits = tool.trait_names()
+        if "diagram" in traits:
+            tool.diagram = self
+        if "selection" in traits:
+            tool.selection = self.view.selection
+        self.tools = tuple([*self.tools, tool])
+        return self
 
     def refresh(self, change: T.Bunch = None) -> asyncio.Task:
         """Create asynchronous refresh task"""

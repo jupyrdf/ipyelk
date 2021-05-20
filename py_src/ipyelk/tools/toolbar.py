@@ -3,6 +3,7 @@
 
 from collections import defaultdict
 from itertools import chain
+from typing import List, Dict
 
 import ipywidgets as W
 import traitlets as T
@@ -47,13 +48,18 @@ class Toolbar(W.HBox, StyledWidget):
 
     @T.observe("tools")
     def _update_children(self, change: T.Bunch = None):
-        order = defaultdict(list)
-        for tool in self.tools:
-            if isinstance(tool.ui, W.DOMWidget):
-                order[tool.priority].append(tool.ui)
-        tools = list(chain(*[values for k, values in sorted(order.items())]))
-        self.children = tools + [self.close_btn]
+        self.children = self.tool_order() + [self.close_btn]
 
         # only have widgets shown if commands are specified or a on_close callback
         shown = "visible" if self.tools or callable(self.on_close) else "hidden"
         self.layout.visibility = shown
+
+    def tool_order(self)->List[Tool]:
+        return list(chain(*[values for k, values in sorted(self.order().items())]))
+
+    def order(self)->Dict[int, List[Tool]]:
+        order = defaultdict(list)
+        for tool in self.tools:
+            if isinstance(tool.ui, W.DOMWidget):
+                order[tool.priority].append(tool.ui)
+        return order
