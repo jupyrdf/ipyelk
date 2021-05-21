@@ -86,10 +86,10 @@ export class ELKExporterModel extends WidgetModel {
 
   _on_viewer_changed() {
     ELK_DEBUG && console.warn('[export] viewer changed', arguments);
-    if (this.viewer?.layoutUpdated == null) {
+    if (this.viewer?.diagramUpdated == null) {
       return;
     }
-    this.viewer.layoutUpdated.connect(this._schedule_update, this);
+    this.viewer.diagramUpdated.connect(this._schedule_update, this);
     if (!this.enabled) {
       return;
     }
@@ -107,8 +107,8 @@ export class ELKExporterModel extends WidgetModel {
       diagram.on('change:raw_css', this._schedule_update, this);
       const children: WidgetModel[] = diagram.get('children') || [];
       const viewers = children.filter(this.is_an_elkmodel) as ELKViewerModel[];
-      if (viewers.length && viewers[0].layoutUpdated) {
-        viewers[0].layoutUpdated.connect(this._schedule_update, this);
+      if (viewers.length && viewers[0].diagramUpdated) {
+        viewers[0].diagramUpdated.connect(this._schedule_update, this);
       } else {
         ELK_DEBUG && console.warn('[export] no diagram ready', children);
       }
@@ -177,6 +177,10 @@ export class ELKExporterModel extends WidgetModel {
         ]]>
       </style>`;
     const g: SVGGElement = svg.querySelector('g');
+    if (g == null) {
+      // bail if not g
+      return;
+    }
     const transform = g.attributes['transform'].value;
     let scaleFactor = 1.0;
     const scale = transform.match(/scale\((.*?)\)/);

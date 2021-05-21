@@ -3,7 +3,7 @@
 
 from collections import defaultdict
 from itertools import chain
-from typing import List, Dict
+from typing import Dict, List
 
 import ipywidgets as W
 import traitlets as T
@@ -54,10 +54,10 @@ class Toolbar(W.HBox, StyledWidget):
         shown = "visible" if self.tools or callable(self.on_close) else "hidden"
         self.layout.visibility = shown
 
-    def tool_order(self)->List[Tool]:
+    def tool_order(self) -> List[Tool]:
         return list(chain(*[values for k, values in sorted(self.order().items())]))
 
-    def order(self)->Dict[int, List[Tool]]:
+    def order(self) -> Dict[int, List[Tool]]:
         order = defaultdict(list)
         for tool in self.tools:
             if isinstance(tool.ui, W.DOMWidget):

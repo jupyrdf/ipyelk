@@ -3,11 +3,10 @@
 
 from .collapser import ToggleCollapsedTool
 from .painter import Painter
+from .progress import PipelineProgressBar
 from .tool import Tool, ToolButton
 from .toolbar import Toolbar
-from .view_tools import CenterTool, FitTool, Hover, Pan, Selection, Zoom, SetTool
-
-from .progress import PipelineProgressBar
+from .view_tools import CenterTool, FitTool, Hover, Pan, Selection, SetTool, Zoom
 
 # from .tools import ToggleCollapsedBtn, ToolButton
 

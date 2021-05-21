@@ -23,6 +23,7 @@ class NXLoader(Loader):
         self,
         graph: nx.MultiDiGraph,
         hierarchy: Optional[nx.DiGraph] = None,
+        root_id: Optional[str] = None,
     ) -> MarkElementWidget:
         hierarchy = process_hierarchy(graph, hierarchy)
 
@@ -59,6 +60,9 @@ class NXLoader(Loader):
             root: Node = get_root(hierarchy)
             if not isinstance(root, Node):
                 root = el_map.get(root)
+
+            if root.id is None and root_id is not None:
+                root.id = root_id
 
             for el in index.iter_elements(root):
                 el.id = el.get_id()

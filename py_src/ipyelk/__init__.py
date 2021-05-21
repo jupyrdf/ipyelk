@@ -8,6 +8,7 @@ from .loaders import (
     ElkJSONLoader,
     Loader,
     NXLoader,
+    from_element,
     from_elkjson,
     from_nx,
 )
@@ -24,6 +25,7 @@ __all__ = [
     "Diagram",
     "ElementLoader",
     "ElkJSONLoader",
+    "from_element",
     "from_elkjson",
     "from_nx",
     "Loader",

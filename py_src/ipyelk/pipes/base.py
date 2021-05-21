@@ -2,6 +2,7 @@
 # Distributed under the terms of the Modified BSD License.
 import asyncio
 import re
+from enum import Enum
 from typing import Tuple
 
 import ipywidgets as W
@@ -9,13 +10,14 @@ import traitlets as T
 from ipywidgets.widgets.trait_types import TypedTuple
 
 from .marks import MarkElementWidget
-from enum import Enum
+
 
 class PipeDisposition(Enum):
-    waiting = 'waiting'
-    running = 'running'
-    done = 'finished'
+    waiting = "waiting"
+    running = "running"
+    done = "finished"
     error = "error"
+
 
 class Pipe(W.Widget):
     disposition = T.Instance(PipeDisposition)

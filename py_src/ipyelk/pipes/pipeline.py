@@ -1,9 +1,9 @@
 # Copyright (c) 2021 Dane Freeman.
 # Distributed under the terms of the Modified BSD License.
+from typing import Callable, Optional, Tuple
+
 import ipywidgets as W
 import traitlets as T
-
-from typing import Tuple, Callable, Optional
 
 from ..exceptions import BrokenPipe
 from .base import Pipe, PipeDisposition, SyncedOutletPipe
@@ -15,7 +15,6 @@ class Pipeline(SyncedOutletPipe):
     )
     on_progress: Optional[Callable] = T.Any(allow_none=True)
     exception = T.Instance(Exception, allow_none=True)
-
 
     @T.observe("pipes", "inlet")
     def _update_pipes(self, change=None):
@@ -52,7 +51,6 @@ class Pipeline(SyncedOutletPipe):
                 pipe.outlet.value = pipe.inlet.value
             self.status_update(pipe, PipeDisposition.done)
         self.dirty = False
-
 
     def check_dirty(self) -> bool:
         # check pipes and propagate flow to downstream pipes
@@ -95,7 +93,9 @@ class Pipeline(SyncedOutletPipe):
             raise BrokenPipe(broken)
         return True
 
-    def status_update(self, pipe:Pipe, disposition:PipeDisposition, *, exception:Exception=None):
+    def status_update(
+        self, pipe: Pipe, disposition: PipeDisposition, *, exception: Exception = None
+    ):
         pipe.disposition = disposition
         if exception:
             self.exception = exception

@@ -2,18 +2,17 @@
 # Distributed under the terms of the Modified BSD License.
 
 import asyncio
-from ipyelk.elements import symbol
-from ipyelk.tools import progress
+from typing import List, Tuple, Type
+
 import ipywidgets as W
 import traitlets as T
 
-from typing import Tuple, Type, List
-
 from ..elements import SymbolSpec, symbol_serialization
 from ..exceptions import NotFoundError, NotUniqueError
-from ..pipes import MarkElementWidget, Pipe, flows as F
+from ..pipes import MarkElementWidget, Pipe
+from ..pipes import flows as F
 from ..styled_widget import StyledWidget
-from ..tools import ToggleCollapsedTool, Tool, Toolbar, PipelineProgressBar
+from ..tools import PipelineProgressBar, ToggleCollapsedTool, Tool, Toolbar
 from .sprotty_viewer import SprottyViewer
 from .viewer import Viewer
 
@@ -32,15 +31,18 @@ class Diagram(StyledWidget):
 
     :param toolbar: Toolar for widget
     """
-    source:MarkElementWidget = T.Instance(MarkElementWidget, kw={})
 
-    pipe:Pipe = T.Instance(Pipe).tag(sync=True, **W.widget_serialization)
+    source: MarkElementWidget = T.Instance(MarkElementWidget, kw={})
+
+    pipe: Pipe = T.Instance(Pipe).tag(sync=True, **W.widget_serialization)
     view: Viewer = T.Instance(Viewer).tag(sync=True, **W.widget_serialization)
     tools: Tuple[Tool] = W.trait_types.TypedTuple(T.Instance(Tool)).tag(
         sync=True, **W.widget_serialization
     )
     toolbar: Toolbar = T.Instance(Toolbar, kw={})
-    symbols:SymbolSpec = T.Instance(SymbolSpec, kw={}).tag(sync=True, **symbol_serialization)
+    symbols: SymbolSpec = T.Instance(SymbolSpec, kw={}).tag(
+        sync=True, **symbol_serialization
+    )
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -54,19 +56,16 @@ class Diagram(StyledWidget):
 
     @T.default("view")
     def _default_view(self):
-        view = SprottyViewer(
-            symbols = self.symbols
-        )
-        T.link((self, 'symbols'), (view, "symbols"))
+        view = SprottyViewer(symbols=self.symbols)
+        T.link((self, "symbols"), (view, "symbols"))
         return view
 
     @T.default("pipe")
     def _default_Pipe(self):
         from .flow import DefaultFlow
+
         progress_bar = self.get_tool(PipelineProgressBar)
-        return DefaultFlow(
-            on_progress = progress_bar.update
-        )
+        return DefaultFlow(on_progress=progress_bar.update)
 
     @T.observe("view")
     def _update_children(self, change: T.Bunch = None):
@@ -89,7 +88,7 @@ class Diagram(StyledWidget):
         self._update_view_sources()
 
     @T.default("tools")
-    def _default_tools(self)->List[Tool]:
+    def _default_tools(self) -> List[Tool]:
         return [
             self.view.selection,
             self.view.fit_tool,
@@ -126,7 +125,7 @@ class Diagram(StyledWidget):
         return matches[0]
 
     def register_tool(self, tool: Tool) -> "Diagram":
-        #TODO inject dependencies smarter...
+        # TODO inject dependencies smarter...
         traits = tool.trait_names()
         if "diagram" in traits:
             tool.diagram = self

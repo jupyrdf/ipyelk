@@ -57,6 +57,7 @@ export class ELKViewerModel extends DOMWidgetModel {
     pan: { deserialize }
   };
   layoutUpdated = new Signal<ELKViewerModel, void>(this);
+  diagramUpdated = new Signal<ELKViewerModel, void>(this);
 
   defaults() {
     let defaults = {
@@ -203,6 +204,7 @@ export class ELKViewerView extends DOMWidgetView {
           if (selection != null) {
             selection.set('ids', ids);
             selection.save_changes();
+            this.model.diagramUpdated.emit(void 0);
           }
         });
         break;
@@ -215,6 +217,7 @@ export class ELKViewerView extends DOMWidgetView {
           if (hover != null) {
             hover.set('ids', hoverFeedback.mouseoverElement);
             hover.save_changes();
+            this.model.diagramUpdated.emit(void 0);
           }
         }
         break;
@@ -229,14 +232,15 @@ export class ELKViewerView extends DOMWidgetView {
       selection.on('change:ids', this.updateSelected, this);
     }
   }
-  updateSelected() {
+  async updateSelected() {
     let selection = this.model.get('selection');
     if (selection != null) {
       let selected: string[] = selection.get('ids');
       let old_selected: string[] = selection.previous('ids');
       let exiting: string[] = difference(old_selected, selected);
       let entering: string[] = difference(selected, old_selected);
-      this.actionDispatcher.dispatch(new SelectAction(entering, exiting));
+      await this.actionDispatcher.dispatch(new SelectAction(entering, exiting));
+      this.model.diagramUpdated.emit(void 0);
     }
   }
 
@@ -247,15 +251,16 @@ export class ELKViewerView extends DOMWidgetView {
     }
   }
 
-  updateHover() {
+  async updateHover() {
     let hover = this.model.get('hover');
     if (hover != null) {
       let hovered: string = hover.get('ids');
       let old_hovered: string = hover.previous('ids');
-      this.actionDispatcher.dispatchAll([
+      await this.actionDispatcher.dispatchAll([
         new HoverFeedbackAction(hovered, true),
         new HoverFeedbackAction(old_hovered, false)
       ]);
+      this.model.diagramUpdated.emit(void 0);
     }
   }
 
@@ -266,12 +271,13 @@ export class ELKViewerView extends DOMWidgetView {
   async diagramLayout() {
     let layout = this.model.get('source')?.get('value');
     let symbols = this.model.get('symbols');
-    if (layout == null || symbols == null) {
+    if (layout == null || symbols == null || this.source == null) {
       // bailing
       return null;
     }
     await this.source.updateLayout(layout, symbols, this.div_id);
     this.model.layoutUpdated.emit();
+    this.model.diagramUpdated.emit();
   }
 
   normalizeElementIds(model_id: string | string[] | null) {
