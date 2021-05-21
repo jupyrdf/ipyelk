@@ -1,5 +1,17 @@
 # Changelog
 
+## @jupyrdf/jupyter-elk 2.0.0a0
+
+- Label Schema fix ([#87])
+- Overhaul top level interface ([#89])
+
+[#89]: https://github.com/jupyrdf/ipyelk/issues/89
+[#87]: https://github.com/jupyrdf/ipyelk/pull/87
+
+## ipyelk 2.0.0a0
+
+---
+
 ## @jupyrdf/jupyter-elk 1.0.1
 
 - hides some browser console messages
