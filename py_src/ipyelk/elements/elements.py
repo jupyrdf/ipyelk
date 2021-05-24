@@ -40,6 +40,7 @@ class BaseProperties(BaseModel):
 
     class Config:
         copy_on_model_validation = False
+        validate_assignment = True
 
     def get_shape(self) -> BaseShape:
         if self.shape is None:
@@ -137,7 +138,7 @@ class BaseElement(IDElement, abc.ABC):
 
     class Config:
         copy_on_model_validation = False
-
+        validate_assignment = True
         excluded = merge_excluded(IDElement, "metadata", "labels")
 
     def add_class(self, *className: str) -> "BaseElement":
@@ -252,6 +253,7 @@ class Edge(BaseElement):
 
     class Config:
         copy_on_model_validation = False
+        validate_assignment = True
         excluded = merge_excluded(BaseElement, "source", "target")
 
     def points(self):
@@ -288,6 +290,7 @@ class Port(HierarchicalElement):
 
     class Config:
         copy_on_model_validation = False
+        validate_assignment = True
 
         # non-pydantic configs
         excluded = merge_excluded(HierarchicalElement)
@@ -309,6 +312,7 @@ class Node(HierarchicalElement):
 
     class Config:
         copy_on_model_validation = False
+        validate_assignment = True
 
         # non-pydantic configs
         excluded = merge_excluded(HierarchicalElement, "ports", "children", "edges")

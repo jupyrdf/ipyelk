@@ -8,13 +8,6 @@ ${EXPORTER}       05_SVG_Exporter
 ${APP EXPORTER}    06_SVG_App_Exporter
 ${SIM PLUMBING}    07_Simulation
 ${SIM APP}        08_Simulation_App
-${LABEL PLACEMENT}    100_node_label_placement
-${TEXT SIZER}     101_text_sizer
-${LAYOUT OPTIONS}    102_layout_options
-${TX LAYOUT OPTIONS}    103_transformer_layout_options
-${TX MULTI LABEL}    104_transformer_multi_label
-${TX PORTS}       105_transformer_ports
-${TX EDGES}       106_transformer_edges
 ${CSS ELK VIEW}    .jp-ElkView
 ${CSS SPROTTY GRAPH}    .sprotty-graph
 ${CSS ELK NODE}    .elknode

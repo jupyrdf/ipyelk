@@ -121,6 +121,7 @@ class ElementIndex(BaseModel):
         copy_on_model_validation = False
 
     def get(self, key: str) -> BaseElement:
+        key = str(key)
         try:
             if key in self.elements:
                 return self.elements[key]

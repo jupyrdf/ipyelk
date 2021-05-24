@@ -134,23 +134,43 @@ def get_root(hierarchy):
         return root
 
 
-def as_in_hierarchy(node: HierarchicalElement, hierarchy, el_map: HierarchicalIndex):
-    # TODO need to handle if given a port or node
-    if isinstance(node, Port):
-        node = node._parent
+def as_in_hierarchy(
+    node: HierarchicalElement,
+    hierarchy: nx.DiGraph,
+    el_map: HierarchicalIndex,
+    nx_node_map: Optional[Dict[Node, Hashable]] = None,
+):
+    """Attempts to convert node to how it appears in the hierarchical graph
 
-    if node in hierarchy:
-        return node
+    :param node: networkx graph of edges
+    :param hierarchy: networkx tree of nodes
+    :param el_map: element map of string ids to nodes
+    :param nx_node_map: optional additional mapping of elements to their
+    networkx node object
+    :raises NotUniqueError: If multiple matching nodes in the hierarchy are found
+    :raises NotFoundError: If unable to find a matching node
+    :return: Node as it exists in the hierarchical graph
+    """
 
-    if isinstance(node, HierarchicalElement):
-        node = node.get_id()
+    parent = node._parent if isinstance(node, Port) else node
+
+    if parent in hierarchy:
+        return parent
+    elif nx_node_map and parent in nx_node_map:
+        return nx_node_map[parent]
+
+    if isinstance(parent, HierarchicalElement):
+        node_id = parent.get_id()
+        if node_id in hierarchy:
+            return node_id
     else:
         # should be an identifer to something in the element map
-        node = el_map[node]
-        if isinstance(node, Port):
-            node = node.parent
-    assert node in hierarchy, "node not in hierarchy"
-    return node
+        el = el_map[parent]
+        if isinstance(el, Port):
+            parent = el.parent
+    if parent in hierarchy:
+        return parent
+    raise NotFoundError(f"Unable to find {node} in the hierarchy")
 
 
 def lca(
@@ -158,9 +178,20 @@ def lca(
     node1: HierarchicalElement,
     node2: HierarchicalElement,
     el_map: HierarchicalIndex,
+    nx_node_map: Optional[Dict[Node, Hashable]] = None,
 ) -> HierarchicalElement:
-    node1 = as_in_hierarchy(node1, hierarchy, el_map)
-    node2 = as_in_hierarchy(node2, hierarchy, el_map)
+    """Find the lowest common ancestor between two nodes in the hierarchy. This
+    is used to assign the correct edge owner based on it's source and target
+    endpoints
+
+    :param hierarchy: networkx tree hierarchy of nodes
+    :param node1: node one
+    :param node2: node two
+    :param el_map: element map of string ids to nodes
+    :return: Lowest Common Ancestor
+    """
+    node1 = as_in_hierarchy(node1, hierarchy, el_map, nx_node_map)
+    node2 = as_in_hierarchy(node2, hierarchy, el_map, nx_node_map)
 
     ancestor = nx.lowest_common_ancestor(hierarchy, node1, node2)
     if not isinstance(ancestor, HierarchicalElement):
@@ -168,10 +199,15 @@ def lca(
     return ancestor
 
 
-def get_owner(edge: Edge, hierarchy: nx.DiGraph, el_map: HierarchicalIndex) -> Node:
+def get_owner(
+    edge: Edge,
+    hierarchy: nx.DiGraph,
+    el_map: HierarchicalIndex,
+    nx_node_map: Optional[Dict[Node, Hashable]] = None,
+) -> Node:
     u = edge.source
     v = edge.target
-    owner = lca(hierarchy, u, v, el_map)
+    owner = lca(hierarchy, u, v, el_map, nx_node_map)
     if isinstance(owner, Port):
         owner = owner.get_parent()
     assert isinstance(owner, Node)
