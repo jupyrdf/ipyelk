@@ -2,11 +2,21 @@
 
 ## @jupyrdf/jupyter-elk 2.0.0a0
 
-- Label Schema fix ([#87])
+- Label Schema fix ([#73])
+- Element API overhaul ([#88])
+  - Add mypy for type checking
+  - Use pydantic for `Element` base models
 - Overhaul top level interface ([#89])
+  - Backporting Sprotty Duplicate ID ([#17])
+  - Generalize the processing stages to use a common interface of Marks and
+    simplify processing to composable pipes
+  - Refactoring top level apis and attempt and more streamlined `Diagram`
+    creation
 
-[#89]: https://github.com/jupyrdf/ipyelk/issues/89
+[#17]: https://github.com/jupyrdf/ipyelk/issues/17
 [#87]: https://github.com/jupyrdf/ipyelk/pull/87
+[#88]: https://github.com/jupyrdf/ipyelk/pull/88
+[#89]: https://github.com/jupyrdf/ipyelk/issues/89
 
 ## ipyelk 2.0.0a0
 

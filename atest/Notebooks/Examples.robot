@@ -39,7 +39,7 @@ ${SCREENS}        ${SCREENS ROOT}${/}notebook-examples
 03_App
     [Tags]    data:hier_tree.json    data:hier_ports.json    foo:bar
     Example Should Restart-and-Run-All    ${APP}
-    Elk Counts Should Be    n=${5}    &{HIER COUNTS}
+    Elk Counts Should Be    n=${4}    &{HIER COUNTS}
     Linked Elk Output Counts Should Be    &{HIER COUNTS}
     Custom Elk Selectors Should Exist    @{HIER PORT CUSTOM}
 
