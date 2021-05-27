@@ -77,14 +77,17 @@ Elk Counts Should Be
     ...    nodes:${found nodes} edges:${found edges} labels:${found labels} ports:${found ports}
     ...    nodes:${nodes.__mul__(${n})} edges:${edges.__mul__(${n})} labels:${labels.__mul__(${n})} ports:${ports.__mul__(${n})}
 
-Linked Elk Output Counts Should Be
-    [Arguments]    ${nodes}=${0}    ${edges}=${0}    ${labels}=${0}    ${ports}=${0}    ${n}=${1}    ${screen}=30-linked.png
+Create Linked Elk Output View
     Wait Until Page Contains Element    css:${CSS ELK VIEW}
     Click Element    css:${CSS ELK VIEW}
     Open Context Menu    css:${CSS ELK VIEW}
     Wait Until Keyword Succeeds    3x    0.5s    Mouse Over    css:${JLAB CSS CREATE OUTPUT}
     Press Keys    None    RETURN
     Wait Until Page Contains Element    css:${JLAB CSS LINKED OUTPUT} ${CSS ELK VIEW} ${CSS ELK NODE}
+
+Linked Elk Output Counts Should Be
+    [Arguments]    ${nodes}=${0}    ${edges}=${0}    ${labels}=${0}    ${ports}=${0}    ${n}=${1}    ${screen}=30-linked.png    ${open}=${TRUE}
+    Run Keyword If    ${open}    Create Linked Elk Output View
     Elk Counts Should Be    nodes=${nodes}    edges=${edges}    labels=${labels}    ports=${ports}    n=${n}
     ...    prefix=${JLAB CSS LINKED OUTPUT}${SPACE}    screen=${screen}
 
@@ -107,3 +110,13 @@ Get Elk Port Count
     [Arguments]    ${prefix}=${EMPTY}    ${suffix}=${EMPTY}
     ${ports} =    SeleniumLibrary.Get Element Count    css:${prefix}${CSS ELK PORT}${suffix}
     [Return]    ${ports}
+
+Click Elk Tool
+    [Arguments]    ${label}    ${index}=${0}
+    ${elkSelector} =    Set Variable    xpath://div[contains(@class,"jp-ElkApp")]
+    ${elkApps} =    Get WebElements    ${elkSelector}
+    Log    ${elkApps}
+    Mouse Over    ${elkApps[${index}]}
+    ${tools} =    Get WebElements    ${elkSelector}//button[contains(.,"${label}")]
+    Log    ${tools}
+    Click Element    ${tools[${index}]}

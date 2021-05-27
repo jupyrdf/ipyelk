@@ -8,10 +8,9 @@
   - Use pydantic for `Element` base models
 - Overhaul top level interface ([#89])
   - Backporting Sprotty Duplicate ID ([#17])
-  - Generalize the processing stages to use a common interface of Marks and
-    simplify processing to composable pipes
-  - Refactoring top level apis and attempt and more streamlined `Diagram`
-    creation
+  - Generalize the processing stages to use a common interface of Marks and simplify
+    processing to composable pipes
+  - Refactoring top level apis and attempt and more streamlined `Diagram` creation
 
 [#17]: https://github.com/jupyrdf/ipyelk/issues/17
 [#87]: https://github.com/jupyrdf/ipyelk/pull/87
