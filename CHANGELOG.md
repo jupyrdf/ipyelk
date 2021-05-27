@@ -1,6 +1,6 @@
 # Changelog
 
-## @jupyrdf/jupyter-elk 2.0.0a0
+## @jupyrdf/jupyter-elk 2.0.0-alpha0
 
 - Label Schema fix ([#73])
 - Element API overhaul ([#88])
@@ -17,7 +17,7 @@
 [#88]: https://github.com/jupyrdf/ipyelk/pull/88
 [#89]: https://github.com/jupyrdf/ipyelk/issues/89
 
-## ipyelk 2.0.0a0
+## ipyelk 2.0.0-alpha0
 
 ---
 
