@@ -4,10 +4,19 @@
  */
 
 import { DOMWidgetModel, DOMWidgetView } from '@jupyter-widgets/base';
-import { NAME, VERSION, ELK_CSS, ELK_DEBUG } from './tokens';
+import { unpack_models as deserialize } from '@jupyter-widgets/base';
+import { NAME, VERSION, ELK_CSS, ELK_DEBUG, IRunMessage } from './tokens';
+import { ElkNode, ElkLabel } from './sprotty/json/elkgraph-json';
+import { random } from 'lodash';
+// import { ElkNode } from './sprotty/sprotty-model';
 
 export class ELKTextSizerModel extends DOMWidgetModel {
   static model_name = 'ELKTextSizerModel';
+  static serializers = {
+    ...DOMWidgetModel.serializers,
+    inlet: { deserialize },
+    outlet: { deserialize }
+  };
 
   defaults() {
     let defaults = {
@@ -18,7 +27,9 @@ export class ELKTextSizerModel extends DOMWidgetModel {
       _view_module: NAME,
       _view_name: ELKTextSizerView.view_name,
       _view_module_version: VERSION,
-      id: String(Math.random())
+      id: String(Math.random()),
+      inlet: null,
+      outlet: null
     };
     return defaults;
   }
@@ -33,7 +44,7 @@ export class ELKTextSizerModel extends DOMWidgetModel {
   ) {
     super.initialize(attributes, options);
     ELK_DEBUG && console.warn('ELK Test Sizer Init');
-    this.on('msg:custom', this.measure, this);
+    this.on('msg:custom', this.handleMessage, this);
     (<any>window).sizer = this;
     ELK_DEBUG && console.warn('ELK Text Done Init');
   }
@@ -58,31 +69,48 @@ export class ELKTextSizerModel extends DOMWidgetModel {
    * SVG Text Element for given text string
    * @param text
    */
-  make_label(text: IELKText): SVGElement {
-    ELK_DEBUG && console.warn('ELK Text Label for text', text);
-    let label: SVGElement = createSVGElement('text');
+  make_label(label: ElkLabel): SVGElement {
+    ELK_DEBUG && console.warn('ELK Text Label for text', label);
+    let element: SVGElement = createSVGElement('text');
     let classes: string[] = [ELK_CSS.label];
-    if (text.cssClasses.length > 0) {
-      classes = classes.concat(text.cssClasses.split(' '));
+    if (label.properties?.cssClasses.length > 0) {
+      classes = classes.concat(label.properties?.cssClasses.split(' '));
     }
 
-    label.classList.add(...classes);
-    label.textContent = text.value;
-    ELK_DEBUG && console.warn('ELK Text Label', label);
-    return label;
+    element.classList.add(...classes);
+    element.textContent = label.text;
+    ELK_DEBUG && console.warn('ELK Text Label', element);
+    return element;
+  }
+
+  handleMessage(content: IRunMessage) {
+    // check message and decide if should call `measure`
+    switch (content.action) {
+      case 'run':
+        this.measure();
+        break;
+    }
   }
 
   /**
    * Method to take a list of texts and build SVG Text Elements to attach to the DOM
-   * @param content TextSize Request
+   * @param content message measure request
    */
-  measure(content: IELKTextSizeRequest) {
-    ELK_DEBUG && console.warn('ELK Text Sizer Measure', content);
+  measure() {
+    const rootNode: ElkNode = this.get('inlet')?.get('value');
+    let outlet: DOMWidgetModel = this.get('outlet'); // target output
+    if (rootNode == null || outlet == null) {
+      return null;
+    }
+    ELK_DEBUG && console.log('Root Node:', rootNode);
+    let texts: ElkLabel[] = get_labels(rootNode);
+
+    ELK_DEBUG && console.warn('ELK Text Sizer Measure', texts);
     const el: HTMLElement = this.make_container();
     const view: SVGElement = el.getElementsByTagName('g')[0];
 
     const new_g: SVGElement = createSVGElement('g');
-    content.texts.forEach(text => {
+    texts.forEach(text => {
       new_g.appendChild(this.make_label(text));
     });
     view.appendChild(new_g);
@@ -98,14 +126,14 @@ export class ELKTextSizerModel extends DOMWidgetModel {
 
     // Callback to take measurements and remove element from DOM
     window.requestAnimationFrame(() => {
-      const response: IELKTextSizeResponse = {
-        event: 'measurement',
-        measurements: this.read_sizes(content.texts, elements)
-      };
+      this.read_sizes(texts, elements);
+      let output = { ...rootNode };
+      output['out'] = random();
+      outlet.set('value', output);
+      outlet.save_changes();
       if (!ELK_DEBUG) {
         document.body.removeChild(el);
       }
-      this.send(response, {}, []);
     });
   }
 
@@ -114,46 +142,19 @@ export class ELKTextSizerModel extends DOMWidgetModel {
    * @param texts Original list of text strings requested to size
    * @param elements List of SVG Text Elements to get their respective bounding boxes
    */
-  read_sizes(texts: IELKText[], elements: SVGElement[]): IELKTextSize[] {
-    let measurements: IELKTextSize[] = [];
+  read_sizes(labels: ElkLabel[], elements: SVGElement[]) {
     let i = 0;
-    for (let label of elements) {
-      ELK_DEBUG && console.warn(label.innerHTML);
-      const text: IELKText = texts[i];
-      const size: DOMRect = label.getBoundingClientRect();
+    for (let element of elements) {
+      ELK_DEBUG && console.warn(element.innerHTML);
+      const label: ElkLabel = labels[i];
+      const size: DOMRect = element.getBoundingClientRect();
 
-      let measurement: IELKTextSize = {
-        id: text.id,
-        width: size.width,
-        height: size.height
-      };
+      label.width = size.width;
+      label.height = size.height;
 
-      measurements.push(measurement);
       i++;
     }
-    ELK_DEBUG && console.warn('Measurements', measurements);
-    return measurements;
   }
-}
-
-export interface IELKText {
-  id: string;
-  value: string;
-  cssClasses: string;
-}
-
-export interface IELKTextSizeRequest {
-  texts: IELKText[];
-}
-
-export interface IELKTextSize {
-  id: string;
-  width: number;
-  height: number;
-}
-export interface IELKTextSizeResponse {
-  event: 'measurement';
-  measurements: IELKTextSize[];
 }
 
 export class ELKTextSizerView extends DOMWidgetView {
@@ -168,4 +169,30 @@ export class ELKTextSizerView extends DOMWidgetView {
  */
 function createSVGElement(tag: string): SVGElement {
   return document.createElementNS('http://www.w3.org/2000/svg', tag);
+}
+
+function get_labels(el: any): ElkLabel[] {
+  let labels: ElkLabel[] = [];
+  if (el?.labels) {
+    for (let label of el.labels as ElkLabel[]) {
+      // size only those labels without a width or a height set
+      if (!label?.width || !label?.height) {
+        labels.push(label);
+      }
+    }
+  }
+  for (let child of el?.ports || []) {
+    labels.push(...get_labels(child));
+  }
+  for (let child of el?.children || []) {
+    labels.push(...get_labels(child));
+  }
+  for (let edge of el?.edges || []) {
+    labels.push(...get_labels(edge));
+  }
+  for (let label of el?.labels || []) {
+    labels.push(...get_labels(label));
+  }
+
+  return labels;
 }

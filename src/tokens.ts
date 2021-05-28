@@ -3,7 +3,7 @@
  * Distributed under the terms of the Modified BSD License.
  */
 export const NAME = '@jupyrdf/jupyter-elk';
-export const VERSION = '1.0.1';
+export const VERSION = '2.0.0-alpha0';
 
 export const ELK_DEBUG = window.location.hash.indexOf('ELK_DEBUG') > -1;
 
@@ -20,6 +20,10 @@ export interface IELKFitMessage {
   animate?: boolean;
   max_zoom?: number;
   padding?: number;
+}
+
+export interface IRunMessage {
+  action: 'run';
 }
 
 export const ELK_CSS = {

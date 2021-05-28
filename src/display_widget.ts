@@ -9,7 +9,11 @@ import { Message } from '@lumino/messaging';
 import { Widget } from '@lumino/widgets';
 import { Signal } from '@lumino/signaling';
 
-import { DOMWidgetModel, DOMWidgetView } from '@jupyter-widgets/base';
+import {
+  DOMWidgetModel,
+  DOMWidgetView,
+  unpack_models as deserialize
+} from '@jupyter-widgets/base';
 // import { WidgetManager } from '@jupyter-widgets/jupyterlab-manager';
 // import { ManagerBase } from '@jupyter-widgets/base';
 
@@ -39,60 +43,46 @@ import {
 import { ToolTYPES } from './tools/types';
 import { PromiseDelegate } from '@lumino/coreutils';
 
-const DEFAULT_VALUE = { id: 'root' };
 const POLL = 300;
 
-export class ELKDiagramModel extends DOMWidgetModel {
-  static model_name = 'ELKModel';
-
-  layoutUpdated = new Signal<ELKDiagramModel, void>(this);
+export class ELKViewerModel extends DOMWidgetModel {
+  static model_name = 'ELKViewerModel';
+  static serializers = {
+    ...DOMWidgetModel.serializers,
+    source: { deserialize },
+    selection: { deserialize },
+    hover: { deserialize },
+    painter: { deserialize },
+    zoom: { deserialize },
+    pan: { deserialize }
+  };
+  layoutUpdated = new Signal<ELKViewerModel, void>(this);
+  diagramUpdated = new Signal<ELKViewerModel, void>(this);
 
   defaults() {
     let defaults = {
       ...super.defaults(),
 
-      _model_name: ELKDiagramModel.model_name,
+      _model_name: ELKViewerModel.model_name,
       _model_module_version: VERSION,
       _view_module: NAME,
-      _view_name: ELKDiagramView.view_name,
+      _view_name: ELKViewerView.view_name,
       _view_module_version: VERSION,
-      value: DEFAULT_VALUE,
       symbols: {},
-      mark_layout: {},
-      layouter: {}
+      source: null
     };
     return defaults;
   }
 
   initialize(attributes: any, options: any) {
     super.initialize(attributes, options);
-    this.on('change:value', this.value_changed, this);
-
-    this.value_changed().catch(err => console.error(err));
-  }
-
-  async value_changed() {
-    let rootNode = this.get('value');
-    let layoutEngine: any = await this.layoutEngine(); // TODO need layoutEngine interface
-    let result;
-    if (layoutEngine) {
-      result = await layoutEngine.layout(rootNode);
-    } else {
-      result = rootNode;
-    }
-    this.set('mark_layout', result);
-  }
-
-  async layoutEngine() {
-    let mid = this.get('layouter').replace('IPY_MODEL_', '');
-    return await this.widget_manager.get_model(mid);
   }
 }
 
-export class ELKDiagramView extends DOMWidgetView {
-  static view_name = 'ELKDiagramView';
+export class ELKViewerView extends DOMWidgetView {
+  static view_name = 'ELKViewerView';
 
-  model: ELKDiagramModel;
+  model: ELKViewerModel;
   source: JLModelSource;
   container: any;
   private div_id: string;
@@ -106,6 +96,16 @@ export class ELKDiagramView extends DOMWidgetView {
   initialize(parameters: any) {
     super.initialize(parameters);
     this.pWidget.addClass(ELK_CSS.widget_class);
+    this.on('change:source', this.on_source_changed, this);
+    this.on_source_changed();
+  }
+  async on_source_changed() {
+    // TODO disconnect old ones
+    let source = this.model.get('source');
+    if (source) {
+      source.on('change:value', this.diagramLayout, this);
+      this.diagramLayout();
+    }
   }
 
   async render() {
@@ -143,12 +143,17 @@ export class ELKDiagramView extends DOMWidgetView {
     this.feedbackDispatcher = container.get<FeedbackActionDispatcher>(
       ToolTYPES.IFeedbackActionDispatcher
     );
-    this.model.on('change:mark_layout', this.diagramLayout, this);
-    this.model.on('change:selected', this.updateSelected, this);
-    this.model.on('change:hovered', this.updateHover, this);
+    // this.model.on('change:mark_layout', this.diagramLayout, this);
+    this.model.on('change:selection', this.updateSelectedTool, this);
+    this.model.on('change:hover', this.updateHoverTool, this);
     this.model.on('change:interaction', this.interaction_mode_changed, this);
     this.model.on('msg:custom', this.handleMessage, this);
     this.model.on('change:symbols', this.diagramLayout, this);
+
+    // init for the first time
+    this.updateSelectedTool();
+    this.updateHoverTool();
+
     this.touch(); //to sync back the diagram state
 
     // Register Action Handlers
@@ -195,16 +200,25 @@ export class ELKDiagramView extends DOMWidgetView {
     switch (action.kind) {
       case SelectAction.KIND:
         this.source.getSelected().then(ids => {
-          this.model.set('selected', ids);
-          this.touch();
+          let selection = this.model.get('selection');
+          if (selection != null) {
+            selection.set('ids', ids);
+            selection.save_changes();
+            this.model.diagramUpdated.emit(void 0);
+          }
         });
+        break;
       case SelectionResult.KIND:
         break;
       case HoverFeedbackAction.KIND:
         let hoverFeedback: HoverFeedbackAction = action as HoverFeedbackAction;
         if (hoverFeedback.mouseIsOver) {
-          this.model.set('hovered', hoverFeedback.mouseoverElement);
-          this.touch();
+          let hover = this.model.get('hover');
+          if (hover != null) {
+            hover.set('ids', hoverFeedback.mouseoverElement);
+            hover.save_changes();
+            this.model.diagramUpdated.emit(void 0);
+          }
         }
         break;
       default:
@@ -212,49 +226,58 @@ export class ELKDiagramView extends DOMWidgetView {
     }
   }
 
-  /**
-   * Dictionary of events and handlers
-   */
-  events(): { [e: string]: string } {
-    return { click: '_handle_click' };
+  updateSelectedTool() {
+    let selection = this.model.get('selection');
+    if (selection != null) {
+      selection.on('change:ids', this.updateSelected, this);
+    }
+  }
+  async updateSelected() {
+    let selection = this.model.get('selection');
+    if (selection != null) {
+      let selected: string[] = selection.get('ids');
+      let old_selected: string[] = selection.previous('ids');
+      let exiting: string[] = difference(old_selected, selected);
+      let entering: string[] = difference(selected, old_selected);
+      await this.actionDispatcher.dispatch(new SelectAction(entering, exiting));
+      this.model.diagramUpdated.emit(void 0);
+    }
   }
 
-  /**
-   * Handles when the button is clicked.
-   */
-  _handle_click(event) {
-    // event.preventDefault();
-    this.model.layoutUpdated.emit();
-    this.send({ event: 'click', id: this.model.get('hovered') });
+  updateHoverTool() {
+    let hover = this.model.get('hover');
+    if (hover != null) {
+      hover.on('change:ids', this.updateHover, this);
+    }
   }
 
-  updateSelected() {
-    let selected: string[] = this.model.get('selected');
-    let old_selected: string[] = this.model.previous('selected');
-    let exiting: string[] = difference(old_selected, selected);
-    let entering: string[] = difference(selected, old_selected);
-    this.actionDispatcher.dispatch(new SelectAction(entering, exiting));
-  }
-
-  updateHover() {
-    let hovered: string = this.model.get('hovered');
-    let old_hovered: string = this.model.previous('hovered');
-    this.actionDispatcher.dispatchAll([
-      new HoverFeedbackAction(hovered, true),
-      new HoverFeedbackAction(old_hovered, false)
-    ]);
+  async updateHover() {
+    let hover = this.model.get('hover');
+    if (hover != null) {
+      let hovered: string = hover.get('ids');
+      let old_hovered: string = hover.previous('ids');
+      await this.actionDispatcher.dispatchAll([
+        new HoverFeedbackAction(hovered, true),
+        new HoverFeedbackAction(old_hovered, false)
+      ]);
+      this.model.diagramUpdated.emit(void 0);
+    }
   }
 
   async interaction_mode_changed() {
     // let interaction = this.model.get('interaction');
-    // console.log('interaction ', interaction);
   }
 
   async diagramLayout() {
-    let layout = this.model.get('mark_layout');
+    let layout = this.model.get('source')?.get('value');
     let symbols = this.model.get('symbols');
+    if (layout == null || symbols == null || this.source == null) {
+      // bailing
+      return null;
+    }
     await this.source.updateLayout(layout, symbols, this.div_id);
     this.model.layoutUpdated.emit();
+    this.model.diagramUpdated.emit();
   }
 
   normalizeElementIds(model_id: string | string[] | null) {

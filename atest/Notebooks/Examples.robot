@@ -21,11 +21,17 @@ ${SCREENS}        ${SCREENS ROOT}${/}notebook-examples
     Custom Elk Selectors Should Exist    @{SIMPLE CUSTOM}
 
 01_Linking
-    [Tags]    data:simple.json
+    [Tags]    data:simple.json    tool:fit
     Example Should Restart-and-Run-All    ${LINKING}
     ${counts} =    Create Dictionary    n=${2}    &{SIMPLE COUNTS}
+    Click Elk Tool    Fit
+    Click Elk Tool    Fit    1
     Elk Counts Should Be    &{counts}
-    Linked Elk Output Counts Should Be    &{counts}
+    Create Linked Elk Output View
+    Click Elk Tool    Fit    2
+    Click Elk Tool    Fit    3
+    Sleep    1s
+    Linked Elk Output Counts Should Be    &{counts}    open=${FALSE}
     Custom Elk Selectors Should Exist    @{SIMPLE CUSTOM}
 
 02_Transformer
@@ -39,7 +45,7 @@ ${SCREENS}        ${SCREENS ROOT}${/}notebook-examples
 03_App
     [Tags]    data:hier_tree.json    data:hier_ports.json    foo:bar
     Example Should Restart-and-Run-All    ${APP}
-    Elk Counts Should Be    n=${5}    &{HIER COUNTS}
+    Elk Counts Should Be    n=${4}    &{HIER COUNTS}
     Linked Elk Output Counts Should Be    &{HIER COUNTS}
     Custom Elk Selectors Should Exist    @{HIER PORT CUSTOM}
 

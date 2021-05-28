@@ -8,7 +8,7 @@ import { unpack_models as deserialize } from '@jupyter-widgets/base';
 
 import { ELK_DEBUG, NAME, VERSION } from './tokens';
 
-import { ELKDiagramModel } from './display_widget';
+import { ELKViewerModel } from './display_widget';
 
 import elkRawCSS from '!!raw-loader!../style/diagram.css';
 
@@ -35,8 +35,8 @@ export class ELKExporterModel extends WidgetModel {
 
   static serializers = {
     ...WidgetModel.serializers,
-    diagram: { deserialize },
-    app: { deserialize }
+    viewer: { deserialize },
+    diagram: { deserialize }
   };
 
   defaults() {
@@ -48,12 +48,12 @@ export class ELKExporterModel extends WidgetModel {
       _view_module: NAME,
       _view_name: ELKExporterView.view_name,
       _view_module_version: VERSION,
-      diagram: null,
+      viewer: null,
       value: null,
       enabled: true,
       extra_css: '',
       padding: 20,
-      app: null,
+      diagram: null,
       strip_ids: true,
       add_xml_header: true
     };
@@ -64,33 +64,32 @@ export class ELKExporterModel extends WidgetModel {
     return this.get('enabled') || true;
   }
 
-  get diagram(): ELKDiagramModel {
+  get viewer(): ELKViewerModel {
+    return this.get('viewer');
+  }
+
+  get diagram(): WidgetModel {
     return this.get('diagram');
   }
 
-  get app(): WidgetModel {
-    return this.get('app');
-  }
-
-  get app_raw_css(): string[] {
-    return this.app?.get('raw_css') || [];
+  get diagram_raw_css(): string[] {
+    return this.diagram?.get('raw_css') || [];
   }
 
   initialize(attributes: any, options: any) {
     super.initialize(attributes, options);
+    this.on('change:viewer', this._on_viewer_changed, this);
     this.on('change:diagram', this._on_diagram_changed, this);
-    this.on('change:app', this._on_app_changed, this);
+    this._on_viewer_changed();
     this._on_diagram_changed();
-    this._on_app_changed();
   }
 
-  _on_diagram_changed() {
-    ELK_DEBUG && console.warn('[export] diagram changed', arguments);
-    const { diagram } = this;
-    if (diagram?.layoutUpdated == null) {
+  _on_viewer_changed() {
+    ELK_DEBUG && console.warn('[export] viewer changed', arguments);
+    if (this.viewer?.diagramUpdated == null) {
       return;
     }
-    this.diagram.layoutUpdated.connect(this._schedule_update, this);
+    this.viewer.diagramUpdated.connect(this._schedule_update, this);
     if (!this.enabled) {
       return;
     }
@@ -98,20 +97,20 @@ export class ELKExporterModel extends WidgetModel {
   }
 
   is_an_elkmodel(model: WidgetModel) {
-    return model instanceof ELKDiagramModel;
+    return model instanceof ELKViewerModel;
   }
 
-  _on_app_changed() {
-    ELK_DEBUG && console.warn('[export] app changed', arguments);
-    const { app } = this;
-    if (app?.on != null) {
-      app.on('change:raw_css', this._schedule_update, this);
-      const children: WidgetModel[] = app.get('children') || [];
-      const diagrams = children.filter(this.is_an_elkmodel) as ELKDiagramModel[];
-      if (diagrams.length && diagrams[0].layoutUpdated) {
-        diagrams[0].layoutUpdated.connect(this._schedule_update, this);
+  _on_diagram_changed() {
+    ELK_DEBUG && console.warn('[export] diagram changed', arguments);
+    const { diagram } = this;
+    if (diagram?.on != null) {
+      diagram.on('change:raw_css', this._schedule_update, this);
+      const children: WidgetModel[] = diagram.get('children') || [];
+      const viewers = children.filter(this.is_an_elkmodel) as ELKViewerModel[];
+      if (viewers.length && viewers[0].diagramUpdated) {
+        viewers[0].diagramUpdated.connect(this._schedule_update, this);
       } else {
-        ELK_DEBUG && console.warn('[export] no app diagram ready', children);
+        ELK_DEBUG && console.warn('[export] no diagram ready', children);
       }
     }
   }
@@ -120,10 +119,10 @@ export class ELKExporterModel extends WidgetModel {
     if (!this.enabled) {
       return;
     }
-    let views = this.diagram.views;
+    let views = this.viewer.views;
 
-    if (this.app?.views) {
-      views = { ...views, ...this.app.views };
+    if (this.diagram?.views) {
+      views = { ...views, ...this.diagram.views };
     }
 
     if (!Object.keys(views).length) {
@@ -165,10 +164,10 @@ export class ELKExporterModel extends WidgetModel {
     const padding = this.get('padding');
     const strip_ids = this.get('strip_ids');
     const add_xml_header = this.get('add_xml_header');
-    const raw_app_css = this.app_raw_css;
+    const raw_diagram_css = this.diagram_raw_css;
     const rawStyle = `
         ${STANDALONE_CSS}
-        ${raw_app_css.join('\n')}
+        ${raw_diagram_css.join('\n')}
         ${this.get('extra_css') || ''}
     `;
     const style = `
@@ -178,6 +177,10 @@ export class ELKExporterModel extends WidgetModel {
         ]]>
       </style>`;
     const g: SVGGElement = svg.querySelector('g');
+    if (g == null) {
+      // bail if not g
+      return;
+    }
     const transform = g.attributes['transform'].value;
     let scaleFactor = 1.0;
     const scale = transform.match(/scale\((.*?)\)/);

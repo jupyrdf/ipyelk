@@ -14,12 +14,18 @@ class Point(BaseModel):
     x: float = 0
     y: float = 0
 
+    class Config:
+        copy_on_model_validation = False
+
     def __init__(self, x=0, y=0):
         super().__init__(x=x, y=y)
 
 
 class BaseShape(BaseModel):
     type: Optional[str]
+
+    class Config:
+        copy_on_model_validation = False
 
 
 class EdgeShape(BaseShape):
@@ -33,19 +39,22 @@ class ElementShape(BaseShape):
     y: Optional[float]
     width: Optional[float]
     height: Optional[float]
+    use: Optional[str] = Field(None, description="Meaning is specialized in subclasses")
 
     @classmethod
     def valid_subtypes(cls) -> Set[str]:
         """Iterate over subclasses and extracts the known `type` defaults"""
-        return set(c.__fields__["type"].default for c in cls.__subclasses__())
+        return set(c.__fields__["type"].default for c in cls.__subclasses__()) | {
+            cls.__fields__["type"].default,
+            None,
+        }
 
     @validator("type")
     def subtype_validator(cls, v):
-        """Checks that there is a subclass that defines the `type`
-        """
+        """Checks that there is a subclass that defines the `type`"""
         subtypes = cls.valid_subtypes()
         if v not in subtypes:
-            raise ValueError("Unexpected Subtype")
+            raise ValueError(f"Unexpected Subtype: `{v}` not in `{subtypes}`")
         return v
 
 
@@ -56,6 +65,7 @@ class PortShape(ElementShape):
 
 class LabelShape(ElementShape):
     type: Optional[str] = "label"
+    use: Optional[str] = Field(None, description="Symbol Identifier")
 
 
 class Icon(LabelShape):
@@ -64,7 +74,7 @@ class Icon(LabelShape):
 
 
 class NodeShape(ElementShape):
-    use: Optional[str] = Field(None, description="Meaning is specialized in subclasses")
+    pass
 
 
 class Path(NodeShape):
@@ -105,6 +115,7 @@ class Ellipse(NodeShape):
     ry: float = 0
 
     class Config:
+        copy_on_model_validation = False
         excluded = ["metadata"]
 
     def dict(self, **kwargs):
@@ -156,6 +167,7 @@ class Widget(NodeShape):
     widget: DOMWidget = Field(description="Ipywidgets as Foreign object html")
 
     class Config:
+        copy_on_model_validation = False
         arbitrary_types_allowed = True
 
     def dict(self, **kwargs):

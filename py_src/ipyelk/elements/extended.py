@@ -4,9 +4,9 @@ from typing import Dict, List, Optional, Type
 
 from pydantic import Field
 
-from ..diagram import layout_options as opt
 from ..util import merge
-from .elements import Edge, Label, LabelProperties, Node
+from . import layout_options as opt
+from .elements import Edge, Label, LabelProperties, Node, merge_excluded
 from .shapes import Icon
 
 record_opts = opt.OptionsWidget(
@@ -59,7 +59,15 @@ def is_edge(edge) -> bool:
 
 
 class Partition(Node):
-    default_edge: Type[Edge] = Field(default=Edge)
+    default_edge: Type[Edge] = Field(
+        default=Edge, description="default edge style to apply"
+    )
+
+    class Config:
+        copy_on_model_validation = False
+
+        # non-pydantic configs
+        excluded = merge_excluded(Node, "default_edge")
 
     def __getitem__(self, key):
         if isinstance(key, slice):
@@ -82,6 +90,12 @@ class Record(Node):
     )
     min_height: float = Field(default=20, description="Minimum height of a compartment")
 
+    class Config:
+        copy_on_model_validation = False
+
+        # non-pydantic configs
+        excluded = merge_excluded(Node, "min_height")
+
     def dict(self, **kwargs):
         # TODO need ability to resize the min width based on label/child max width
         for child in self.children:
@@ -100,16 +114,21 @@ class Record(Node):
 
 
 class Compartment(Record):
-    headings: List[str] = Field(default_factory=list)
-    content: List[str] = Field(default_factory=list)
     bullet_shape: Optional[Icon] = None
 
-    def dict(self, **kwargs):
-        if self.headings or self.content:
-            self.labels = self._make_labels()
-        return super().dict(**kwargs)
+    class Config:
+        copy_on_model_validation = False
 
-    def _make_labels(self):
+        # non-pydantic configs
+        excluded = merge_excluded(Node, "headings", "content", "bullet_shape")
+
+    def make_labels(
+        self, headings: List[str] = None, content: List[str] = None
+    ) -> "Compartment":
+        if headings is None:
+            headings = []
+        if content is None:
+            content = []
         bullet_label = []
         if self.bullet_shape:
             bullet_label = Label(
@@ -117,7 +136,7 @@ class Compartment(Record):
                 layoutOptions=bullet_opts,
                 selectable=True,
             )
-        if self.headings and not self.content:
+        if headings and not content:
             heading_label_opts = center_label_opts
             heading_cls = "compartment_title"
         else:
@@ -127,7 +146,7 @@ class Compartment(Record):
             Label(text=text, layoutOptions=heading_label_opts).add_class(
                 f"{heading_cls}_{i+1}"
             )
-            for i, text in enumerate(self.headings)
+            for i, text in enumerate(headings)
         ]
         content = [
             Label(
@@ -136,6 +155,7 @@ class Compartment(Record):
                 labels=bullet_label,
                 properties=LabelProperties(selectable=True),
             )
-            for text in self.content
+            for text in content
         ]
-        return heading + content
+        self.labels = [*heading, *content]
+        return self

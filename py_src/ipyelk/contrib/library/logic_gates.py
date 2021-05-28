@@ -9,8 +9,9 @@ Based on https://upload.wikimedia.org/wikipedia/commons/c/cb/Circuit_elements.sv
 from typing import Dict, List, Optional
 from uuid import uuid4
 
-from ...diagram import layout_options as opt
-from ...elements import Node, NodeProperties, Port, Symbol, SymbolSpec, shapes
+from ...elements import Node, NodeProperties, Port, Symbol, SymbolSpec
+from ...elements import layout_options as opt
+from ...elements import shapes
 
 
 class Gate(Symbol):
@@ -35,9 +36,11 @@ class Gate(Symbol):
         return [
             {
                 "id": f"{id}.{key}",
-                "key": str(key),
                 "width": 0.1,
                 "height": 0.1,
+                "properties": {
+                    "key": str(key),
+                },
                 "layoutOptions": opt.OptionsWidget(
                     options=[opt.PortSide(value=value)]
                 ).value,
@@ -57,7 +60,7 @@ class Gate(Symbol):
         ).value
 
     @classmethod
-    def make_defs(cls, symbols: Optional[List[Symbol]] = None) -> Dict[str, "Symbol"]:
+    def make_defs(cls, symbols: Optional[List[Symbol]] = None) -> SymbolSpec:
         symbols = [c() for c in cls.__subclasses__()]  # type: ignore
         return SymbolSpec().add(*symbols)
 
