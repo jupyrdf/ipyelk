@@ -33,7 +33,9 @@ class StyledWidget(W.Box):
         raw_css = []
         for _cls, attrs in self.style.items():
             if "@keyframes" not in _cls:
-                selector = f".{self._css_class}{_cls}"
+                # if the `_cls` begins with a whitespace prefix the selector
+                # with the style widget's unique class
+                selector = f".{self._css_class}{_cls}" if " " == _cls[0] else _cls
                 css_attributes = "\n".join(
                     [f"{key}: {value};" for key, value in attrs.items()]
                 )
