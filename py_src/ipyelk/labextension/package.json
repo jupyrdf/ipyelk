@@ -1,6 +1,6 @@
 {
   "name": "@jupyrdf/jupyter-elk",
-  "version": "2.0.0-alpha0",
+  "version": "2.0.0-alpha1",
   "description": "ElkJS widget for Jupyter",
   "keywords": [
     "jupyter",
@@ -80,7 +80,7 @@
       }
     },
     "_build": {
-      "load": "static/remoteEntry.96e99452d389c4633865.js",
+      "load": "static/remoteEntry.cc25a98f6a6b862e58e4.js",
       "extension": "./extension",
       "style": "./style"
     }

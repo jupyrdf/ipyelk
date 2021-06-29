@@ -1,5 +1,13 @@
 # Changelog
 
+## @jupyrdf/jupyter-elk 2.0.0-alpha1
+
+-
+
+## ipyelk 2.0.0a1
+
+---
+
 ## @jupyrdf/jupyter-elk 2.0.0-alpha0
 
 - Label Schema fix ([#73])

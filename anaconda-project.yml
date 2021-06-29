@@ -64,7 +64,6 @@ env_specs:
 
   ipyelk:
     packages:
-      - async-lru >=1,<2
       - bqplot >=0.12.20
       - importnb
       - ipython >=7
