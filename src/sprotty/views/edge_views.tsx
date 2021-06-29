@@ -18,7 +18,11 @@ import {
   Point,
   toDegrees,
   setClass,
-  angleOfPoint
+  angleOfPoint,
+  SChildElement,
+  BoundsAware,
+  getAbsoluteBounds,
+  isValidDimension,
 } from 'sprotty';
 import { ElkJunction, ElkEdge } from '../sprotty-model';
 import { ElkModelRenderer } from '../renderer';
@@ -65,6 +69,30 @@ export class ElkEdgeView extends PolylineEdgeView {
         {context.renderChildren(edge, { route })}
       </g>
     );
+  }
+
+
+  /**
+   * Check whether the given model element is in the current viewport. Use this method
+   * in your `render` implementation to skip rendering in case the element is not visible.
+   * This can greatly enhance performance for large models.
+   */
+   isVisible(model: Readonly<SChildElement & BoundsAware>, route: Point[], context: ElkModelRenderer): boolean {
+    if (context.targetKind === 'hidden') {
+        // Don't hide any element for hidden rendering
+        return true;
+    }
+    if (!isValidDimension(model.bounds)) {
+        // We should hide only if we know the element's bounds
+        return true;
+    }
+    const ab = getAbsoluteBounds(model);
+    // TODO investigate performance impact from `getBoundingClientRect`
+    const canvasBounds = context.source.element().getBoundingClientRect();
+    return ab.x <= canvasBounds.width
+        && ab.x + ab.width >= 0
+        && ab.y <= canvasBounds.height
+        && ab.y + ab.height >= 0;
   }
 
   protected renderLine(

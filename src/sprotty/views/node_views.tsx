@@ -19,7 +19,11 @@ import {
   setClass,
   Point,
   ViewportRootElement,
-  Dimension
+  Dimension,
+  SChildElement,
+  BoundsAware,
+  getAbsoluteBounds,
+  isValidDimension,
   // HtmlRootView,
   // PreRenderedElement,
   // PreRenderedView,
@@ -79,6 +83,29 @@ export class ElkNodeView extends RectangularNodeView {
    */
   isSymbol(node: ElkNode): boolean {
     return node?.properties?.isSymbol == true;
+  }
+
+  /**
+   * Check whether the given model element is in the current viewport. Use this method
+   * in your `render` implementation to skip rendering in case the element is not visible.
+   * This can greatly enhance performance for large models.
+   */
+  isVisible(model: Readonly<SChildElement & BoundsAware>, context: ElkModelRenderer): boolean {
+    if (context.targetKind === 'hidden') {
+        // Don't hide any element for hidden rendering
+        return true;
+    }
+    if (!isValidDimension(model.bounds)) {
+        // We should hide only if we know the element's bounds
+        return true;
+    }
+    const ab = getAbsoluteBounds(model);
+    // TODO investigate performance impact from `getBoundingClientRect`
+    const canvasBounds = context.source.element().getBoundingClientRect();
+    return ab.x <= canvasBounds.width
+        && ab.x + ab.width >= 0
+        && ab.y <= canvasBounds.height
+        && ab.y + ab.height >= 0;
   }
 }
 
