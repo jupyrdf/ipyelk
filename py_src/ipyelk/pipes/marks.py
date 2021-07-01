@@ -63,3 +63,8 @@ class MarkElementWidget(W.DOMWidget):
                 index = ElementIndex.from_els(self.value)
         self.index.elements = index
         return self.index
+
+    def _ipython_display_(self, **kwargs):
+        from IPython.display import JSON, display
+
+        display(JSON(self.value.dict()))

@@ -176,7 +176,7 @@ function get_labels(el: any): ElkLabel[] {
   if (el?.labels) {
     for (let label of el.labels as ElkLabel[]) {
       // size only those labels without a width or a height set
-      if (!label?.width || !label?.height) {
+      if (!label?.properties?.shape?.width || !label?.properties?.shape?.height) {
         labels.push(label);
       }
     }

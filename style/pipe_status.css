@@ -1,0 +1,77 @@
+/**
+ * Copyright (c) 2021 Dane Freeman.
+ * Distributed under the terms of the Modified BSD License.
+ */
+
+/*
+  Styling elk pipe status widget
+*/
+.elk-pipe span {
+  display: inline-block;
+  margin-left: var(--jp-widgets-margin);
+  margin-right: var(--jp-widgets-margin);
+}
+
+.elk-pipe-badge > svg {
+  height: var(--jp-widgets-font-size);
+}
+
+.elk-pipe-elapsed,
+.elk-pipe-status {
+  width: 60px;
+}
+
+.elk-pipe-name {
+  width: 180px;
+}
+
+.elk-pipe-disposition-waiting .elk-pipe-badge {
+  stroke: var(--jp-info-color3);
+  fill: none;
+  stroke-width: 2px;
+  color: var(--jp-info-color3);
+}
+
+.elk-pipe-disposition-waiting,
+.elk-pipe-accessor {
+  color: var(--jp-border-color1);
+}
+
+.elk-pipe-disposition-finished .elk-pipe-badge {
+  fill: var(--jp-success-color1);
+}
+
+.elk-pipe-disposition-running .elk-pipe-badge {
+  fill: var(--jp-info-color1);
+}
+
+.elk-pipe-disposition-error .elk-pipe-badge {
+  fill: var(--jp-warn-color0);
+}
+
+.elk-pipe-disposition-error .elk-pipe-error {
+  display: block;
+}
+
+.elk-pipe-disposition-error .elk-pipe-error > code {
+  background-color: var(--jp-error-color3);
+  width: 335px;
+  display: inline-block;
+}
+
+.widget-button.elk-pipe-toggle-btn,
+.elk-pipe-space {
+  width: 2em;
+  padding: 0px;
+  margin: 0px;
+  margin-bottom: auto;
+  background-color: unset;
+  height: var(--jp-code-line-height);
+  line-height: var(--jp-code-line-height);
+}
+.widget-button.elk-pipe-toggle-btn i {
+  transition: all 1s;
+}
+.elk-pipe-toggle-btn.elk-pipe-closed i {
+  transform: rotate(-90deg);
+}

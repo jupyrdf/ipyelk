@@ -129,6 +129,11 @@ class IDElement(BaseModel, abc.ABC):
             return self.id
         return Registry.get_id(self)
 
+    def _ipython_display_(self, **kwargs):
+        from IPython.display import JSON, display
+
+        display(JSON(self.dict()))
+
 
 class BaseElement(IDElement, abc.ABC):
     labels: List["Label"] = Field(default_factory=list)

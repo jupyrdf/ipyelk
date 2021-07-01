@@ -4,6 +4,7 @@
  */
 
 @import url('./diagram.css');
+@import url('./pipe_status.css');
 
 .jp-ElkView,
 .jp-ElkView .sprotty {

@@ -62,10 +62,14 @@ class Diagram(StyledWidget):
 
     @T.default("pipe")
     def _default_Pipe(self):
-        from .flow import DefaultFlow
+        from .flow import BrowserTextSizer, DefaultFlow
 
         progress_bar = self.get_tool(PipelineProgressBar)
-        return DefaultFlow(on_progress=progress_bar.update)
+        pipeline = DefaultFlow(on_progress=progress_bar.update)
+        for pipe in pipeline.pipes:
+            if isinstance(pipe, BrowserTextSizer):
+                W.dlink((self, "style"), (pipe, "style"))
+        return pipeline
 
     @T.observe("view")
     def _update_children(self, change: T.Bunch = None):
@@ -83,9 +87,10 @@ class Diagram(StyledWidget):
         self.pipe.inlet = self.source
         self.view.source = self.pipe.outlet
 
-    @T.observe("pipe", "source")
+    @T.observe("pipe", "source", "style")
     def _change_pipe(self, change):
         self._update_view_sources()
+        self.refresh()
 
     @T.default("tools")
     def _default_tools(self) -> List[Tool]:
@@ -140,7 +145,12 @@ class Diagram(StyledWidget):
         task: asyncio.Task = self.pipe.schedule_run()
 
         def update_view(future: asyncio.Task):
-            future.exception()
+            try:
+                future.exception()
+            except asyncio.CancelledError:
+                pass
+            except Exception as E:
+                raise E
             layout = self.pipe.outlet.value
             self.view.source.value = layout
             self.pipe.inlet.value = layout
