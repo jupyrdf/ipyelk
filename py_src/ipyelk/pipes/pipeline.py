@@ -7,7 +7,7 @@ import ipywidgets as W
 import traitlets as T
 
 from ..exceptions import BrokenPipe
-from .base import Pipe, PipeDisposition, PipeStatusView, SyncedOutletPipe
+from .base import Pipe, PipeStatus, PipeStatusView, SyncedOutletPipe
 
 
 class PipelineStatusView(PipeStatusView):
@@ -76,7 +76,7 @@ class Pipeline(SyncedOutletPipe):
             widget.update(self)
 
         update()
-        self.observe(update, ("disposition", "exception"))
+        self.observe(update, "status")
         return widget
 
     @T.observe("pipes", "inlet")
@@ -92,40 +92,31 @@ class Pipeline(SyncedOutletPipe):
 
     async def run(self):
         start = datetime.now()
-        # Clear exceptions and run time
-        for pipe in [self, *self.pipes]:
-            pipe.exception = None
-            pipe.elapsed = None
         self.check_dirty()
 
         # Look at enabled pipes
         for i, pipe in enumerate(self.pipes):
             # TODO use i and num_steps for reporting processing stage
-            start_time = datetime.now()
+            pipe_start_time = datetime.now()
             p_name = f"pipe {i}: {type(pipe)}"
-            if pipe.dirty:
-                self.status_update(PipeDisposition.running, pipe=pipe)
+            if pipe.status.dirty():
+                self.status_update(PipeStatus.running(), pipe=pipe)
                 try:
-
                     await pipe.run()
                 except Exception as err:
                     self.log.exception(f"Error running {p_name}")
-                    end_time = datetime.now()
                     self.status_update(
-                        PipeDisposition.error,
-                        exception=err,
+                        PipeStatus.error(
+                            exception=err,
+                            start_time=pipe_start_time,
+                        ),
                         pipe=pipe,
-                        elapsed=end_time - start_time,
                     )
                     raise err
-                pipe.dirty = False
             else:
                 pipe.outlet.value = pipe.inlet.value
-            end_time = datetime.now()
-            pipe.status_update(PipeDisposition.done, elapsed=end_time - start_time)
-
-        self.dirty = False
-        self.status_update(PipeDisposition.done, elapsed=end_time - start)
+            pipe.status_update(PipeStatus.finished(start_time=pipe_start_time))
+        self.status_update(PipeStatus.finished(start_time=start))
 
     def check_dirty(self) -> bool:
         # check pipes and propagate flow to downstream pipes
@@ -137,15 +128,13 @@ class Pipeline(SyncedOutletPipe):
                 reports |= set(pipe.reports)
         # pipeline is dirty if flows are added to reports from subpipes
         if len(reports):
-            self.dirty = True
-            self.disposition = PipeDisposition.waiting
+            self.status = PipeStatus.waiting()
         else:
-            self.dirty = False
-            self.disposition = PipeDisposition.done
+            self.status = PipeStatus.finished()
 
         self.observes = tuple(observes)
         self.reports = tuple(reports)
-        return self.dirty
+        return self.status.dirty()
 
     def check(self) -> bool:
         """Checks inlets and outlets of the pipeline and raises error is not connected

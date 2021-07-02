@@ -3,7 +3,7 @@
 import ipywidgets as W
 import traitlets as T
 
-from ..pipes import Pipe, PipeDisposition
+from ..pipes import Pipe
 from .tool import Tool
 
 
@@ -20,12 +20,10 @@ class PipelineProgressBar(Tool):
         self.pipe = pipe
         bar = self.bar
 
-        #         bar.description = pipe.__class__.__name__
-        bar.tooltip = f"{bar.description} {pipe.disposition}"
         bar.value = pipe.get_progress_value()
         bar.max = 1
 
-        if pipe.disposition is PipeDisposition.error:
+        if pipe.status.exception:
             bar.bar_style = "warning"
         else:
             bar.bar_style = ""

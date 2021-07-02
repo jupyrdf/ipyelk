@@ -2,7 +2,7 @@
 # Distributed under the terms of the Modified BSD License.
 import asyncio
 import re
-from datetime import timedelta
+from datetime import datetime, timedelta
 from enum import Enum
 from typing import Callable, Optional, Tuple
 
@@ -20,18 +20,57 @@ class PipeDisposition(Enum):
     error = "error"
 
 
-STEP = {
-    PipeDisposition.waiting: 0,
-    PipeDisposition.running: 0.5,
-    PipeDisposition.done: 1,
-}
+class PipeStatus(W.Widget):
 
-STATUS = {
-    PipeDisposition.waiting: "",
-    PipeDisposition.running: "running",
-    PipeDisposition.done: "ok",
-    PipeDisposition.error: "error",
-}
+    disposition = T.Instance(PipeDisposition, default_value=PipeDisposition.done)
+    elapsed: Optional[timedelta] = T.Instance(timedelta, allow_none=True)
+    exception = T.Instance(Exception, allow_none=True)
+    _task: asyncio.Future = None
+
+    STEPS = {
+        PipeDisposition.waiting: 0,
+        PipeDisposition.running: 0.5,
+        PipeDisposition.done: 1,
+    }
+
+    STATES = {
+        PipeDisposition.waiting: "",
+        PipeDisposition.running: "running",
+        PipeDisposition.done: "ok",
+        PipeDisposition.error: "error",
+    }
+
+    @classmethod
+    def waiting(cls):
+        return PipeStatus(disposition=PipeDisposition.waiting)
+
+    @classmethod
+    def running(cls):
+        return PipeStatus(disposition=PipeDisposition.running)
+
+    @classmethod
+    def finished(cls, start_time: Optional[datetime] = None):
+        return PipeStatus(
+            disposition=PipeDisposition.done,
+            elapsed=datetime.now() - start_time if start_time else None,
+        )
+
+    @classmethod
+    def error(cls, start_time: datetime, exception: Exception):
+        return PipeStatus(
+            disposition=PipeDisposition.error,
+            elapsed=datetime.now() - start_time,
+            exception=exception,
+        )
+
+    def step(self) -> float:
+        return self.STEPS.get(self.disposition)
+
+    def state(self) -> str:
+        return self.STATES.get(self.disposition)
+
+    def dirty(self) -> bool:
+        return self.disposition == PipeDisposition.waiting
 
 
 def rep_elapsed(delta: Optional[timedelta]):
@@ -51,12 +90,6 @@ def rep_elapsed(delta: Optional[timedelta]):
         return f"{seconds:.2g}s"
     else:
         return f"{seconds*1000:.3g}ms"
-
-
-def rep_err(self):
-    if not self.exception:
-        return ""
-    return str(self.exception)
 
 
 class PipeStatusView(W.VBox):
@@ -81,10 +114,11 @@ class PipeStatusView(W.VBox):
 
     def update(self, pipe: "Pipe"):
         error = ""
-        if self.include_exception and pipe.exception:
+        status = pipe.status
+        if self.include_exception and status.exception:
             error = (
                 '<span class="elk-pipe-error">'
-                f"<code>{rep_err(pipe)}</code>"
+                f"<code>{status.exception}</code>"
                 '<span class="elk-pipe-accessor">.error()</span>'
                 "</span>"
             )
@@ -99,11 +133,11 @@ class PipeStatusView(W.VBox):
             "</pre>"
         ).format(
             badge=self.badge,
-            elapsed=rep_elapsed(pipe.elapsed),
-            status=STATUS.get(pipe.disposition),
+            elapsed=rep_elapsed(status.elapsed),
+            status=status.state(),
             name=pipe.__class__.__name__,
             title=pipe.__class__,
-            css_cls=f"elk-pipe elk-pipe-disposition-{pipe.disposition.value}",
+            css_cls=f"elk-pipe elk-pipe-disposition-{status.disposition.value}",
             error=error,
         )
         self.html.value = value
@@ -111,18 +145,15 @@ class PipeStatusView(W.VBox):
 
 
 class Pipe(W.Widget):
-    disposition = T.Instance(PipeDisposition, default_value=PipeDisposition.done)
     enabled: bool = T.Bool(default_value=True)
     inlet: MarkElementWidget = T.Instance(MarkElementWidget, kw={})
     outlet: MarkElementWidget = T.Instance(MarkElementWidget, kw={})
-    dirty: bool = T.Bool(default_value=True)
     observes: Tuple[str] = TypedTuple(T.Unicode(), kw={})
     reports: Tuple[str] = TypedTuple(T.Unicode(), kw={})
     on_progress: Optional[Callable] = T.Any(allow_none=True)
-    exception = T.Instance(Exception, allow_none=True)
     _task: asyncio.Future = None
+    status: PipeStatus = T.Instance(PipeStatus, kw={})
     status_widget: W.DOMWidget = T.Instance(W.DOMWidget, allow_none=True)
-    elapsed: Optional[timedelta] = T.Instance(timedelta, allow_none=True)
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -135,7 +166,7 @@ class Pipe(W.Widget):
             widget.update(self)
 
         update()
-        self.observe(update, ("disposition", "exception"))
+        self.observe(update, "status")
         return widget
 
     def _ipython_display_(self, **kwargs):
@@ -169,43 +200,32 @@ class Pipe(W.Widget):
 
         if any(any(re.match(f"^{obs}$", f) for f in flow) for obs in self.observes):
             # mark this pipe as dirty so will run
-            self.dirty = True
-            self.disposition = PipeDisposition.waiting
+            self.status = PipeStatus.waiting()
             # add this pipes reporting to the outlet flow
             flow = tuple(set([*flow, *self.reports]))
         else:
-            self.dirty = False
-            self.disposition = PipeDisposition.done
+            self.status = PipeStatus.finished()
         self.outlet.flow = flow
-        return self.dirty
+        return self.status.dirty()
 
     def status_update(
         self,
-        disposition: PipeDisposition,
-        *,
-        exception: Exception = None,
+        status: PipeStatus,
         pipe: Optional["Pipe"] = None,
-        elapsed: Optional[timedelta] = None,
     ):
         if isinstance(pipe, Pipe):
-            pipe.status_update(
-                disposition=disposition, exception=exception, elapsed=elapsed
-            )
-        self.elapsed = elapsed
-        self.disposition = disposition
-
-        if exception:
-            self.exception = exception
+            pipe.status_update(status=status)
+        self.status = status
 
         if callable(self.on_progress):
             self.on_progress(self)
 
     def get_progress_value(self) -> float:
-        return STEP.get(self.disposition, 0)
+        return self.status.step()
 
     def error(self):
-        if self.exception:
-            raise self.exception
+        if self.status.exception:
+            raise self.status.exception
 
 
 class SyncedInletPipe(Pipe):
