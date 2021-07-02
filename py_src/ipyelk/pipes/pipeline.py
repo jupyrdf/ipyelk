@@ -50,7 +50,7 @@ class PipelineStatusView(PipeStatusView):
         self.children = children
 
     def update_children(self, pipe: "Pipeline"):
-        statuses = [p._dom_widget for p in pipe.pipes]
+        statuses = [p.status_widget for p in pipe.pipes]
         self.statuses = [
             W.HBox(
                 [
@@ -68,8 +68,8 @@ class Pipeline(SyncedOutletPipe):
         sync=True, **W.widget_serialization
     )
 
-    @T.default("_dom_widget")
-    def _default_dom_widget(self):
+    @T.default("status_widget")
+    def _default_status_widget(self):
         widget = PipelineStatusView()
 
         def update(change=None):

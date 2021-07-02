@@ -121,14 +121,14 @@ class Pipe(W.Widget):
     on_progress: Optional[Callable] = T.Any(allow_none=True)
     exception = T.Instance(Exception, allow_none=True)
     _task: asyncio.Future = None
-    _dom_widget: W.DOMWidget = T.Instance(W.DOMWidget, allow_none=True)
+    status_widget: W.DOMWidget = T.Instance(W.DOMWidget, allow_none=True)
     elapsed: Optional[timedelta] = T.Instance(timedelta, allow_none=True)
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-    @T.default("_dom_widget")
-    def _default_dom_widget(self):
+    @T.default("status_widget")
+    def _default_status_widget(self):
         widget = PipeStatusView()
 
         def update(change=None):
@@ -139,9 +139,9 @@ class Pipe(W.Widget):
         return widget
 
     def _ipython_display_(self, **kwargs):
-        if self._dom_widget is None:
+        if self.status_widget is None:
             raise NotImplementedError()
-        return self._dom_widget._ipython_display_(**kwargs)
+        return self.status_widget._ipython_display_(**kwargs)
 
     def schedule_run(self, change: T.Bunch = None) -> asyncio.Task:
         # schedule task on loop
