@@ -8,6 +8,7 @@ ${EXPORTER}       05_SVG_Exporter
 ${APP EXPORTER}    06_SVG_App_Exporter
 ${SIM PLUMBING}    07_Simulation
 ${SIM APP}        08_Simulation_App
+${TEXT STYLE}     14_Text_Styling
 ${CSS ELK VIEW}    .jp-ElkView
 ${CSS SPROTTY GRAPH}    .sprotty-graph
 ${CSS ELK NODE}    .elknode

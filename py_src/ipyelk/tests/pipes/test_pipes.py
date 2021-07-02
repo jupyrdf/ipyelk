@@ -27,7 +27,6 @@ async def test_pipe_check_dirty():
     )
     assert len(p.outlet.flow) == 0
     assert p.check_dirty()
-    assert p.dirty
     assert len(p.outlet.flow) == 2, f"Expected two flow flags. Recieved {p.outlet.flow}"
     # await p.run()
     # assert p.inlet.value is p.outlet.value
@@ -56,18 +55,18 @@ async def test_pipeline_check_dirty():
     # test pipeline with only `p1` dirty
     assert len(p.outlet.flow) == 0
     assert p.check_dirty()
-    assert p.dirty
-    assert p1.dirty
-    assert not p2.dirty
+    assert p.status.dirty()
+    assert p1.status.dirty()
+    assert not p2.status.dirty()
     assert len(p.outlet.flow) == 2, f"Expected two flow flags: `{p.outlet.flow}`"
     assert p.reports == f2, f"Expected pipeline reports to be f2: `{p.reports}`"
 
     # test pipeline with only `p2` dirty
     p.inlet.flow = f3
     assert p.check_dirty()
-    assert p.dirty
-    assert not p1.dirty
-    assert p2.dirty
+    assert p.status.dirty()
+    assert not p1.status.dirty()
+    assert p2.status.dirty()
     assert len(p.outlet.flow) == 1, f"Expected two flow flags. Recieved {p.outlet.flow}"
     assert p.reports == f3, f"Expected pipeline reports to be f3: `{p.reports}`"
 
@@ -76,6 +75,6 @@ async def test_pipeline_check_dirty():
     ), "Inlet value should not have propagated yet"
     await p.run()
     assert p.inlet.value is p.outlet.value, "Inlet value should have propagated"
-    assert not p.dirty, "Pipeline should not still be dirty"
-    assert not p1.dirty, "`p1` should not still be dirty"
-    assert not p2.dirty, "`p2` should not still be dirty"
+    assert not p.status.dirty(), "Pipeline should not still be dirty"
+    assert not p1.status.dirty(), "`p1` should not still be dirty"
+    assert not p2.status.dirty(), "`p2` should not still be dirty"

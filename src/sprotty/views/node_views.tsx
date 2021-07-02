@@ -53,7 +53,7 @@ export class ElkNodeView extends RectangularNodeView {
       setClass(mark, 'selected', node.selected);
     }
 
-    setClass(mark, node.type, true);
+    setClass(mark, node.type.replace(':', '-'), true);
     return (
       <g>
         {mark}
