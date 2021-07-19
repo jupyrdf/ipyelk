@@ -1,6 +1,3 @@
-
-
-
 class DoElk(W.VBox):
     app = T.Instance(ipyelk.Elk)
     _doit = T.Instance(PyFileDoit)

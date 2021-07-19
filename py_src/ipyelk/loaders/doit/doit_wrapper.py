@@ -1,7 +1,9 @@
+from pathlib import Path
+
 import doit
 import ipywidgets as W
 import traitlets as T
-from pathlib import Path
+
 
 class Doit(W.Widget):
     doit_ = T.Instance(doit.doit_cmd.DoitMain)
@@ -35,6 +37,7 @@ class PyFileDoit(FileDoit):
         self.doit_ = doit.doit_cmd.DoitMain(
             doit.cmd_base.ModuleTaskLoader(doit.loader.get_module(self.path))
         )
+
 
 if __name__ == "__main__":
     file = Path("../../../../dodo.py")
