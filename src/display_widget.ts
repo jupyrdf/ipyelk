@@ -24,11 +24,17 @@ import {
   HoverFeedbackAction,
   SelectAction,
   SelectionResult,
-  SModelRegistry,
+  // SModelRegistry,
+  // IModelFactory,
+  // SModelFactory,
+  SModelRootSchema,
+  SetModelAction,
+  UpdateModelAction,
   ToolManager,
   TYPES
 } from 'sprotty';
 
+// import { VNode } from 'snabbdom/vnode';
 import { NAME, VERSION, TAnyELKMessage, ELK_CSS } from './tokens';
 
 import createContainer from './sprotty/di-config';
@@ -45,6 +51,28 @@ import { PromiseDelegate } from '@lumino/coreutils';
 
 const POLL = 300;
 
+export class ELKControlModel extends DOMWidgetModel {
+  static model_name = 'ELKControlModel';
+  static serializers = {
+    ...DOMWidgetModel.serializers,
+    overlay: { deserialize }
+  };
+
+  defaults() {
+    let defaults = {
+      ...super.defaults(),
+
+      _model_name: ELKControlModel.model_name,
+      _model_module_version: VERSION,
+      //    _view_module: NAME,
+      //    _view_name: ELKViewerView.view_name,
+      //    _view_module_version: VERSION,
+      overlay: null
+    };
+    return defaults;
+  }
+}
+
 export class ELKViewerModel extends DOMWidgetModel {
   static model_name = 'ELKViewerModel';
   static serializers = {
@@ -54,7 +82,8 @@ export class ELKViewerModel extends DOMWidgetModel {
     hover: { deserialize },
     painter: { deserialize },
     zoom: { deserialize },
-    pan: { deserialize }
+    pan: { deserialize },
+    control_overlay: { deserialize }
   };
   layoutUpdated = new Signal<ELKViewerModel, void>(this);
   diagramUpdated = new Signal<ELKViewerModel, void>(this);
@@ -69,7 +98,8 @@ export class ELKViewerModel extends DOMWidgetModel {
       _view_name: ELKViewerView.view_name,
       _view_module_version: VERSION,
       symbols: {},
-      source: null
+      source: null,
+      control_overlay: null
     };
     return defaults;
   }
@@ -90,7 +120,8 @@ export class ELKViewerView extends DOMWidgetView {
   registry: ActionHandlerRegistry;
   actionDispatcher: ActionDispatcher;
   feedbackDispatcher: IFeedbackActionDispatcher;
-  elementRegistry: SModelRegistry;
+  // elementRegistry: SModelRegistry;
+  currentRoot: SModelRootSchema;
   was_shown = new PromiseDelegate<void>();
 
   initialize(parameters: any) {
@@ -135,8 +166,9 @@ export class ELKViewerView extends DOMWidgetView {
     const container = createContainer(this.div_id, this);
     this.container = container;
     this.source = container.get<JLModelSource>(TYPES.ModelSource);
+    this.source.diagramWidget = this;
     this.source.widget_manager = this.model.widget_manager as any;
-    this.elementRegistry = container.get(TYPES.SModelRegistry);
+    this.source.factory = container.get(TYPES.IModelFactory);
     this.toolManager = container.get<ToolManager>(TYPES.IToolManager);
     this.registry = container.get<ActionHandlerRegistry>(ActionHandlerRegistry);
     this.actionDispatcher = container.get<ActionDispatcher>(TYPES.IActionDispatcher);
@@ -149,10 +181,12 @@ export class ELKViewerView extends DOMWidgetView {
     this.model.on('change:interaction', this.interaction_mode_changed, this);
     this.model.on('msg:custom', this.handleMessage, this);
     this.model.on('change:symbols', this.diagramLayout, this);
+    this.model.on('change:control_overlay', this.updateControlOverlay, this);
 
     // init for the first time
     this.updateSelectedTool();
     this.updateHoverTool();
+    this.updateControlOverlay();
 
     this.touch(); //to sync back the diagram state
 
@@ -160,6 +194,10 @@ export class ELKViewerView extends DOMWidgetView {
     this.registry.register(SelectAction.KIND, this);
     this.registry.register(SelectionResult.KIND, this); //sprotty complains if doesn't have a SelectionResult handler
     this.registry.register(HoverFeedbackAction.KIND, this);
+
+    // getting hook for
+    this.registry.register(SetModelAction.KIND, this);
+    this.registry.register(UpdateModelAction.KIND, this);
 
     // Register Tools
     this.toolManager.registerDefaultTools(
@@ -171,6 +209,11 @@ export class ELKViewerView extends DOMWidgetView {
     this.diagramLayout().catch(err =>
       console.warn('ELK Failed initial view render', err)
     );
+  }
+
+  updateControlOverlay() {
+    let overlay = this.model.get('control_overlay');
+    this.source.control_overlay = overlay;
   }
 
   resize = (width = -1, height = -1) => {
@@ -199,11 +242,18 @@ export class ELKViewerView extends DOMWidgetView {
   handle(action: Action) {
     switch (action.kind) {
       case SelectAction.KIND:
-        this.source.getSelected().then(ids => {
-          let selection = this.model.get('selection');
-          if (selection != null) {
-            selection.set('ids', ids);
-            selection.save_changes();
+        this.source.getSelection().then(selection => {
+          let ids = [];
+          let nodes = [];
+          selection.forEach((node, i) => {
+            ids.push(node.id);
+            nodes.push(node);
+          });
+          let selectionTool = this.model.get('selection');
+          if (selectionTool != null) {
+            selectionTool.set('ids', ids);
+            selectionTool.save_changes();
+            this.setSelectedNodes(ids);
             this.model.diagramUpdated.emit(void 0);
           }
         });
@@ -220,6 +270,15 @@ export class ELKViewerView extends DOMWidgetView {
             this.model.diagramUpdated.emit(void 0);
           }
         }
+        break;
+      case SetModelAction.KIND:
+        let setModelAction: SetModelAction = action as SetModelAction;
+        const { newRoot } = setModelAction;
+        if (newRoot) {
+          this.currentRoot = newRoot;
+        }
+        break;
+      case UpdateModelAction.KIND:
         break;
       default:
         break;
@@ -240,8 +299,16 @@ export class ELKViewerView extends DOMWidgetView {
       let exiting: string[] = difference(old_selected, selected);
       let entering: string[] = difference(selected, old_selected);
       await this.actionDispatcher.dispatch(new SelectAction(entering, exiting));
+      this.setSelectedNodes(selected);
       this.model.diagramUpdated.emit(void 0);
     }
+  }
+
+  /*
+   * Keep reference of the current selected nodes on the selection widget
+   */
+  async setSelectedNodes(selected: string[]) {
+    this.source.selectedNodes = selected.map(id => <any>this.source.index.getById(id));
   }
 
   updateHoverTool() {

@@ -10,17 +10,35 @@ import {
   GetViewportAction,
   InitializeCanvasBoundsAction,
   LocalModelSource,
-  Viewport
+  Viewport,
+  Match,
+  Action,
+  SModelIndex,
+  SModelElementSchema,
+  SModelRootSchema,
+  SModelRoot,
+  SModelElement,
+  // SModelFactory,
+  SModelRegistry
 } from 'sprotty';
 import { ElkGraphJsonToSprotty, SSymbolGraphSchema } from './json/elkgraph-to-sprotty';
 import { ManagerBase } from '@jupyter-widgets/base';
 import { Widget } from '@lumino/widgets';
+// import { VNode } from 'snabbdom/vnode';
+import { ElkNode } from './sprotty-model';
+import { SSymbolModelFactory } from './renderer';
+import { ELK_DEBUG } from '../tokens';
 // import { WidgetManager } from '@jupyter-widgets/jupyterlab-manager';
 @injectable()
 export class JLModelSource extends LocalModelSource {
   elkToSprotty: ElkGraphJsonToSprotty;
   widget_manager: ManagerBase<Widget>;
-  // widget_manager: WidgetManager;
+  control_overlay: any;
+  selectedNodes: ElkNode[];
+  index: SModelIndex<SModelElementSchema>;
+  elementRegistry: SModelRegistry;
+  factory: SSymbolModelFactory;
+  diagramWidget: any;
 
   async updateLayout(layout, symbols, idPrefix: string) {
     this.elkToSprotty = new ElkGraphJsonToSprotty();
@@ -33,13 +51,35 @@ export class JLModelSource extends LocalModelSource {
     // TODO this promise resolves before ModelViewer rendering is done. need to hook into postprocessing
   }
 
-  async getSelected() {
-    let ids = [];
-    let selected = await this.getSelection();
-    selected.forEach((node, i) => {
-      ids.push(node.id);
-    });
-    return ids;
+  public get root(): SModelRoot {
+    return this.factory.root;
+  }
+
+  /*
+   * Helper method to return the appropriate sprotty model element in the current
+   * graph based on id
+   */
+  getById(id: string): SModelElement {
+    return this.factory.root.index.getById(id);
+  }
+
+  /**
+   * Submit the given model with an `UpdateModelAction` or a `SetModelAction` depending on the
+   * `update` argument. If available, the model layout engine is invoked first.
+   */
+  protected async doSubmitModel(
+    newRoot: SModelRootSchema,
+    update: boolean | Match[],
+    cause?: Action,
+    index?: SModelIndex<SModelElementSchema>
+  ): Promise<void> {
+    ELK_DEBUG && console.log('doSubmitModel');
+    super.doSubmitModel(newRoot, update, cause, index);
+    if (!index) {
+      index = new SModelIndex();
+      index.add(this.currentRoot);
+    }
+    this.index = index;
   }
 
   element(): HTMLElement {

@@ -2,6 +2,7 @@
 # Distributed under the terms of the Modified BSD License.
 
 from .collapser import ToggleCollapsedTool
+from .contol_overlay import ControlOverlay
 from .painter import Painter
 from .progress import PipelineProgressBar
 from .tool import Tool, ToolButton
@@ -12,6 +13,7 @@ from .view_tools import CenterTool, FitTool, Hover, Pan, Selection, SetTool, Zoo
 
 __all__ = [
     "CenterTool",
+    "ControlOverlay",
     "FitTool",
     "Hover",
     "Painter",

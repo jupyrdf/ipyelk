@@ -111,8 +111,8 @@ export default (containerId: string, view: DOMWidgetView) => {
     configureModelElement(context, 'node:comment', ElkNode, v.ElkCommentNodeView);
     configureModelElement(context, 'node:path', ElkNode, v.ElkPathNodeView);
     configureModelElement(context, 'node:svg', ElkNode, v.ElkSVGNodeView);
-    configureModelElement(context, 'node:html', ElkNode, v.ElkHTMLNodeView);
-    configureModelElement(context, 'node:widget', ElkNode, v.ElkHTMLNodeView);
+    configureModelElement(context, 'node:html', ElkNode, v.ElkJLNodeView);
+    configureModelElement(context, 'node:widget', ElkNode, v.ElkJLNodeView);
     configureModelElement(
       context,
       'node:compartment',

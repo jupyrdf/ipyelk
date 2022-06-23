@@ -228,8 +228,11 @@ export class ElkForeignObjectNodeView extends ElkNodeView {
   }
 }
 
+/**
+ * View for bridging the JupyterLab Widgets with Sprotty Elements
+ */
 @injectable()
-export class ElkHTMLNodeView extends ElkNodeView {
+export class ElkJLNodeView extends ElkNodeView {
   render(node: ElkNode, context: ElkModelRenderer): VNode | undefined {
     if (!this.isSymbol(node) && !this.isVisible(node, context)) {
       return;
@@ -247,10 +250,10 @@ export class ElkHTMLNodeView extends ElkNodeView {
       'g',
       {
         hook: {
-          insert: vnode => context.overlayContent(vnode, node, true),
-          destroy: vnode => context.overlayContent(vnode, node, false),
+          insert: vnode => context.registerJLWidgetNode(vnode, node, true),
+          destroy: vnode => context.registerJLWidgetNode(vnode, node, false),
           update: (oldnode, vnode) =>
-            context.overlayContent(vnode, node, this.isVisible(node, context))
+            context.registerJLWidgetNode(vnode, node, this.isVisible(node, context))
         }
       },
       [mark, <g class-elkchildren={true}>{this.renderChildren(node, context)}</g>]
