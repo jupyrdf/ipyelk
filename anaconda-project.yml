@@ -61,6 +61,8 @@ env_specs:
       - twine
       - wheel
       - rope
+    channels:
+      - https://conda.anaconda.org/conda-forge
 
   ipyelk:
     packages:
