@@ -3,7 +3,7 @@
     be careful about imports here:
 """
 
-# Copyright (c) 2021 Dane Freeman.
+# Copyright (c) 2022 ipyelk contributors.
 # Distributed under the terms of the Modified BSD License.
 
 import json
@@ -26,7 +26,7 @@ ARBITRARY_PATH_LENGTH = 32 if P.WIN else 64
 NOT_DEFINED = "!NOT DEFINED!"
 DEFAULT_KERNEL_NAME = "python3"
 
-COPYRIGHT = f"Copyright (c) {datetime.now().year} Dane Freeman."
+COPYRIGHT = f"Copyright (c) {datetime.now().year} ipyelk contributors."
 LICENSE = "Distributed under the terms of the Modified BSD License."
 
 

@@ -7,7 +7,7 @@
     See `doit list` for more options.
 """
 
-# Copyright (c) 2021 Dane Freeman.
+# Copyright (c) 2022 ipyelk contributors.
 # Distributed under the terms of the Modified BSD License.
 
 import json

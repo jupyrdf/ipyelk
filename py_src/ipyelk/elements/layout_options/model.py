@@ -2,7 +2,7 @@
 
     https://app.quicktype.io/?share=v69WIlc7rT81xJjmW3XY
 """
-# Copyright (c) 2021 Dane Freeman.
+# Copyright (c) 2022 ipyelk contributors.
 # Distributed under the terms of the Modified BSD License.
 
 # flake8: noqa

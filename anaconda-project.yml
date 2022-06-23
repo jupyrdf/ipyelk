@@ -73,7 +73,7 @@ env_specs:
       - networkx
       - nodejs >=14,<15
       - pandas
-      - pydantic
+      - pydantic >=1
       - python >=3.7
     channels:
       - https://conda.anaconda.org/conda-forge
@@ -122,9 +122,9 @@ env_specs:
       - black
       - isort
       - pyflakes
-      - flake8
+      - flake8 >=4
       - mypy
-
+      - importlib-metadata <4.3 # required constraint of flake8 4
   _utest:
     description: unit test environment. not actually created.
     packages:

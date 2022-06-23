@@ -1,4 +1,4 @@
-# Copyright (c) 2021 Dane Freeman.
+# Copyright (c) 2022 ipyelk contributors.
 # Distributed under the terms of the Modified BSD License.
 
 __version__ = "2.0.0a1"
