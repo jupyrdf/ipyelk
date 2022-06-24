@@ -10,7 +10,7 @@ ${JLAB XP CODE CELLS}    xpath://*[contains(@class, 'jp-NotebookPanel-notebook')
 ${JLAB XP LAST CODE CELL}    ${JLAB XP CODE CELLS}\[last()]
 ${JLAB XP LAST CODE PROMPT}    ${JLAB XP LAST CODE CELL}//*[contains(@class, 'jp-InputArea-prompt')]
 ${JLAB XP STDERR}    xpath://*[@data-mime-type="application/vnd.jupyter.stderr"]
-${JLAB XP KERNEL IDLE}    xpath://*[@data-icon="ui-components:circle-empty"]
+${JLAB XP KERNEL IDLE}    .jp-Toolbar-kernelStatus.jp-FilledCircleIcon
 ${JLAB CSS VERSION}    css:.jp-About-version
 ${JLAB CSS CREATE OUTPUT}    .p-Menu-item[data-command="notebook:create-output-view"]
 ${JLAB CSS LINKED OUTPUT}    .jp-LinkedOutputView
