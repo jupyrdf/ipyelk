@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2021 Dane Freeman.
+ * Copyright (c) 2022 ipyelk contributors.
  * Distributed under the terms of the Modified BSD License.
  */
 //inspired from :
@@ -65,8 +65,7 @@ export class NodeSelectToolMouseListener extends DragAwareHoverMouseListener {
   nonDraggingMouseUp(target: SModelElement, event: MouseEvent): Action[] {
     let entering: SModelElement[] = []; // elements entering selection
     let exiting: SModelElement[] = []; // element exiting selection
-
-    if (event.button === 0) {
+    if (event.button === 0 && !isJLWidget(event.target as Element)) {
       const selectableTarget = findParentByFeature(target, isSelectable);
       if (selectableTarget != null || target instanceof SModelRoot) {
         // multi-selection?
@@ -109,4 +108,12 @@ export class NodeSelectToolMouseListener extends DragAwareHoverMouseListener {
       setClass(vnode, 'selected', selectableTarget.selected);
     return vnode;
   }
+}
+
+/*
+ * Test is given dom element is a jupyter lab widget
+ */
+function isJLWidget(target: Element): boolean {
+  // TODO is this sufficiently robust?
+  return target?.classList?.contains('jupyter-widgets');
 }

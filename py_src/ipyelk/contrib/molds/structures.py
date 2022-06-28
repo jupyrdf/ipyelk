@@ -1,4 +1,4 @@
-# Copyright (c) 2021 Dane Freeman.
+# Copyright (c) 2022 ipyelk contributors.
 # Distributed under the terms of the Modified BSD License.
 from ...elements import Node, NodeProperties, shapes
 
@@ -26,8 +26,8 @@ def XCircle(radius=6) -> Node:
                 properties=NodeProperties(
                     shape=shapes.Path.from_list(
                         [
-                            (r + r * 2 ** -0.5, r + r * 2 ** -0.5),
-                            (r - r * 2 ** -0.5, r - r * 2 ** -0.5),
+                            (r + r * 2**-0.5, r + r * 2**-0.5),
+                            (r - r * 2**-0.5, r - r * 2**-0.5),
                         ]
                     )
                 )
@@ -36,8 +36,8 @@ def XCircle(radius=6) -> Node:
                 properties=NodeProperties(
                     shape=shapes.Path.from_list(
                         [
-                            (r - r * 2 ** -0.5, r + r * 2 ** -0.5),
-                            (r + r * 2 ** -0.5, r - r * 2 ** -0.5),
+                            (r - r * 2**-0.5, r + r * 2**-0.5),
+                            (r + r * 2**-0.5, r - r * 2**-0.5),
                         ]
                     )
                 )

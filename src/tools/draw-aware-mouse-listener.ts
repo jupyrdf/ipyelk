@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2021 Dane Freeman.
+ * Copyright (c) 2022 ipyelk contributors.
  * Distributed under the terms of the Modified BSD License.
  */
 import { Action, MouseListener, SModelElement, HoverFeedbackAction } from 'sprotty/lib';

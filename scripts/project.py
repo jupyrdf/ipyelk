@@ -3,7 +3,7 @@
     this should not import anything not in py36+ stdlib, or any local paths
 """
 
-# Copyright (c) 2021 Dane Freeman.
+# Copyright (c) 2022 ipyelk contributors.
 # Distributed under the terms of the Modified BSD License.
 
 import json

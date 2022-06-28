@@ -26,11 +26,12 @@ export class SGraphView implements IView {
     };
     let overlay = (
       <div class-sprotty-overlay={true} style={css_transform}>
-        {context.renderWidgets()}
+        {context.renderJLNodeWidgets()}
       </div>
     );
     return (
       <div class-sprotty-root={true}>
+        <div class-sprotty-overlay={true}>{context.renderJLOverlayControl()}</div>
         {graph}
         {overlay}
       </div>
