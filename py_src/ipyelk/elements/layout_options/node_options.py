@@ -412,10 +412,10 @@ class Padding(LayoutOptionWidget):
     metadata_provider = "core.options.CoreOptions"
     applies_to = ["parents", "nodes"]
 
-    top = T.Float(min_value=0, default_value=12)
-    bottom = T.Float(min_value=0, default_value=12)
-    left = T.Float(min_value=0, default_value=12)
-    right = T.Float(min_value=0, default_value=12)
+    top = T.Float(min=0, default_value=12)
+    bottom = T.Float(min=0, default_value=12)
+    left = T.Float(min=0, default_value=12)
+    right = T.Float(min=0, default_value=12)
 
     _traits = ["top", "bottom", "left", "right"]
 
@@ -486,7 +486,7 @@ class AspectRatio(LayoutOptionWidget):
     metadata_provider = "core.options.CoreOptions"
     applies_to = ["parents"]
 
-    ratio = T.Float(min_value=0, default_value=0.01)
+    ratio = T.Float(min=0, default_value=0.01)
 
     def _ui(self) -> List[W.Widget]:
         slider = W.FloatSlider(description="Aspect Ratio")

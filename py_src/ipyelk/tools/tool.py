@@ -67,7 +67,7 @@ class Tool(W.Widget):
 
 class ToolButton(Tool):
     handler: Callable = T.Any(allow_none=True)
-    description: str = T.Unicode(default="")
+    description: str = T.Unicode(default_value="")
 
     @T.default("ui")
     def _default_ui(self):

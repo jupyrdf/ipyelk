@@ -193,7 +193,15 @@ def lca(
     node1 = as_in_hierarchy(node1, hierarchy, el_map, nx_node_map)
     node2 = as_in_hierarchy(node2, hierarchy, el_map, nx_node_map)
 
-    ancestor = nx.lowest_common_ancestor(hierarchy, node1, node2)
+    if node1 is node2:
+        # self loops need to be owned by their parent
+        if not isinstance(node1, HierarchicalElement):
+            node = el_map[node1]
+        else:
+            node = node1
+        ancestor = node.get_parent()
+    else:
+        ancestor = nx.lowest_common_ancestor(hierarchy, node1, node2)
     if not isinstance(ancestor, HierarchicalElement):
         ancestor = el_map[ancestor]
     return ancestor

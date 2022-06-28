@@ -88,7 +88,7 @@ class Pipeline(SyncedOutletPipe):
             prev = pipe.outlet
         self.outlet = prev
 
-        self.schedule_run()
+        # self.schedule_run()
 
     async def run(self):
         start = datetime.now()
@@ -99,22 +99,23 @@ class Pipeline(SyncedOutletPipe):
             # TODO use i and num_steps for reporting processing stage
             pipe_start_time = datetime.now()
             p_name = f"pipe {i}: {type(pipe)}"
-            if pipe.status.dirty():
-                self.status_update(PipeStatus.running(), pipe=pipe)
-                try:
+            try:
+                if pipe.status.dirty():
+                    self.status_update(PipeStatus.running(), pipe=pipe)
                     await pipe.run()
-                except Exception as err:
-                    self.log.exception(f"Error running {p_name}")
-                    self.status_update(
-                        PipeStatus.error(
-                            exception=err,
-                            start_time=pipe_start_time,
-                        ),
-                        pipe=pipe,
-                    )
-                    raise err
-            else:
-                pipe.outlet.value = pipe.inlet.value
+                else:
+                    pipe.outlet.value = pipe.inlet.value
+            except Exception as err:
+                self.log.exception(f"Error running {p_name}")
+                self.status_update(
+                    PipeStatus.error(
+                        exception=err,
+                        start_time=pipe_start_time,
+                    ),
+                    pipe=pipe,
+                )
+                raise err
+
             pipe.status_update(PipeStatus.finished(start_time=pipe_start_time))
         self.status_update(PipeStatus.finished(start_time=start))
 
