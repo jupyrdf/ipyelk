@@ -84,4 +84,5 @@ ${SCREENS}        ${SCREENS ROOT}${/}notebook-examples
 14_Text_Styling
     [Tags]    gh:100
     Example Should Restart-and-Run-All    ${TEXT STYLE}
+    Sleep    2s
     Computed Element Style Should Be    .elklabel    fontWeight=700
