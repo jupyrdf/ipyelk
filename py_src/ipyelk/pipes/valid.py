@@ -5,7 +5,7 @@ from typing import Dict
 import traitlets as T
 from ipywidgets.widgets.trait_types import TypedTuple
 
-from ..elements import EdgeReport, IDReport
+from ..elements import EdgeReport, IDReport, Node
 from . import flows as F
 from .base import Pipe
 from .marks import MarkIndex
@@ -30,9 +30,8 @@ class ValidationPipe(Pipe):
             self.errors = self.collect_errors()
             if self.errors:
                 raise ValueError("Inlet value is not valid")
-            self.apply_fixes(index)
+            value = self.apply_fixes(index)
 
-            value = self.inlet.index.root
             if value is self.outlet.value:
                 # force refresh if same instance
                 self.outlet._notify_trait("value", None, value)
@@ -44,9 +43,7 @@ class ValidationPipe(Pipe):
                 raise ValueError("Outlet value is not valid")
 
     def get_reports(self, index: MarkIndex):
-        self.edge_report = index.elements.check_edges()
-        self.id_report = index.elements.check_ids(*self.edge_report.orphans)
-        self.schema_report = {}  # TODO run elkjson schema validator
+        self.edge_report, self.id_report = index.elements.get_reports()
 
     def collect_errors(self) -> Dict:
         errors = {}
@@ -66,7 +63,7 @@ class ValidationPipe(Pipe):
             errors["Schema Error"] = self.schema_report
         return errors
 
-    def apply_fixes(self, index: MarkIndex):
+    def apply_fixes(self, index: MarkIndex) -> Node:
         root = index.root
         if self.id_report.null_ids and self.fix_null_id:
             self.log.warning(f"fixing {len(self.id_report.null_ids)} ids")
@@ -83,3 +80,4 @@ class ValidationPipe(Pipe):
                 if new is None:
                     new = root
                 new.edges.append(edge)
+        return root

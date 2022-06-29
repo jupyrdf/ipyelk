@@ -177,8 +177,16 @@ class ElementIndex(BaseModel):
             if not node._parent:
                 roots.append(node)
         # TODO handle multiple roots by making one higher level root?
-        assert len(roots) == 1, "Multiple roots"
-        return roots[0]
+        assert len(roots) >= 1, "Multiple roots"
+        root = roots[0]
+        assert isinstance(root, Node), f"Root is not of type Node. Not {type(root)}."
+        assert (
+            len(root.ports) == 0
+        ), f"Root should not have any ports. Current root has `{len(root.ports)}`."
+        assert (
+            len(root.labels) == 0
+        ), f"Root should not have any labels. Current root has `{len(root.labels)}`."
+        return root
 
     def update(self, other: "ElementIndex"):
         fields = [
@@ -222,6 +230,9 @@ class ElementIndex(BaseModel):
         )
 
     def check_edges(self) -> EdgeReport:
+        """Check edges' endpoints for references to nodes outside of the current
+        hierarchy as well as which edges should be remapped to the appropriate
+        lowest common ancestor."""
         from ..loaders.nx.nxutils import get_owner
 
         orphans: Set[Node] = set()
@@ -253,11 +264,15 @@ class ElementIndex(BaseModel):
             owner = get_owner(edge, hierarchy=hierarchy, el_map=el_map)
             if el is not owner:
                 lca_mismatch[edge] = (el, owner)
-
         return EdgeReport(
             orphans=orphans,
             lca_mismatch=lca_mismatch,
         )
+
+    def get_reports(self) -> Tuple[EdgeReport, IDReport]:
+        edge_report = self.check_edges()
+        id_report = self.check_ids(*edge_report.orphans)
+        return edge_report, id_report
 
 
 class HierarchicalIndex(ElementIndex):
@@ -347,23 +362,27 @@ class HierarchicalIndex(ElementIndex):
         return key not in self.elements
 
     def is_null_edge(self, source, target) -> bool:
-        source_node = self.get_visible_node(source)
-        target_node = self.get_visible_node(target)
-        return source_node is target_node
+        source_node, source_hidden = self.get_visible_node(source)
+        target_node, target_hidden = self.get_visible_node(target)
+        # if either source or target are hidden check if mapped to same common ancestor
+        if source_hidden or target_hidden:
+            return source_node is target_node
+        return False
 
-    def get_visible_node(self, el_id: str) -> Node:
+    def get_visible_node(self, el_id: str) -> Tuple[Node, bool]:
         """Gets the visible node associated with the given el_id
 
         :param key: element id
-        :return: Closest Visible Node
+        :return: Closest Visible Node and if the original element was hidden
         """
-        if self.is_hidden(el_id) and self.vis_index:
+        hidden = self.is_hidden(el_id)
+        if hidden and self.vis_index:
             _, el_id = self.vis_index.get(el_id)
         element = self.get(el_id)
         if isinstance(element, Port):
             element = element._parent
         assert isinstance(element, Node)
-        return element
+        return element, hidden
 
 
 def iter_elements(*els: BaseElement) -> Iterator[BaseElement]:
