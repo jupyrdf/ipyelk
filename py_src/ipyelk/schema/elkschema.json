@@ -75,7 +75,7 @@
               "type": "array"
             }
           },
-          "required": ["id", "sections", "sources", "targets"],
+          "required": ["id", "sources", "targets"],
           "type": "object"
         },
         {
@@ -206,7 +206,6 @@
           "type": "number"
         }
       },
-      "required": ["id", "text"],
       "type": "object"
     },
     "AnyElkNode": {
@@ -341,7 +340,7 @@
           "$ref": "#/definitions/ElkPoint"
         }
       },
-      "required": ["endPoint", "id", "startPoint"],
+      "required": ["id", "startPoint", "endPoint"],
       "type": "object"
     },
     "ElkLabel": {
@@ -375,7 +374,6 @@
           "type": "number"
         }
       },
-      "required": ["id", "text"],
       "type": "object"
     },
     "ElkPoint": {
@@ -413,7 +411,7 @@
       "additionalProperties": {
         "type": "string"
       },
-      "description": "***************************************************************************** Copyright (c) 2019 TypeFox and others. All rights reserved. This program and the accompanying materials are made available under the terms of the Eclipse Public License v1.0 which accompanies this distribution, and is available at http://www.eclipse.org/legal/epl-v10.html *****************************************************************************",
+      "description": "***************************************************************************** Copyright (c) 2019 TypeFox and others.\n\nThis program and the accompanying materials are made  available under the terms of the Eclipse Public License 2.0  which is available at https://www.eclipse.org/legal/epl-2.0/ \n\nSPDX-License-Identifier: EPL-2.0 *****************************************************************************",
       "type": "object"
     },
     "Shape": {
