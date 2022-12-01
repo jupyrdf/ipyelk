@@ -80,7 +80,7 @@ export class ElkModelRenderer extends ModelRenderer {
     if (this.source.control_overlay) {
       let selected = this.getSelected();
       // filter selectedNodes...
-      if (selected.length == 0) {
+      if (selected.length == 0 || !selected[0]) {
         // exit is nothing is selected or no control_overlay
         return vnodes;
       }

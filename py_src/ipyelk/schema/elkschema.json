@@ -3,174 +3,50 @@
   "$schema": "http://json-schema.org/draft-07/schema#",
   "definitions": {
     "AnyElkEdgeWithProperties": {
-      "anyOf": [
-        {
-          "additionalProperties": false,
-          "properties": {
-            "id": {
-              "type": "string"
-            },
-            "junctionPoints": {
-              "items": {
-                "$ref": "#/definitions/ElkPoint"
-              },
-              "type": "array"
-            },
-            "labels": {
-              "items": {
-                "$ref": "#/definitions/ElkLabel"
-              },
-              "type": "array"
-            },
-            "layoutOptions": {
-              "$ref": "#/definitions/LayoutOptions"
-            },
-            "properties": {
-              "$ref": "#/definitions/ElkProperties"
-            }
-          },
-          "required": ["id"],
-          "type": "object"
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string"
         },
-        {
-          "additionalProperties": false,
-          "properties": {
-            "id": {
-              "type": "string"
-            },
-            "junctionPoints": {
-              "items": {
-                "$ref": "#/definitions/ElkPoint"
-              },
-              "type": "array"
-            },
-            "labels": {
-              "items": {
-                "$ref": "#/definitions/ElkLabel"
-              },
-              "type": "array"
-            },
-            "layoutOptions": {
-              "$ref": "#/definitions/LayoutOptions"
-            },
-            "properties": {
-              "$ref": "#/definitions/ElkProperties"
-            },
-            "sections": {
-              "items": {
-                "$ref": "#/definitions/ElkEdgeSection"
-              },
-              "type": "array"
-            },
-            "sources": {
-              "items": {
-                "type": "string"
-              },
-              "type": "array"
-            },
-            "targets": {
-              "items": {
-                "type": "string"
-              },
-              "type": "array"
-            }
+        "junctionPoints": {
+          "items": {
+            "$ref": "#/definitions/ElkPoint"
           },
-          "required": ["id", "sources", "targets"],
-          "type": "object"
+          "type": "array"
         },
-        {
-          "additionalProperties": false,
-          "properties": {
-            "bendPoints": {
-              "items": {
-                "$ref": "#/definitions/ElkPoint"
-              },
-              "type": "array"
-            },
-            "id": {
-              "type": "string"
-            },
-            "junctionPoints": {
-              "items": {
-                "$ref": "#/definitions/ElkPoint"
-              },
-              "type": "array"
-            },
-            "labels": {
-              "items": {
-                "$ref": "#/definitions/ElkLabel"
-              },
-              "type": "array"
-            },
-            "layoutOptions": {
-              "$ref": "#/definitions/LayoutOptions"
-            },
-            "properties": {
-              "$ref": "#/definitions/ElkProperties"
-            },
-            "source": {
-              "type": "string"
-            },
-            "sourcePoint": {
-              "$ref": "#/definitions/ElkPoint"
-            },
-            "sourcePort": {
-              "type": "string"
-            },
-            "target": {
-              "type": "string"
-            },
-            "targetPoint": {
-              "$ref": "#/definitions/ElkPoint"
-            },
-            "targetPort": {
-              "type": "string"
-            }
+        "labels": {
+          "items": {
+            "$ref": "#/definitions/AnyElkLabelWithProperties"
           },
-          "required": ["id", "source", "target"],
-          "type": "object"
+          "type": "array"
         },
-        {
-          "additionalProperties": false,
-          "properties": {
-            "id": {
-              "type": "string"
-            },
-            "junctionPoints": {
-              "items": {
-                "$ref": "#/definitions/ElkPoint"
-              },
-              "type": "array"
-            },
-            "labels": {
-              "items": {
-                "$ref": "#/definitions/AnyElkLabelWithProperties"
-              },
-              "type": "array"
-            },
-            "layoutOptions": {
-              "$ref": "#/definitions/LayoutOptions"
-            },
-            "properties": {
-              "$ref": "#/definitions/ElkProperties"
-            },
-            "sources": {
-              "items": {
-                "type": "string"
-              },
-              "type": "array"
-            },
-            "targets": {
-              "items": {
-                "type": "string"
-              },
-              "type": "array"
-            }
+        "layoutOptions": {
+          "$ref": "#/definitions/LayoutOptions"
+        },
+        "properties": {
+          "$ref": "#/definitions/ElkProperties"
+        },
+        "sections": {
+          "items": {
+            "$ref": "#/definitions/ElkEdgeSection"
           },
-          "required": ["id", "sources", "targets"],
-          "type": "object"
+          "type": "array"
+        },
+        "sources": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "targets": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
         }
-      ]
+      },
+      "required": ["id", "sources", "targets"],
+      "type": "object"
     },
     "AnyElkLabelWithProperties": {
       "additionalProperties": false,
@@ -416,6 +292,7 @@
     },
     "Shape": {
       "additionalProperties": false,
+      "description": "***************************************************************************** Copyright (c) 2019 TypeFox and others.\n\nThis program and the accompanying materials are made available under the terms of the Eclipse Public License 2.0 which is available at https://www.eclipse.org/legal/epl-2.0/\n\nSPDX-License-Identifier: EPL-2.0 *****************************************************************************",
       "properties": {
         "end": {
           "type": "string"

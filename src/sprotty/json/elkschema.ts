@@ -13,25 +13,17 @@ export interface AnyElkLabelWithProperties extends ELK.ElkLabel {
   labels?: AnyElkLabelWithProperties[];
 }
 
-export interface LazyElkEdge extends ELK.ElkEdge {
+export interface AnyElkEdgeWithProperties extends ELK.ElkExtendedEdge {
   sources: string[];
   targets: string[];
   labels?: AnyElkLabelWithProperties[];
+  properties?: ElkProperties;
 }
 
 export interface AnyElkPort extends ELK.ElkPort {
   properties?: ElkProperties;
   labels?: AnyElkLabelWithProperties[];
 }
-
-export type AnyElkEdge =
-  | ELK.ElkEdge
-  | ELK.ElkExtendedEdge
-  | ELK.ElkPrimitiveEdge
-  | LazyElkEdge;
-
-export type AnyElkEdgeWithProperties = AnyElkEdge & { properties?: ElkProperties };
-
 export interface AnyElkNode extends ELK.ElkNode {
   children?: AnyElkNode[];
   ports?: AnyElkPort[];
