@@ -19,7 +19,7 @@ import {
   setClass,
   Point,
   ViewportRootElement,
-  Dimension
+  Dimension,
   // HtmlRootView,
   // PreRenderedElement,
   // PreRenderedView,
