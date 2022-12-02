@@ -80,7 +80,7 @@ export class ElkModelRenderer extends ModelRenderer {
     if (this.source.control_overlay) {
       let selected = this.getSelected();
       // filter selectedNodes...
-      if (selected.length == 0) {
+      if (selected.length == 0 || !selected[0]) {
         // exit is nothing is selected or no control_overlay
         return vnodes;
       }
@@ -204,7 +204,18 @@ export class ElkModelRenderer extends ModelRenderer {
         widget_model,
         {}
       );
+
+      // initially render jl widget at "full" size. Then after questionable
+      // timeout... scale widget to fit inside the elk node.
+      let zoom = this.source.root['zoom'] || 1;
+      let el = view.pWidget.node;
+      el.style.transform = `scale(${1 / zoom})`;
+      el.style.transformOrigin = `top left`;
       Widget.attach(view.pWidget, vnode.elm as HTMLElement);
+
+      setTimeout(() => {
+        el.style.transform = '';
+      }, 500);
     }
   }
 

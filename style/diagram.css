@@ -115,3 +115,11 @@ symbol.elksymbol {
   fill: var(--jp-elk-stroke-hover-selected);
   transition: fill stroke var(--jp-elk-transition);
 }
+
+.elkcontainer.widget {
+  overflow: hidden;
+}
+
+.elkcontainer.widget .jupyter-widgets {
+  transition: transform 0.5s;
+}

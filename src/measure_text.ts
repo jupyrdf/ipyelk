@@ -45,7 +45,6 @@ export class ELKTextSizerModel extends DOMWidgetModel {
     super.initialize(attributes, options);
     ELK_DEBUG && console.warn('ELK Test Sizer Init');
     this.on('msg:custom', this.handleMessage, this);
-    (<any>window).sizer = this;
     ELK_DEBUG && console.warn('ELK Text Done Init');
   }
 

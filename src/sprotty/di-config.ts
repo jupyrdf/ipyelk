@@ -147,7 +147,13 @@ export default (containerId: string, view: DOMWidgetView) => {
       return (targetKind: RenderingTargetKind, processors: IVNodePostprocessor[]) => {
         const viewRegistry = ctx.container.get<ViewRegistry>(TYPES.ViewRegistry);
         const modelSource = ctx.container.get<JLModelSource>(TYPES.ModelSource);
-        return new ElkModelRenderer(viewRegistry, targetKind, processors, modelSource);
+        const renderer = new ElkModelRenderer(
+          viewRegistry,
+          targetKind,
+          processors,
+          modelSource
+        );
+        return renderer;
       };
     });
 

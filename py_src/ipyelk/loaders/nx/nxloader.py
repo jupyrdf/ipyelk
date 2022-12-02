@@ -33,8 +33,6 @@ class NXLoader(Loader):
         for n in graph.nodes():
             el = from_nx_node(n, graph)
             nx_node_map[el] = n
-            if not el.labels:
-                el.labels.append(Label(text=el.get_id()))
 
         # add hierarchy nodes
         for n in hierarchy.nodes():
@@ -67,6 +65,10 @@ class NXLoader(Loader):
 
             for el in index.iter_elements(root):
                 el.id = el.get_id()
+
+            for el, n in nx_node_map.items():
+                if not el.labels and el.id != root.id:
+                    el.labels.append(Label(text=el.get_id()))
 
         return MarkElementWidget(
             value=self.apply_layout_defaults(root),

@@ -12,6 +12,7 @@ PORT_CONSTRAINT_OPTIONS = {
     "Undefined": "UNDEFINED",
     "Free": "FREE",
     "Fixed Side": "FIXED_SIDE",
+    "Fixed Order": "FIXED_ORDER",
     "Fixed Ratio": "FIXED_RATIO",
     "Fixed Position": "FIXED_POS",
 }
