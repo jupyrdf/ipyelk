@@ -213,9 +213,9 @@ export class ELKViewerView extends DOMWidgetView {
     // timeout is ugly workaround for gh issue #94. Still potential for bounding
     // box being stale but added resize call to the `fit` and `center` actions
     // as additional protection.
-    setTimeout(()=>{
+    setTimeout(() => {
       this.resize();
-    }, 10*POLL);
+    }, 10 * POLL);
   }
 
   updateControlOverlay() {
@@ -224,7 +224,6 @@ export class ELKViewerView extends DOMWidgetView {
   }
 
   resize = (width = -1, height = -1) => {
-    console.log("resize");
     if (width === -1 || height === -1) {
       const rect = (this.el as HTMLDivElement).getBoundingClientRect();
       width = rect.width;
@@ -370,7 +369,7 @@ export class ELKViewerView extends DOMWidgetView {
   handleMessage(content: TAnyELKMessage) {
     switch (content.action) {
       case 'center':
-        this.resize();  // ensure bounds are accurate before centering
+        this.resize(); // ensure bounds are accurate before centering
         this.source.center(
           this.normalizeElementIds(content.model_id),
           content.animate,
@@ -378,7 +377,7 @@ export class ELKViewerView extends DOMWidgetView {
         );
         break;
       case 'fit':
-        this.resize();  // ensure bounds are accurate before fitting
+        this.resize(); // ensure bounds are accurate before fitting
         this.source.fit(
           this.normalizeElementIds(content.model_id),
           content.padding == null ? 0 : content.padding,

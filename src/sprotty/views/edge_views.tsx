@@ -18,7 +18,7 @@ import {
   Point,
   toDegrees,
   setClass,
-  angleOfPoint,
+  angleOfPoint
 } from 'sprotty';
 import { ElkJunction, ElkEdge } from '../sprotty-model';
 import { ElkModelRenderer } from '../renderer';
