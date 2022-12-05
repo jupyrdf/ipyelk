@@ -23,90 +23,170 @@ env:
 jobs:
   build:
     runs-on: ${{ matrix.os }}-latest
+    env:
+      BUILDING_IN_CI: 1
+    strategy:
+      fail-fast: true
+      matrix:
+        os: [ubuntu]
+        py: ['3.11']
+    steps:
+      - name: git checkout
+        uses: actions/checkout@v3
+
+      - name: setup (python)
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.py }}
+          architecture: x64
+
+      - name: setup (node)
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+
+      - name: cache (pip)
+        uses: actions/cache@v3
+        with:
+          path: ~/.cache/pip
+          key: |
+            ${{ env.CACHE_EPOCH }}-${{ runner.os }}-pip-build-${{ hashFiles('.github/requirements-build.txt') }}
+          restore-keys: |
+            ${{ env.CACHE_EPOCH }}-${{ runner.os }}-pip-build-
+
+      - name: cache (node)
+        uses: actions/cache@v3
+        id: cache-node-modules
+        with:
+          path: '**/node_modules'
+          key: |
+            ${{ env.CACHE_EPOCH }}-${{ runner.os }}-node-build-${{ hashFiles('yarn.lock') }}
+
+      - name: cache (yarn)
+        uses: actions/cache@v3
+        if: steps.cache-node-modules.outputs.cache-hit != 'true'
+        id: cache-yarn-packages
+        with:
+          path: .yarn-packages
+          key: |
+            ${{ env.CACHE_EPOCH }}-yarn-${{ runner.os }}-${{ hashFiles('yarn.lock') }}
+          restore-keys: |
+            ${{ env.CACHE_EPOCH }}-yarn-${{ runner.os }}-
+            ${{ env.CACHE_EPOCH }}-yarn-
+
+      - name: setup (pip)
+        run: pip install -U pip wheel setuptools
+
+      - name: setup (pip build)
+        run: pip install -U -v -r .github/requirements-build.txt
+
+      - name: check (pip)
+        run: |
+          set -eux
+          mkdir -p build/pip
+          pip freeze | tee build/pip/dist.pip.freeze
+          pip check
+
+      - name: build
+        shell: bash -l {0}
+        run: |
+          doit build || doit build
+
+      - name: build
+        shell: bash -l {0}
+        run: |
+          doit preflight:release
+
+      - name: publish dists
+        uses: actions/upload-artifact@v3
+        with:
+          name: ipyelk-${{ github.run_number }}-dist
+          path: ./dist
+
+  lint:
+    runs-on: ${{ matrix.os }}-latest
     strategy:
       fail-fast: false
       matrix:
         os: [ubuntu]
     steps:
       - name: git checkout
-        uses: actions/checkout@v2
-
-      - name: cache (conda)
-        uses: actions/cache@v1
-        with:
-          path: ~/conda_pkgs_dir
-          key:
-            ${{ runner.os }}-conda-${{ hashFiles('.github/environment.yml',
-            'anaconda-project-lock.yml') }}
-          restore-keys: |
-            ${{ runner.os }}-conda-
+        uses: actions/checkout@v3
 
       - name: cache (yarn)
-        uses: actions/cache@v1
+        uses: actions/cache@v3
         with:
-          path: .yarn-packages
+          path: node_modules/
           key: yarn-${{ runner.os }}-${{ hashFiles('yarn.lock', '.yarnrc') }}
-          restore-keys: |
-            yarn-${{ runner.os }}-
-            yarn-
 
       - name: base env (conda)
         uses: conda-incubator/setup-miniconda@v2
         with:
           environment-file: .github/environment.yml
-          use-only-tar-bz2: true
+          miniforge-variant: Mambaforge
+          use-mamba: true
 
-      - name: build
+      - name: lint
         shell: bash -l {0}
         run: |
-          doit -n4 lint release || doit lint release || exit 1
+          doit -n4 lint || doit lint || exit 1
 
-      - name: publish dists
-        uses: actions/upload-artifact@v2
+      - name: build docs
+        shell: bash -l {0}
+        run: doit -n4 docs
+
+      - name: upload docs
+        uses: actions/upload-artifact@v3
         with:
-          name: ipyelk dist ${{ github.run_number }}
-          path: ./dist
+          name: ipyelk-${{ github.run_number }}-docs
+          path: |
+            ./build/docs
+
+      - name: cache (docs)
+        uses: actions/cache@v3
+        with:
+          path: build/links
+          key: |
+            ${{ env.CACHE_EPOCH }}-links-${{ runner.os }}-${{ hashFiles('.github/environment.yml') }}
+          restore-keys: |
+            ${{ env.CACHE_EPOCH }}-links-${{ runner.os }}-
+            ${{ env.CACHE_EPOCH }}-links-
+
+      - name: docs
+        shell: bash -l {0}
+        run: doit -n4 checkdocs
 
   test:
-    runs-on: ${{ matrix.vm }}
+    runs-on: ${{ matrix.os }}-latest
     needs: [build]
     strategy:
       fail-fast: false
       matrix:
-        os:
-          - ubuntu
-          - macos
-          - windows
+        os: [ubuntu, macos, windows]
+        py: ['3.7', '3.11']
         include:
           - os: ubuntu
-            miniforge: Linux-x86_64.sh
-            vm: ubuntu-20.04
+            subdir: linux-64
           - os: macos
-            miniforge: MacOSX-x86_64.sh
-            vm: macos-latest
+            subdir: osx-64
           - os: windows
-            miniforge: Windows-x86_64.exe
-            vm: windows-latest
+            subdir: win-64
+          - py: '3.7'
+            artifact: sdist
+          - py: '3.11'
+            artifact: wheel
     env:
-      INSTALL_ARTIFACT: wheel
+      INSTALL_ARTIFACT: ${{ matrix.artifact }}
       TESTING_IN_CI: 'true'
       ATEST_RETRIES: '2'
+      IPYELK_PY: ${{ matrix.py }}
     steps:
       - name: configure line endings
         run: |
           git config --global core.autocrlf false
 
       - name: git checkout
-        uses: actions/checkout@v2
-
-      - name: cache (conda)
-        uses: actions/cache@v1
-        with:
-          path: ~/conda_pkgs_dir
-          key: |
-            ${{ env.CACHE_EPOCH }}-${{ runner.os }}-conda-${{ hashFiles('.github/environment.yml', 'anaconda-project-lock.yml') }}
-          restore-keys: |
-            ${{ env.CACHE_EPOCH }}-${{ runner.os }}-conda-
+        uses: actions/checkout@v3
 
       - name: env (conda)
         uses: conda-incubator/setup-miniconda@v2
@@ -114,32 +194,22 @@ jobs:
           environment-file: .github/environment.yml
           miniforge-variant: Mambaforge
           use-mamba: true
-      - name: cache (yarn)
-        uses: actions/cache@v1
-        with:
-          path: .yarn-packages
-          key: |
-            ${{ env.CACHE_EPOCH }}-yarn-${{ runner.os }}-${{ hashFiles('yarn.lock', '.yarnrc') }}
-          restore-keys: |
-            ${{ env.CACHE_EPOCH }}-yarn-${{ runner.os }}-
-            ${{ env.CACHE_EPOCH }}-yarn-
 
-      - uses: actions/download-artifact@v2
+      - uses: actions/download-artifact@v3
         with:
-          name: ipyelk dist ${{ github.run_number }}
+          name: ipyelk-${{ github.run_number }}-dist
           path: ./dist
 
       - name: test (linux)
         if: ${{ contains(matrix.os, 'ubuntu') }}
         shell: bash -l {0}
         run: |
-          export INSTALL_ARTIFACT=sdist
-          doit -n4 all || doit all || exit 1
+          doit -n4 test || doit test || exit 1
 
       - name: test (macos)
         if: ${{ contains(matrix.os, 'macos') }}
         shell: bash -l {0}
-        run: doit -n4 all || doit all || exit 1
+        run: doit -n4 test || doit test || exit 1
 
       - name: test (windows)
         if: ${{ contains(matrix.os, 'windows') }}
@@ -147,43 +217,15 @@ jobs:
         env:
           ATEST_PROCESSES: 1
           WIN_CI: 1
-        run: doit all || doit all || exit 1
+        run: doit test || doit test || exit 1
 
       - name: reports
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
-          name: ${{ job.status }} reports ${{ matrix.os }} ${{ github.run_number }}
+          name: |-
+            ipyelk-${{ github.run_number }}-${{ job.status }}-reports-${{ matrix.os }}-${{ matrix.py }}
           path: |
             ./atest/output
             ./build/htmcov
             ./build/pytest.html
         if: always()
-
-      - name: build docs
-        if: ${{ contains(matrix.os, 'ubuntu') }}
-        shell: bash -l {0}
-        run: doit -n4 docs
-
-      - name: upload docs
-        if: ${{ contains(matrix.os, 'ubuntu') }}
-        uses: actions/upload-artifact@v2
-        with:
-          name: ipyelk docs ${{ github.run_number }}
-          path: |
-            ./build/docs
-
-      - name: cache (docs)
-        if: ${{ contains(matrix.os, 'ubuntu') }}
-        uses: actions/cache@v1
-        with:
-          path: build/links
-          key: |
-            ${{ env.CACHE_EPOCH }}-links-${{ runner.os }}-${{ hashFiles('.github/environment.yml', 'anaconda-project-lock.yml') }}
-          restore-keys: |
-            ${{ env.CACHE_EPOCH }}-links-${{ runner.os }}-
-            ${{ env.CACHE_EPOCH }}-links-
-
-      - name: docs
-        if: ${{ contains(matrix.os, 'ubuntu') }}
-        shell: bash -l {0}
-        run: doit -n4 checkdocs

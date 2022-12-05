@@ -1,0 +1,325 @@
+{
+  "$ref": "#/definitions/AnyElkNode",
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "definitions": {
+    "AnyElkEdgeWithProperties": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "junctionPoints": {
+          "items": {
+            "$ref": "#/definitions/ElkPoint"
+          },
+          "type": "array"
+        },
+        "labels": {
+          "items": {
+            "$ref": "#/definitions/AnyElkLabelWithProperties"
+          },
+          "type": "array"
+        },
+        "layoutOptions": {
+          "$ref": "#/definitions/LayoutOptions"
+        },
+        "properties": {
+          "$ref": "#/definitions/ElkProperties"
+        },
+        "sections": {
+          "items": {
+            "$ref": "#/definitions/ElkEdgeSection"
+          },
+          "type": "array"
+        },
+        "sources": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "targets": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        }
+      },
+      "required": ["id", "sources", "targets"],
+      "type": "object"
+    },
+    "AnyElkLabelWithProperties": {
+      "additionalProperties": false,
+      "properties": {
+        "height": {
+          "type": "number"
+        },
+        "id": {
+          "type": "string"
+        },
+        "labels": {
+          "items": {
+            "$ref": "#/definitions/AnyElkLabelWithProperties"
+          },
+          "type": "array"
+        },
+        "layoutOptions": {
+          "$ref": "#/definitions/LayoutOptions"
+        },
+        "properties": {
+          "$ref": "#/definitions/ElkProperties"
+        },
+        "text": {
+          "type": "string"
+        },
+        "width": {
+          "type": "number"
+        },
+        "x": {
+          "type": "number"
+        },
+        "y": {
+          "type": "number"
+        }
+      },
+      "type": "object"
+    },
+    "AnyElkNode": {
+      "additionalProperties": false,
+      "properties": {
+        "children": {
+          "items": {
+            "$ref": "#/definitions/AnyElkNode"
+          },
+          "type": "array"
+        },
+        "edges": {
+          "items": {
+            "$ref": "#/definitions/AnyElkEdgeWithProperties"
+          },
+          "type": "array"
+        },
+        "height": {
+          "type": "number"
+        },
+        "id": {
+          "type": "string"
+        },
+        "labels": {
+          "items": {
+            "$ref": "#/definitions/AnyElkLabelWithProperties"
+          },
+          "type": "array"
+        },
+        "layoutOptions": {
+          "$ref": "#/definitions/LayoutOptions"
+        },
+        "ports": {
+          "items": {
+            "$ref": "#/definitions/AnyElkPort"
+          },
+          "type": "array"
+        },
+        "properties": {
+          "$ref": "#/definitions/ElkProperties"
+        },
+        "width": {
+          "type": "number"
+        },
+        "x": {
+          "type": "number"
+        },
+        "y": {
+          "type": "number"
+        }
+      },
+      "required": ["id"],
+      "type": "object"
+    },
+    "AnyElkPort": {
+      "additionalProperties": false,
+      "properties": {
+        "height": {
+          "type": "number"
+        },
+        "id": {
+          "type": "string"
+        },
+        "labels": {
+          "items": {
+            "$ref": "#/definitions/AnyElkLabelWithProperties"
+          },
+          "type": "array"
+        },
+        "layoutOptions": {
+          "$ref": "#/definitions/LayoutOptions"
+        },
+        "properties": {
+          "$ref": "#/definitions/ElkProperties"
+        },
+        "width": {
+          "type": "number"
+        },
+        "x": {
+          "type": "number"
+        },
+        "y": {
+          "type": "number"
+        }
+      },
+      "required": ["id"],
+      "type": "object"
+    },
+    "ElkEdgeSection": {
+      "additionalProperties": false,
+      "properties": {
+        "bendPoints": {
+          "items": {
+            "$ref": "#/definitions/ElkPoint"
+          },
+          "type": "array"
+        },
+        "endPoint": {
+          "$ref": "#/definitions/ElkPoint"
+        },
+        "id": {
+          "type": "string"
+        },
+        "incomingSections": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "incomingShape": {
+          "type": "string"
+        },
+        "labels": {
+          "items": {
+            "$ref": "#/definitions/ElkLabel"
+          },
+          "type": "array"
+        },
+        "layoutOptions": {
+          "$ref": "#/definitions/LayoutOptions"
+        },
+        "outgoingSections": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "outgoingShape": {
+          "type": "string"
+        },
+        "startPoint": {
+          "$ref": "#/definitions/ElkPoint"
+        }
+      },
+      "required": ["id", "startPoint", "endPoint"],
+      "type": "object"
+    },
+    "ElkLabel": {
+      "additionalProperties": false,
+      "properties": {
+        "height": {
+          "type": "number"
+        },
+        "id": {
+          "type": "string"
+        },
+        "labels": {
+          "items": {
+            "$ref": "#/definitions/ElkLabel"
+          },
+          "type": "array"
+        },
+        "layoutOptions": {
+          "$ref": "#/definitions/LayoutOptions"
+        },
+        "text": {
+          "type": "string"
+        },
+        "width": {
+          "type": "number"
+        },
+        "x": {
+          "type": "number"
+        },
+        "y": {
+          "type": "number"
+        }
+      },
+      "type": "object"
+    },
+    "ElkPoint": {
+      "additionalProperties": false,
+      "properties": {
+        "x": {
+          "type": "number"
+        },
+        "y": {
+          "type": "number"
+        }
+      },
+      "required": ["x", "y"],
+      "type": "object"
+    },
+    "ElkProperties": {
+      "additionalProperties": false,
+      "properties": {
+        "cssClasses": {
+          "type": "string"
+        },
+        "isSymbol": {
+          "type": "boolean"
+        },
+        "selectable": {
+          "type": "boolean"
+        },
+        "shape": {
+          "$ref": "#/definitions/Shape"
+        }
+      },
+      "type": "object"
+    },
+    "LayoutOptions": {
+      "additionalProperties": {
+        "type": "string"
+      },
+      "description": "***************************************************************************** Copyright (c) 2019 TypeFox and others.\n\nThis program and the accompanying materials are made  available under the terms of the Eclipse Public License 2.0  which is available at https://www.eclipse.org/legal/epl-2.0/ \n\nSPDX-License-Identifier: EPL-2.0\n*****************************************************************************",
+      "type": "object"
+    },
+    "Shape": {
+      "additionalProperties": false,
+      "description": "***************************************************************************** Copyright (c) 2019 TypeFox and others.\n\nThis program and the accompanying materials are made available under the terms of the Eclipse Public License 2.0 which is available at https://www.eclipse.org/legal/epl-2.0/\n\nSPDX-License-Identifier: EPL-2.0\n*****************************************************************************",
+      "properties": {
+        "end": {
+          "type": "string"
+        },
+        "height": {
+          "type": "number"
+        },
+        "start": {
+          "type": "string"
+        },
+        "type": {
+          "type": "string"
+        },
+        "use": {
+          "type": "string"
+        },
+        "width": {
+          "type": "number"
+        },
+        "x": {
+          "type": "number"
+        },
+        "y": {
+          "type": "number"
+        }
+      },
+      "type": "object"
+    }
+  }
+}

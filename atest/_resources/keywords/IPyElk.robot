@@ -1,13 +1,14 @@
 *** Settings ***
-Library           Collections
-Library           XML    WITH NAME    XML
-Library           OperatingSystem
-Resource          ../variables/IPyElk.robot
+Library     Collections
+Library     XML    WITH NAME    XML
+Library     OperatingSystem
+Resource    ../variables/IPyElk.robot
+
 
 *** Keywords ***
 Get All IPyElk Example File Names
     ${file names} =    List Files in Directory    ${IPYELK_EXAMPLES}
-    [Return]    ${file names}
+    RETURN    ${file names}
 
 Get All IPyElk Example Paths
     ${file names} =    Get All IPyElk Example File Names
@@ -15,7 +16,7 @@ Get All IPyElk Example Paths
     FOR    ${file}    IN    @{file names}
         Append To List    ${paths}    ${IPYELK_EXAMPLES}${/}${file}
     END
-    [Return]    ${paths}
+    RETURN    ${paths}
 
 Open IPyElk Notebook
     [Arguments]    ${notebook}    ${path}=${IPYELK_EXAMPLES}
@@ -58,7 +59,7 @@ Exported SVG should be valid XML
     [Arguments]    ${file}
     ${path} =    Set Variable    ${OUTPUT DIR}${/}home${/}${file}
     Wait Until Created    ${path}
-    [Return]    XML.Parse XML    ${file}
+    RETURN    XML.Parse XML    ${file}
 
 Custom Elk Selectors Should Exist
     [Arguments]    @{selectors}
@@ -87,29 +88,29 @@ Create Linked Elk Output View
 
 Linked Elk Output Counts Should Be
     [Arguments]    ${nodes}=${0}    ${edges}=${0}    ${labels}=${0}    ${ports}=${0}    ${n}=${1}    ${screen}=30-linked.png    ${open}=${TRUE}
-    Run Keyword If    ${open}    Create Linked Elk Output View
+    IF    ${open}    Create Linked Elk Output View
     Elk Counts Should Be    nodes=${nodes}    edges=${edges}    labels=${labels}    ports=${ports}    n=${n}
     ...    prefix=${JLAB CSS LINKED OUTPUT}${SPACE}    screen=${screen}
 
 Get Elk Node Count
     [Arguments]    ${prefix}=${EMPTY}    ${suffix}=${EMPTY}
     ${nodes} =    SeleniumLibrary.Get Element Count    css:${prefix}${CSS ELK NODE}${suffix}
-    [Return]    ${nodes}
+    RETURN    ${nodes}
 
 Get Elk Edge Count
     [Arguments]    ${prefix}=${EMPTY}    ${suffix}=${EMPTY}
     ${edges} =    SeleniumLibrary.Get Element Count    css:${prefix}${CSS ELK EDGE}${suffix}
-    [Return]    ${edges}
+    RETURN    ${edges}
 
 Get Elk Label Count
     [Arguments]    ${prefix}=${EMPTY}    ${suffix}=${EMPTY}
     ${labels} =    SeleniumLibrary.Get Element Count    css:${prefix}${CSS ELK LABEL}${suffix}
-    [Return]    ${labels}
+    RETURN    ${labels}
 
 Get Elk Port Count
     [Arguments]    ${prefix}=${EMPTY}    ${suffix}=${EMPTY}
     ${ports} =    SeleniumLibrary.Get Element Count    css:${prefix}${CSS ELK PORT}${suffix}
-    [Return]    ${ports}
+    RETURN    ${ports}
 
 Click Elk Tool
     [Arguments]    ${label}    ${index}=${0}

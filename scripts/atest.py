@@ -8,7 +8,6 @@ import os
 import shutil
 import sys
 import time
-from os.path import join
 
 import robot
 from pabot import pabot
@@ -33,25 +32,6 @@ def atest(attempt, extra_args):
     """perform a single attempt of the acceptance tests"""
     stem = get_stem(attempt, extra_args)
 
-    if "FIREFOX_BINARY" not in os.environ:
-        os.environ["FIREFOX_BINARY"] = shutil.which("firefox")
-
-        prefix = os.environ.get("CONDA_PREFIX")
-
-        if prefix:
-            app_dir = join(prefix, "bin", "FirefoxApp")
-            os.environ["FIREFOX_BINARY"] = {
-                "Windows": join(prefix, "Library", "bin", "firefox.exe"),
-                "Linux": join(app_dir, "firefox"),
-                "Darwin": join(app_dir, "Contents", "MacOS", "firefox"),
-            }[P.PLATFORM]
-
-    print("Will use firefox at", os.environ["FIREFOX_BINARY"])
-
-    assert os.path.exists(
-        os.environ["FIREFOX_BINARY"]
-    ), "No firefox found, this would not go well"
-
     if attempt != 1:
         previous = P.ATEST_OUT / f"{get_stem(attempt - 1, extra_args)}" / "output.xml"
         print(f"Attempt {attempt} will try to re-run tests from {previous}")
@@ -64,24 +44,15 @@ def atest(attempt, extra_args):
     out_dir = P.ATEST_OUT / stem
 
     args = [
-        "--name",
-        f"{P.PLATFORM}",
-        "--outputdir",
-        out_dir,
-        "--log",
-        out_dir / "log.html",
-        "--report",
-        out_dir / "report.html",
-        "--xunit",
-        out_dir / "xunit.xml",
-        "--variable",
-        f"OS:{P.PLATFORM}",
-        "--variable",
-        f"IPYELK_EXAMPLES:{P.EXAMPLES}",
-        "--variable",
-        f"""JUPYTERLAB_EXE:{" ".join(map(str, P.JUPYTERLAB_EXE))}""",
-        "--randomize",
-        "all",
+        *["--name", f"{P.PLATFORM}"],
+        *["--outputdir", out_dir],
+        *["--log", out_dir / "log.html"],
+        *["--report", out_dir / "report.html"],
+        *["--xunit", out_dir / "xunit.xml"],
+        *["--variable", f"OS:{P.PLATFORM}"],
+        *["--variable", f"IPYELK_EXAMPLES:{P.EXAMPLES}"],
+        *["--variable", f"""JUPYTERLAB_EXE:{" ".join(map(str, P.JUPYTERLAB_EXE))}"""],
+        *["--randomize", "all"],
         *(extra_args or []),
         *(os.environ.get("ATEST_ARGS", "").split()),
     ]
@@ -104,11 +75,9 @@ def atest(attempt, extra_args):
 
         # pabot args must come first
         args = [
-            "--processes",
-            PROCESSES,
+            *["--processes", PROCESSES],
             "--artifactsinsubfolders",
-            "--artifacts",
-            "png,log,svg",
+            *["--artifacts", "png,log,svg"],
             "--testlevelsplit",
             *args,
         ]

@@ -1,7 +1,27 @@
 {
   "directed": true,
-  "multigraph": true,
   "graph": {},
+  "links": [
+    {
+      "source": "n1",
+      "target": "n2",
+      "key": 0
+    },
+    {
+      "source": "n1",
+      "target": "n3",
+      "key": 0
+    },
+    {
+      "source": "n2",
+      "target": "n3",
+      "key": 0,
+      "properties": {
+        "cssClasses": "example-data-edge-class-from-flat"
+      }
+    }
+  ],
+  "multigraph": true,
   "nodes": [
     {
       "id": "n1"
@@ -22,26 +42,6 @@
           }
         }
       ]
-    }
-  ],
-  "links": [
-    {
-      "source": "n1",
-      "target": "n2",
-      "key": 0
-    },
-    {
-      "source": "n1",
-      "target": "n3",
-      "key": 0
-    },
-    {
-      "source": "n2",
-      "target": "n3",
-      "key": 0,
-      "properties": {
-        "cssClasses": "example-data-edge-class-from-flat"
-      }
     }
   ]
 }

@@ -9,7 +9,6 @@ import sys
 from hashlib import sha256
 from pathlib import Path
 
-import black
 import isort
 import nbformat
 from isort.api import sort_code_string
@@ -20,12 +19,7 @@ NODE = [shutil.which("node") or shutil.which("node.exe") or shutil.which("node.c
 
 NB_METADATA_KEYS = ["kernelspec", "language_info"]
 
-ISORT_CONFIG = isort.settings.Config(settings_path=P.SETUP_CFG)
-
-
-def blacken(source):
-    """apply black to a source string"""
-    return black.format_str(source, mode=black.FileMode(line_length=88))
+ISORT_CONFIG = isort.settings.Config(settings_path=P.PY_PROJ)
 
 
 def nblint_one(nb_node):
@@ -42,13 +36,7 @@ def nblint_one(nb_node):
         if not source.strip():
             has_empty += 1
         if cell_type == "markdown":
-            args = [
-                *P.PRETTIER,
-                "--stdin-filepath",
-                "foo.md",
-                "--prose-wrap",
-                "always",
-            ]
+            args = [*P.PRETTIER, "--stdin-filepath", "foo.md"]
             prettier = subprocess.Popen(
                 list(map(str, args)),
                 stdin=subprocess.PIPE,
@@ -69,7 +57,6 @@ def nblint_one(nb_node):
             if source.startswith("%"):
                 continue
             new = sort_code_string(source, config=ISORT_CONFIG)
-            new = blacken(new).rstrip()
             if new != source:
                 cell["source"] = new.splitlines(True)
                 changes += 1

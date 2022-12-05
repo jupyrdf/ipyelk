@@ -2,12 +2,12 @@
 
 ## Install
 
-- Get [Mambaforge](https://github.com/conda-forge/miniforge/releases/tag/4.9.2-5)
-- Get [anaconda-project](https://anaconda-project.readthedocs.io) and
-  [doit](https://pydoit.org)
+- Get [Mambaforge](https://github.com/conda-forge/miniforge)
+- Get [doit](https://pydoit.org) and
+  [conda-lock](https://github.com/conda-incubator/conda-lock)
 
 ```bash
-mamba install anaconda-project=0.8.4 doit=0.32
+mamba install doit conda-lock=1.2
 ```
 
 ## Get Started
@@ -34,23 +34,19 @@ Presently, on GitHub:
 
 ## Important Paths
 
-| Path                                  | Purpose                                              |
-| ------------------------------------- | ---------------------------------------------------- |
-| `dodo.py`                             | task automation tool                                 |
-| `anaconda-project.yml`                | environment templates and some task definitions      |
-| `anaconda-project-lock.yml`           | frozen environments                                  |
-| `setup.py` / `setup.cfg`              | package description for `ipyelk`                     |
-| `py_src/`                             | Python source for `ipyelk`                           |
-| `py_src/ipyelk/schema/elkschema.json` | JSON schema derived from the TypeScript source       |
-| `package.json/`                       | `npm` package description for `@jupyrdf/jupyter-elk` |
-| `yarn.lock`                           | frozen `npm` dependencies                            |
-| `src/`                                | TypeScript source for `@jupyrdf/jupyter-elk`         |
-| `atest/`                              | Robot Framework source for acceptance tests          |
+| Path                               | Purpose                                              |
+| ---------------------------------- | ---------------------------------------------------- |
+| `atest/`                           | Robot Framework source for acceptance tests          |
+| `dodo.py`                          | task automation tool                                 |
+| `js/`                              | TypeScript source for `@jupyrdf/jupyter-elk`         |
+| `package.json/`                    | `npm` package description for `@jupyrdf/jupyter-elk` |
+| `pyproject.toml`                   | package description for `ipyelk`                     |
+| `src/`                             | Python source for `ipyelk`                           |
+| `src/ipyelk/schema/elkschema.json` | JSON schema derived from the TypeScript source       |
+| `yarn.lock`                        | frozen `npm` dependencies                            |
 
 - Run `doit` to get ready to develop
 - Most commands are run with `doit all` (this is what CI does)
-- Most typescript-related commands are run with
-  `anaconda-project run jlpm <script in package.json>`
 
 ## Live Development
 
@@ -162,26 +158,25 @@ git push upstream --tags
     the distribution
 
 ```bash
-anaconda-project run npm login
-anaconda-project run npm publish
-anaconda-project run npm logout
-anaconda-project run twine upload where-you-expanded-the-archive/ipyelk-*
+npm login
+npm publish
+npm logout
+twine upload where-you-expanded-the-archive/ipyelk-*
 ```
 
 ## Updating Dependencies
 
 ### Python Dependencies
 
-- Edit the `env_specs` section of [project file](./anaconda-project.yml).
+- Edit the `dependencies` section of [environment specs](./.github/env_specs/) or the
+  [binder environment](./.binder/environment.yml).
 - Run:
 
 ```bash
-python scripts/lock.py
-doit lint
+doit lock
 ```
 
-- Commit the changes to the project file and the
-  [project lock file](./anaconda-project-lock.yml).
+- Commit the changes to the env specs and the [lock files](./.github/locks).
 
 ### Browser Dependencies
 
@@ -189,7 +184,7 @@ doit lint
 - Run:
 
 ```bash
-doit setup:js
+doit setup:js || doit setup:js || doit setup:js
 doit lint
 ```
 

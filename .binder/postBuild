@@ -1,0 +1,14 @@
+#!/usr/bin/env python3
+# Copyright (c) 2022 ipyelk contributors.
+# Distributed under the terms of the Modified BSD License.
+
+import os
+import subprocess
+
+os.environ.update(IN_BINDER="1")
+
+subprocess.call(["doit", "-n4"])
+subprocess.call(["doit", "list"])
+subprocess.check_call(["doit"])
+
+print(">>> OK")

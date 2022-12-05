@@ -1,0 +1,3 @@
+importnb ; platform_machine == "wasm32"
+ipyelk ; platform_machine == "wasm32"
+bqplot ; platform_machine == "wasm32"

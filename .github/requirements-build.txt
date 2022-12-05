@@ -1,0 +1,3 @@
+doit
+flit >=3.7.1
+jupyterlab >=3,<4
