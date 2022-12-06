@@ -12,7 +12,6 @@ build:
 sphinx:
   builder: html
   configuration: docs/conf.py
-  fail_on_warning: true
 
 conda:
-  environment: docs/rtd.yml
+  environment: .binder/environment.yml
