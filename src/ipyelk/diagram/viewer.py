@@ -12,6 +12,24 @@ from ..tools import CenterTool, ControlOverlay, FitTool, Hover, Pan, Selection, 
 
 
 class Viewer(W.Widget):
+    """Generic Viewer of ELK Json diagrams. Currently only mainly used by :py:class:`~ipyelk.diagram.SprottyViewer`
+
+    Attributes
+    ----------
+    source: :py:class:`~ipyelk.pipes.MarkElementWidget`
+
+    selection: :py:class:`~ipyelk.tools.Selection`
+
+    hover: :py:class:`~ipyelk.tools.Hover`
+
+    zoom: :py:class:`~ipyelk.tools.Zoom`
+
+    pan: :py:class:`~ipyelk.tools.Pan`
+
+    control_overlay: :py:class:`~ipyelk.tools.ControlOverlay`
+
+    """
+
     source: MarkElementWidget = T.Instance(MarkElementWidget, allow_none=True).tag(
         sync=True, **W.widget_serialization
     )

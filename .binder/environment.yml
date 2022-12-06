@@ -51,4 +51,3 @@ dependencies:
   - wheel
   - pip:
     - jupyterlite ==0.1.0b15
-    - autodoc-traits

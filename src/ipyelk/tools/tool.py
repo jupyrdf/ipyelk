@@ -66,6 +66,11 @@ class Tool(W.Widget):
 
 
 class ToolButton(Tool):
+    """Generic Tool that provides a simple button UI
+
+    :param handler: Called when button is pressed.
+    """
+
     handler: Callable = T.Any(allow_none=True)
     description: str = T.Unicode(default_value="")
 

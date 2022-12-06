@@ -4,7 +4,8 @@
 .. currentmodule:: ipyelk.pipes
 .. autoclass:: ipyelk.pipes.Pipe
     :members:
-
+.. autoclass:: ipyelk.pipes.Pipeline
+    :members:
 ```
 
 ```{eval-rst}
@@ -13,8 +14,6 @@
     :members:
 
 ```
-
-## Layout Widget
 
 ```{eval-rst}
 .. currentmodule:: ipyelk.pipes

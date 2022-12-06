@@ -175,6 +175,7 @@ class Pipe(W.Widget):
         return self.status_widget._repr_mimebundle_(**kwargs)
 
     def schedule_run(self, change: T.Bunch = None) -> asyncio.Task:
+        """Test2"""
         # schedule task on loop
         if self._task:
             self._task.cancel()

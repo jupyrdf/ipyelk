@@ -20,22 +20,13 @@ from .viewer import Viewer
 
 class SprottyViewer(DOMWidget, Viewer):
     """Jupyterlab widget for displaying and interacting with views generated
-    from elk json.
+    from ELK JSON.
 
-    Setting the instance's `value` traitlet to valid `elk json
+    Setting the instance's `value` traitlet to valid `Eclipse Layout Kernal JSON
     <https://www.eclipse.org/elk/documentation/tooldevelopers/
     graphdatastructure/jsonformat.html>`_  will call the `elkjs layout method
     <https://github.com/kieler/elkjs>`_ and display the returned `mark_layout`
     using `sprotty <https://github.com/eclipse/sprotty>`_.
-
-    :param mark_layout: Input elk json layout
-    :type mark_layout: Dict
-    :param selected: elk ids of selected marks
-    :type selected: Tuple[str]
-    :param hovered: elk id of currently hovered mark
-    :type hovered: str
-    :param symbols: Symbol mapping to use for rendering
-    :type symbols: SymbolSpec
 
     """
 

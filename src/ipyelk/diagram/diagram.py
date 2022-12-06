@@ -20,19 +20,20 @@ from .viewer import Viewer
 class Diagram(StyledWidget):
     """An Elk diagramming widget to help coordinate the
     :py:class:`~ipyelk.diagram.viewer.Viewer` and
-    :py:class:`~ipyelk.transformers.AbstractTransformer`
+    :py:class:`~ipyelk.pipes.Pipe`
 
-    Attributes
-    ----------
 
-    transformer: :py:class:`~ipyelk.transformers.AbstractTransformer`
-        Transformer to convert source objects into valid elk json value
-    viewer: :py:class:`~ipyelk.diagram.viewer.Viewer`
+    :param source: :py:class:`~ipyelk.pipes.MarkElementWidget`
+    :param pipe: :py:class:`~ipyelk.pipes.Pipe`
+    :param view: :py:class:`~ipyelk.diagram.viewer.Viewer`
+    :param tools: tuple :py:class:`~ipyelk.tools.Tool`
+    :param symbols: :py:class:`~ipyelk.elements.SymbolSpec`
 
-    :param toolbar: Toolar for widget
     """
 
-    source: MarkElementWidget = T.Instance(MarkElementWidget, kw={})
+    source: MarkElementWidget = T.Instance(
+        MarkElementWidget, kw={}, help="Syncs Elk JSON Elements"
+    )
 
     pipe: Pipe = T.Instance(Pipe).tag(sync=True, **W.widget_serialization)
     view: Viewer = T.Instance(Viewer).tag(sync=True, **W.widget_serialization)
@@ -120,6 +121,10 @@ class Diagram(StyledWidget):
         return toolbar
 
     def get_tool(self, tool_type: Type[Tool]) -> Tool:
+        """Get the tool that matches the given Tool type.
+
+        :param tool_type:
+        """
         matches = [tool for tool in self.tools if type(tool) is tool_type]
         num_matches = len(matches)
         if num_matches > 1:
@@ -140,7 +145,8 @@ class Diagram(StyledWidget):
         return self
 
     def refresh(self, change: T.Bunch = None) -> asyncio.Task:
-        """Create asynchronous refresh task"""
+        """Create asynchronous refresh task which will update the view given any
+        changes."""
         self.log.debug("Refreshing diagram")
         task: asyncio.Task = self.pipe.schedule_run()
 
