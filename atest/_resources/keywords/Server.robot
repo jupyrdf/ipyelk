@@ -1,12 +1,13 @@
 *** Settings ***
-Library           OperatingSystem
-Library           Process
-Library           String
-Resource          Lab.robot
-Resource          Browser.robot
-Resource          Meta.robot
-Resource          ../variables/Server.robot
-Library           ../../_libraries/Ports.py
+Library     OperatingSystem
+Library     Process
+Library     String
+Resource    Lab.robot
+Resource    Browser.robot
+Resource    Meta.robot
+Resource    ../variables/Server.robot
+Library     ../../_libraries/Ports.py
+
 
 *** Keywords ***
 Setup Server and Browser
@@ -40,18 +41,20 @@ Setup Server and Browser
     Set Tags    lab:${LAB VERSION}
 
 Create Lab Launch Command
-    [Arguments]    ${root}
     [Documentation]    Create a JupyterLab CLI shell string, escaping for traitlets
+    [Arguments]    ${root}
     ${WORKSPACES DIR} =    Set Variable    ${OUTPUT DIR}${/}workspaces
-    ${app args} =    Set Variable    --no-browser --debug --LabApp.base_url\='${URL PREFIX}' --port\=${PORT} --LabApp.token\='${TOKEN}' --ExtensionApp.open_browser\=False --ServerApp.open_browser\=False
-    ${path args} =    Set Variable    --LabApp.user_settings_dir\='${SETTINGS DIR.replace('\\', '\\\\')}' --LabApp.workspaces_dir\='${WORKSPACES DIR.replace('\\', '\\\\')}'
+    ${app args} =    Set Variable
+    ...    --no-browser --debug --LabApp.base_url\='${URL PREFIX}' --port\=${PORT} --LabApp.token\='${TOKEN}' --ExtensionApp.open_browser\=False --ServerApp.open_browser\=False
+    ${path args} =    Set Variable
+    ...    --LabApp.user_settings_dir\='${SETTINGS DIR.replace('\\', '\\\\')}' --LabApp.workspaces_dir\='${WORKSPACES DIR.replace('\\', '\\\\')}'
     ${cmd} =    Set Variable
     ...    ${JUPYTERLAB_EXE} ${app args} ${path args}
-    [Return]    ${cmd}
+    RETURN    ${cmd}
 
 Create Notebok Server Config
-    [Arguments]    ${home}
     [Documentation]    Copies in notebook server config file to disables npm/build checks
+    [Arguments]    ${home}
     Copy File    ${FIXTURES}${/}${NBSERVER CONF}    ${home}${/}${NBSERVER CONF}
 
 Initialize User Settings

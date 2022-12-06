@@ -1,9 +1,10 @@
 .yarn-packages/
 **/__pycache__/**/*
 **/.ipynb_checkpoints/**/*
+**/.mypy_cache/**
 build/
 envs/
 lib/
+lite/.cache
 node_modules/
-py_src/ipyelk/labextension
-**/.mypy_cache/**
+_d/

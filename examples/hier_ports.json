@@ -1,24 +1,6 @@
 {
   "directed": true,
-  "multigraph": true,
   "graph": {},
-  "nodes": [
-    {
-      "id": "n0",
-      "properties": {
-        "cssClasses": "example-data-node-class-from-ports"
-      }
-    },
-    {
-      "id": "n1"
-    },
-    {
-      "id": "n2"
-    },
-    {
-      "id": "n3"
-    }
-  ],
   "links": [
     {
       "sourcePort": "x",
@@ -61,6 +43,24 @@
       "source": "n1",
       "target": "n3",
       "key": 1
+    }
+  ],
+  "multigraph": true,
+  "nodes": [
+    {
+      "id": "n0",
+      "properties": {
+        "cssClasses": "example-data-node-class-from-ports"
+      }
+    },
+    {
+      "id": "n1"
+    },
+    {
+      "id": "n2"
+    },
+    {
+      "id": "n3"
     }
   ]
 }

@@ -1,7 +1,10 @@
+0a1
 2FA
 ci
+composable
 conda
 doit
+evented
 ipyelk
 js
 jupyrdf
@@ -12,11 +15,14 @@ labextension
 maintenance
 Mambaforge
 networkx
+NetworkX
 npm
 PRs
+PyData
 pypi
 PyPI
 ReadTheDocs
 sprotty
+TBD
 TypeScript
 WebWorker

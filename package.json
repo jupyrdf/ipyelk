@@ -2,83 +2,119 @@
   "name": "@jupyrdf/jupyter-elk",
   "version": "2.0.0-alpha1",
   "description": "ElkJS widget for Jupyter",
+  "license": "BSD-3-Clause",
+  "author": "Dane Freeman",
+  "homepage": "https://github.com/jupyrdf/ipyelk",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/jupyrdf/ipyelk"
+  },
+  "bugs": {
+    "url": "https://github.com/jupyrdf/ipyelk/issues"
+  },
+  "main": "lib/index.js",
+  "files": [
+    "COPYRIGHT.md",
+    "third-party/**/*",
+    "{lib,style}/**/*.{.ts,eot,gif,html,jpg,js,js.map,json,png,svg,woff2,ttf,css}"
+  ],
+  "scripts": {
+    "bootstrap": "jlpm --prefer-offline --ignore-optional --ignore-scripts && jlpm clean && jlpm schema && jlpm lint && jlpm build",
+    "build": "jlpm build:ts && jlpm build:ext",
+    "build:ext": "jupyter labextension build .",
+    "build:ts": "tsc -b js",
+    "clean": "rimraf ./lib ./src/ipyelk/schema/elkschema.json ./src/ipyelk/_d",
+    "deduplicate": "yarn-deduplicate -s fewer --fail",
+    "lint": "jlpm lint:prettier",
+    "lint:prettier": "prettier-package-json --write package.json && prettier --cache --cache-location build/.prettiercache --write --list-different \"*.{json,yml,md}\" \"{js,style,lite,src,.github,examples,docs}/**/*.{ts,tsx,js,jsx,css,json,md,yml,yaml}\"",
+    "schema": "cd js && ts-json-schema-generator --tsconfig ./tsconfig.json --type AnyElkNode --no-type-check --expose all --path ./elkschema.ts -o ../src/ipyelk/schema/elkschema.json",
+    "watch": "run-p watch:lib watch:ext",
+    "watch:ext": "jupyter labextension watch .",
+    "watch:lib": "jlpm build:ts --watch --preserveWatchOutput"
+  },
+  "sideEffects": [
+    "style/*.css"
+  ],
+  "types": "lib/index.d.ts",
+  "resolutions": {
+    "verdaccio": "file:./scripts/not-a-package",
+    "typescript": "~4.9.3",
+    "prettier": "^2.8.0",
+    "elkjs": "0.8.2"
+  },
+  "dependencies": {
+    "@jupyter-widgets/base": "^6.0.1",
+    "@jupyter-widgets/controls": "^5.0.1",
+    "@jupyter-widgets/jupyterlab-manager": "^5.0.0",
+    "elkjs": "0.8.2",
+    "reflect-metadata": "^0.1.13",
+    "sprotty-elk": "0.9.0"
+  },
+  "devDependencies": {
+    "@jupyterlab/application": "3",
+    "@jupyterlab/builder": "^3.1.0",
+    "@jupyterlab/theme-dark-extension": "3",
+    "@jupyterlab/theme-light-extension": "3",
+    "@trivago/prettier-plugin-sort-imports": "^4.0.0",
+    "@types/lodash": "^4.14.162",
+    "npm-run-all": "^4.1.5",
+    "prettier": "^2.8.0",
+    "prettier-package-json": "^2.7.0",
+    "prettier-plugin-sort-json": "^0.0.3",
+    "rimraf": "^3.0.2",
+    "snabbdom": "~0.6.6",
+    "ts-json-schema-generator": "^1.1.2",
+    "typescript": "~4.9.3",
+    "yarn-deduplicate": "^6.0.0"
+  },
   "keywords": [
     "jupyter",
     "jupyterlab",
     "jupyterlab-extension",
     "widgets"
   ],
-  "homepage": "https://github.com/jupyrdf/ipyelk",
-  "bugs": {
-    "url": "https://github.com/jupyrdf/ipyelk/issues"
-  },
-  "license": "BSD-3-Clause",
-  "author": "Dane Freeman",
-  "files": [
-    "{lib,style,src}/**/*.{.ts,eot,gif,html,jpg,js,js.map,json,png,svg,woff2,ttf,css}",
-    "LICENSE.txt",
-    "COPYRIGHT.md",
-    "third-party/**/*"
-  ],
-  "main": "lib/index.js",
-  "types": "lib/index.d.ts",
-  "style": "style/index.css",
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/jupyrdf/ipyelk"
-  },
-  "prettier": {
-    "singleQuote": true,
-    "proseWrap": "always",
-    "printWidth": 88
-  },
-  "scripts": {
-    "bootstrap": "jlpm --prefer-offline --ignore-optional --ignore-scripts && jlpm clean && jlpm schema && jlpm lint && jlpm build",
-    "build": "jlpm build:ts && jlpm build:ext",
-    "build:ts": "tsc -b",
-    "build:ext": "jupyter labextension build .",
-    "clean": "rimraf ./lib ./py_src/ipyelk/schema/elkschema.json ./py_src/ipyelk/labextension",
-    "watch": "jlpm build:ts --watch --preserveWatchOutput",
-    "schema": "ts-json-schema-generator --tsconfig ./tsconfig.json --type AnyElkNode --no-type-check --expose all --path ./src/elkschema.ts -o ./py_src/ipyelk/schema/elkschema.json",
-    "lint": "jlpm lint:prettier",
-    "lint:prettier": "prettier --write --list-different \"*.{json,yml,md}\" \"{src,style,py_src,.github,examples,docs}/**/*.{ts,tsx,js,jsx,css,json,md,yml}\""
-  },
-  "dependencies": {
-    "elkjs": "0.8.2",
-    "reflect-metadata": "^0.1.13",
-    "sprotty-elk": "0.9.0"
-  },
-  "devDependencies": {
-    "@jupyter-widgets/base": "4",
-    "@jupyter-widgets/controls": "3",
-    "@jupyter-widgets/jupyterlab-manager": "3",
-    "@jupyterlab/application": "3",
-    "@jupyterlab/builder": "^3.0.1",
-    "@jupyterlab/theme-dark-extension": "3",
-    "@jupyterlab/theme-light-extension": "3",
-    "@types/lodash": "^4.14.162",
-    "prettier": "^1.9.1",
-    "rimraf": "^3.0.2",
-    "snabbdom": "~0.6.6",
-    "ts-json-schema-generator": "^0.83.2",
-    "typescript": "~4.1.3"
-  },
-  "peerDependencies": {
-    "@jupyter-widgets/base": "4",
-    "@jupyter-widgets/controls": "3",
-    "@jupyter-widgets/jupyterlab-manager": "3"
-  },
-  "sideEffects": [
-    "style/*.css"
-  ],
   "jupyterlab": {
     "extension": "lib/plugin",
-    "outputDir": "py_src/ipyelk/labextension",
+    "outputDir": "./src/_d/share/jupyter/labextensions/@jupyrdf/jupyter-elk",
     "sharedPackages": {
+      "elkjs": {
+        "bundled": true,
+        "singleton": true
+      },
+      "sprotty-elk": {
+        "bundled": true,
+        "singleton": true
+      },
       "@jupyter-widgets/base": {
+        "bundled": false,
+        "singleton": true
+      },
+      "@jupyter-widgets/controls": {
         "bundled": false,
         "singleton": true
       }
     }
-  }
+  },
+  "prettier": {
+    "singleQuote": true,
+    "proseWrap": "always",
+    "printWidth": 88,
+    "importOrder": [
+      "^@lumino/(.*)$",
+      "^@jupyterlab/(.*)$",
+      "^@jupyter-widgets/(.*)$",
+      "^[.]{2}/",
+      "^[./]",
+      "^!"
+    ],
+    "importOrderSeparation": true,
+    "importOrderSortSpecifiers": true,
+    "importOrderParserPlugins": [
+      "classProperties",
+      "decorators-legacy",
+      "jsx",
+      "typescript"
+    ]
+  },
+  "style": "style/index.css"
 }

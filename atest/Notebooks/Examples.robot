@@ -1,12 +1,15 @@
 *** Settings ***
-Resource          ../_resources/keywords/Browser.robot
-Resource          ../_resources/keywords/Lab.robot
-Resource          ../_resources/keywords/IPyElk.robot
-Test Teardown     Clean up after IPyElk Example
-Library           Collections
+Resource            ../_resources/keywords/Browser.robot
+Resource            ../_resources/keywords/Lab.robot
+Resource            ../_resources/keywords/IPyElk.robot
+Library             Collections
+
+Test Teardown       Clean up after IPyElk Example
+
 
 *** Variables ***
-${SCREENS}        ${SCREENS ROOT}${/}notebook-examples
+${SCREENS}      ${SCREENS ROOT}${/}notebook-examples
+
 
 *** Test Cases ***
 #    TODO:

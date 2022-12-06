@@ -1,0 +1,68 @@
+# Copyright (c) 2022 ipyelk contributors.
+# Distributed under the terms of the Modified BSD License.
+
+[build-system]
+requires = ["flit_core >=3.7.1,<4"]
+build-backend = "flit_core.buildapi"
+
+[project]
+name = "ipyelk"
+version = "2.0.0a1"
+description = "ELK widget for Jupyter"
+authors = [
+    {name = "Dane Freeman", email = "dane.freeman@gtri.gatech.edu"},
+]
+readme = "README.md"
+classifiers = [
+    "Framework :: Jupyter :: JupyterLab :: 3",
+    "Framework :: Jupyter :: JupyterLab :: Extensions :: Prebuilt",
+    "Framework :: Jupyter :: JupyterLab :: Extensions",
+    "Framework :: Jupyter :: JupyterLab",
+    "Framework :: Jupyter",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: BSD License",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3",
+]
+requires-python = ">=3.7"
+dependencies = [
+    "ipywidgets >=8.0.1,<9",
+    "networkx",
+    "pydantic",
+]
+
+[project.urls]
+"Bug Tracker" = "https://github.com/jupyrdf/ipyelk/issues"
+"Changelog" = "https://github.com/jupyrdf/ipyelk/blob/main/CHANGELOG.md"
+"Documentation" = "https://ipyelk.rtfd.io"
+"Source" = "https://github.com/jupyrdf/ipyelk"
+
+[tool.flit.sdist]
+include = ["src/_d"]
+
+[tool.flit.external-data]
+directory = "src/_d"
+
+[tool.isort]
+profile = "black"
+known_first_party = "ipyelk"
+
+[tool.mypy]
+plugins = ["pydantic.mypy"]
+files = "src"
+allow_redefinition = true
+
+[tool.pydantic-mypy]
+init_forbid_extra = true
+init_typed = true
+warn_required_dynamic_aliases = true
+warn_untyped_fields = true
+
+[tool.pytest.ini_options]
+junit_family = "xunit2"
+addopts = "-vv --ff --pyargs ipyelk --cov ipyelk --cov-report term-missing:skip-covered --cov-report html:build/htmlcov --no-cov-on-fail --html build/pytest.html --self-contained-html --junitxml build/pytest.xunit.xml"
