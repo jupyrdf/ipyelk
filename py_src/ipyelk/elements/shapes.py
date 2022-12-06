@@ -40,6 +40,7 @@ class ElementShape(BaseShape):
     width: Optional[float]
     height: Optional[float]
     use: Optional[str] = Field(None, description="Meaning is specialized in subclasses")
+    delay: Optional[int] = Field(None, description="Only used for delayed rendering of embedded jupyterlab widgets")
 
     @classmethod
     def valid_subtypes(cls) -> Set[str]:

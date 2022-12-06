@@ -113,7 +113,7 @@ class Record(Node):
         return super().dict(**kwargs)
 
 
-class Compartment(Record):
+class Compartment(Node):
     bullet_shape: Optional[Icon] = None
 
     class Config:
