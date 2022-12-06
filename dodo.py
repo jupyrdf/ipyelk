@@ -75,6 +75,9 @@ def task_all():
 def task_lock():
     """create lockfiles from the binder environment and CI excursions."""
 
+    if not P.USE_LOCK_ENV:
+        return
+
     def _lock_one(lockfile: Path, file_dep: typing.List[Path]) -> None:
         lock_args = ["conda-lock", "--kind=explicit"]
         comment = ""
