@@ -116,8 +116,6 @@ def preflight_build():
         print(
             """Perhaps try:
             rm -rf node_modules .yarn-packages yarn.lock
-            anaconda-project run jlpm cache clean
-            anaconda-project run jlpm
             doit preflight:build
             """
         )
@@ -153,18 +151,21 @@ def preflight_kernel():
 
 def preflight_lab():
     proc = subprocess.Popen(
-        ["jupyter", "labextension", "list"],
+        [sys.executable, "-m", "jupyter", "labextension", "list"],
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
     )
     out, err = proc.communicate()
     name = P.JS_PACKAGE_DATA["name"]
 
-    for line in (out + err).decode("utf-8").splitlines():
-        if name in line and "OK" in line and "enabled" in line:
+    all_out = (out + err).decode("utf-8")
+
+    for line in all_out.splitlines():
+        if re.findall(f"{name}.*enabled.*ok", line.lower()):
             print(">>> OK lab")
             return 0
-    print("The labextension is not enabled")
+    print(all_out, flush=True)
+    print("The labextension is not enabled", flush=True)
     return 1
 
 
@@ -174,26 +175,13 @@ def preflight_release():
 
     print("Checking CHANGELOG...", flush=True)
     changelog_versions = [
-        f"## {P.PY_PKG} {P.PY_VERSION}",
-        "## {name} {version}".format(**P.JS_PACKAGE_DATA),
+        f"### `{P.PY_PKG} {P.PY_VERSION}`",
+        "### `{name} {version}`".format(**P.JS_PACKAGE_DATA),
     ]
 
     for version in changelog_versions:
         if version not in changelog:
             problems += [f"- Not found in CHANGELOG.md: {version}"]
-
-    print("Checking widget spec versions...", flush=True)
-    tokens_ts = P.TS_SRC / "tokens.ts"
-    ts_version = re.findall(r"""VERSION = '(.*?)'""", tokens_ts.read_text())[0]
-    py_version = re.findall(
-        r"""EXTENSION_SPEC_VERSION = "([^"]+)""", P.VERSION_PY.read_text()
-    )[0]
-
-    if ts_version != py_version:
-        problems += [
-            "python EXTENSION_SPEC_VERSION do not match typescript VERSION"
-            f"\n> {py_version} vs {ts_version}"
-        ]
 
     print("Checking copyright/license headers...")
     for any_src in [*P.ALL_PY, *P.ALL_CSS, *P.ALL_TS]:

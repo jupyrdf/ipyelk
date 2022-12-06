@@ -1,7 +1,17 @@
 {
   "directed": true,
-  "multigraph": false,
   "graph": {},
+  "links": [
+    {
+      "source": "n0",
+      "target": "n1"
+    },
+    {
+      "source": "n1",
+      "target": "n2"
+    }
+  ],
+  "multigraph": false,
   "nodes": [
     {
       "id": "n0",
@@ -19,16 +29,6 @@
     },
     {
       "id": "n3"
-    }
-  ],
-  "links": [
-    {
-      "source": "n0",
-      "target": "n1"
-    },
-    {
-      "source": "n1",
-      "target": "n2"
     }
   ]
 }

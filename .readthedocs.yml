@@ -1,10 +1,17 @@
 version: 2
 
-sphinx:
-  configuration: docs/conf.py
-conda:
-  environment: docs/rtd.yml
+build:
+  os: ubuntu-20.04
+  tools:
+    python: mambaforge-4.10
+  jobs:
+    pre_build:
+      - doit setup
+      - doit lite
 
-formats:
-  - htmlzip
-  - epub
+sphinx:
+  builder: html
+  configuration: docs/conf.py
+
+conda:
+  environment: .binder/environment.yml

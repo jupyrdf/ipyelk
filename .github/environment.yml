@@ -1,14 +1,8 @@
-name: test
-
 channels:
-  - https://conda.anaconda.org/conda-forge
+  - conda-forge
+  - nodefaults
 
 dependencies:
-  - anaconda-project =0.9.1
-  - conda =4.12
-  - doit ==0.32
-  - mamba =0.22.1
-  - pip
-  - python >=3.8,<3.9
-  - twine
-  - wheel
+  - doit
+  - mamba >=1.1.0
+  - python >=3.11,<3.12

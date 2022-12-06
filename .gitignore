@@ -150,9 +150,7 @@ $RECYCLE.BIN/
 # ----
 
 **/node_modules/
-py_src/ipyelk/nbextension/static/index.*
-py_src/ipyelk/labextension/*.tgz
-py_src/ipyelk/labextension
+_d/
 **/.yarn-packages/
 
 # Coverage data
@@ -164,6 +162,8 @@ py_src/ipyelk/labextension
 .vscode/
 
 # task stuff
-.doit*
+*.doit.db*
 .pabotsuitenames
 atest/output
+*.tsbuildinfo*
+*.isorted

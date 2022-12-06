@@ -1,0 +1,53 @@
+channels:
+  - conda-forge
+  - nodefaults
+dependencies:
+  - ansi2html
+  - black-jupyter
+  - bqplot >=0.12.20
+  - docutils >=0.19
+  - doit
+  - firefox =102
+  - flit >=3.7.1,<4
+  - geckodriver
+  - hypothesis-jsonschema
+  - importnb
+  - ipython >=7
+  - ipywidgets >=8.0.1,<9
+  - isort
+  - jupyterlab >=3,<4
+  - jupyterlab-deck
+  - jupyterlab-myst
+  - jupyterlab-webrtc-docprovider
+  - keyring
+  - mypy
+  - myst-nb
+  - networkx
+  - nodejs >=18,<19
+  - pandas
+  - pip
+  - pkginfo
+  - pydantic >=1
+  - pydata-sphinx-theme
+  - pyflakes
+  - pytest-asyncio
+  - pytest-check-links
+  - pytest-cov
+  - pytest-html
+  - pytest-xdist
+  - python >=3.7,<3.12.0a0
+  - python-libarchive-c
+  - requests-cache
+  - robotframework-pabot
+  - robotframework-robocop
+  - robotframework-seleniumlibrary
+  - robotframework-tidy
+  - rope
+  - sphinx
+  - sphinx-autobuild
+  - sphinx-autodoc-typehints
+  - tomli
+  - twine
+  - wheel
+  - pip:
+    - jupyterlite ==0.1.0b15
