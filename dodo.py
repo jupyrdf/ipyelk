@@ -243,15 +243,18 @@ def task_setup():
             P.PY_PROJ,
         ]
 
+    py_actions = [[*P.IN_ENV, *P.PIP, "install", *_install]]
+
+    if not P.IN_RTD:
+        # ancient sphinx_rtd_theme wants ancient docutils
+        py_actions += [[*P.IN_ENV, *P.PIP, "check"]]
+
     py_task = _ok(
         dict(
             name="py",
             uptodate=[config_changed({"artifact": P.INSTALL_ARTIFACT})],
             file_dep=file_dep,
-            actions=[
-                [*P.IN_ENV, *P.PIP, "install", *_install],
-                [*P.IN_ENV, *P.PIP, "check"],
-            ],
+            actions=py_actions,
         ),
         P.OK_PIP_INSTALL,
     )
