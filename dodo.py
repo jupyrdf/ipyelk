@@ -611,7 +611,7 @@ def task_lab():
 
     def lab():
         proc = subprocess.Popen(
-            list(map(str, *P.JUPYTERLAB_EXE)),
+            list(map(str, P.JUPYTERLAB_EXE)),
             stdin=subprocess.PIPE,
         )
 
