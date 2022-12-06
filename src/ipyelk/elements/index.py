@@ -20,7 +20,7 @@ class IDReport(BaseModel):
     )
 
     class Config:
-        copy_on_model_validation = False
+        copy_on_model_validation = "none"
 
     def __bool__(self):
         return len(self.duplicated) + len(self.null_ids) > 0
@@ -49,12 +49,12 @@ class EdgeReport(BaseModel):
     )
 
     class Config:
-        copy_on_model_validation = False
+        copy_on_model_validation = "none"
 
 
 class VisIndex(BaseModel):
     class Config:
-        copy_on_model_validation = False
+        copy_on_model_validation = "none"
 
     hidden: Dict[str, BaseElement] = Field(
         default_factory=dict,
@@ -118,7 +118,7 @@ class ElementIndex(BaseModel):
     elements: Mapping[str, BaseElement] = Field(default_factory=dict)
 
     class Config:
-        copy_on_model_validation = False
+        copy_on_model_validation = "none"
 
     def get(self, key: str) -> BaseElement:
         key = str(key)
