@@ -207,9 +207,9 @@ export class ElkModelRenderer extends ModelRenderer {
         {}
       );
       let delay = jlsw.node.properties.shape?.delay || 0;
-      if (delay){
-      // initially render jl widget at "full" size. Then after questionable
-      // timeout... scale widget to fit inside the elk node.
+      if (delay) {
+        // initially render jl widget at "full" size. Then after questionable
+        // timeout... scale widget to fit inside the elk node.
         let zoom = this.source.root['zoom'] || 1;
         let el = view.luminoWidget.node;
         el.style.transform = `scale(${1 / zoom})`;
@@ -218,7 +218,6 @@ export class ElkModelRenderer extends ModelRenderer {
         setTimeout(() => {
           el.style.transform = '';
         }, delay);
-
       }
       Widget.attach(view.luminoWidget, vnode.elm as HTMLElement);
     }
