@@ -43,7 +43,7 @@ WIN_CI = _get_boolish("WIN_CI")
 TESTING_IN_CI = _get_boolish("TESTING_IN_CI")
 BUILDING_IN_CI = _get_boolish("BUILDING_IN_CI")
 IN_BINDER = _get_boolish("IN_BINDER")
-IN_RTD = _get_boolish("RTD")
+IN_RTD = _get_boolish("READTHEDOCS")
 PYTEST_ARGS = json.loads(os.environ.get("PYTEST_ARGS", "[]"))
 
 # CI jank
