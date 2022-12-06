@@ -20,10 +20,11 @@ PROJ = PY_PROJ["project"]
 
 # extensions
 extensions = [
-    "sphinx.ext.autosummary",
-    "sphinx.ext.autodoc",
-    "sphinx_autodoc_typehints",
+    "autodoc_traits",
     "myst_nb",
+    "sphinx_autodoc_typehints",
+    "sphinx.ext.autodoc",
+    "sphinx.ext.autosummary",
 ]
 
 # meta
