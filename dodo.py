@@ -640,24 +640,10 @@ def task_watch():
     if P.TESTING_IN_CI:
         return
 
-    def _watch():
-        proc = subprocess.Popen(
-            list(map(str, [*P.IN_ENV, *P.PYM, "scripts.lab.watch"])),
-            stdin=subprocess.PIPE,
-        )
-
-        try:
-            proc.wait()
-        except KeyboardInterrupt:
-            pass
-
-        proc.wait()
-        return True
-
     return dict(
         uptodate=[lambda: False],
         file_dep=[P.OK_PREFLIGHT_LAB],
-        actions=[PythonInteractiveAction(_watch)],
+        actions=[[*P.IN_ENV, "jlpm", "watch"]],
     )
 
 
