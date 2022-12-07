@@ -10,6 +10,7 @@ import itertools
 import json
 import os
 import platform
+import shutil
 import subprocess
 import sys
 from pathlib import Path
@@ -32,6 +33,7 @@ WIN = PLATFORM == "Windows"
 OSX = PLATFORM == "Darwin"
 LINUX = PLATFORM == "Linux"
 UNIX = not WIN
+HAS_CONDA_LOCK = shutil.which("conda-lock")
 
 
 def _get_boolish(name, default="false"):
@@ -96,28 +98,40 @@ README = ROOT / "README.md"
 DOCS = ROOT / "docs"
 BINDER = ROOT / ".binder"
 POSTBUILD = BINDER / "postBuild"
-ENV_YAML = BINDER / "environment.yml"
+BINDER_ENV_YAML = BINDER / "environment.yml"
 LITE = ROOT / "lite"
 LITE_CONFIG = LITE / "jupyter_lite_config.json"
 
 # envs
 ENV_SPECS = GH / "env_specs"
+LOCK_ENV_YAML = GH / "lock-environment.yml"
 PY_SPECS = sorted(ENV_SPECS.glob("py/*.yml"))
 SUBDIR_SPECS = sorted(ENV_SPECS.glob("subdir/*.yml"))
-ENV_MATRIX = itertools.product(SUBDIR_SPECS, PY_SPECS, [ENV_YAML])
+SUBDIR_LOCK_SPECS = sorted(ENV_SPECS.glob("subdir-lock/*.yml"))
+ENV_MATRIX = [
+    *itertools.product(SUBDIR_SPECS, PY_SPECS, [BINDER_ENV_YAML]),
+    *itertools.product(SUBDIR_LOCK_SPECS, [LOCK_ENV_YAML]),
+]
 EXPLICIT = "@EXPLICIT"
 LOCKS = GH / "locks"
 PIP_BUILD_ENV = GH / "requirements-build.txt"
 LOCKFILE = LOCKS / f"{THIS_SUBDIR}_{IPYELK_PY}_environment.conda.lock"
+LOCK_LOCKFILE = LOCKS / f"{THIS_SUBDIR}_lock-environment.conda.lock"
 USE_LOCK_ENV = not (BUILDING_IN_CI or IN_RTD or IN_BINDER)
 ENV = Path(sys.prefix) if IN_RTD or IN_BINDER else ROOT / f"envs/py_{IPYELK_PY}"
+LOCK_ENV = ROOT / "envs/lock"
+
+CONDA_RUN = ["conda", "run", "--live-stream", "--prefix"]
+MAMBA_CREATE = ["mamba", "create", "-y", "--prefix"]
 
 if BUILDING_IN_CI:
     IN_ENV = []
     HISTORY = PIP_BUILD_ENV
 else:
-    IN_ENV = ["conda", "run", "--live-stream", "--prefix", ENV]
+    IN_ENV = [*CONDA_RUN, ENV]
+    IN_LOCK_ENV = [*CONDA_RUN, LOCK_ENV]
     HISTORY = ENV / "conda-meta/history"
+    LOCK_HISTORY = LOCK_ENV / "conda-meta/history"
 
 # tools
 PY = ["python"]

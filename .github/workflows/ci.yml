@@ -122,7 +122,7 @@ jobs:
       - name: base env (conda)
         uses: conda-incubator/setup-miniconda@v2
         with:
-          environment-file: .github/environment.yml
+          environment-file: .github/base-environment.yml
           miniforge-variant: Mambaforge
           use-mamba: true
 
@@ -147,7 +147,7 @@ jobs:
         with:
           path: build/links
           key: |
-            ${{ env.CACHE_EPOCH }}-links-${{ runner.os }}-${{ hashFiles('.github/environment.yml') }}
+            ${{ env.CACHE_EPOCH }}-links-${{ runner.os }}-${{ hashFiles('.github/base-environment.yml') }}
           restore-keys: |
             ${{ env.CACHE_EPOCH }}-links-${{ runner.os }}-
             ${{ env.CACHE_EPOCH }}-links-
@@ -191,7 +191,7 @@ jobs:
       - name: env (conda)
         uses: conda-incubator/setup-miniconda@v2
         with:
-          environment-file: .github/environment.yml
+          environment-file: .github/base-environment.yml
           miniforge-variant: Mambaforge
           use-mamba: true
 

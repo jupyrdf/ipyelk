@@ -27,7 +27,9 @@
     "deduplicate": "yarn-deduplicate -s fewer --fail",
     "lint": "jlpm lint:prettier",
     "lint:prettier": "prettier-package-json --write package.json && prettier --cache --cache-location build/.prettiercache --write --list-different \"*.{json,yml,md}\" \"{js,style,lite,src,.github,examples,docs}/**/*.{ts,tsx,js,jsx,css,json,md,yml,yaml}\"",
-    "schema": "cd js && ts-json-schema-generator --tsconfig ./tsconfig.json --type AnyElkNode --no-type-check --expose all --path ./elkschema.ts -o ../src/ipyelk/schema/elkschema.json",
+    "schema": "jlpm schema:build && jlpm schema:prettier",
+    "schema:build": "cd js && ts-json-schema-generator --tsconfig ./tsconfig.json --type AnyElkNode --no-type-check --expose all --path ./elkschema.ts -o ../src/ipyelk/schema/elkschema.json",
+    "schema:prettier": "prettier --write src/ipyelk/schema/elkschema.json",
     "watch": "run-p watch:lib watch:ext",
     "watch:ext": "jupyter labextension watch .",
     "watch:lib": "jlpm build:ts --watch --preserveWatchOutput"

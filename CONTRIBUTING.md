@@ -3,11 +3,10 @@
 ## Install
 
 - Get [Mambaforge](https://github.com/conda-forge/miniforge)
-- Get [doit](https://pydoit.org) and
-  [conda-lock](https://github.com/conda-incubator/conda-lock)
+- Get [doit](https://pydoit.org)
 
 ```bash
-mamba install doit conda-lock=1.2
+mamba install doit
 ```
 
 ## Get Started
@@ -177,6 +176,12 @@ doit lock
 ```
 
 - Commit the changes to the env specs and the [lock files](./.github/locks).
+
+> if you delete _all_ the lockfiles, you'll need to `conda-lock` on path with e.g.
+>
+> ```bash
+> mamba install -c conda-forge conda-lock
+> ```
 
 ### Browser Dependencies
 
