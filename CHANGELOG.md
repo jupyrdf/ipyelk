@@ -1,14 +1,25 @@
 # Changelog
 
-## `2.0.0a1`
+## `2.0.0`
 
-### `@jupyrdf/jupyter-elk 2.0.0-alpha1`
+### `@jupyrdf/jupyter-elk 2.0.0`
 
-- TBD
+- Added control layer to allow jupyterlab widgets to exist on top of the diagram based
+  on current node selection.
+- Adding controllable render delay for jupyterlab widgets used in diagram nodes.
+- Updated dependencies to `elkjs 0.8.2`.
+- Fixed diagram bounding box issue affecting node visibility ([#94]).
+- Improved test sizing that takes into account css properties ([#97])
 
-### `ipyelk 2.0.0a1`
+### `ipyelk 2.0.0`
 
-- TBD
+- Migrated to `ipywidgets >=8.0.1,<9`
+- Added simple visualizer widget for the diagram pipe status.
+- Fixed edge parent ownership affecting self edges ([#101])
+
+[#94]: https://github.com/jupyrdf/ipyelk/issues/94
+[#97]: https://github.com/jupyrdf/ipyelk/issues/97
+[#101]: https://github.com/jupyrdf/ipyelk/issues/101
 
 ## `2.0.0a0`
 

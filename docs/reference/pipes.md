@@ -6,6 +6,10 @@
     :members:
 .. autoclass:: ipyelk.pipes.Pipeline
     :members:
+.. autoclass:: ipyelk.pipes.base.PipeStatus
+    :members:
+.. autoclass:: ipyelk.pipes.base.PipeStatusView
+    :members:
 ```
 
 ```{eval-rst}

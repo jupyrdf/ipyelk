@@ -17,17 +17,18 @@ class Viewer(W.Widget):
     Attributes
     ----------
     source: :py:class:`~ipyelk.pipes.MarkElementWidget`
-
+        input source for rendering.
     selection: :py:class:`~ipyelk.tools.Selection`
-
+        maintains selected ids and methods to resolve the python elements.
     hover: :py:class:`~ipyelk.tools.Hover`
-
+        maintains hovered ids.
     zoom: :py:class:`~ipyelk.tools.Zoom`
 
     pan: :py:class:`~ipyelk.tools.Pan`
 
     control_overlay: :py:class:`~ipyelk.tools.ControlOverlay`
-
+        additional jupyterlab widgets that can be rendered ontop of the diagram
+        based on the current selected states.
     """
 
     source: MarkElementWidget = T.Instance(MarkElementWidget, allow_none=True).tag(
