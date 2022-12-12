@@ -617,7 +617,6 @@ def task_lab():
             list(map(str, P.JUPYTERLAB_EXE)),
             stdin=subprocess.PIPE,
         )
-
         try:
             proc.wait()
         except KeyboardInterrupt:

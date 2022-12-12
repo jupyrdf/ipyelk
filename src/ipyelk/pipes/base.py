@@ -102,6 +102,7 @@ class PipeStatusView(W.VBox):
     html: string
         built status html to display
     """
+
     include_exception = T.Bool(default_value=False)
     html: W.HTML = T.Instance(W.HTML, kw={})
 
@@ -178,6 +179,7 @@ class Pipe(W.Widget):
         whether the processing step can be run
 
     """
+
     enabled: bool = T.Bool(default_value=True)
     inlet: MarkElementWidget = T.Instance(MarkElementWidget, kw={})
     outlet: MarkElementWidget = T.Instance(MarkElementWidget, kw={})

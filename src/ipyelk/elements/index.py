@@ -457,6 +457,22 @@ def iter_hierarchy(
         yield from iter_hierarchy(*el.labels, root=el)
 
 
+def iter_labels(
+    *els: BaseElement,
+) -> Iterator[Tuple[Node, Label]]:
+    """Iterate over BaseElements that follow the `Node` hierarchy
+
+    :param els: iterable of elements
+    :yield: element and label pair
+    """
+    for el in els:
+        if isinstance(el, Node):
+            yield from iter_labels(
+                *el.children,
+            )
+        yield from zip([el], el.labels)
+
+
 def get_ancestor(element: HierarchicalElement) -> HierarchicalElement:
     parent = element.get_parent()
     if parent is None:
