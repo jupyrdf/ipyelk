@@ -49,6 +49,8 @@ DOIT_CONFIG = dict(
     verbosity=2,
 )
 
+Paths = typing.List[Path]
+
 
 def task_all():
     """do everything except start lab"""
@@ -78,20 +80,40 @@ def task_lock():
     if not P.USE_LOCK_ENV:
         return
 
-    def _lock_one(lockfile: Path, file_dep: typing.List[Path]) -> None:
-        lock_args = ["conda-lock", "--kind=explicit"]
+    def _lock_comment(env_yamls: Paths) -> str:
         comment = ""
-        for env_file in reversed(file_dep):
+        for env_file in reversed(env_yamls):
             comment += env_file.read_text(encoding="utf-8").strip() + "\n"
-            lock_args += ["--file", env_file]
-        platform = next(p.stem for p in file_dep if p.parent.name == "subdir")
-        lock_args += ["--platform", platform]
+        return textwrap.indent(comment, "# ")
 
-        comment = textwrap.indent(comment, "# ")
+    def _needs_lock(lockfile: Path, env_yamls: Paths) -> bool:
+        if not lockfile.exists():
+            return True
+        lock_text = lockfile.read_text(encoding="utf-8")
+        comment = _lock_comment(env_yamls)
+        return comment not in lock_text
 
-        if lockfile.exists() and comment in lockfile.read_text(encoding="utf-8"):
+    def _lock_one(lockfile: Path, env_yamls: typing.List[Path]) -> None:
+        if not _needs_lock(lockfile, env_yamls):
             print(f"lockfile up-to-date: {lockfile}")
             return
+
+        lock_args = ["conda-lock", "--kind=explicit"]
+        comment = _lock_comment(env_yamls)
+        for env_file in reversed(env_yamls):
+            lock_args += ["--file", env_file]
+        platform = next(p.stem for p in env_yamls if "subdir" in p.parent.name)
+        lock_args += ["--platform", platform]
+
+        if P.LOCK_HISTORY.exists():
+            lock_args = [*P.IN_LOCK_ENV, *lock_args]
+        elif not P.HAS_CONDA_LOCK:
+            print(
+                "Can't bootstrap lockfiles without `conda-lock`, please:\n\n\t"
+                "mamba install -c conda-forge conda-lock\n\n"
+                "and re-run `doit lock`"
+            )
+            return False
 
         with tempfile.TemporaryDirectory() as td:
             tdp = Path(td)
@@ -102,12 +124,20 @@ def task_lock():
         lockfile.parent.mkdir(exist_ok=True, parents=True)
         lockfile.write_text("\n".join([comment, P.EXPLICIT, raw, ""]), encoding="utf-8")
 
-    for file_dep in P.ENV_MATRIX:
-        lock_name = "_".join([f"{p.stem}" for p in file_dep])
+    for env_yamls in P.ENV_MATRIX:
+        file_dep = [*env_yamls]
+        lock_name = "_".join([f"{p.stem}" for p in env_yamls])
         lockfile = P.LOCKS / f"{lock_name}.conda.lock"
+
+        if not _needs_lock(lockfile, env_yamls):
+            continue
+
+        if P.LOCK_ENV_YAML not in env_yamls:
+            file_dep += [P.LOCK_HISTORY]
+
         yield dict(
             name=lock_name,
-            actions=[(_lock_one, [lockfile, file_dep])],
+            actions=[(_lock_one, [lockfile, env_yamls])],
             file_dep=file_dep,
             targets=[lockfile],
         )
@@ -192,12 +222,21 @@ def task_env():
         return
 
     yield dict(
-        name="create",
+        name="lock",
+        file_dep=[P.LOCK_LOCKFILE],
+        targets=[P.LOCK_HISTORY],
+        actions=[
+            [*P.MAMBA_CREATE, P.LOCK_ENV, "--file", P.LOCK_LOCKFILE],
+        ],
+    )
+
+    yield dict(
+        name="dev",
         uptodate=[config_changed(dict(lite=P.LITE_SPEC))],
         file_dep=[P.LOCKFILE],
         targets=[P.HISTORY],
         actions=[
-            ["mamba", "create", "-y", "--prefix", P.ENV, "--file", P.LOCKFILE],
+            [*P.MAMBA_CREATE, P.ENV, "--file", P.LOCKFILE],
             [*P.IN_ENV, *P.PIP, "install", "--no-deps", *P.LITE_SPEC],
         ],
     )
