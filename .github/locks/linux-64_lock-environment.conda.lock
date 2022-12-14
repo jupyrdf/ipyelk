@@ -5,6 +5,7 @@
 # dependencies:
 #   - conda-lock >=1.2,<1.3
 #   - mamba >=1.1.0,<1.2
+#   - conda !=22.11.1
 #   - python >=3.11,<3.12
 #   - lockfile
 # dependencies: []
@@ -61,7 +62,6 @@ https://conda.anaconda.org/conda-forge/noarch/cachy-0.3.0-pyhd8ed1ab_1.tar.bz2#5
 https://conda.anaconda.org/conda-forge/noarch/certifi-2022.12.7-pyhd8ed1ab_0.conda#fb9addc3db06e56abe03e0e9f21a63e6
 https://conda.anaconda.org/conda-forge/noarch/charset-normalizer-2.1.1-pyhd8ed1ab_0.tar.bz2#c1d5b294fbf9a795dec349a6f4d8be8e
 https://conda.anaconda.org/conda-forge/noarch/click-8.1.3-unix_pyhd8ed1ab_2.tar.bz2#20e4087407c7cb04a40817114b333dbf
-https://conda.anaconda.org/conda-forge/noarch/colorama-0.4.6-pyhd8ed1ab_0.tar.bz2#3faab06a954c2a04039983f2c4a50d99
 https://conda.anaconda.org/conda-forge/noarch/crashtest-0.3.1-pyhd8ed1ab_0.tar.bz2#b8477552274c1cfdb533e954c76523f1
 https://conda.anaconda.org/conda-forge/linux-64/dbus-1.13.6-h5008d03_3.tar.bz2#ecfff944ba3960ecb334b9a2663d708d
 https://conda.anaconda.org/conda-forge/noarch/distlib-0.3.6-pyhd8ed1ab_0.tar.bz2#b65b4d50dbd2d50fa0aeac367ec9eed7
@@ -77,13 +77,13 @@ https://conda.anaconda.org/conda-forge/noarch/packaging-22.0-pyhd8ed1ab_0.conda#
 https://conda.anaconda.org/conda-forge/noarch/pastel-0.2.1-pyhd8ed1ab_0.tar.bz2#a4eea5bff523f26442405bc5d1f52adb
 https://conda.anaconda.org/conda-forge/noarch/pkginfo-1.9.2-pyhd8ed1ab_0.conda#8fb2779f1ab2ce91e893f31a36fbcbfa
 https://conda.anaconda.org/conda-forge/noarch/platformdirs-2.6.0-pyhd8ed1ab_0.conda#b1b2ab02d1ece1719f7fa002ad4bc70d
-https://conda.anaconda.org/conda-forge/noarch/pluggy-1.0.0-pyhd8ed1ab_5.tar.bz2#7d301a0d25f424d96175f810935f0da9
 https://conda.anaconda.org/conda-forge/linux-64/pycosat-0.6.4-py311hd4cff14_1.tar.bz2#17399f8b68b4592f098ab18d4fdb0ac4
 https://conda.anaconda.org/conda-forge/noarch/pycparser-2.21-pyhd8ed1ab_0.tar.bz2#076becd9e05608f8dc72757d5f3a91ff
 https://conda.anaconda.org/conda-forge/noarch/pylev-1.4.0-pyhd8ed1ab_0.tar.bz2#edf8651c4379d9d1495ad6229622d150
 https://conda.anaconda.org/conda-forge/noarch/pysocks-1.7.1-pyha2e5f31_6.tar.bz2#2a7de29fb590ca14b5243c4c812c8025
 https://conda.anaconda.org/conda-forge/linux-64/pyyaml-6.0-py311hd4cff14_5.tar.bz2#da8769492e423103c59f469f4f17f8d9
 https://conda.anaconda.org/conda-forge/linux-64/ruamel.yaml.clib-0.2.7-py311h2582759_1.conda#5e997292429a22ad50c11af0a2cb0f08
+https://conda.anaconda.org/conda-forge/linux-64/ruamel_yaml-0.15.80-py311hd4cff14_1008.tar.bz2#cfc7aa9d4e13c267fb6531d4788f2ede
 https://conda.anaconda.org/conda-forge/noarch/setuptools-65.5.1-pyhd8ed1ab_0.tar.bz2#cfb8dc4d9d285ca5fb1177b9dd450e33
 https://conda.anaconda.org/conda-forge/noarch/six-1.16.0-pyh6c4a22f_0.tar.bz2#e5f25f8dbc060e9a8d912e432202afc2
 https://conda.anaconda.org/conda-forge/noarch/tomli-2.0.1-pyhd8ed1ab_0.tar.bz2#5844808ffab9ebdb694585b50ba02a96
@@ -102,7 +102,6 @@ https://conda.anaconda.org/conda-forge/noarch/jinja2-3.1.2-pyhd8ed1ab_1.tar.bz2#
 https://conda.anaconda.org/conda-forge/linux-64/libmamba-1.1.0-h70b1f8a_2.conda#9d38a1b35b7de29dfc4d64daeb1e27fc
 https://conda.anaconda.org/conda-forge/linux-64/ruamel.yaml-0.17.21-py311hd4cff14_2.tar.bz2#1e3fa73ad16d9c64e8e3421861a49ec0
 https://conda.anaconda.org/conda-forge/noarch/tomlkit-0.11.6-pyha770c72_0.tar.bz2#471bf9e605820b59988e830382b8d654
-https://conda.anaconda.org/conda-forge/noarch/tqdm-4.64.1-pyhd8ed1ab_0.tar.bz2#5526ff3f88f9db87bb0924b9ce575345
 https://conda.anaconda.org/conda-forge/noarch/typing-extensions-4.4.0-hd8ed1ab_0.tar.bz2#be969210b61b897775a0de63cd9e9026
 https://conda.anaconda.org/conda-forge/linux-64/virtualenv-20.17.1-py311h38be061_0.conda#46ee18791b2f786c1e052664b3842580
 https://conda.anaconda.org/conda-forge/linux-64/brotlipy-0.7.0-py311hd4cff14_1005.tar.bz2#9bdac7084ecfc08338bae1b976535724
@@ -119,7 +118,7 @@ https://conda.anaconda.org/conda-forge/linux-64/keyring-23.11.0-py311h38be061_0.
 https://conda.anaconda.org/conda-forge/noarch/urllib3-1.26.13-pyhd8ed1ab_0.conda#3078ef2359efd6ecadbc7e085c5e0592
 https://conda.anaconda.org/conda-forge/noarch/requests-2.28.1-pyhd8ed1ab_1.tar.bz2#089382ee0e2dc2eae33a04cc3c2bddb0
 https://conda.anaconda.org/conda-forge/noarch/cachecontrol-0.12.11-pyhd8ed1ab_0.tar.bz2#6eefee9888f33f150b5d44d616b1a613
-https://conda.anaconda.org/conda-forge/linux-64/conda-22.11.1-py311h38be061_1.conda#8044bd784684111d0e3eb50211146b8e
+https://conda.anaconda.org/conda-forge/linux-64/conda-22.9.0-py311h38be061_2.tar.bz2#d083486f8b405adad834ba22b9cd7340
 https://conda.anaconda.org/conda-forge/noarch/ensureconda-1.4.3-pyhd8ed1ab_0.tar.bz2#c99ae3abf501990769047b4b40a98f17
 https://conda.anaconda.org/conda-forge/noarch/conda-lock-1.2.1-pyhd8ed1ab_1.tar.bz2#7b1dde4760c5c554523fead6c2771af2
 https://conda.anaconda.org/conda-forge/linux-64/mamba-1.1.0-py311h3072747_2.conda#d090b2f1b164c9584ad96902d5a09b1d
