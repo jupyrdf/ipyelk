@@ -80,12 +80,12 @@ ${SCREENS}      ${SCREENS ROOT}${/}notebook-examples
     [Tags]    gh:48
     Example Should Restart-and-Run-All    ${SIM APP}
     # not worth counting anything, as is basically non-deterministic
-    Computed Element Style Should Be    rect.elknode    stroke=rgba(0, 0, 0, 0)
-    Computed Element Style Should Be    .down path    strokeDasharray=4px    stroke=rgb(255, 0, 0)
-    Computed Element Style Should Be    .elkedge    fontWeight=700
+    Wait Until Computed Element Styles Are    5x    1s    rect.elknode    stroke=rgba(0, 0, 0, 0)
+    Wait Until Computed Element Styles Are    5x    1s    .down path    strokeDasharray=4px    stroke=rgb(255, 0, 0)
+    Wait Until Computed Element Styles Are    5x    1s    .elkedge    fontWeight=700
 
 14_Text_Styling
     [Tags]    gh:100
     Example Should Restart-and-Run-All    ${TEXT STYLE}
     Sleep    2s
-    Computed Element Style Should Be    .elklabel    fontWeight=700
+    Wait Until Computed Element Styles Are    5x    1s    .elklabel    fontWeight=700
