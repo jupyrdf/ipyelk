@@ -124,4 +124,5 @@ Click Elk Tool
     Mouse Over    ${elkApps[${index}]}
     ${tools} =    Get WebElements    ${elkSelector}//button[contains(.,"${label}")]
     Log    ${tools}
+    Wait Until Element Is Visible    ${tools[${index}]}
     Click Element    ${tools[${index}]}
