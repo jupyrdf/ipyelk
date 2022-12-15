@@ -69,6 +69,10 @@ Custom Elk Selectors Should Exist
 
 Elk Counts Should Be
     [Arguments]    ${nodes}=${0}    ${edges}=${0}    ${labels}=${0}    ${ports}=${0}    ${prefix}=${EMPTY}    ${n}=${1}    ${screen}=20-counted.png
+    IF    ${nodes} + ${edges} + ${labels} + ${ports}
+        Wait Until Element Is Visible
+        ...    css:${prefix}${CSS ELK NODE}, ${prefix}${CSS ELK EDGE}, ${prefix}${CSS ELK LABEL}, ${prefix}${CSS ELK PORT}
+    END
     ${found nodes} =    Get Elk Node Count    prefix=${prefix}
     ${found edges} =    Get Elk Edge Count    prefix=${prefix}
     ${found labels} =    Get Elk Label Count    prefix=${prefix}
