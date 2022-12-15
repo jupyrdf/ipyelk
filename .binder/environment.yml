@@ -2,52 +2,64 @@ channels:
   - conda-forge
   - nodefaults
 dependencies:
-  - ansi2html
-  - black-jupyter
-  - bqplot >=0.12.20
-  - docutils >=0.19
+  # runtimes
+  - python >=3.7,<3.12.0a0
+  - jupyterlab >=3,<4
+  # real deps
+  - ipywidgets >=8.0.1,<9
+  - networkx
+  - pydantic >=1
+  # build
   - doit
-  - firefox =102
   - flit >=3.7.1,<4
-  - geckodriver
-  - hypothesis-jsonschema
+  - keyring
+  - nodejs >=18,<19
+  - pip
+  - tomli
+  - twine
+  - wheel
+  - packaging <22
+  - pytoolconfig <1.2.4
+  # demo
+  - bqplot >=0.12.20
   - importnb
   - ipython >=7
-  - ipywidgets >=8.0.1,<9
-  - isort
-  - jupyterlab >=3,<4
   - jupyterlab-deck
   - jupyterlab-myst
-  - jupyterlab-webrtc-docprovider
-  - keyring
-  - mypy
-  - myst-nb
-  - networkx
-  - nodejs >=18,<19
   - pandas
-  - pip
-  - pkginfo
-  - pydantic >=1
-  - pydata-sphinx-theme
+  # lint
+  - black-jupyter
+  - isort
+  - mypy
   - pyflakes
+  - rope
+  # utest
+  - hypothesis-jsonschema
   - pytest-asyncio
-  - pytest-check-links
   - pytest-cov
   - pytest-html
   - pytest-xdist
-  - python >=3.7,<3.12.0a0
-  - python-libarchive-c
-  - requests-cache
+  # atest
+  - firefox =102
+  - geckodriver
   - robotframework-pabot
   - robotframework-robocop
   - robotframework-seleniumlibrary
   - robotframework-tidy
-  - rope
+  # docs
+  - ansi2html
+  - docutils >=0.19
+  - myst-nb
+  - pydata-sphinx-theme
+  - pytest-check-links
+  - requests-cache
   - sphinx
   - sphinx-autobuild
   - sphinx-autodoc-typehints
-  - tomli
-  - twine
-  - wheel
-  - pip:
-    - jupyterlite ==0.1.0b15
+  # lite
+  - jupyterlab-webrtc-docprovider
+  - pkginfo
+  - python-libarchive-c
+  # this is handled by `doit lite:pip:install`
+  # - pip:
+  #   - jupyterlite ==0.1.0b15
