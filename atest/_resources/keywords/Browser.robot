@@ -14,6 +14,7 @@ Computed Element Style Should Be
     [Documentation]    Check whether the element style has all the given camelCase-value pairs.
     ...    Further, some values get translated, e.g. `red` -> `rgb(255, 0, 0)`
     [Arguments]    ${css selector}    &{styles}
+    Wait Until Page Contains Element    css:${css selector}
     ${map} =    Set Variable    return window.getComputedStyle(document.querySelector(`${css selector}`))
     ${observed} =    Create Dictionary
     ${all} =    Execute Javascript    ${map}

@@ -159,7 +159,7 @@ Open in Advanced Settings
     [Arguments]    ${plugin id}
     Lab Command    Advanced Settings Editor
     ${sel} =    Set Variable    css:[data-id="${plugin id}"]
-    Wait Until Page Contains Element    ${sel}
+    Wait Until Element Is Visible    ${sel}
     Click Element    ${sel}
     Wait Until Page Contains    System Defaults
 
@@ -177,7 +177,7 @@ Close JupyterLab
 
 Open Command Palette
     Press Keys    id:main    ${ACCEL}+SHIFT+c
-    Wait Until Element is Visible    ${CMD PALETTE INPUT}
+    Wait Until Element Is Visible    ${CMD PALETTE INPUT}
     Wait Until Keyword Succeeds    3x    1s    Click Element    ${CMD PALETTE INPUT}
 
 Enter Command Name
@@ -188,7 +188,7 @@ Enter Command Name
 Lab Command
     [Arguments]    ${cmd}
     Enter Command Name    ${cmd}
-    Wait Until Page Contains Element    ${CMD PALETTE ITEM ACTIVE}
+    Wait Until Element Is Visible    ${CMD PALETTE ITEM ACTIVE}
     Wait Until Keyword Succeeds    5x    0.5s    Click Element    ${CMD PALETTE ITEM ACTIVE}
 
 Capture All Code Cells
@@ -230,10 +230,13 @@ Accept Default Dialog Option
 Ensure All Kernels Are Shut Down
     Enter Command Name    Shut Down All Kernels
     ${els} =    Get WebElements    ${CMD PALETTE ITEM ACTIVE}
-    IF    ${els.__len__()}    Click Element    ${CMD PALETTE ITEM ACTIVE}
     ${accept} =    Set Variable    css:.jp-mod-accept.jp-mod-warn
-    IF    ${els.__len__()}    Wait Until Page Contains Element    ${accept}
-    IF    ${els.__len__()}    Click Element    ${accept}
+    IF    ${els.__len__()}
+        Wait Until Element is Visible    ${CMD PALETTE ITEM ACTIVE}
+        Click Element    ${CMD PALETTE ITEM ACTIVE}
+        Wait Until Element Is Visible    ${accept}
+        Click Element    ${accept}
+    END
 
 Page Should Not Contain Contain Standard Errors
     [Arguments]    ${prefix}=${EMPTY}    ${exceptions}=${None}
