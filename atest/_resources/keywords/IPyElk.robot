@@ -69,6 +69,20 @@ Custom Elk Selectors Should Exist
 
 Elk Counts Should Be
     [Arguments]    ${nodes}=${0}    ${edges}=${0}    ${labels}=${0}    ${ports}=${0}    ${prefix}=${EMPTY}    ${n}=${1}    ${screen}=20-counted.png
+    Wait Until Keyword Succeeds
+    ...    5x
+    ...    1s
+    ...    Elk Counts Should Really Be
+    ...    nodes=${nodes}
+    ...    edges=${edges}
+    ...    labels=${labels}
+    ...    ports=${ports}
+    ...    prefix=${prefix}
+    ...    n=${n}
+    ...    screen=${screen}
+
+Elk Counts Should Really Be
+    [Arguments]    ${nodes}=${0}    ${edges}=${0}    ${labels}=${0}    ${ports}=${0}    ${prefix}=${EMPTY}    ${n}=${1}    ${screen}=20-counted.png
     IF    ${nodes} + ${edges} + ${labels} + ${ports}
         Wait Until Element Is Visible
         ...    css:${prefix}${CSS ELK NODE}, ${prefix}${CSS ELK EDGE}, ${prefix}${CSS ELK LABEL}, ${prefix}${CSS ELK PORT}
