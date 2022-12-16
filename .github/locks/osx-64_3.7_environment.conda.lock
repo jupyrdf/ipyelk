@@ -8,6 +8,7 @@
 # - geckodriver
 # - hypothesis-jsonschema
 # - importnb
+# - ipykernel !=6.19.*
 # - ipython >=7
 # - ipywidgets >=8.0.1,<9
 # - isort
@@ -78,7 +79,7 @@ https://conda.anaconda.org/conda-forge/osx-64/icu-70.1-h96cf925_0.tar.bz2#376635
 https://conda.anaconda.org/conda-forge/osx-64/lerc-4.0.0-hb486fe8_0.tar.bz2#f9d6a4c82889d5ecedec1d90eb673c55
 https://conda.anaconda.org/conda-forge/osx-64/libbrotlidec-1.0.9-hb7f2c08_8.tar.bz2#7f952a036d9014b4dab96c6ea0f8c2a7
 https://conda.anaconda.org/conda-forge/osx-64/libbrotlienc-1.0.9-hb7f2c08_8.tar.bz2#b36a3bfe866d9127f25f286506982166
-https://conda.anaconda.org/conda-forge/osx-64/libgfortran5-11.3.0-h082f757_26.tar.bz2#11835360754e5caca43cfaa3a81dfca5
+https://conda.anaconda.org/conda-forge/osx-64/libgfortran5-11.3.0-h082f757_27.conda#f7602714b2be91be36f00fb75c45cb14
 https://conda.anaconda.org/conda-forge/osx-64/libpng-1.6.39-ha978bb4_0.conda#35e4928794c5391aec14ffdf1deaaee5
 https://conda.anaconda.org/conda-forge/osx-64/libsqlite-3.40.0-ha978bb4_0.tar.bz2#ceb13b6726534b96e3b4e3dda91e9050
 https://conda.anaconda.org/conda-forge/osx-64/libxcb-1.13-h0d85af4_1004.tar.bz2#eb7860935e14aec936065cbc21a1a962
@@ -91,7 +92,7 @@ https://conda.anaconda.org/conda-forge/osx-64/zlib-1.2.13-hfd90126_4.tar.bz2#be9
 https://conda.anaconda.org/conda-forge/osx-64/zstd-1.5.2-hfa58983_4.tar.bz2#0b446e84f3ccf085e590dc1f73eebe3f
 https://conda.anaconda.org/conda-forge/osx-64/brotli-bin-1.0.9-hb7f2c08_8.tar.bz2#aac5ad0d8f747ef7f871508146df75d9
 https://conda.anaconda.org/conda-forge/osx-64/freetype-2.12.1-h3f81eb7_1.conda#852224ea3e8991a8342228eab274840e
-https://conda.anaconda.org/conda-forge/osx-64/libgfortran-5.0.0-9_5_0_h97931a8_26.tar.bz2#ac9c1a84323edab6c3ff9d3e586ab3cc
+https://conda.anaconda.org/conda-forge/osx-64/libgfortran-5.0.0-11_3_0_h97931a8_27.conda#7d25335e67256924aa04de681e68e807
 https://conda.anaconda.org/conda-forge/osx-64/libtiff-4.4.0-hdb44e8a_4.tar.bz2#09195c43a896fe98b82dcebfa1d6eab1
 https://conda.anaconda.org/conda-forge/osx-64/libxml2-2.10.3-hb9e07b5_0.tar.bz2#13ba8bf8f44cdac2e5401dac20a36040
 https://conda.anaconda.org/conda-forge/osx-64/nodejs-18.12.1-hd0c9b3c_0.tar.bz2#e5ab86f2155244c022f8db0165bce009
@@ -271,7 +272,7 @@ https://conda.anaconda.org/conda-forge/noarch/prompt-toolkit-3.0.36-pyha770c72_0
 https://conda.anaconda.org/conda-forge/noarch/pyopenssl-22.1.0-pyhd8ed1ab_0.tar.bz2#fbfa0a180d48c800f922a10a114a8632
 https://conda.anaconda.org/conda-forge/noarch/readme_renderer-37.3-pyhd8ed1ab_0.tar.bz2#82e8ab317fe8f1d2a944688438dce868
 https://conda.anaconda.org/conda-forge/noarch/rich-click-1.4-pyhd8ed1ab_0.tar.bz2#2b8b2a9974170b437c4c3025b9a8e8d8
-https://conda.anaconda.org/conda-forge/noarch/rope-1.5.1-pyhd8ed1ab_0.conda#a3931347bef767fefdca19b7cf127dbf
+https://conda.anaconda.org/conda-forge/noarch/rope-1.6.0-pyhd8ed1ab_0.conda#c10a8588df896961f69e6887727fe167
 https://conda.anaconda.org/conda-forge/osx-64/scipy-1.7.3-py37h4e3cf02_0.tar.bz2#e0a33e15732767448c6ddf0458b09e3e
 https://conda.anaconda.org/conda-forge/noarch/trio-websocket-0.9.2-pyhd8ed1ab_0.tar.bz2#7acf3fc982eef23b24aed10e80d5dc99
 https://conda.anaconda.org/conda-forge/noarch/hypothesis-jsonschema-0.22.0-pyhd8ed1ab_0.tar.bz2#8c544f6ff56e72de377510575009dca1

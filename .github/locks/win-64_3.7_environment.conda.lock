@@ -8,6 +8,7 @@
 # - geckodriver
 # - hypothesis-jsonschema
 # - importnb
+# - ipykernel !=6.19.*
 # - ipython >=7
 # - ipywidgets >=8.0.1,<9
 # - isort
@@ -272,7 +273,7 @@ https://conda.anaconda.org/conda-forge/noarch/prompt-toolkit-3.0.36-pyha770c72_0
 https://conda.anaconda.org/conda-forge/noarch/pyopenssl-22.1.0-pyhd8ed1ab_0.tar.bz2#fbfa0a180d48c800f922a10a114a8632
 https://conda.anaconda.org/conda-forge/noarch/readme_renderer-37.3-pyhd8ed1ab_0.tar.bz2#82e8ab317fe8f1d2a944688438dce868
 https://conda.anaconda.org/conda-forge/noarch/rich-click-1.4-pyhd8ed1ab_0.tar.bz2#2b8b2a9974170b437c4c3025b9a8e8d8
-https://conda.anaconda.org/conda-forge/noarch/rope-1.5.1-pyhd8ed1ab_0.conda#a3931347bef767fefdca19b7cf127dbf
+https://conda.anaconda.org/conda-forge/noarch/rope-1.6.0-pyhd8ed1ab_0.conda#c10a8588df896961f69e6887727fe167
 https://conda.anaconda.org/conda-forge/noarch/trio-websocket-0.9.2-pyhd8ed1ab_0.tar.bz2#7acf3fc982eef23b24aed10e80d5dc99
 https://conda.anaconda.org/conda-forge/noarch/hypothesis-jsonschema-0.22.0-pyhd8ed1ab_0.tar.bz2#8c544f6ff56e72de377510575009dca1
 https://conda.anaconda.org/conda-forge/win-64/ipython-7.33.0-py37h03978a9_0.tar.bz2#2773244832770bf8605f505da0ffdcac
