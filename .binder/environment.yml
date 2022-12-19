@@ -5,6 +5,7 @@ dependencies:
   # runtimes
   - python >=3.7,<3.12.0a0
   - jupyterlab >=3,<4
+  - ipykernel !=6.19.*
   # real deps
   - ipywidgets >=8.0.1,<9
   - networkx
