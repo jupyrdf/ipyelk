@@ -64,7 +64,7 @@ class Partition(Node):
     )
 
     class Config:
-        copy_on_model_validation = False
+        copy_on_model_validation = "none"
 
         # non-pydantic configs
         excluded = merge_excluded(Node, "default_edge")
@@ -91,7 +91,7 @@ class Record(Node):
     min_height: float = Field(default=20, description="Minimum height of a compartment")
 
     class Config:
-        copy_on_model_validation = False
+        copy_on_model_validation = "none"
 
         # non-pydantic configs
         excluded = merge_excluded(Node, "min_height")
@@ -113,11 +113,11 @@ class Record(Node):
         return super().dict(**kwargs)
 
 
-class Compartment(Record):
+class Compartment(Node):
     bullet_shape: Optional[Icon] = None
 
     class Config:
-        copy_on_model_validation = False
+        copy_on_model_validation = "none"
 
         # non-pydantic configs
         excluded = merge_excluded(Node, "headings", "content", "bullet_shape")

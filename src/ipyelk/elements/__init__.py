@@ -27,6 +27,7 @@ from .index import (
     iter_edges,
     iter_elements,
     iter_hierarchy,
+    iter_labels,
     iter_visible,
 )
 from .mark_factory import Mark, MarkFactory
@@ -59,6 +60,7 @@ __all__ = [
     "iter_edges",
     "iter_elements",
     "iter_hierarchy",
+    "iter_labels",
     "iter_visible",
     "Label",
     "LabelProperties",

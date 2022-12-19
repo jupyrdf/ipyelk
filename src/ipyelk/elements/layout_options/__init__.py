@@ -22,11 +22,12 @@ from .edge_options import (
     MergeEdges,
     MergeHierarchyCrossingEdges,
 )
-from .layout import LayoutAlgorithm
+from .layout import ELKRectanglePacking, LayoutAlgorithm
 from .node_options import (
     ActivateInsideSelfLoops,
     AspectRatio,
     ConsiderModelOrder,
+    ContentAlignment,
     ExpandNodes,
     HierarchyHandling,
     NodeLabelPlacement,
@@ -64,6 +65,7 @@ __all__ = [
     "CommentNodeSpacing",
     "ComponentsSpacing",
     "ConsiderModelOrder",
+    "ContentAlignment",
     "Direction",
     "EadesRepulsion",
     "EdgeCenterLabelPlacementStrategy" "EdgeEdgeLayerSpacing",
@@ -80,6 +82,7 @@ __all__ = [
     "EdgeSpacing",
     "EdgeThickness",
     "EdgeType",
+    "ELKRectanglePacking",
     "ExpandNodes",
     "FeedbackEdges",
     "HierarchyHandling",

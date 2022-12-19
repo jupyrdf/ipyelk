@@ -93,6 +93,16 @@ def rep_elapsed(delta: Optional[timedelta]):
 
 
 class PipeStatusView(W.VBox):
+    """Widget to display the pipe status.
+
+    Attributes
+    ----------
+    include_exception: bool
+        exception captured
+    html: string
+        built status html to display
+    """
+
     include_exception = T.Bool(default_value=False)
     html: W.HTML = T.Instance(W.HTML, kw={})
 
@@ -113,6 +123,7 @@ class PipeStatusView(W.VBox):
         self.children = [self.html]
 
     def update(self, pipe: "Pipe"):
+        """Method to update the status given changes in the pipe."""
         error = ""
         status = pipe.status
         if self.include_exception and status.exception:
@@ -145,6 +156,30 @@ class PipeStatusView(W.VBox):
 
 
 class Pipe(W.Widget):
+    """A step in the processing pipeline for diagrams.
+
+    Attributes
+    ----------
+    inlet: :py:class:`~ipyelk.pipes.MarkElementWidget`
+        input elements to manipulate.
+    outlet: :py:class:`~ipyelk.pipes.MarkElementWidget`
+        output elements that potentially have been manipulated.
+    observed: tuple of :py:class:`~str`
+        which potential changes that would require this pipe to be rerun.
+    reports: tuple of :py:class:`~str`
+        types of changes that get added to the output based of rerunning this
+        pipe.
+    on_progress: :py:class:`~callable`
+        Callable function that is executed when the pipe is running.
+    status: :py:class:`~ipyelk.pipes.base.PipeStatus`
+        Captures the disposition of the pipe during the change lifecycle.
+    status_view: :py:class:`~ipyelk.pipes.base.PipeStatusView`
+        Widget to show pipe status as it updates.
+    enabled: bool
+        whether the processing step can be run
+
+    """
+
     enabled: bool = T.Bool(default_value=True)
     inlet: MarkElementWidget = T.Instance(MarkElementWidget, kw={})
     outlet: MarkElementWidget = T.Instance(MarkElementWidget, kw={})
@@ -175,6 +210,7 @@ class Pipe(W.Widget):
         return self.status_widget._repr_mimebundle_(**kwargs)
 
     def schedule_run(self, change: T.Bunch = None) -> asyncio.Task:
+        """Schedule rerunning the pipe on the event loop."""
         # schedule task on loop
         if self._task:
             self._task.cancel()
@@ -192,10 +228,20 @@ class Pipe(W.Widget):
             raise E
 
     async def run(self):
+        """Run method that takes the input performs checks/changes, and sets the
+        output value.
+
+        Subclasses of the pipe will implement their own custom processing logic.
+        """
         # do work
         self.outlet.value = self.inlet.value
 
     def check_dirty(self) -> bool:
+        """Method to test is this pipe should be run given the set of changes.
+
+        :return: dirty flag
+        :rtype: bool
+        """
         flow = self.inlet.flow
 
         if any(any(re.match(f"^{obs}$", f) for f in flow) for obs in self.observes):
@@ -224,6 +270,11 @@ class Pipe(W.Widget):
         return self.status.step()
 
     def error(self):
+        """Method to raise any potential errors captured during the running of
+        the pipe.
+
+        :raises self.status.exception: captured exception during the processing.
+        """
         if self.status.exception:
             raise self.status.exception
 

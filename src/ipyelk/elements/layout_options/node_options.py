@@ -496,3 +496,60 @@ class AspectRatio(LayoutOptionWidget):
     @T.observe("ratio")
     def _update_value(self, change: T.Bunch = None):
         self.value = str(self.ratio)
+
+
+class ContentAlignment(LayoutOptionWidget):
+    """Specifies how the content of a node are aligned. Each node can
+    individually control the alignment of its contents. I.e. if a node should be
+    aligned top left in its parent node, the parent node should specify that
+    option.
+
+    https://www.eclipse.org/elk/reference/options/org-eclipse-elk-contentAlignment.html
+    """
+
+    identifier = "	org.eclipse.elk.contentAlignment"
+    metadata_provider = "core.options.CoreOptions"
+    applies_to = ["parents"]
+    group = "nodeSize"
+
+    horizontal = T.Enum(values=["left", "center", "right"], default_value="left")
+    vertical = T.Enum(values=["top", "center", "bottom"], default_value="top")
+
+    def _ui(self) -> List[W.Widget]:
+        horizontal_options = W.RadioButtons(
+            description="Horizontal",
+            options=(
+                ("Left", "left"),
+                ("Center", "center"),
+                ("Right", "right"),
+            ),
+        )
+        vertical_options = W.RadioButtons(
+            description="Vertical",
+            options=(
+                ("Top", "top"),
+                ("Center", "center"),
+                ("Bottom", "bottom"),
+            ),
+        )
+
+        T.link((self, "horizontal"), (horizontal_options, "value"))
+        T.link((self, "vertical"), (vertical_options, "value"))
+
+        return [
+            horizontal_options,
+            vertical_options,
+        ]
+
+    @T.observe("horizontal", "vertical")
+    def _update_value(self, change=None):
+        options = []
+        if self.horizontal:
+            options.append(f"H_{self.horizontal.upper()}")
+        if self.vertical:
+            options.append(f"V_{self.vertical.upper()}")
+
+        if options:
+            self.value = " ".join(options)
+        else:
+            self.value = None

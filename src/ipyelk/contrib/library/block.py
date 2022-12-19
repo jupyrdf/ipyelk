@@ -65,7 +65,7 @@ class Generalization(Edge):
 class BlockDiagram(Partition):
     # TODO flesh out ideas of encapsulating diagram defs / styles / elements
     class Config:
-        copy_on_model_validation = False
+        copy_on_model_validation = "none"
         excluded = merge_excluded(Partition, "symbols", "style")
 
     symbols: SymbolSpec = SymbolSpec().add(
