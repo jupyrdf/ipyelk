@@ -81,10 +81,19 @@ def task_lock():
         return
 
     def _lock_comment(env_yamls: Paths) -> str:
-        comment = ""
+        deps = []
         for env_file in reversed(env_yamls):
-            comment += env_file.read_text(encoding="utf-8").strip() + "\n"
-        return textwrap.indent(comment, "# ")
+            found_deps = False
+            for line in env_file.read_text(encoding="utf-8").strip().splitlines():
+                line = line.strip()
+                if line.startswith("dependencies"):
+                    found_deps = True
+                if not found_deps:
+                    continue
+                if line.startswith("- "):
+                    deps += [line]
+        comment = textwrap.indent("\n".join(sorted(set(deps))), "# ")
+        return comment
 
     def _needs_lock(lockfile: Path, env_yamls: Paths) -> bool:
         if not lockfile.exists():
@@ -98,7 +107,7 @@ def task_lock():
             print(f"lockfile up-to-date: {lockfile}")
             return
 
-        lock_args = ["conda-lock", "--kind=explicit"]
+        lock_args = [*P.CONDA_LOCK]
         comment = _lock_comment(env_yamls)
         for env_file in reversed(env_yamls):
             lock_args += ["--file", env_file]
@@ -115,10 +124,13 @@ def task_lock():
             )
             return False
 
+        str_args = list(map(str, lock_args))
+        print(">>>", *str_args)
+
         with tempfile.TemporaryDirectory() as td:
             tdp = Path(td)
             tmp_lock = tdp / f"conda-{platform}.lock"
-            subprocess.check_call(list(map(str, lock_args)), cwd=td)
+            subprocess.check_call(str_args, cwd=td)
             raw = tmp_lock.read_text(encoding="utf-8").split(P.EXPLICIT)[1].strip()
 
         lockfile.parent.mkdir(exist_ok=True, parents=True)
@@ -232,12 +244,10 @@ def task_env():
 
     yield dict(
         name="dev",
-        uptodate=[config_changed(dict(lite=P.LITE_SPEC))],
         file_dep=[P.LOCKFILE],
         targets=[P.HISTORY],
         actions=[
             [*P.MAMBA_CREATE, P.ENV, "--file", P.LOCKFILE],
-            [*P.IN_ENV, *P.PIP, "install", "--no-deps", *P.LITE_SPEC],
         ],
     )
 
@@ -689,15 +699,21 @@ def task_lite():
     """build the jupyterlite site"""
 
     yield dict(
+        name="pip:install",
+        file_dep=[P.OK_PIP_INSTALL],
+        actions=[[*P.IN_ENV, *P.PIP, "install", "--no-deps", *P.LITE_SPEC]],
+    )
+
+    yield dict(
         name="build",
         file_dep=[
             *P.EXAMPLE_IPYNB,
             *P.EXAMPLE_JSON,
             *P.LITE_JSON,
             P.EXAMPLE_REQS,
-            P.OK_PIP_INSTALL,
             P.WHEEL,
         ],
+        task_dep=["lite:pip:install"],
         targets=[P.LITE_SHA256SUMS],
         actions=[
             CmdAction(

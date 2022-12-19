@@ -114,7 +114,7 @@ class Diagram(StyledWidget):
     @T.observe("tools")
     def _update_tools(self, change=None):
         if change and isinstance(change.old, tuple):
-            for tool in change.old:
+            for tool in change.old or []:
                 tool.tee = None
                 tool.on_done = None
 
