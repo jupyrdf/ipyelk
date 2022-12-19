@@ -123,6 +123,7 @@ LOCK_ENV = ROOT / "envs/lock"
 
 CONDA_RUN = ["conda", "run", "--live-stream", "--prefix"]
 MAMBA_CREATE = ["mamba", "create", "-y", "--prefix"]
+CONDA_LOCK = ["conda-lock", "--kind=explicit", "--mamba"]
 
 if BUILDING_IN_CI:
     IN_ENV = []

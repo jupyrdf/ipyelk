@@ -73,7 +73,7 @@ class OptionsWidget(W.Accordion, LayoutOptionWidget):
     @T.observe("options")
     def _update_options(self, change: T.Bunch = None):
         if change and change.old is not T.Undefined:
-            for old_option in change.old:
+            for old_option in change.old or []:
                 old_option.unobserve(self._update_value, "value")
         for option in self.options:
             option.observe(self._update_value, "value")
