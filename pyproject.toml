@@ -31,7 +31,7 @@ classifiers = [
 ]
 requires-python = ">=3.7"
 dependencies = [
-    "ipywidgets >=8.0.1,<9",
+    "ipywidgets >=8.0.4,<9",
     "networkx",
     "pydantic",
 ]
