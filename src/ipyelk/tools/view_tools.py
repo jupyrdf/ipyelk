@@ -12,6 +12,16 @@ from .tool import Tool, ToolButton
 
 
 class Selection(Tool):
+    """Tool exposing the ids and elements for selected marks in the
+    diagram.
+
+    Attributes
+    ----------
+    ids: tuple
+    Tuple of string ids.
+
+    """
+
     ids = TypedTuple(trait=T.Unicode()).tag(
         sync=True
     )  # list element ids currently selected
@@ -25,12 +35,22 @@ class Selection(Tool):
         return self.tee.inlet.index
 
     def elements(self) -> Iterator[BaseElement]:
+        """"""
         index = self.get_index()
         for el in map(index.from_id, self.ids):
             yield el
 
 
 class Hover(Tool):
+    """Tool exposing the ids of hovered marks in the diagram.
+
+    Attributes
+    ----------
+    ids: tuple
+    Tuple of string ids.
+
+    """
+
     ids: str = T.Unicode().tag(sync=True)  # list element ids currently hovered
 
 

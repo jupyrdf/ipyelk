@@ -3,23 +3,21 @@
 ## Diagram Widget
 
 ```{eval-rst}
-.. currentmodule:: ipyelk.diagram.elk_widget
-.. autoclass:: ipyelk.diagram.elk_widget.ElkDiagram
+.. currentmodule:: ipyelk
+.. autoclass:: ipyelk.Diagram
     :members:
 ```
 
-## App Widget
+## Viewer Widget
 
 ```{eval-rst}
-.. currentmodule:: ipyelk.app
-.. autoclass:: ipyelk.app.Elk
+.. currentmodule:: ipyelk
+.. autoclass:: ipyelk.diagram.Viewer
     :members:
 ```
 
-## Layout Widget
-
 ```{eval-rst}
-.. currentmodule:: ipyelk.layouting.elkjs
-.. autoclass:: ipyelk.layouting.elkjs.ElkJS
+.. currentmodule:: ipyelk
+.. autoclass:: ipyelk.diagram.SprottyViewer
     :members:
 ```

@@ -20,19 +20,28 @@ from .viewer import Viewer
 class Diagram(StyledWidget):
     """An Elk diagramming widget to help coordinate the
     :py:class:`~ipyelk.diagram.viewer.Viewer` and
-    :py:class:`~ipyelk.transformers.AbstractTransformer`
+    :py:class:`~ipyelk.pipes.Pipe`
 
     Attributes
     ----------
-
-    transformer: :py:class:`~ipyelk.transformers.AbstractTransformer`
-        Transformer to convert source objects into valid elk json value
-    viewer: :py:class:`~ipyelk.diagram.viewer.Viewer`
-
-    :param toolbar: Toolar for widget
+    source: :py:class:`~ipyelk.pipes.MarkElementWidget`
+        input source to the diagram's processing pipe
+    pipe: :py:class:`~ipyelk.pipes.Pipe`
+        processing pipe (that may contain sub-pipes). Pipes perform various
+        tasks like adding x/y and width/height layouts or calculating text label sizes.
+    view: :py:class:`~ipyelk.diagram.viewer.Viewer`
+        output view that will render the pipe outlet
+    tools: tuple :py:class:`~ipyelk.tools.Tool`
+        list of tools that a user of the diagram might use to manipulate the
+        state of the diagram.
+    symbols: :py:class:`~ipyelk.elements.SymbolSpec`
+        additional shape definitions that can be used in rendering the diagram.
+        For example unique arrow head shapes or custom node shapes.
     """
 
-    source: MarkElementWidget = T.Instance(MarkElementWidget, kw={})
+    source: MarkElementWidget = T.Instance(
+        MarkElementWidget, kw={}, help="Syncs Elk JSON Elements"
+    )
 
     pipe: Pipe = T.Instance(Pipe).tag(sync=True, **W.widget_serialization)
     view: Viewer = T.Instance(Viewer).tag(sync=True, **W.widget_serialization)
@@ -120,6 +129,10 @@ class Diagram(StyledWidget):
         return toolbar
 
     def get_tool(self, tool_type: Type[Tool]) -> Tool:
+        """Get the tool that matches the given Tool type.
+
+        :param tool_type: get specific tool instance based on matched type.
+        """
         matches = [tool for tool in self.tools if type(tool) is tool_type]
         num_matches = len(matches)
         if num_matches > 1:
@@ -130,6 +143,12 @@ class Diagram(StyledWidget):
         return matches[0]
 
     def register_tool(self, tool: Tool) -> "Diagram":
+        """Add a new tool to the diagram.
+
+        :param tool: new tool instance to add to the diagram.
+        :type tool: Tool
+        :return: current Diagram instance
+        """
         # TODO inject dependencies smarter...
         traits = tool.trait_names()
         if "diagram" in traits:
@@ -140,7 +159,8 @@ class Diagram(StyledWidget):
         return self
 
     def refresh(self, change: T.Bunch = None) -> asyncio.Task:
-        """Create asynchronous refresh task"""
+        """Create asynchronous refresh task which will update the view given any
+        changes."""
         self.log.debug("Refreshing diagram")
         task: asyncio.Task = self.pipe.schedule_run()
 

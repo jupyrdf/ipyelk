@@ -666,7 +666,6 @@ def task_lab():
             list(map(str, P.JUPYTERLAB_EXE)),
             stdin=subprocess.PIPE,
         )
-
         try:
             proc.wait()
         except KeyboardInterrupt:
@@ -757,7 +756,7 @@ def task_watch_docs():
     yield dict(
         uptodate=[lambda: False],
         name="sphinx-autobuild",
-        file_dep=[P.DOCS_BUILDINFO, *P.ALL_MD, P.OK_DOCS_PIP_INSTALL],
+        file_dep=[P.DOCS_BUILDINFO, *P.ALL_MD, P.OK_PIP_INSTALL],
         actions=[
             LongRunning(
                 [*P.IN_ENV, "sphinx-autobuild", P.DOCS, P.DOCS_BUILD], shell=False

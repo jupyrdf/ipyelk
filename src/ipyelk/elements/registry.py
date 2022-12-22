@@ -18,7 +18,7 @@ class Registry(BaseModel):
     stack: ClassVar[List] = []
 
     class Config:
-        copy_on_model_validation = False
+        copy_on_model_validation = "none"
 
     def __enter__(self):
         self.get_contexts().append(self)

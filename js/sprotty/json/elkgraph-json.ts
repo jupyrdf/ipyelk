@@ -21,6 +21,7 @@ export interface Shape {
   y?: number;
   width?: number;
   height?: number;
+  delay?: number;
 }
 export interface ElkProperties {
   cssClasses?: string;
