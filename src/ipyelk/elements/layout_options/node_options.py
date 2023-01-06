@@ -417,7 +417,7 @@ class Padding(LayoutOptionWidget):
     left = T.Float(min=0, default_value=12)
     right = T.Float(min=0, default_value=12)
 
-    _traits = ["top", "bottom", "left", "right"]
+    _elk_traits = ["top", "bottom", "left", "right"]
 
     def _ui(self) -> List[W.Widget]:
 
@@ -430,7 +430,7 @@ class Padding(LayoutOptionWidget):
 
     @T.observe("top", "bottom", "left", "right")
     def _update_value(self, change: T.Bunch = None):
-        padding = ",".join([f"{t}={getattr(self, t)}" for t in self._traits])
+        padding = ",".join([f"{t}={getattr(self, t)}" for t in self._elk_traits])
         self.value = f"[{padding}]"
 
 
