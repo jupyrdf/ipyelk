@@ -9,7 +9,7 @@ dependencies:
   # real deps
   - ipywidgets >=8.0.1,<9
   - networkx
-  - pydantic >=1
+  - pydantic >=2
   # build
   - doit
   - flit >=3.7.1,<4
