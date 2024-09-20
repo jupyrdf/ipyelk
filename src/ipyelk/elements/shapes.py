@@ -5,7 +5,7 @@
 from typing import Optional, Set
 
 from ipywidgets import DOMWidget
-from pydantic import BaseModel, Field, validator
+from pydantic.v1 import BaseModel, Field, validator
 
 from .common import add_excluded_fields
 

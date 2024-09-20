@@ -3,7 +3,7 @@
 
 from typing import Dict
 
-from pydantic import BaseModel, Field
+from pydantic.v1 import BaseModel, Field
 
 from .elements import Node
 from .shapes import Point

@@ -4,7 +4,7 @@ from collections import defaultdict
 from typing import ClassVar, List, Optional
 from uuid import uuid4
 
-from pydantic import BaseModel, Field
+from pydantic.v1 import BaseModel, Field
 
 
 def id_factory():
