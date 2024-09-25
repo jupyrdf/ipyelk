@@ -1,5 +1,16 @@
 # Changelog
 
+## `2.1.0`
+
+### `@jupyrdf/jupyter-elk 2.1.0`
+
+- Update dependency `elkjs 0.9.3`.
+
+### `ipyelk 2.1.0`
+
+- Update pydantic to v2
+
+
 ## `2.0.0`
 
 ### `@jupyrdf/jupyter-elk 2.0.0`
