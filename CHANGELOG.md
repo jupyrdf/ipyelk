@@ -10,7 +10,6 @@
 
 - Update pydantic to v2
 
-
 ## `2.0.0`
 
 ### `@jupyrdf/jupyter-elk 2.0.0`
