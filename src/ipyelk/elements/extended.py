@@ -2,7 +2,8 @@
 # Distributed under the terms of the Modified BSD License.
 from typing import Dict, List, Optional, Type
 
-from pydantic import Field
+from pydantic.v1 import Field
+from pydantic.v1.fields import FieldInfo
 
 from ..util import merge
 from . import layout_options as opt
@@ -74,13 +75,26 @@ class Partition(Node):
             kwargs = {
                 "source": key.start,
                 "target": key.stop,
-                "cls": key.step if is_edge(key.step) else self.default_edge,
+                "cls": key.step if is_edge(key.step) else self.get_default_edge(),
             }
 
             edge = self.add_edge(**kwargs)
             if isinstance(key.step, str):
                 edge.labels.append(Label(text=key.step))
             return edge
+
+    def get_default_edge(self) -> Type[Edge]:
+        if isinstance(self.default_edge, FieldInfo):
+            edge_cls = self.default_edge.default
+            if not issubclass(edge_cls, Edge):
+                edge_cls = self.default_edge.default_factory()
+        else:
+            edge_cls = self.default_edge
+        if not issubclass(edge_cls, Edge):
+            raise TypeError(
+                f"Not able to find the default edge type.\n Found: {edge_cls}"
+            )
+        return edge_cls
 
 
 class Record(Node):

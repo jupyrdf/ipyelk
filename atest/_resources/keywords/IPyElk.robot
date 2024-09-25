@@ -68,7 +68,14 @@ Custom Elk Selectors Should Exist
     END
 
 Elk Counts Should Be
-    [Arguments]    ${nodes}=${0}    ${edges}=${0}    ${labels}=${0}    ${ports}=${0}    ${prefix}=${EMPTY}    ${n}=${1}    ${screen}=20-counted.png
+    [Arguments]
+    ...    ${nodes}=${0}
+    ...    ${edges}=${0}
+    ...    ${labels}=${0}
+    ...    ${ports}=${0}
+    ...    ${prefix}=${EMPTY}
+    ...    ${n}=${1}
+    ...    ${screen}=20-counted.png
     Wait Until Keyword Succeeds
     ...    5x
     ...    1s
@@ -82,7 +89,14 @@ Elk Counts Should Be
     ...    screen=${screen}
 
 Elk Counts Should Really Be
-    [Arguments]    ${nodes}=${0}    ${edges}=${0}    ${labels}=${0}    ${ports}=${0}    ${prefix}=${EMPTY}    ${n}=${1}    ${screen}=20-counted.png
+    [Arguments]
+    ...    ${nodes}=${0}
+    ...    ${edges}=${0}
+    ...    ${labels}=${0}
+    ...    ${ports}=${0}
+    ...    ${prefix}=${EMPTY}
+    ...    ${n}=${1}
+    ...    ${screen}=20-counted.png
     IF    ${nodes} + ${edges} + ${labels} + ${ports}
         Wait Until Element Is Visible
         ...    css:${prefix}${CSS ELK NODE}, ${prefix}${CSS ELK EDGE}, ${prefix}${CSS ELK LABEL}, ${prefix}${CSS ELK PORT}
@@ -105,7 +119,14 @@ Create Linked Elk Output View
     Wait Until Page Contains Element    css:${JLAB CSS LINKED OUTPUT} ${CSS ELK VIEW} ${CSS ELK NODE}
 
 Linked Elk Output Counts Should Be
-    [Arguments]    ${nodes}=${0}    ${edges}=${0}    ${labels}=${0}    ${ports}=${0}    ${n}=${1}    ${screen}=30-linked.png    ${open}=${TRUE}
+    [Arguments]
+    ...    ${nodes}=${0}
+    ...    ${edges}=${0}
+    ...    ${labels}=${0}
+    ...    ${ports}=${0}
+    ...    ${n}=${1}
+    ...    ${screen}=30-linked.png
+    ...    ${open}=${TRUE}
     IF    ${open}    Create Linked Elk Output View
     Elk Counts Should Be    nodes=${nodes}    edges=${edges}    labels=${labels}    ports=${ports}    n=${n}
     ...    prefix=${JLAB CSS LINKED OUTPUT}${SPACE}    screen=${screen}

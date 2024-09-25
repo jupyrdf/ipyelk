@@ -4,7 +4,7 @@
 from typing import Dict, Optional
 
 from ipywidgets import DOMWidget
-from pydantic import BaseModel
+from pydantic.v1 import BaseModel
 
 from .elements import Node
 from .index import HierarchicalIndex, VisIndex

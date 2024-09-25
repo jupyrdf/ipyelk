@@ -42,13 +42,13 @@
     "verdaccio": "file:./scripts/not-a-package",
     "typescript": "~4.9.3",
     "prettier": "^2.8.0",
-    "elkjs": "0.8.2"
+    "elkjs": "0.9.3"
   },
   "dependencies": {
     "@jupyter-widgets/base": "^6.0.1",
     "@jupyter-widgets/controls": "^5.0.1",
     "@jupyter-widgets/jupyterlab-manager": "^5.0.0",
-    "elkjs": "0.8.2",
+    "elkjs": "0.9.3",
     "reflect-metadata": "^0.1.13",
     "sprotty-elk": "0.9.0"
   },

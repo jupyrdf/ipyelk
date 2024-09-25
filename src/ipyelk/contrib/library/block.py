@@ -2,7 +2,7 @@
 # Distributed under the terms of the Modified BSD License.
 from typing import Dict, Type
 
-from pydantic import Field
+from pydantic.v1 import Field
 
 from ...elements import Edge, EdgeProperties, Partition, Record, SymbolSpec
 from ...elements import layout_options as opt

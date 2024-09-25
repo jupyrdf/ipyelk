@@ -47,6 +47,7 @@ dependencies:
   - robotframework-robocop
   - robotframework-seleniumlibrary
   - robotframework-tidy
+  - selenium <=4.5
   # docs
   - ansi2html
   - docutils >=0.19
