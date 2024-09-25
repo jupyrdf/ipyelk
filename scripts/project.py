@@ -3,7 +3,7 @@
     this should not import anything not in py36+ stdlib, or any local paths
 """
 
-# Copyright (c) 2022 ipyelk contributors.
+# Copyright (c) 2024 ipyelk contributors.
 # Distributed under the terms of the Modified BSD License.
 
 import itertools

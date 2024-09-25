@@ -1,4 +1,4 @@
-# Copyright (c) 2022 ipyelk contributors.
+# Copyright (c) 2024 ipyelk contributors.
 # Distributed under the terms of the Modified BSD License.
 from collections import defaultdict
 from typing import ClassVar, List, Optional
