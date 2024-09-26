@@ -398,7 +398,7 @@ def task_build():
     yield dict(
         name="ext",
         actions=[[*P.IN_ENV, *P.JLPM, "build:ext"]],
-        file_dep=[P.TSBUILDINFO, *P.ALL_CSS],
+        file_dep=[P.TSBUILDINFO, *P.ALL_CSS, P.WEBPACKCONFIG],
         targets=[P.PY_PACKAGE_JSON],
     )
 
@@ -581,6 +581,7 @@ def task_lint():
                 P.HISTORY,
                 P.PRETTIER_IGNORE,
                 P.YARN_INTEGRITY,
+                
             ],
             actions=[
                 [*P.IN_ENV, "npm", "run", "lint:prettier"],

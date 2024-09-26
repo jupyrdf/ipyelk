@@ -12,10 +12,13 @@
  *******************************************************************************/
 
 /** @jsx svg */
-import { injectable } from 'inversify';
 import { VNode } from 'snabbdom';
-import { CircularNodeView, PolylineEdgeView, setClass, svg } from 'sprotty';
+
+import { injectable } from 'inversify';
+
 import { Point, angleOfPoint, toDegrees } from 'sprotty-protocol';
+
+import { CircularNodeView, PolylineEdgeView, setClass, svg } from 'sprotty';
 
 import { ElkModelRenderer } from '../renderer';
 import { ElkEdge, ElkJunction } from '../sprotty-model';

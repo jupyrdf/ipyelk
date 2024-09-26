@@ -12,8 +12,12 @@
  *******************************************************************************/
 
 /** @jsx svg */
-import { injectable } from 'inversify';
 import { VNode } from 'snabbdom';
+
+import { injectable } from 'inversify';
+
+import { Dimension, Point } from 'sprotty-protocol';
+
 import {
   // HtmlRootView,
   // PreRenderedElement,
@@ -29,7 +33,6 @@ import {
   setClass,
   svg,
 } from 'sprotty';
-import { Dimension, Point } from 'sprotty-protocol';
 
 import { ElkModelRenderer } from '../renderer';
 import { ElkLabel, ElkNode, ElkPort } from '../sprotty-model';

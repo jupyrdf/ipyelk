@@ -1,6 +1,8 @@
 /** @jsx html */
-import { injectable } from 'inversify';
 import { VNode } from 'snabbdom';
+
+import { injectable } from 'inversify';
+
 import { IView, SGraphImpl, SParentElementImpl, html, svg } from 'sprotty';
 
 import { ElkModelRenderer } from '../renderer';

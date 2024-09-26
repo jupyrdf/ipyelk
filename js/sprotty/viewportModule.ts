@@ -3,6 +3,9 @@
  * Distributed under the terms of the Modified BSD License.
  */
 import { ContainerModule, inject } from 'inversify';
+
+import { Action, Point, SetViewportAction, Viewport } from 'sprotty-protocol';
+
 import {
   CenterCommand,
   CenterKeyboardListener,
@@ -20,7 +23,6 @@ import {
   isMoveable,
   isViewport,
 } from 'sprotty';
-import { Action, Point, SetViewportAction, Viewport } from 'sprotty-protocol';
 
 import { JLModelSource } from './diagram-server';
 

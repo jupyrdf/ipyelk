@@ -5,13 +5,7 @@
 
 /** @jsx svg */
 import { injectable } from 'inversify';
-import {
-  InitializeCanvasBoundsAction,
-  LocalModelSource,
-  Match,
-  SModelRegistry,
-  SModelRootImpl,
-} from 'sprotty';
+
 import {
   Action,
   Bounds,
@@ -23,6 +17,14 @@ import {
   SModelRoot,
   Viewport,
 } from 'sprotty-protocol';
+
+import {
+  InitializeCanvasBoundsAction,
+  LocalModelSource,
+  Match,
+  SModelRegistry,
+  SModelRootImpl,
+} from 'sprotty';
 
 import type { IWidgetManager } from '@jupyter-widgets/base';
 

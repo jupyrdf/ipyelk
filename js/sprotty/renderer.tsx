@@ -3,6 +3,14 @@
  * Distributed under the terms of the Modified BSD License.
  */
 import { VNode } from 'snabbdom';
+
+import {
+  Bounds,
+  Point,
+  getSubType, // SChildElement,
+} from 'sprotty-protocol';
+import 'sprotty-protocol';
+
 import {
   IVNodePostprocessor,
   IViewArgs,
@@ -17,12 +25,6 @@ import {
   getAbsoluteBounds,
   html,
 } from 'sprotty';
-import {
-  Bounds,
-  Point,
-  getSubType, // SChildElement,
-} from 'sprotty-protocol';
-import 'sprotty-protocol';
 
 import { Widget } from '@lumino/widgets';
 

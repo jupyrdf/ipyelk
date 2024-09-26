@@ -4,8 +4,12 @@
  */
 //inspired from :
 // https://github.com/eclipsesource/graphical-lsp/blob/abc742641f6fc993f708f0c8cef937eb7a0b028a/client/packages/sprotty-client/src/features/tools/creation-tool.ts
-import { inject, injectable } from 'inversify';
 import { VNode } from 'snabbdom';
+
+import { inject, injectable } from 'inversify';
+
+import { Action, SelectAction } from 'sprotty-protocol';
+
 import {
   MouseTool,
   SModelElementImpl,
@@ -15,7 +19,6 @@ import {
   isSelectable,
   setClass,
 } from 'sprotty';
-import { Action, SelectAction } from 'sprotty-protocol';
 import { toArray } from 'sprotty/lib/utils/iterable';
 
 import { DragAwareMouseListener } from './draw-aware-mouse-listener';

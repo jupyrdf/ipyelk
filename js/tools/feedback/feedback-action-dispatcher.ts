@@ -20,7 +20,9 @@
  ********************************************************************************/
 import { injectable } from 'inversify';
 import { inject } from 'inversify';
+
 import { Action } from 'sprotty-protocol';
+
 import { IActionDispatcher } from 'sprotty/lib';
 import { ILogger } from 'sprotty/lib';
 import { TYPES } from 'sprotty/lib';

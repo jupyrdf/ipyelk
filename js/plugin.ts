@@ -2,6 +2,8 @@
  * # Copyright (c) 2024 ipyelk contributors.
  * Distributed under the terms of the Modified BSD License.
  */
+import 'reflect-metadata';
+
 import { Application, IPlugin } from '@lumino/application';
 import { Widget } from '@lumino/widgets';
 
@@ -10,6 +12,8 @@ import { IJupyterWidgetRegistry } from '@jupyter-widgets/base';
 import '../style/index.css';
 
 import { ELK_DEBUG, NAME, VERSION } from './tokens';
+
+console.log('logging:', Reflect.getMetadata);
 
 const EXTENSION_ID = `${NAME}:plugin`;
 

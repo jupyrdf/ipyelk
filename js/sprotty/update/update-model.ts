@@ -20,6 +20,9 @@
  * SPDX-License-Identifier: EPL-2.0 OR GPL-2.0 WITH Classpath-exception-2.0
  ********************************************************************************/
 import { injectable } from 'inversify';
+
+import { Fadeable } from 'sprotty-protocol';
+
 import {
   Animation,
   CommandExecutionContext,
@@ -34,7 +37,6 @@ import {
   isFadeable,
 } from 'sprotty';
 import { UpdateAnimationData, UpdateModelCommand } from 'sprotty';
-import { Fadeable } from 'sprotty-protocol';
 
 import { containsSome } from './smodel-utils';
 

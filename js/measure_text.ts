@@ -160,7 +160,6 @@ export class ELKTextSizerModel extends DOMWidgetModel {
 
 export class ELKTextSizerView extends DOMWidgetView {
   static view_name = 'ELKTextSizerView';
-
   model: ELKTextSizerModel;
   async render() {}
 }

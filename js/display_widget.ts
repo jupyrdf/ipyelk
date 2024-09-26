@@ -3,15 +3,9 @@
  * Distributed under the terms of the Modified BSD License.
  */
 import difference from 'lodash/difference';
+
 import 'reflect-metadata';
-// import { WidgetManager } from '@jupyter-widgets/jupyterlab-manager';
-// import { ManagerBase } from '@jupyter-widgets/base';
-import {
-  ActionDispatcher,
-  ActionHandlerRegistry, // IModelFactory,
-  // SModelFactory,
-  TYPES,
-} from 'sprotty';
+
 import {
   Action,
   HoverFeedbackAction,
@@ -21,6 +15,15 @@ import {
   SetModelAction,
   UpdateModelAction,
 } from 'sprotty-protocol';
+
+// import { WidgetManager } from '@jupyter-widgets/jupyterlab-manager';
+// import { ManagerBase } from '@jupyter-widgets/base';
+import {
+  ActionDispatcher,
+  ActionHandlerRegistry, // IModelFactory,
+  // SModelFactory,
+  TYPES,
+} from 'sprotty';
 
 import { PromiseDelegate } from '@lumino/coreutils';
 import { Message } from '@lumino/messaging';

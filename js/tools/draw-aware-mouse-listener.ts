@@ -2,8 +2,9 @@
  * # Copyright (c) 2024 ipyelk contributors.
  * Distributed under the terms of the Modified BSD License.
  */
-import { MouseListener, SModelElementImpl } from 'sprotty';
 import { Action, HoverFeedbackAction } from 'sprotty-protocol';
+
+import { MouseListener, SModelElementImpl } from 'sprotty';
 
 import { DiagramTool } from './tool';
 

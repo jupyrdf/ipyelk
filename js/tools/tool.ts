@@ -3,8 +3,10 @@
  * Distributed under the terms of the Modified BSD License.
  */
 import { injectable } from 'inversify';
-import { MouseListener, MouseTool } from 'sprotty';
+
 import { Action } from 'sprotty-protocol';
+
+import { MouseListener, MouseTool } from 'sprotty';
 
 export const TOOL_ID_PREFIX = 'tool';
 

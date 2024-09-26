@@ -167,6 +167,7 @@ LITE_SHA256SUMS = LITE_BUILD / "SHA256SUMS"
 # js stuff
 JS_LIB = ROOT / "lib"
 TSBUILDINFO = BUILD / ".src.tsbuildinfo"
+WEBPACKCONFIG = ROOT / "webpack.config.js"
 TS_SRC = ROOT / "js"
 TS_SCHEMA = TS_SRC / "sprotty" / "json" / "elkschema.ts"
 STYLE = ROOT / "style"
@@ -206,7 +207,7 @@ ALL_MD = [*ROOT.glob("*.md"), *ALL_DOCS_MD]
 ALL_TS = [*TS_SRC.rglob("*.ts")]
 ALL_CSS = [*STYLE.rglob("*.css")]
 PRETTIER_IGNORE = ROOT / ".prettierignore"
-ALL_PRETTIER = [*ALL_YML, *ALL_JSON, *ALL_MD, *ALL_TS, *ALL_CSS]
+ALL_PRETTIER = [*ALL_YML, *ALL_JSON, *ALL_MD, *ALL_TS, *ALL_CSS, WEBPACKCONFIG]
 
 # built files
 OK_RELEASE = BUILD / "release.ok"
