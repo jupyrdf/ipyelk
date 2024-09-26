@@ -10,8 +10,6 @@
  * which accompanies this distribution, and is available at
  * http://www.eclipse.org/legal/epl-v10.html
  *******************************************************************************/
-import 'reflect-metadata';
-
 import { Container, ContainerModule, interfaces } from 'inversify';
 
 import {
@@ -29,8 +27,7 @@ import {
   // configureActionHandler,
   // HoverFeedbackCommand,
   IVNodePostprocessor,
-  IViewArgs,
-  InitializeCanvasBoundsCommand,
+  IViewArgs, // InitializeCanvasBoundsCommand,
   LogLevel, // HoverFeedbackAction
   // LocalModelSource,
   //
@@ -159,7 +156,6 @@ export default (containerId: string, view: DOMWidgetView) => {
     rebind(TYPES.IModelFactory).to(SSymbolModelFactory).inSingletonScope();
   });
   const container = new Container();
-  console.log(window.Reflect.getMetadataKeys(InitializeCanvasBoundsCommand));
 
   console.log(
     defaultModule,

@@ -20,7 +20,7 @@
   ],
   "scripts": {
     "bootstrap": "jlpm --prefer-offline --ignore-optional --ignore-scripts && jlpm clean && jlpm schema && jlpm lint && jlpm build",
-    "build": "jlpm build:ts && jlpm build:ext",
+    "build": "NODE_OPTIONS=\"--require reflect-metadata\" jlpm build:ts && jlpm build:ext",
     "build:ext": "NODE_OPTIONS=\"--require reflect-metadata\" jupyter labextension build . --debug",
     "build:ts": "tsc -b js",
     "clean": "rimraf ./lib ./src/ipyelk/schema/elkschema.json ./src/ipyelk/_d",
@@ -31,7 +31,7 @@
     "schema:prettier": "prettier --write src/ipyelk/schema/elkschema.json",
     "watch": "run watch:lib && run watch:ext",
     "watch:ext": "NODE_OPTIONS=\"--require reflect-metadata\" jupyter labextension watch .",
-    "watch:lib": "jlpm build:ts --watch --preserveWatchOutput"
+    "watch:lib": "NODE_OPTIONS=\"--require reflect-metadata\" jlpm build:ts --watch --preserveWatchOutput"
   },
   "sideEffects": [
     "style/*.css"

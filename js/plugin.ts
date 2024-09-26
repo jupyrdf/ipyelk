@@ -13,8 +13,6 @@ import '../style/index.css';
 
 import { ELK_DEBUG, NAME, VERSION } from './tokens';
 
-console.log('logging:', Reflect.getMetadata);
-
 const EXTENSION_ID = `${NAME}:plugin`;
 
 const plugin: IPlugin<Application<Widget>, void> = {

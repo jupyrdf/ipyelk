@@ -4,8 +4,6 @@
  */
 import difference from 'lodash/difference';
 
-import 'reflect-metadata';
-
 import {
   Action,
   HoverFeedbackAction,
