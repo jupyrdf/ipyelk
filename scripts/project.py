@@ -85,7 +85,7 @@ JS_NEEDS_INSTALL_KEYS = [
 ]
 JS_PKG = JS_PACKAGE_DATA["name"]
 JS_VERSION = JS_PACKAGE_DATA["version"]
-YARN_INTEGRITY = NODE_MODULES / ".yarn-integrity"
+YARN_INTEGRITY = NODE_MODULES / ".yarn-state.yml"
 YARN_LOCK = ROOT / "yarn.lock"
 GH = ROOT / ".github"
 DODO = ROOT / "dodo.py"
@@ -140,7 +140,7 @@ PYM = [*PY, "-m"]
 PIP = [*PYM, "pip"]
 
 JLPM = ["jlpm"]
-JLPM_INSTALL = [*JLPM, "--prefer-offline"]
+JLPM_INSTALL = [*JLPM]
 PREFLIGHT = [*PYM, "scripts.preflight"]
 LAB_EXT = ["jupyter", "labextension"]
 CONDA_BUILD = ["conda-build"]

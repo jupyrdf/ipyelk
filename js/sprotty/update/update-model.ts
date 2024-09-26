@@ -24,27 +24,27 @@ import {
   Animation,
   CommandExecutionContext,
   CompoundAnimation,
-  Fadeable,
   MatchResult,
   ResolvedElementFade,
-  SChildElement,
-  SModelElement,
-  SModelRoot,
-  SParentElement,
+  SChildElementImpl,
+  SModelElementImpl,
+  SModelRootImpl,
+  SParentElementImpl,
   forEachMatch,
   isFadeable,
 } from 'sprotty';
 import { UpdateAnimationData, UpdateModelCommand } from 'sprotty';
+import { Fadeable } from 'sprotty-protocol';
 
 import { containsSome } from './smodel-utils';
 
 @injectable()
 export class UpdateModelCommand2 extends UpdateModelCommand {
   protected computeAnimation(
-    newRoot: SModelRoot,
+    newRoot: SModelRootImpl,
     matchResult: MatchResult,
-    context: CommandExecutionContext
-  ): SModelRoot | Animation {
+    context: CommandExecutionContext,
+  ): SModelRootImpl | Animation {
     const animationData: UpdateAnimationData = {
       fades: [] as ResolvedElementFade[],
     };
@@ -52,13 +52,13 @@ export class UpdateModelCommand2 extends UpdateModelCommand {
       if (match.left !== undefined && match.right !== undefined) {
         // The element is still there, but may have been moved
         this.updateElement(
-          match.left as SModelElement,
-          match.right as SModelElement,
-          animationData
+          match.left as SModelElementImpl,
+          match.right as SModelElementImpl,
+          animationData,
         );
       } else if (match.right !== undefined) {
         // An element has been added
-        const right = match.right as SModelElement;
+        const right = match.right as SModelElementImpl;
         if (isFadeable(right)) {
           right.opacity = 0;
           animationData.fades.push({
@@ -66,16 +66,16 @@ export class UpdateModelCommand2 extends UpdateModelCommand {
             type: 'in',
           });
         }
-      } else if (match.left instanceof SChildElement) {
+      } else if (match.left instanceof SChildElementImpl) {
         // An element has been removed
         const left = match.left;
         if (isFadeable(left) && match.leftParentId !== undefined) {
           if (!containsSome(newRoot, left)) {
             const parent = newRoot.index.getById(match.leftParentId);
-            if (parent instanceof SParentElement) {
+            if (parent instanceof SParentElementImpl) {
               const leftCopy = context.modelFactory.createElement(
-                left
-              ) as SChildElement & Fadeable;
+                left,
+              ) as SChildElementImpl & Fadeable;
               parent.add(leftCopy);
               animationData.fades.push({
                 element: leftCopy,

@@ -2,7 +2,7 @@
 # Distributed under the terms of the Modified BSD License.
 
 [build-system]
-requires = ["flit_core >=3.7.1,<4"]
+requires = ["flit_core >=3.9.0,<4"]
 build-backend = "flit_core.buildapi"
 
 [project]
@@ -14,7 +14,7 @@ authors = [
 ]
 readme = "README.md"
 classifiers = [
-    "Framework :: Jupyter :: JupyterLab :: 3",
+    "Framework :: Jupyter :: JupyterLab :: 4",
     "Framework :: Jupyter :: JupyterLab :: Extensions :: Prebuilt",
     "Framework :: Jupyter :: JupyterLab :: Extensions",
     "Framework :: Jupyter :: JupyterLab",
@@ -25,15 +25,15 @@ classifiers = [
     "Programming Language :: Python :: 3 :: Only",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
-    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3",
 ]
-requires-python = ">=3.7"
+requires-python = ">=3.9"
 dependencies = [
     "ipywidgets >=8.0.1,<9",
     "networkx",
-    "pydantic",
+    "pydantic >=1.10.17,<3",
 ]
 
 [project.urls]

@@ -2,8 +2,8 @@
  * # Copyright (c) 2024 ipyelk contributors.
  * Distributed under the terms of the Modified BSD License.
  */
-import { SModelElement } from 'sprotty/lib';
+import { SModelElementImpl } from 'sprotty';
 
-export function idGetter(e: SModelElement) {
+export function idGetter(e: SModelElementImpl) {
   return e.id;
 }

@@ -334,7 +334,9 @@ def task_setup():
         install_actions = [[*P.IN_ENV, *install_args]]
 
         if not P.CI:
-            install_actions += [[*P.IN_ENV, "jlpm", "deduplicate"]]
+            install_actions += [
+                [*P.IN_ENV, "jlpm", "yarn-berry-deduplicate", "-s", "fewer", "--fail"]
+            ]
 
         yield dict(
             name="js",

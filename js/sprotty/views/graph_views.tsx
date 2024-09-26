@@ -1,14 +1,12 @@
+/** @jsx html */
 import { injectable } from 'inversify';
-import { html, svg } from 'snabbdom-jsx';
-import { VNode } from 'snabbdom/vnode';
-import { IView, SGraph, SParentElement } from 'sprotty';
+import { VNode } from 'snabbdom';
+import { IView, SGraphImpl, SParentElementImpl, html, svg } from 'sprotty';
 
 import { ElkModelRenderer } from '../renderer';
 
-const JSX = { createElement: html };
-
-class SSymbolGraph extends SGraph {
-  symbols: SParentElement;
+class SSymbolGraph extends SGraphImpl {
+  symbols: SParentElementImpl;
 }
 /**
  * IView component that turns an SGraph element and its children into a tree of virtual DOM elements.
@@ -18,10 +16,16 @@ export class SGraphView implements IView {
   render(model: Readonly<SSymbolGraph>, context: ElkModelRenderer): VNode {
     const transform = `scale(${model.zoom}) translate(${-model.scroll.x},${-model.scroll
       .y})`;
-    let graph = svg('svg', { class: { 'sprotty-graph': true } }, [
-      svg('g', { transform: transform }, context.renderChildren(model)),
-      svg('g', { class: { elksymbols: true } }, context.renderChildren(model.symbols)),
-    ]);
+    let graph = svg(
+      'svg',
+      { class: { 'sprotty-graph': true } },
+      svg('g', { transform: transform }, ...context.renderChildren(model)),
+      svg(
+        'g',
+        { class: { elksymbols: true } },
+        ...context.renderChildren(model.symbols),
+      ),
+    );
     const css_transform = {
       transform: `scale(${model.zoom}) translateZ(0) translate(${-model.scroll
         .x}px,${-model.scroll.y}px)`,
@@ -31,12 +35,13 @@ export class SGraphView implements IView {
         {context.renderJLNodeWidgets()}
       </div>
     );
-    return (
+    let element: VNode = (
       <div class-sprotty-root={true}>
         <div class-sprotty-overlay={true}>{context.renderJLOverlayControl()}</div>
         {graph}
         {overlay}
       </div>
     );
+    return element;
   }
 }

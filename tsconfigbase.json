@@ -15,7 +15,6 @@
     "noImplicitAny": false,
     "noUnusedLocals": true,
     "preserveWatchOutput": true,
-    "reactNamespace": "JSX",
     "resolveJsonModule": true,
     "skipLibCheck": true,
     "sourceMap": true,

@@ -2,30 +2,33 @@
  * # Copyright (c) 2024 ipyelk contributors.
  * Distributed under the terms of the Modified BSD License.
  */
+
+/** @jsx svg */
 import { injectable } from 'inversify';
+import {
+  InitializeCanvasBoundsAction,
+  LocalModelSource,
+  Match,
+  SModelRegistry,
+  SModelRootImpl,
+} from 'sprotty';
 import {
   Action,
   Bounds,
   CenterAction,
   FitToScreenAction,
   GetViewportAction,
-  InitializeCanvasBoundsAction,
-  LocalModelSource,
-  Match,
   SModelElement,
-  SModelElementSchema,
   SModelIndex, // SModelFactory,
-  SModelRegistry,
   SModelRoot,
-  SModelRootSchema,
   Viewport,
-} from 'sprotty';
+} from 'sprotty-protocol';
 
 import type { IWidgetManager } from '@jupyter-widgets/base';
 
 import { ELK_DEBUG } from '../tokens';
 
-import { ElkGraphJsonToSprotty, SSymbolGraphSchema } from './json/elkgraph-to-sprotty';
+import { ElkGraphJsonToSprotty, SSymbolGraph } from './json/elkgraph-to-sprotty';
 import { SSymbolModelFactory } from './renderer';
 import { ElkNode } from './sprotty-model';
 
@@ -35,23 +38,19 @@ export class JLModelSource extends LocalModelSource {
   widget_manager: IWidgetManager;
   control_overlay: any;
   selectedNodes: ElkNode[];
-  index: SModelIndex<SModelElementSchema>;
+  index: SModelIndex;
   elementRegistry: SModelRegistry;
   factory: SSymbolModelFactory;
   diagramWidget: any;
 
   async updateLayout(layout, symbols, idPrefix: string) {
     this.elkToSprotty = new ElkGraphJsonToSprotty();
-    let sGraph: SSymbolGraphSchema = this.elkToSprotty.transform(
-      layout,
-      symbols,
-      idPrefix
-    );
+    let sGraph: SSymbolGraph = this.elkToSprotty.transform(layout, symbols, idPrefix);
     await this.updateModel(sGraph);
     // TODO this promise resolves before ModelViewer rendering is done. need to hook into postprocessing
   }
 
-  public get root(): SModelRoot {
+  public get root(): SModelRootImpl {
     return this.factory.root;
   }
 
@@ -68,10 +67,10 @@ export class JLModelSource extends LocalModelSource {
    * `update` argument. If available, the model layout engine is invoked first.
    */
   protected async doSubmitModel(
-    newRoot: SModelRootSchema,
+    newRoot: SModelRoot,
     update: boolean | Match[],
     cause?: Action,
-    index?: SModelIndex<SModelElementSchema>
+    index?: SModelIndex,
   ): Promise<void> {
     ELK_DEBUG && console.log('doSubmitModel');
     super.doSubmitModel(newRoot, update, cause, index);
@@ -87,7 +86,10 @@ export class JLModelSource extends LocalModelSource {
   }
 
   center(elementIds: string[] = [], animate = true, retainZoom = false) {
-    let action = new CenterAction(elementIds, animate, retainZoom);
+    let action = CenterAction.create(elementIds, {
+      animate: animate,
+      retainZoom: retainZoom,
+    });
     this.actionDispatcher.dispatch(action);
   }
 
@@ -95,14 +97,18 @@ export class JLModelSource extends LocalModelSource {
     elementIds: string[] = [],
     padding?: number,
     maxZoom?: number,
-    animate?: boolean
+    animate?: boolean,
   ) {
-    let action = new FitToScreenAction(elementIds, padding, maxZoom, animate);
+    let action = FitToScreenAction.create(elementIds, {
+      padding: padding,
+      maxZoom: maxZoom,
+      animate: animate,
+    });
     this.actionDispatcher.dispatch(action);
   }
 
   resize(bounds: Bounds) {
-    let action = new InitializeCanvasBoundsAction(bounds);
+    let action = InitializeCanvasBoundsAction.create(bounds);
     this.actionDispatcher.dispatch(action);
   }
 

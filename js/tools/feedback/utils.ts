@@ -2,9 +2,9 @@
  * # Copyright (c) 2024 ipyelk contributors.
  * Distributed under the terms of the Modified BSD License.
  */
-import { SModelElement } from 'sprotty';
+import { SModelElementImpl } from 'sprotty';
 
-export function addCssClasses(root: SModelElement, cssClasses: string[]) {
+export function addCssClasses(root: SModelElementImpl, cssClasses: string[]) {
   if (root.cssClasses == null) {
     root.cssClasses = [];
   }
@@ -15,7 +15,7 @@ export function addCssClasses(root: SModelElement, cssClasses: string[]) {
   }
 }
 
-export function removeCssClasses(root: SModelElement, cssClasses: string[]) {
+export function removeCssClasses(root: SModelElementImpl, cssClasses: string[]) {
   if (root.cssClasses == null || root.cssClasses.length === 0) {
     return;
   }

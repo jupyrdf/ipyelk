@@ -6,9 +6,9 @@
 import {
   RectangularNode,
   RectangularPort,
-  SEdge,
-  SLabel,
-  SNode,
+  SEdgeImpl,
+  SLabelImpl,
+  SNodeImpl,
   alignFeature,
   boundsFeature,
   edgeLayoutFeature,
@@ -40,7 +40,7 @@ export class ElkPort extends RectangularPort {
   }
 }
 
-export class ElkEdge extends SEdge {
+export class ElkEdge extends SEdgeImpl {
   properties: ElkProperties;
 
   hasFeature(feature: symbol): boolean {
@@ -49,7 +49,7 @@ export class ElkEdge extends SEdge {
   }
 }
 
-export class ElkJunction extends SNode {
+export class ElkJunction extends SNodeImpl {
   hasFeature(feature: symbol): boolean {
     if (
       feature === moveFeature ||
@@ -61,7 +61,7 @@ export class ElkJunction extends SNode {
   }
 }
 
-export class ElkLabel extends SLabel {
+export class ElkLabel extends SLabelImpl {
   static readonly DEFAULT_FEATURES = [
     selectFeature,
     hoverFeedbackFeature,
@@ -85,7 +85,7 @@ export class ElkLabel extends SLabel {
   }
 }
 
-export class SymbolNode extends SNode {
+export class SymbolNode extends SNodeImpl {
   hasFeature(feature: symbol): boolean {
     if (feature === moveFeature) return false;
     else return super.hasFeature(feature);

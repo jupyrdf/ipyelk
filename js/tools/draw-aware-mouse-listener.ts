@@ -2,7 +2,8 @@
  * # Copyright (c) 2024 ipyelk contributors.
  * Distributed under the terms of the Modified BSD License.
  */
-import { Action, HoverFeedbackAction, MouseListener, SModelElement } from 'sprotty/lib';
+import { MouseListener, SModelElementImpl } from 'sprotty';
+import { Action, HoverFeedbackAction } from 'sprotty-protocol';
 
 import { DiagramTool } from './tool';
 
@@ -18,19 +19,19 @@ export class DragAwareMouseListener extends MouseListener {
   private isMouseDown: boolean = false;
   private isMouseDrag: boolean = false;
 
-  mouseDown(target: SModelElement, event: MouseEvent): Action[] {
+  mouseDown(target: SModelElementImpl, event: MouseEvent): Action[] {
     this.isMouseDown = true;
     return [];
   }
 
-  mouseMove(target: SModelElement, event: MouseEvent): Action[] {
+  mouseMove(target: SModelElementImpl, event: MouseEvent): Action[] {
     if (this.isMouseDown) {
       this.isMouseDrag = true;
     }
     return [];
   }
 
-  mouseUp(element: SModelElement, event: MouseEvent): Action[] {
+  mouseUp(element: SModelElementImpl, event: MouseEvent): Action[] {
     this.isMouseDown = false;
     if (this.isMouseDrag) {
       this.isMouseDrag = false;
@@ -40,25 +41,32 @@ export class DragAwareMouseListener extends MouseListener {
     return this.nonDraggingMouseUp(element, event);
   }
 
-  nonDraggingMouseUp(element: SModelElement, event: MouseEvent): Action[] {
+  nonDraggingMouseUp(element: SModelElementImpl, event: MouseEvent): Action[] {
     return [];
   }
 
-  draggingMouseUp(element: SModelElement, event: MouseEvent): Action[] {
+  draggingMouseUp(element: SModelElementImpl, event: MouseEvent): Action[] {
     return [];
   }
 }
 
 export class DragAwareHoverMouseListener extends DragAwareMouseListener {
-  constructor(protected elementTypeId: string, protected tool: DiagramTool) {
+  constructor(
+    protected elementTypeId: string,
+    protected tool: DiagramTool,
+  ) {
     super();
   }
 
-  mouseOver(target: SModelElement, event: MouseEvent): Action[] {
-    return [new HoverFeedbackAction(target.id, true)];
+  mouseOver(target: SModelElementImpl, event: MouseEvent): Action[] {
+    return [
+      HoverFeedbackAction.create({ mouseoverElement: target.id, mouseIsOver: true }),
+    ];
   }
 
-  mouseOut(target: SModelElement, event: MouseEvent): (Action | Promise<Action>)[] {
-    return [new HoverFeedbackAction(target.id, false)];
+  mouseOut(target: SModelElementImpl, event: MouseEvent): (Action | Promise<Action>)[] {
+    return [
+      HoverFeedbackAction.create({ mouseoverElement: target.id, mouseIsOver: false }),
+    ];
   }
 }

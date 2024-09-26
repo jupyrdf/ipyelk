@@ -10,7 +10,7 @@
  * which accompanies this distribution, and is available at
  * http://www.eclipse.org/legal/epl-v10.html
  *******************************************************************************/
-import { Container, ContainerModule } from 'inversify';
+import { Container, ContainerModule, interfaces } from 'inversify';
 import {
   // SGraphView,
   // DiamondNodeView,
@@ -24,19 +24,19 @@ import {
   // EnableToolsAction,
   // EnableDefaultToolsAction,
   // configureActionHandler,
-  HoverFeedbackCommand,
+  // HoverFeedbackCommand,
   IVNodePostprocessor,
+  IViewArgs,
   LogLevel, // HoverFeedbackAction
   // LocalModelSource,
   //
   // ModelRenderer,
   RenderingTargetKind,
-  SGraph,
+  SGraphImpl,
   SvgExporter,
   TYPES,
   ViewRegistry,
-  boundsModule,
-  configureCommand,
+  boundsModule, // configureCommand,
   configureModelElement,
   configureViewerOptions,
   defaultModule,
@@ -91,7 +91,7 @@ export default (containerId: string, view: DOMWidgetView) => {
     const context = { bind, unbind, isBound, rebind };
 
     // Initialize model element views
-    configureModelElement(context, 'graph', SGraph, v.SGraphView);
+    configureModelElement(context, 'graph', SGraphImpl, v.SGraphView);
     configureModelElement(context, 'node', ElkNode, v.ElkNodeView);
     configureModelElement(context, 'node:use', ElkNode, v.ElkUseNodeView);
     configureModelElement(context, 'node:diamond', ElkNode, v.ElkDiamondNodeView);
@@ -106,13 +106,13 @@ export default (containerId: string, view: DOMWidgetView) => {
       context,
       'node:compartment',
       ElkNode,
-      v.ElkCompartmentNodeView
+      v.ElkCompartmentNodeView,
     );
     configureModelElement(
       context,
       'node:foreignobject',
       ElkNode,
-      v.ElkForeignObjectNodeView
+      v.ElkForeignObjectNodeView,
     );
 
     configureModelElement(context, 'port', ElkPort, v.ElkPortView);
@@ -126,31 +126,37 @@ export default (containerId: string, view: DOMWidgetView) => {
     });
 
     // Hover
-    configureCommand(context, HoverFeedbackCommand);
+    // configureCommand(context, HoverFeedbackCommand);
 
     // Model elements for symbols
     configureModelElement(context, 'symbol', SymbolNode, v.SymbolNodeView);
 
     // Expose extracted path and connector offset to the rendering context
-    rebind(TYPES.ModelRendererFactory).toFactory<ElkModelRenderer>((ctx) => {
-      return (targetKind: RenderingTargetKind, processors: IVNodePostprocessor[]) => {
-        const viewRegistry = ctx.container.get<ViewRegistry>(TYPES.ViewRegistry);
-        const modelSource = ctx.container.get<JLModelSource>(TYPES.ModelSource);
-        const renderer = new ElkModelRenderer(
-          viewRegistry,
-          targetKind,
-          processors,
-          modelSource
-        );
-        return renderer;
-      };
-    });
+    rebind(TYPES.ModelRendererFactory).toFactory(
+      (ctx: interfaces.Context) =>
+        (
+          targetKind: RenderingTargetKind,
+          processors: IVNodePostprocessor[],
+          args: IViewArgs,
+        ) => {
+          const viewRegistry = ctx.container.get<ViewRegistry>(TYPES.ViewRegistry);
+          const modelSource = ctx.container.get<JLModelSource>(TYPES.ModelSource);
+          const renderer = new ElkModelRenderer(
+            viewRegistry,
+            targetKind,
+            processors,
+            modelSource,
+            args,
+          );
+          return renderer;
+        },
+    );
 
     rebind(TYPES.IModelFactory).to(SSymbolModelFactory).inSingletonScope();
   });
   const container = new Container();
 
-  container.load(
+  console.log(
     defaultModule,
     boundsModule,
     moveModule,
@@ -165,7 +171,25 @@ export default (containerId: string, view: DOMWidgetView) => {
     edgeEditModule,
     labelEditModule,
     toolFeedbackModule,
-    elkGraphModule
+    elkGraphModule,
+  );
+
+  container.load(
+    defaultModule,
+    boundsModule,
+    moveModule,
+    fadeModule,
+    // //    hoverModule,
+    // updateModule,
+    undoRedoModule,
+    // viewportModule,
+    routingModule,
+    // exportModule,
+    // modelSourceModule,
+    // edgeEditModule,
+    // labelEditModule,
+    // toolFeedbackModule,
+    elkGraphModule,
   );
   return container;
 };

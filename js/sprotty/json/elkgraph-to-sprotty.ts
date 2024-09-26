@@ -13,13 +13,13 @@
 import {
   Dimension,
   Point,
-  SEdgeSchema,
-  SGraphSchema,
-  SLabelSchema,
-  SModelElementSchema, // PopupModelViewer
-  SNodeSchema,
-  SPortSchema,
-} from 'sprotty';
+  SEdge,
+  SGraph,
+  SLabel,
+  SModelElement,
+  SNode,
+  SPort,
+} from 'sprotty-protocol';
 
 import {
   ElkEdge,
@@ -48,12 +48,12 @@ function getClasses(element: ElkGraphElement) {
   return classes ? classes.split(' ') : [];
 }
 
-export interface SSymbolsSchema extends SModelElementSchema {}
-export interface SSymbolGraphSchema extends SGraphSchema {
-  symbols: SSymbolsSchema;
+export interface SSymbols extends SModelElement {}
+export interface SSymbolGraph extends SGraph {
+  symbols: SSymbols;
 }
 
-export interface ElkLabelschema extends SLabelSchema {
+export interface ElkLabelschema extends SLabel {
   labels: ElkLabelschema[];
 }
 
@@ -69,25 +69,23 @@ export class ElkGraphJsonToSprotty {
   public transform(
     elkGraph: ElkNode,
     symbols: IElkSymbols,
-    idPrefix: string
-  ): SSymbolGraphSchema {
-    const sGraph: SSymbolGraphSchema = {
+    idPrefix: string,
+  ): SSymbolGraph {
+    let children = [];
+    let edges = [];
+    if (elkGraph.children) {
+      children = elkGraph.children.map(this.transformElkNode, this);
+    }
+    if (elkGraph.edges) {
+      edges = elkGraph.edges.map(this.transformElkEdge, this);
+    }
+    const sGraph: SSymbolGraph = {
       type: 'graph',
       id: elkGraph.id || 'root',
-      children: [],
+      children: [...children, ...edges],
       cssClasses: getClasses(elkGraph),
       symbols: this.transformSymbols(symbols, idPrefix),
     };
-
-    if (elkGraph.children) {
-      const children = elkGraph.children.map(this.transformElkNode, this);
-      sGraph.children.push(...children);
-    }
-    if (elkGraph.edges) {
-      const sEdges = elkGraph.edges.map(this.transformElkEdge, this);
-      sGraph.children!.push(...sEdges);
-    }
-
     return sGraph;
   }
 
@@ -95,7 +93,7 @@ export class ElkGraphJsonToSprotty {
    * Build up the Sprotty model objects for the SVG Symbols
    * @param symbols
    */
-  private transformSymbols(symbols: IElkSymbols, idPrefix: string): SSymbolsSchema {
+  private transformSymbols(symbols: IElkSymbols, idPrefix: string): SSymbols {
     let children = [];
     for (const key in symbols.library) {
       children.push(this.transformSymbol(key, symbols.library[key], idPrefix));
@@ -103,7 +101,7 @@ export class ElkGraphJsonToSprotty {
 
     const sSymbols = {
       children: children,
-    } as SSymbolsSchema;
+    } as SSymbols;
 
     return sSymbols;
   }
@@ -111,8 +109,8 @@ export class ElkGraphJsonToSprotty {
   private transformSymbol(
     id: string,
     symbol: IElkSymbol,
-    idPrefix: string
-  ): SModelElementSchema {
+    idPrefix: string,
+  ): SModelElement {
     let element = symbol?.element;
     let children = [];
     if (element) {
@@ -133,10 +131,10 @@ export class ElkGraphJsonToSprotty {
       position: this.pos(symbol),
       size: this.size(symbol),
       properties: symbol.properties,
-    } as SModelElementSchema;
+    } as SModelElement;
   }
 
-  private transformSymbolElement(elkNode: ElkNode): SNodeSchema {
+  private transformSymbolElement(elkNode: ElkNode): SNode {
     elkNode.properties.isSymbol = true;
     let sNode = {
       id: elkNode.id,
@@ -146,13 +144,13 @@ export class ElkGraphJsonToSprotty {
       children: [],
       properties: elkNode.properties,
       type: getType(elkNode?.properties?.shape?.type, 'node'),
-    } as SNodeSchema;
+    } as SNode;
     const sNodes = elkNode.children.map(this.transformSymbolElement, this);
     sNode.children!.push(...sNodes);
     return sNode;
   }
 
-  private transformElkNode(elkNode: ElkNode): SNodeSchema {
+  private transformElkNode(elkNode: ElkNode): SNode {
     this.checkAndRememberId(elkNode, this.nodeIds);
 
     const sNode = {
@@ -164,7 +162,7 @@ export class ElkGraphJsonToSprotty {
       cssClasses: getClasses(elkNode),
       properties: elkNode?.properties,
       layoutOptions: elkNode?.layoutOptions,
-    } as SNodeSchema;
+    } as SNode;
     // children
     if (elkNode.children) {
       const sNodes = elkNode.children.map(this.transformElkNode, this);
@@ -188,7 +186,7 @@ export class ElkGraphJsonToSprotty {
     return sNode;
   }
 
-  private transformElkPort(elkPort: ElkPort): SPortSchema {
+  private transformElkPort(elkPort: ElkPort): SPort {
     this.checkAndRememberId(elkPort, this.portIds);
     const sPort = {
       type: getType(elkPort.properties?.shape?.type, 'port'),
@@ -199,7 +197,7 @@ export class ElkGraphJsonToSprotty {
       cssClasses: getClasses(elkPort),
       properties: elkPort?.properties,
       layoutOptions: elkPort?.layoutOptions,
-    } as SPortSchema;
+    } as SPort;
     // labels
     if (elkPort.labels) {
       const sLabels = elkPort.labels.map(this.transformElkLabel, this);
@@ -229,7 +227,7 @@ export class ElkGraphJsonToSprotty {
     return sLabel;
   }
 
-  private transformElkEdge(elkEdge: ElkEdge): SEdgeSchema {
+  private transformElkEdge(elkEdge: ElkEdge): SEdge {
     this.checkAndRememberId(elkEdge, this.edgeIds);
 
     const sEdge = {
@@ -242,7 +240,7 @@ export class ElkGraphJsonToSprotty {
       cssClasses: getClasses(elkEdge),
       properties: elkEdge?.properties,
       layoutOptions: elkEdge?.layoutOptions,
-    } as SEdgeSchema;
+    } as SEdge;
     if (isPrimitive(elkEdge)) {
       sEdge.sourceId = elkEdge.source;
       sEdge.targetId = elkEdge.target;
@@ -269,7 +267,7 @@ export class ElkGraphJsonToSprotty {
           type: 'junction',
           id: elkEdge.id + '_j' + i,
           position: jp,
-        } as SNodeSchema;
+        } as SNode;
         sEdge.children!.push(sJunction);
       });
     }

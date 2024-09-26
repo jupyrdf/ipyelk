@@ -10,22 +10,15 @@
  * which accompanies this distribution, and is available at
  * http://www.eclipse.org/legal/epl-v10.html
  *******************************************************************************/
+
+/** @jsx svg */
 import { injectable } from 'inversify';
-import * as snabbdom from 'snabbdom-jsx';
-import { VNode } from 'snabbdom/vnode';
-import {
-  CircularNodeView,
-  Point,
-  PolylineEdgeView,
-  angleOfPoint,
-  setClass,
-  toDegrees,
-} from 'sprotty';
+import { VNode } from 'snabbdom';
+import { CircularNodeView, PolylineEdgeView, setClass, svg } from 'sprotty';
+import { Point, angleOfPoint, toDegrees } from 'sprotty-protocol';
 
 import { ElkModelRenderer } from '../renderer';
 import { ElkEdge, ElkJunction } from '../sprotty-model';
-
-const JSX = { createElement: snabbdom.svg };
 
 @injectable()
 export class JunctionView extends CircularNodeView {
@@ -72,7 +65,7 @@ export class ElkEdgeView extends PolylineEdgeView {
   protected renderLine(
     edge: ElkEdge,
     segments: Point[],
-    context: ElkModelRenderer
+    context: ElkModelRenderer,
   ): VNode {
     const p1_s = segments[1];
     const p2_s = segments[0];
@@ -99,7 +92,7 @@ export class ElkEdgeView extends PolylineEdgeView {
   protected getAnchorOffset(
     id: string | undefined,
     context: ElkModelRenderer,
-    r: number
+    r: number,
   ): Point {
     let connection = context.getConnector(id);
     if (connection?.symbol_offset) {
@@ -115,7 +108,7 @@ export class ElkEdgeView extends PolylineEdgeView {
   protected getPathOffset(
     id: string | undefined,
     context: ElkModelRenderer,
-    r: number
+    r: number,
   ): Point {
     let connection = context.getConnector(id);
     if (connection?.path_offset) {
@@ -132,7 +125,7 @@ export class ElkEdgeView extends PolylineEdgeView {
   protected renderAdditionals(
     edge: ElkEdge,
     segments: Point[],
-    context: ElkModelRenderer
+    context: ElkModelRenderer,
   ): VNode[] {
     let connectors: VNode[] = [];
     let href: string;

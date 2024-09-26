@@ -2,25 +2,27 @@
  * Copyright (c) 2021 Dane Freeman.
  * Distributed under the terms of the Modified BSD License.
  */
-import { html } from 'snabbdom-jsx';
-import { VNode } from 'snabbdom/vnode';
+import { VNode } from 'snabbdom';
 import {
-  // SChildElement,
-  Bounds,
-  BoundsAware,
   IVNodePostprocessor,
+  IViewArgs,
+  InternalBoundsAware,
   ModelRenderer,
-  Point,
   RenderingTargetKind,
-  SChildElement, // SNodeSchema
-  SModelElement,
+  SChildElementImpl,
+  SModelElementImpl,
   SModelFactory,
-  SModelRoot,
+  SModelRootImpl,
   ViewRegistry,
-  add,
   getAbsoluteBounds,
-  getSubType,
+  html,
 } from 'sprotty';
+import {
+  Bounds,
+  Point,
+  getSubType, // SChildElement,
+} from 'sprotty-protocol';
+import 'sprotty-protocol';
 
 import { Widget } from '@lumino/widgets';
 
@@ -29,7 +31,7 @@ import { DOMWidgetModel, DOMWidgetView, WidgetModel } from '@jupyter-widgets/bas
 import { ELK_DEBUG } from '../tokens';
 
 import { JLModelSource } from './diagram-server';
-import { SSymbolGraphSchema } from './json/elkgraph-to-sprotty';
+import { SSymbolGraph } from './json/elkgraph-to-sprotty';
 import { SElkConnectorSymbol } from './json/symbols';
 import { ElkNode } from './sprotty-model';
 
@@ -53,9 +55,10 @@ export class ElkModelRenderer extends ModelRenderer {
     readonly viewRegistry: ViewRegistry,
     readonly targetKind: RenderingTargetKind,
     postprocessors: IVNodePostprocessor[],
-    source: JLModelSource
+    source: JLModelSource,
+    protected args: IViewArgs = {},
   ) {
-    super(viewRegistry, targetKind, postprocessors);
+    super(viewRegistry, targetKind, postprocessors, args);
     this.source = source;
     this.widgets = new Map();
   }
@@ -98,7 +101,7 @@ export class ElkModelRenderer extends ModelRenderer {
       };
       elkNode.id = selected[0].id + '_entropy';
       elkNode.type = 'node:widget';
-      elkNode.position = add(bounds, { x: bounds.width, y: 0 });
+      elkNode.position = Bounds.combine(bounds, { x: bounds.width, y: 0 } as Bounds);
       elkNode.size = size;
       elkNode.properties = {
         shape: {
@@ -146,7 +149,7 @@ export class ElkModelRenderer extends ModelRenderer {
   widgetContainer(
     jlsw: Readonly<JLSprottyWidget>,
     args?: object,
-    setBounds: boolean = true
+    setBounds: boolean = true,
   ): VNode | undefined {
     if (!jlsw.visible) {
       return;
@@ -173,21 +176,17 @@ export class ElkModelRenderer extends ModelRenderer {
       props = { innerHTML: jlsw.html };
     }
 
-    return html(
-      'div',
-      {
-        key: jlsw.node.id,
-        class: {
-          elkcontainer: true,
-        },
-        style: style,
-        props: props,
-        hook: {
-          insert: (vnode) => this.renderContent(vnode, jlsw),
-        },
+    return html('div', {
+      key: jlsw.node.id,
+      class: {
+        elkcontainer: true,
       },
-      []
-    );
+      style: style,
+      props: props,
+      hook: {
+        insert: (vnode) => this.renderContent(vnode, jlsw),
+      },
+    });
   }
 
   /**
@@ -204,7 +203,7 @@ export class ElkModelRenderer extends ModelRenderer {
       }
       let view: DOMWidgetView = await this.source.widget_manager.create_view(
         widget_model,
-        {}
+        {},
       );
       let delay = jlsw.node.properties.shape?.delay || 0;
       if (delay) {
@@ -230,7 +229,7 @@ export class ElkModelRenderer extends ModelRenderer {
   async registerJLWidgetNode(
     vnode: VNode | undefined,
     node: ElkNode,
-    visible: boolean
+    visible: boolean,
   ) {
     this.widgets[node.id] = await this.wrapJLWidget(vnode, node, visible);
   }
@@ -238,7 +237,7 @@ export class ElkModelRenderer extends ModelRenderer {
   async wrapJLWidget(
     vnode: VNode | undefined,
     node: ElkNode,
-    visible: boolean
+    visible: boolean,
   ): Promise<JLSprottyWidget> {
     let widget, html;
     let id = node.properties?.shape?.use;
@@ -273,13 +272,13 @@ export class ElkModelRenderer extends ModelRenderer {
   }
 }
 
-function getPosition(element: BoundsAware & SChildElement): Point {
+function getPosition(element: InternalBoundsAware & SChildElementImpl): Point {
   let x = 0;
   let y = 0;
   while (element !== undefined) {
     x = x + (element.bounds?.x || 0);
     y = y + (element.bounds?.y || 0);
-    element = element?.parent as BoundsAware & SChildElement;
+    element = element?.parent as InternalBoundsAware & SChildElementImpl;
   }
 
   return {
@@ -289,14 +288,14 @@ function getPosition(element: BoundsAware & SChildElement): Point {
 }
 
 export class SSymbolModelFactory extends SModelFactory {
-  root: SModelRoot;
+  root: SModelRootImpl;
 
-  protected initializeRoot(root: SModelRoot, schema: SSymbolGraphSchema): SModelRoot {
+  protected initializeRoot(root: SModelRootImpl, schema: SSymbolGraph): SModelRootImpl {
     root = super.initializeRoot(root, schema);
 
     if ((root as any)?.symbols) {
       (root as any).symbols.children = schema.symbols.children.map((childSchema) =>
-        this.createElement(childSchema, root)
+        this.createElement(childSchema, root),
       );
     }
     // TODO is there a better way to get a handle to the active `SModelRoot`?
@@ -310,7 +309,7 @@ type BBox = [number, number, number, number];
 /*
  * Merge Bounds of SModelElements
  */
-export function mergeBounds(elements: SModelElement[]): Bounds {
+export function mergeBounds(elements: SModelElementImpl[]): Bounds {
   let [minLeft, minBottom, maxRight, maxTop] = extents(elements[0]);
 
   elements.splice(1, elements.length).forEach((element) => {
@@ -333,7 +332,7 @@ export function mergeBounds(elements: SModelElement[]): Bounds {
 /*
  * Get SModelElement absolute bounds
  */
-function extents(element: SModelElement): BBox {
+function extents(element: SModelElementImpl): BBox {
   let bounds = getAbsoluteBounds(element);
   let left = bounds.x;
   let top = bounds.y;
