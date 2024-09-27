@@ -58,7 +58,7 @@ def atest(attempt, extra_args):
         *(os.environ.get("ATEST_ARGS", "").split()),
     ]
 
-    os.chdir(P.ATEST)
+    
 
     if out_dir.exists():
         print("trying to clean out {}".format(out_dir))
@@ -66,6 +66,9 @@ def atest(attempt, extra_args):
             shutil.rmtree(out_dir)
         except Exception as err:
             print("Error deleting {}, hopefully harmless: {}".format(out_dir, err))
+    out_dir.mkdir(parents=True)
+    os.chdir(out_dir)
+
 
     if "--dryrun" in extra_args or PROCESSES == 1:
         run_robot = robot.run_cli
@@ -82,7 +85,7 @@ def atest(attempt, extra_args):
             *args,
         ]
 
-    args += ["."]
+    args += [P.ATEST]
 
     print(f"[{fake_cmd} test root]\n", P.ATEST)
     print(f"[{fake_cmd} arguments]\n", " ".join(list(map(str, args))))

@@ -1,10 +1,21 @@
-// Addressing issue between reflect-metadata and fast foundation reflect
+/**
+ * # Copyright (c) 2024 ipyelk contributors.
+ * Distributed under the terms of the Modified BSD License.
+ */
+import { NAME } from './tokens';
 
 const KEYSTODELETE = ['defineMetadata', 'getOwnMetadata', 'metadata'];
 
-export async function patchReflectMetadata() {
+/**
+ * Address issue between reflect-metadata and fast-foundation di
+ */
+export async function patchReflectMetadata(): Promise<void> {
+  if (Reflect.hasOwnMetadata != null) {
+    console.info(`${NAME}: skipping patch of Reflect.metadata`);
+    return;
+  }
   if (Reflect.metadata) {
-    console.warn('Patching broken fast-foundation Reflect.metadata shim');
+    console.warn(`${NAME}: patching broken fast-foundation Reflect.metadata shim`);
   }
 
   for (const key of KEYSTODELETE) {

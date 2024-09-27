@@ -9,15 +9,25 @@ Resource    ../variables/Browser.robot
 *** Keywords ***
 Open JupyterLab
     Set Environment Variable    MOZ_HEADLESS    ${HEADLESS}
+    ${options} =    Evaluate
+    ...    selenium.webdriver.FirefoxOptions()
+    ...    selenium.webdriver
+    Call Method    ${options}    add_argument    --headless
+
     ${firefox} =    Which    firefox
     ${geckodriver} =    Which    geckodriver
+    ${options.binary_location} =    Set Variable    ${firefox}
+    Call Method    ${options}    set_preference    ui.prefersReducedMotion    ${1}
+    Call Method    ${options}    set_preference    devtools.console.stdout.content    ${True}
+
     ${service args} =    Create List    --log    info
     Set Global Variable    ${NEXT BROWSER}    ${NEXT BROWSER.__add__(1)}
-    Wait Until Keyword Succeeds    5x    5s    Create WebDriver    Firefox
-    ...    executable_path=${geckodriver}
-    ...    firefox_binary=${firefox}
-    ...    service_log_path=${OUTPUT DIR}${/}geckodriver-${NEXT BROWSER}.log
-    ...    service_args=${service args}
+
+    Open Browser
+    ...    about:blank
+    ...    headlessfirefox
+    ...    options=${options}
+    ...    service=log_output='geckodriver-${NEXT BROWSER}.log.txt'; executable_path='${geckodriver}'
     Wait Until Keyword Succeeds    3x    5s    Wait For Splash
 
 Wait For Splash
@@ -66,7 +76,7 @@ Open With JupyterLab Menu
     END
 
 Ensure File Browser is Open
-    ${sel} =    Set Variable    css:.p-TabBar-tab[data-id="filebrowser"]:not(.p-mod-current)
+    ${sel} =    Set Variable    css:.lm-TabBar-tab[data-id="filebrowser"]:not(.lm-mod-current)
     ${els} =    Get WebElements    ${sel}
     IF    ${els.__len__()}    Click Element    ${sel}
 
@@ -74,13 +84,13 @@ Ensure Sidebar Is Closed
     [Arguments]    ${side}=left
     ${els} =    Get WebElements    css:#jp-${side}-stack
     IF    ${els.__len__()} and ${els[0].is_displayed()}
-        Wait Until Keyword Succeeds    3x    0.5s    Click Element    css:.jp-mod-${side} .p-TabBar-tab.p-mod-current
+        Wait Until Keyword Succeeds    3x    0.5s    Click Element    css:.jp-mod-${side} .lm-TabBar-tab.lm-mod-current
     END
 
 Open Context Menu for File
     [Arguments]    ${file}
     Ensure File Browser is Open
-    Click Element    css:button[data-command="filebrowser:refresh"]
+    Click Element    css:jp-button[data-command="filebrowser:refresh"]
     ${selector} =    Set Variable    xpath://span[@class='jp-DirListing-itemText']//span\[text() = '${file}']
     Wait Until Page Contains Element    ${selector}
     Open Context Menu    ${selector}

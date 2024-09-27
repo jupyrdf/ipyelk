@@ -56,7 +56,7 @@ export class ELKTextSizerModel extends DOMWidgetModel {
       (dc: string) => dc.indexOf('styled-widget-') === 0,
     )[0];
     el.classList.add(
-      'p-Widget',
+      'lm-Widget',
       ELK_CSS.widget_class,
       ELK_CSS.sizer_class,
       styledClass,

@@ -250,7 +250,7 @@ SHA256SUMS = DIST / "SHA256SUMS"
 # robot testing
 ATEST = ROOT / "atest"
 ALL_ROBOT = [*ATEST.rglob("*.robot")]
-ATEST_OUT = ATEST / "output"
+ATEST_OUT = BUILD / "reports/atest"
 ATEST_CANARY = BUILD / f"robot.{PLATFORM.lower()}_success.ok"
 
 # docs
