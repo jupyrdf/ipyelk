@@ -157,12 +157,12 @@ export default (containerId: string, view: DOMWidgetView) => {
   });
   const container = new Container();
 
-  console.log(
+  container.load(
     defaultModule,
     boundsModule,
     moveModule,
     fadeModule,
-    //    hoverModule,
+    // //    hoverModule,
     updateModule,
     undoRedoModule,
     viewportModule,
@@ -172,24 +172,6 @@ export default (containerId: string, view: DOMWidgetView) => {
     edgeEditModule,
     labelEditModule,
     toolFeedbackModule,
-    elkGraphModule,
-  );
-
-  container.load(
-    defaultModule,
-    boundsModule,
-    moveModule,
-    fadeModule,
-    // //    hoverModule,
-    // updateModule,
-    undoRedoModule,
-    // viewportModule,
-    routingModule,
-    // exportModule,
-    // modelSourceModule,
-    // edgeEditModule,
-    // labelEditModule,
-    // toolFeedbackModule,
     elkGraphModule,
   );
   return container;

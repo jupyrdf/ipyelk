@@ -2,8 +2,6 @@
  * # Copyright (c) 2024 ipyelk contributors.
  * Distributed under the terms of the Modified BSD License.
  */
-import 'reflect-metadata';
-
 import { Application, IPlugin } from '@lumino/application';
 import { Widget } from '@lumino/widgets';
 
@@ -19,7 +17,10 @@ const plugin: IPlugin<Application<Widget>, void> = {
   id: EXTENSION_ID,
   requires: [IJupyterWidgetRegistry],
   autoStart: true,
-  activate: (app: Application<Widget>, registry: IJupyterWidgetRegistry) => {
+  activate: async (app: Application<Widget>, registry: IJupyterWidgetRegistry) => {
+    const { patchReflectMetadata } = await import('./patches');
+    await patchReflectMetadata();
+
     ELK_DEBUG && console.warn('elk activated');
     registry.registerWidget({
       name: NAME,

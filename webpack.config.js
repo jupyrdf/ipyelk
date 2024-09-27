@@ -12,7 +12,6 @@ const config = {
   target: 'web',
   mode: 'development',
   devtool: 'source-map',
-  entry: ['reflect-metadata', './lib/index.js'],
   module: {
     rules: [
       {

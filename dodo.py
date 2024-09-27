@@ -581,7 +581,6 @@ def task_lint():
                 P.HISTORY,
                 P.PRETTIER_IGNORE,
                 P.YARN_INTEGRITY,
-                
             ],
             actions=[
                 [*P.IN_ENV, "npm", "run", "lint:prettier"],

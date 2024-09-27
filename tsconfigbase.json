@@ -23,6 +23,6 @@
     "strict": true,
     "strictNullChecks": false,
     "target": "ES2017",
-    "types": ["reflect-metadata"]
+    "types": []
   }
 }
