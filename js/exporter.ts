@@ -8,15 +8,16 @@ import { unpack_models as deserialize } from '@jupyter-widgets/base';
 import { ELKViewerModel } from './display_widget';
 import { ELK_DEBUG, NAME, VERSION } from './tokens';
 
-import elkRawCSS from '!!raw-loader!../style/diagram.css';
-import materialRawCss from '!!raw-loader!@jupyterlab/apputils/style/materialcolors.css';
-import labRawCss from '!!raw-loader!@jupyterlab/theme-light-extension/style/variables.css';
+// import elkRawCSS from '!!raw-loader!../style/diagram.css';
+// import materialRawCss from '!!raw-loader!@jupyterlab/apputils/style/materialcolors.css';
+// import labRawCss from '!!raw-loader!@jupyterlab/theme-light-extension/style/variables.css';
 
-const STANDALONE_CSS = `
-  ${materialRawCss}
-  ${labRawCss}
-  ${elkRawCSS}
-`
+const STANDALONE_CSS = ''
+  //  `
+  //   ${materialRawCss}
+  //   ${labRawCss}
+  //   ${elkRawCSS}
+  // `
   .replace(/\/\*(.|\n)*?\*\//gm, ' ')
   .replace(/.jp-ElkView /g, '')
   .replace(/\n/g, ' ')
@@ -192,7 +193,7 @@ export class ELKExporterModel extends WidgetModel {
           width / scaleFactor + padding
         } ${height / scaleFactor + padding}" $1>
           ${style}
-        `
+        `,
       )
       .replace(/ transform=".*?"/, '');
 

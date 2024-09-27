@@ -334,7 +334,9 @@ def task_setup():
         install_actions = [[*P.IN_ENV, *install_args]]
 
         if not P.CI:
-            install_actions += [[*P.IN_ENV, "jlpm", "deduplicate"]]
+            install_actions += [
+                [*P.IN_ENV, "jlpm", "yarn-berry-deduplicate", "-s", "fewer", "--fail"]
+            ]
 
         yield dict(
             name="js",
@@ -357,12 +359,7 @@ def task_build():
     if P.TESTING_IN_CI:
         return
 
-    yield dict(
-        name="schema",
-        file_dep=[P.YARN_INTEGRITY, P.TS_SCHEMA, P.HISTORY],
-        actions=[[*P.IN_ENV, *P.JLPM, "schema"]],
-        targets=[P.PY_SCHEMA],
-    )
+
 
     ts_dep = [
         *P.ALL_TS,
@@ -392,11 +389,18 @@ def task_build():
         actions=[[*P.IN_ENV, *P.JLPM, "build:ts"]],
         targets=[P.TSBUILDINFO],
     )
+    
+    yield dict(
+        name="schema",
+        file_dep=[P.YARN_INTEGRITY, P.TS_SCHEMA, P.HISTORY],
+        actions=[[*P.IN_ENV, *P.JLPM, "schema"]],
+        targets=[P.PY_SCHEMA],
+    )    
 
     yield dict(
         name="ext",
         actions=[[*P.IN_ENV, *P.JLPM, "build:ext"]],
-        file_dep=[P.TSBUILDINFO, *P.ALL_CSS],
+        file_dep=[P.TSBUILDINFO, *P.ALL_CSS, P.WEBPACKCONFIG],
         targets=[P.PY_PACKAGE_JSON],
     )
 
@@ -579,6 +583,7 @@ def task_lint():
                 P.HISTORY,
                 P.PRETTIER_IGNORE,
                 P.YARN_INTEGRITY,
+                
             ],
             actions=[
                 [*P.IN_ENV, "npm", "run", "lint:prettier"],

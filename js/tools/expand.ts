@@ -4,8 +4,10 @@
  */
 //inspired from :
 // https://github.com/eclipsesource/graphical-lsp/blob/abc742641f6fc993f708f0c8cef937eb7a0b028a/client/packages/sprotty-client/src/features/tools/creation-tool.ts
-import { inject, injectable } from 'inversify';
 import { VNode } from 'snabbdom/vnode';
+
+import { inject, injectable } from 'inversify';
+
 import {
   Action,
   MouseTool,
@@ -32,7 +34,7 @@ export class ExpandAction implements Action {
 
   constructor(
     public readonly expandElementsIDs: string[] = [],
-    public readonly contractElementsIDs: string[] = []
+    public readonly contractElementsIDs: string[] = [],
   ) {}
 }
 
@@ -45,7 +47,7 @@ export class NodeExpandTool extends DiagramTool {
   constructor(
     @inject(MouseTool) protected mouseTool: IMouseTool,
     @inject(ToolTYPES.IFeedbackActionDispatcher)
-    protected feedbackDispatcher: IFeedbackActionDispatcher
+    protected feedbackDispatcher: IFeedbackActionDispatcher,
   ) {
     super();
   }
@@ -53,7 +55,7 @@ export class NodeExpandTool extends DiagramTool {
   enable() {
     this.expansionToolMouseListener = new NodeExpandToolMouseListener(
       this.elementTypeId,
-      this
+      this,
     );
     this.mouseTool.register(this.expansionToolMouseListener);
   }
@@ -69,7 +71,10 @@ export class NodeExpandTool extends DiagramTool {
 
 @injectable()
 export class NodeExpandToolMouseListener extends DragAwareMouseListener {
-  constructor(protected elementTypeId: string, protected tool: NodeExpandTool) {
+  constructor(
+    protected elementTypeId: string,
+    protected tool: NodeExpandTool,
+  ) {
     super();
   }
 
@@ -93,8 +98,8 @@ export class NodeExpandToolMouseListener extends DragAwareMouseListener {
                   !(
                     selectableTarget instanceof SRoutingHandle &&
                     element === (selectableTarget.parent as SModelElement)
-                  )
-              )
+                  ),
+              ),
           );
         }
         if (selectableTarget != null) {

@@ -10,10 +10,12 @@
  * which accompanies this distribution, and is available at
  * http://www.eclipse.org/legal/epl-v10.html
  *******************************************************************************/
-import { injectable } from 'inversify';
 import * as snabbdom from 'snabbdom-jsx';
 import { html, svg } from 'snabbdom-jsx';
 import { VNode } from 'snabbdom/vnode';
+
+import { injectable } from 'inversify';
+
 import {
   Dimension, // HtmlRootView,
   // PreRenderedElement,
@@ -190,7 +192,7 @@ export class ElkSVGNodeView extends ElkNodeView {
         props: { innerHTML: node?.properties?.shape?.use },
         transform: `translate(${x} ${y})`,
       },
-      []
+      [],
     );
   }
 }
@@ -214,7 +216,7 @@ export class ElkForeignObjectNodeView extends ElkNodeView {
     let contents = html(
       'div',
       { props: { innerHTML: node?.properties?.shape?.use } },
-      []
+      [],
     );
     return (
       <foreignObject
@@ -258,7 +260,7 @@ export class ElkJLNodeView extends ElkNodeView {
             context.registerJLWidgetNode(vnode, node, this.isVisible(node, context)),
         },
       },
-      [mark, <g class-elkchildren={true}>{this.renderChildren(node, context)}</g>]
+      [mark, <g class-elkchildren={true}>{this.renderChildren(node, context)}</g>],
     );
   }
 }

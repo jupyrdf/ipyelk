@@ -50,7 +50,10 @@ export class DragAwareMouseListener extends MouseListener {
 }
 
 export class DragAwareHoverMouseListener extends DragAwareMouseListener {
-  constructor(protected elementTypeId: string, protected tool: DiagramTool) {
+  constructor(
+    protected elementTypeId: string,
+    protected tool: DiagramTool,
+  ) {
     super();
   }
 

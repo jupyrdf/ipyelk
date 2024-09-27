@@ -7,6 +7,7 @@
  * remove after next sprotty release > 0.9
  */
 import { ContainerModule } from 'inversify';
+
 import { configureCommand } from 'sprotty';
 
 import { UpdateModelCommand2 } from './update-model';

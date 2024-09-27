@@ -3,6 +3,7 @@
  * Distributed under the terms of the Modified BSD License.
  */
 import { ContainerModule, inject } from 'inversify';
+
 import {
   Action,
   CenterCommand,

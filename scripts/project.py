@@ -85,7 +85,7 @@ JS_NEEDS_INSTALL_KEYS = [
 ]
 JS_PKG = JS_PACKAGE_DATA["name"]
 JS_VERSION = JS_PACKAGE_DATA["version"]
-YARN_INTEGRITY = NODE_MODULES / ".yarn-integrity"
+YARN_INTEGRITY = NODE_MODULES / ".yarn-state.yml"
 YARN_LOCK = ROOT / "yarn.lock"
 GH = ROOT / ".github"
 DODO = ROOT / "dodo.py"
@@ -140,7 +140,7 @@ PYM = [*PY, "-m"]
 PIP = [*PYM, "pip"]
 
 JLPM = ["jlpm"]
-JLPM_INSTALL = [*JLPM, "--prefer-offline"]
+JLPM_INSTALL = [*JLPM]
 PREFLIGHT = [*PYM, "scripts.preflight"]
 LAB_EXT = ["jupyter", "labextension"]
 CONDA_BUILD = ["conda-build"]
@@ -167,6 +167,7 @@ LITE_SHA256SUMS = LITE_BUILD / "SHA256SUMS"
 # js stuff
 JS_LIB = ROOT / "lib"
 TSBUILDINFO = BUILD / ".src.tsbuildinfo"
+WEBPACKCONFIG = ROOT / "webpack.config.js"
 TS_SRC = ROOT / "js"
 TS_SCHEMA = TS_SRC / "sprotty" / "json" / "elkschema.ts"
 STYLE = ROOT / "style"
@@ -206,7 +207,7 @@ ALL_MD = [*ROOT.glob("*.md"), *ALL_DOCS_MD]
 ALL_TS = [*TS_SRC.rglob("*.ts")]
 ALL_CSS = [*STYLE.rglob("*.css")]
 PRETTIER_IGNORE = ROOT / ".prettierignore"
-ALL_PRETTIER = [*ALL_YML, *ALL_JSON, *ALL_MD, *ALL_TS, *ALL_CSS]
+ALL_PRETTIER = [*ALL_YML, *ALL_JSON, *ALL_MD, *ALL_TS, *ALL_CSS, WEBPACKCONFIG]
 
 # built files
 OK_RELEASE = BUILD / "release.ok"

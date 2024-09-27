@@ -69,7 +69,7 @@ export class ElkGraphJsonToSprotty {
   public transform(
     elkGraph: ElkNode,
     symbols: IElkSymbols,
-    idPrefix: string
+    idPrefix: string,
   ): SSymbolGraphSchema {
     const sGraph: SSymbolGraphSchema = {
       type: 'graph',
@@ -111,7 +111,7 @@ export class ElkGraphJsonToSprotty {
   private transformSymbol(
     id: string,
     symbol: IElkSymbol,
-    idPrefix: string
+    idPrefix: string,
   ): SModelElementSchema {
     let element = symbol?.element;
     let children = [];

@@ -11,6 +11,7 @@
  * http://www.eclipse.org/legal/epl-v10.html
  *******************************************************************************/
 import { Container, ContainerModule } from 'inversify';
+
 import {
   // SGraphView,
   // DiamondNodeView,
@@ -106,13 +107,13 @@ export default (containerId: string, view: DOMWidgetView) => {
       context,
       'node:compartment',
       ElkNode,
-      v.ElkCompartmentNodeView
+      v.ElkCompartmentNodeView,
     );
     configureModelElement(
       context,
       'node:foreignobject',
       ElkNode,
-      v.ElkForeignObjectNodeView
+      v.ElkForeignObjectNodeView,
     );
 
     configureModelElement(context, 'port', ElkPort, v.ElkPortView);
@@ -140,7 +141,7 @@ export default (containerId: string, view: DOMWidgetView) => {
           viewRegistry,
           targetKind,
           processors,
-          modelSource
+          modelSource,
         );
         return renderer;
       };
@@ -165,7 +166,7 @@ export default (containerId: string, view: DOMWidgetView) => {
     edgeEditModule,
     labelEditModule,
     toolFeedbackModule,
-    elkGraphModule
+    elkGraphModule,
   );
   return container;
 };

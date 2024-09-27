@@ -20,6 +20,7 @@
  * SPDX-License-Identifier: EPL-2.0 OR GPL-2.0 WITH Classpath-exception-2.0
  ********************************************************************************/
 import { injectable } from 'inversify';
+
 import {
   Animation,
   CommandExecutionContext,
@@ -43,7 +44,7 @@ export class UpdateModelCommand2 extends UpdateModelCommand {
   protected computeAnimation(
     newRoot: SModelRoot,
     matchResult: MatchResult,
-    context: CommandExecutionContext
+    context: CommandExecutionContext,
   ): SModelRoot | Animation {
     const animationData: UpdateAnimationData = {
       fades: [] as ResolvedElementFade[],
@@ -54,7 +55,7 @@ export class UpdateModelCommand2 extends UpdateModelCommand {
         this.updateElement(
           match.left as SModelElement,
           match.right as SModelElement,
-          animationData
+          animationData,
         );
       } else if (match.right !== undefined) {
         // An element has been added
@@ -74,7 +75,7 @@ export class UpdateModelCommand2 extends UpdateModelCommand {
             const parent = newRoot.index.getById(match.leftParentId);
             if (parent instanceof SParentElement) {
               const leftCopy = context.modelFactory.createElement(
-                left
+                left,
               ) as SChildElement & Fadeable;
               parent.add(leftCopy);
               animationData.fades.push({

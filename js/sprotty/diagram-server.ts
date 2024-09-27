@@ -3,6 +3,7 @@
  * Distributed under the terms of the Modified BSD License.
  */
 import { injectable } from 'inversify';
+
 import {
   Action,
   Bounds,
@@ -45,7 +46,7 @@ export class JLModelSource extends LocalModelSource {
     let sGraph: SSymbolGraphSchema = this.elkToSprotty.transform(
       layout,
       symbols,
-      idPrefix
+      idPrefix,
     );
     await this.updateModel(sGraph);
     // TODO this promise resolves before ModelViewer rendering is done. need to hook into postprocessing
@@ -71,7 +72,7 @@ export class JLModelSource extends LocalModelSource {
     newRoot: SModelRootSchema,
     update: boolean | Match[],
     cause?: Action,
-    index?: SModelIndex<SModelElementSchema>
+    index?: SModelIndex<SModelElementSchema>,
   ): Promise<void> {
     ELK_DEBUG && console.log('doSubmitModel');
     super.doSubmitModel(newRoot, update, cause, index);
@@ -95,7 +96,7 @@ export class JLModelSource extends LocalModelSource {
     elementIds: string[] = [],
     padding?: number,
     maxZoom?: number,
-    animate?: boolean
+    animate?: boolean,
   ) {
     let action = new FitToScreenAction(elementIds, padding, maxZoom, animate);
     this.actionDispatcher.dispatch(action);

@@ -4,8 +4,10 @@
  */
 //inspired from :
 // https://github.com/eclipsesource/graphical-lsp/blob/abc742641f6fc993f708f0c8cef937eb7a0b028a/client/packages/sprotty-client/src/features/tools/creation-tool.ts
-import { inject, injectable } from 'inversify';
 import { VNode } from 'snabbdom/vnode';
+
+import { inject, injectable } from 'inversify';
+
 import {
   Action,
   MouseTool,
@@ -35,7 +37,7 @@ export class NodeSelectTool extends DiagramTool {
   constructor(
     @inject(MouseTool) protected mouseTool: IMouseTool,
     @inject(ToolTYPES.IFeedbackActionDispatcher)
-    protected feedbackDispatcher: IFeedbackActionDispatcher
+    protected feedbackDispatcher: IFeedbackActionDispatcher,
   ) {
     super();
   }
@@ -43,7 +45,7 @@ export class NodeSelectTool extends DiagramTool {
   enable() {
     this.selectionToolMouseListener = new NodeSelectToolMouseListener(
       this.elementTypeId,
-      this
+      this,
     );
     this.mouseTool.register(this.selectionToolMouseListener);
   }
@@ -55,7 +57,10 @@ export class NodeSelectTool extends DiagramTool {
 
 @injectable()
 export class NodeSelectToolMouseListener extends DragAwareHoverMouseListener {
-  constructor(protected elementTypeId: string, protected tool: NodeSelectTool) {
+  constructor(
+    protected elementTypeId: string,
+    protected tool: NodeSelectTool,
+  ) {
     super(elementTypeId, tool);
   }
 
@@ -77,8 +82,8 @@ export class NodeSelectToolMouseListener extends DragAwareHoverMouseListener {
                   !(
                     selectableTarget instanceof SRoutingHandle &&
                     element === (selectableTarget.parent as SModelElement)
-                  )
-              )
+                  ),
+              ),
           );
         }
         if (selectableTarget != null) {

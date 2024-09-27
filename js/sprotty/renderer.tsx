@@ -4,6 +4,7 @@
  */
 import { html } from 'snabbdom-jsx';
 import { VNode } from 'snabbdom/vnode';
+
 import {
   // SChildElement,
   Bounds,
@@ -53,7 +54,7 @@ export class ElkModelRenderer extends ModelRenderer {
     readonly viewRegistry: ViewRegistry,
     readonly targetKind: RenderingTargetKind,
     postprocessors: IVNodePostprocessor[],
-    source: JLModelSource
+    source: JLModelSource,
   ) {
     super(viewRegistry, targetKind, postprocessors);
     this.source = source;
@@ -146,7 +147,7 @@ export class ElkModelRenderer extends ModelRenderer {
   widgetContainer(
     jlsw: Readonly<JLSprottyWidget>,
     args?: object,
-    setBounds: boolean = true
+    setBounds: boolean = true,
   ): VNode | undefined {
     if (!jlsw.visible) {
       return;
@@ -186,7 +187,7 @@ export class ElkModelRenderer extends ModelRenderer {
           insert: (vnode) => this.renderContent(vnode, jlsw),
         },
       },
-      []
+      [],
     );
   }
 
@@ -204,7 +205,7 @@ export class ElkModelRenderer extends ModelRenderer {
       }
       let view: DOMWidgetView = await this.source.widget_manager.create_view(
         widget_model,
-        {}
+        {},
       );
       let delay = jlsw.node.properties.shape?.delay || 0;
       if (delay) {
@@ -230,7 +231,7 @@ export class ElkModelRenderer extends ModelRenderer {
   async registerJLWidgetNode(
     vnode: VNode | undefined,
     node: ElkNode,
-    visible: boolean
+    visible: boolean,
   ) {
     this.widgets[node.id] = await this.wrapJLWidget(vnode, node, visible);
   }
@@ -238,7 +239,7 @@ export class ElkModelRenderer extends ModelRenderer {
   async wrapJLWidget(
     vnode: VNode | undefined,
     node: ElkNode,
-    visible: boolean
+    visible: boolean,
   ): Promise<JLSprottyWidget> {
     let widget, html;
     let id = node.properties?.shape?.use;
@@ -296,7 +297,7 @@ export class SSymbolModelFactory extends SModelFactory {
 
     if ((root as any)?.symbols) {
       (root as any).symbols.children = schema.symbols.children.map((childSchema) =>
-        this.createElement(childSchema, root)
+        this.createElement(childSchema, root),
       );
     }
     // TODO is there a better way to get a handle to the active `SModelRoot`?

@@ -3,6 +3,7 @@
  * Distributed under the terms of the Modified BSD License.
  */
 import { injectable } from 'inversify';
+
 import { Action, MouseListener, Tool } from 'sprotty/lib';
 
 export const TOOL_ID_PREFIX = 'tool';

@@ -7,7 +7,10 @@
     "esModuleInterop": true,
     "experimentalDecorators": true,
     "incremental": true,
-    "jsx": "react",
+    // Needs to be disabled to support property injection
+    "strictPropertyInitialization": false,
+    "jsx": "react-jsx",
+    "jsxImportSource": "@herp-inc/snabbdom-jsx",
     "lib": ["ES2017", "DOM"],
     "module": "esnext",
     "moduleResolution": "node",
@@ -15,13 +18,12 @@
     "noImplicitAny": false,
     "noUnusedLocals": true,
     "preserveWatchOutput": true,
-    "reactNamespace": "JSX",
     "resolveJsonModule": true,
     "skipLibCheck": true,
     "sourceMap": true,
     "strict": true,
     "strictNullChecks": false,
-    "target": "es2017",
+    "target": "ES2017",
     "types": ["reflect-metadata"]
   }
 }

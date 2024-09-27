@@ -1,6 +1,8 @@
-import { injectable } from 'inversify';
 import { svg } from 'snabbdom-jsx';
 import { VNode } from 'snabbdom/vnode';
+
+import { injectable } from 'inversify';
+
 import { IView } from 'sprotty';
 
 import { ElkModelRenderer } from '../renderer';

@@ -1,11 +1,16 @@
-import { injectable } from 'inversify';
-import { html, svg } from 'snabbdom-jsx';
+import {
+  // html,
+  svg,
+} from 'snabbdom-jsx';
 import { VNode } from 'snabbdom/vnode';
+
+import { injectable } from 'inversify';
+
 import { IView, SGraph, SParentElement } from 'sprotty';
 
 import { ElkModelRenderer } from '../renderer';
 
-const JSX = { createElement: html };
+// const JSX = { createElement: html };
 
 class SSymbolGraph extends SGraph {
   symbols: SParentElement;

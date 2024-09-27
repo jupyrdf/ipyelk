@@ -3,7 +3,9 @@
  * Distributed under the terms of the Modified BSD License.
  */
 import difference from 'lodash/difference';
+
 import 'reflect-metadata';
+
 // import { WidgetManager } from '@jupyter-widgets/jupyterlab-manager';
 // import { ManagerBase } from '@jupyter-widgets/base';
 import {
@@ -168,7 +170,7 @@ export class ELKViewerView extends DOMWidgetView {
     this.registry = container.get<ActionHandlerRegistry>(ActionHandlerRegistry);
     this.actionDispatcher = container.get<ActionDispatcher>(TYPES.IActionDispatcher);
     this.feedbackDispatcher = container.get<FeedbackActionDispatcher>(
-      ToolTYPES.IFeedbackActionDispatcher
+      ToolTYPES.IFeedbackActionDispatcher,
     );
     // this.model.on('change:mark_layout', this.diagramLayout, this);
     this.model.on('change:selection', this.updateSelectedTool, this);
@@ -197,12 +199,12 @@ export class ELKViewerView extends DOMWidgetView {
     // Register Tools
     this.toolManager.registerDefaultTools(
       container.resolve(NodeSelectTool),
-      container.resolve(NodeExpandTool)
+      container.resolve(NodeExpandTool),
     );
     this.toolManager.enableDefaultTools();
 
     this.diagramLayout().catch((err) =>
-      console.warn('ELK Failed initial view render', err)
+      console.warn('ELK Failed initial view render', err),
     );
 
     // timeout is ugly workaround for gh issue #94. Still potential for bounding
@@ -315,7 +317,7 @@ export class ELKViewerView extends DOMWidgetView {
    */
   async setSelectedNodes(selected: string[]) {
     this.source.selectedNodes = selected.map(
-      (id) => this.source.index.getById(id) as any
+      (id) => this.source.index.getById(id) as any,
     );
   }
 
@@ -374,7 +376,7 @@ export class ELKViewerView extends DOMWidgetView {
         this.source.center(
           this.normalizeElementIds(content.model_id),
           content.animate,
-          content.retain_zoom
+          content.retain_zoom,
         );
         break;
       case 'fit':
@@ -383,7 +385,7 @@ export class ELKViewerView extends DOMWidgetView {
           this.normalizeElementIds(content.model_id),
           content.padding == null ? 0 : content.padding,
           content.max_zoom == null ? Infinity : content.max_zoom,
-          content.animate == null ? true : content.animate
+          content.animate == null ? true : content.animate,
         );
         break;
       default:
