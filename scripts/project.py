@@ -159,7 +159,6 @@ LITE_JSON = [*LITE.glob("*.json")]
 DOCS_BUILD = BUILD / "docs"
 DOCS_CONF = DOCS / "conf.py"
 DICTIONARY = DOCS / "dictionary.txt"
-LITE_SPEC = ["--pre", "jupyterlite==0.1.0b15"]
 LITE_BUILD = BUILD / "lite"
 LITE_SHA256SUMS = LITE_BUILD / "SHA256SUMS"
 

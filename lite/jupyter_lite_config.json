@@ -1,7 +1,9 @@
 {
   "LiteBuildConfig": {
-    "piplite_urls": ["../dist"],
     "output_dir": "../build/lite",
     "contents": ["../examples"]
+  },
+  "PipliteAddon": {
+    "piplite_urls": ["../dist"]
   }
 }
