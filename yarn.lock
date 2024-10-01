@@ -1933,8 +1933,8 @@ __metadata:
 
 "@types/react@file:./scripts/not-a-package::locator=%40jupyrdf%2Fjupyter-elk%40workspace%3A.":
   version: 0.0.0
-  resolution: "@types/react@file:./scripts/not-a-package#./scripts/not-a-package::hash=b79066&locator=%40jupyrdf%2Fjupyter-elk%40workspace%3A."
-  checksum: dcc19ae2232d5c05699eadbc5baac3b547e2ee5263573633c7df281ec9943cef2b4b893ae3056582a05a52032d4fccb0ea2cf07ff9fc923855606f11d8806bc0
+  resolution: "@types/react@file:./scripts/not-a-package#./scripts/not-a-package::hash=fa67cb&locator=%40jupyrdf%2Fjupyter-elk%40workspace%3A."
+  checksum: d5d05d779c54d069e95fcdb3498f6442f34167cce5fc21b6bd057b0d1bca78a7fb63e50c46d0adb233cd6827ce955b9b57ff04abfcd998990b05d60e592f845c
   languageName: node
   linkType: hard
 
