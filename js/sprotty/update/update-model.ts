@@ -51,14 +51,14 @@ export class UpdateModelCommand2 extends UpdateModelCommand {
       fades: [] as ResolvedElementFade[],
     };
     forEachMatch(matchResult, (id, match) => {
-      if (match.left !== undefined && match.right !== undefined) {
+      if (match.left != null && match.right != null) {
         // The element is still there, but may have been moved
         this.updateElement(
           match.left as SModelElementImpl,
           match.right as SModelElementImpl,
           animationData,
         );
-      } else if (match.right !== undefined) {
+      } else if (match.right != null) {
         // An element has been added
         const right = match.right as SModelElementImpl;
         if (isFadeable(right)) {
@@ -71,7 +71,7 @@ export class UpdateModelCommand2 extends UpdateModelCommand {
       } else if (match.left instanceof SChildElementImpl) {
         // An element has been removed
         const left = match.left;
-        if (isFadeable(left) && match.leftParentId !== undefined) {
+        if (isFadeable(left) && match.leftParentId != null) {
           if (!containsSome(newRoot, left)) {
             const parent = newRoot.index.getById(match.leftParentId);
             if (parent instanceof SParentElementImpl) {

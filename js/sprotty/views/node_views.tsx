@@ -27,8 +27,6 @@ import {
   // RoutableView,
   // getSubType
   // IView
-  RectangularNodeView,
-  ShapeView,
   html,
   setClass,
   svg,
@@ -36,6 +34,8 @@ import {
 
 import { ElkModelRenderer } from '../renderer';
 import { ElkLabel, ElkNode, ElkPort } from '../sprotty-model';
+
+import { RectangularNodeView, ShapeView } from './base';
 
 function svgStr(point: Point) {
   return `${point.x},${point.y}`;
@@ -121,9 +121,9 @@ export class ElkRoundNodeView extends ElkNodeView {
     let rx = node.size.width / 2;
     let ry = node.size.height / 2;
     let x = node.properties?.shape?.x;
-    if (x == undefined) x = rx;
+    if (x == null) x = rx;
     let y = node.properties?.shape?.y;
-    if (y == undefined) y = ry;
+    if (y == null) y = ry;
     return <ellipse rx={rx} ry={ry} cx={x} cy={y} />;
   }
 }

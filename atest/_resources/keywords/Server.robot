@@ -4,7 +4,6 @@ Library     Process
 Library     String
 Resource    Lab.robot
 Resource    Browser.robot
-Resource    Meta.robot
 Resource    ../variables/Server.robot
 Library     ../../_libraries/Ports.py
 
@@ -12,7 +11,6 @@ Library     ../../_libraries/Ports.py
 *** Keywords ***
 Setup Server and Browser
     ${port} =    Get Unused Port
-    Run Keyword and Ignore Error    Tag for Pabot
     Set Global Variable    ${PORT}    ${port}
     Set Global Variable    ${URL}    http://localhost:${PORT}${URL PREFIX}
     ${accel} =    Evaluate    "COMMAND" if "${OS}" == "Darwin" else "CTRL"
@@ -22,12 +20,13 @@ Setup Server and Browser
     ${home} =    Set Variable    ${OUTPUT DIR}${/}home
     ${root} =    Normalize Path    ${OUTPUT DIR}${/}..${/}..${/}..
     Create Directory    ${home}
+    Create Directory    ${OUTPUT DIR}${/}logs
     Create Notebok Server Config    ${home}
     Initialize User Settings
     ${cmd} =    Create Lab Launch Command    ${root}
     Set Screenshot Directory    ${SCREENS ROOT}
     Set Global Variable    ${NEXT LAB}    ${NEXT LAB.__add__(1)}
-    Set Global Variable    ${LAB LOG}    ${OUTPUT DIR}${/}lab-${NEXT LAB}.log
+    Set Global Variable    ${LAB LOG}    ${OUTPUT DIR}${/}logs${/}lab-${NEXT LAB}.log
     Set Global Variable    ${PREVIOUS LAB LOG LENGTH}    0
     ${server} =    Start Process    ${cmd}    shell=yes    env:HOME=${home}    cwd=${home}    stdout=${LAB LOG}
     ...    stderr=STDOUT
@@ -69,6 +68,9 @@ Initialize User Settings
     Create File
     ...    ${SETTINGS DIR}${/}@jupyterlab${/}apputils-extension${/}palette.jupyterlab-settings
     ...    {"modal": false}
+    Create File
+    ...    ${SETTINGS DIR}${/}@jupyterlab${/}apputils-extension${/}notification.jupyterlab-settings
+    ...    {"fetchNews": "false", "checkForUpdates": false}
 
 Tear Down Everything
     Close All Browsers

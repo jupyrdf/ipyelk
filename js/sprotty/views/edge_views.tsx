@@ -18,10 +18,18 @@ import { injectable } from 'inversify';
 
 import { Point, angleOfPoint, toDegrees } from 'sprotty-protocol';
 
-import { CircularNodeView, PolylineEdgeView, setClass, svg } from 'sprotty';
+import {
+  PolylineEdgeView,
+  SRoutableElementImpl,
+  getAbsoluteRouteBounds,
+  setClass,
+  svg,
+} from 'sprotty';
 
 import { ElkModelRenderer } from '../renderer';
 import { ElkEdge, ElkJunction } from '../sprotty-model';
+
+import { CircularNodeView, validCanvasBounds } from './base';
 
 @injectable()
 export class JunctionView extends CircularNodeView {
@@ -41,6 +49,34 @@ export class JunctionView extends CircularNodeView {
 
 @injectable()
 export class ElkEdgeView extends PolylineEdgeView {
+  isVisible(
+    model: Readonly<SRoutableElementImpl>,
+    route: Point[],
+    context: ElkModelRenderer,
+  ): boolean {
+    if (context.targetKind === 'hidden') {
+      // Don't hide any element for hidden rendering
+      return true;
+    }
+    if (route.length === 0) {
+      // We should hide only if we know the element's route
+      return true;
+    }
+
+    const canvasBounds = model.root.canvasBounds;
+    if (!validCanvasBounds(canvasBounds)) {
+      // only hide if the canvas's size is set
+      return true;
+    }
+    const ab = getAbsoluteRouteBounds(model, route);
+    return (
+      ab.x <= canvasBounds.width &&
+      ab.x + ab.width >= 0 &&
+      ab.y <= canvasBounds.height &&
+      ab.y + ab.height >= 0
+    );
+  }
+
   render(edge: Readonly<ElkEdge>, context: ElkModelRenderer): VNode | undefined {
     const router = this.edgeRouterRegistry.get(edge.routerKind);
     const route = router.route(edge);

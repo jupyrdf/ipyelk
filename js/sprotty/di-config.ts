@@ -25,7 +25,7 @@ import {
   // EnableToolsAction,
   // EnableDefaultToolsAction,
   // configureActionHandler,
-  // HoverFeedbackCommand,
+  HoverFeedbackCommand,
   IVNodePostprocessor,
   IViewArgs, // InitializeCanvasBoundsCommand,
   LogLevel, // HoverFeedbackAction
@@ -37,11 +37,13 @@ import {
   SvgExporter,
   TYPES,
   ViewRegistry,
-  boundsModule, // configureCommand,
+  boundsModule,
+  configureCommand,
   configureModelElement,
   configureViewerOptions,
   defaultModule,
-  edgeEditModule, // hoverModule,
+  edgeEditModule,
+  edgeLayoutModule, // hoverModule,
   // Tool,
   // MouseTool,
   exportModule,
@@ -127,7 +129,7 @@ export default (containerId: string, view: DOMWidgetView) => {
     });
 
     // Hover
-    // configureCommand(context, HoverFeedbackCommand);
+    configureCommand(context, HoverFeedbackCommand);
 
     // Model elements for symbols
     configureModelElement(context, 'symbol', SymbolNode, v.SymbolNodeView);
@@ -172,6 +174,7 @@ export default (containerId: string, view: DOMWidgetView) => {
     edgeEditModule,
     labelEditModule,
     toolFeedbackModule,
+    edgeLayoutModule,
     elkGraphModule,
   );
   return container;

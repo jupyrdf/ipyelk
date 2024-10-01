@@ -146,7 +146,7 @@ LAB_EXT = ["jupyter", "labextension"]
 CONDA_BUILD = ["conda-build"]
 LAB = ["jupyter", "lab"]
 PRETTIER = [*JLPM, "--silent", "prettier"]
-JUPYTERLAB_EXE = [*IN_ENV, "jupyter-lab", "--no-browser", "--debug"]
+JUPYTERLAB_EXE = [*IN_ENV, "jupyter-lab", "--no-browser"]
 
 # python stuff
 PY_SRC = ROOT / "src" / PY_PKG

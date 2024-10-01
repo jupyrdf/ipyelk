@@ -15,7 +15,11 @@ ${SCREENS}      ${SCREENS ROOT}${/}examples${/}02_Transformer
 02_Transformer
     [Tags]    data:flat_graph.json    data:hier_tree.json    data:hier_ports.json
     Example Should Restart-and-Run-All    ${TRANSFORMER}
+    Click Elk Tool    Center    1
+    Scroll To Notebook Cell    10
+    Click Elk Tool    Center    2
     Elk Counts Should Be    &{FLAT AND HIER COUNTS}
+    Scroll To Notebook Cell    1
     Linked Elk Output Counts Should Be    &{FLAT COUNTS}
     Custom Elk Selectors Should Exist    @{FLAT CUSTOM}
     Custom Elk Selectors Should Exist    @{HIER PORT CUSTOM}

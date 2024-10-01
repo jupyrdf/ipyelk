@@ -20,7 +20,6 @@ const plugin: IPlugin<Application<Widget>, void> = {
   activate: async (app: Application<Widget>, registry: IJupyterWidgetRegistry) => {
     const { patchReflectMetadata } = await import('./patches');
     await patchReflectMetadata();
-
     ELK_DEBUG && console.warn('elk activated');
     registry.registerWidget({
       name: NAME,

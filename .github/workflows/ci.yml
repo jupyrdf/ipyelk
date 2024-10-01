@@ -223,7 +223,7 @@ jobs:
           name: |-
             ipyelk-${{ github.run_number }}-${{ job.status }}-reports-${{ matrix.os }}-${{ matrix.py }}
           path: |
-            ./atest/output
+            ./build/reports
             ./build/htmcov
             ./build/pytest.html
         if: always()

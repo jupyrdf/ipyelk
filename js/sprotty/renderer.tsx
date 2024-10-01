@@ -21,6 +21,7 @@ import {
   SModelElementImpl,
   SModelFactory,
   SModelRootImpl,
+  SParentElementImpl,
   ViewRegistry,
   getAbsoluteBounds,
   html,
@@ -120,8 +121,7 @@ export class ElkModelRenderer extends ModelRenderer {
       };
 
       let vnode = this.widgetContainer(jlsw, args, false);
-      if (vnode !== undefined) {
-        // this.decorate(vnode, jlsw.node);
+      if (vnode != null) {
         vnodes.push(vnode);
       }
     }
@@ -137,7 +137,7 @@ export class ElkModelRenderer extends ModelRenderer {
     for (let key in this.widgets) {
       let jlsw: JLSprottyWidget = this.widgets[key];
       let vnode = this.widgetContainer(jlsw, args);
-      if (vnode !== undefined) {
+      if (vnode != null) {
         this.decorate(vnode, jlsw.node);
         vnodes.push(vnode);
       }
@@ -272,12 +272,28 @@ export class ElkModelRenderer extends ModelRenderer {
       return this.source.elkToSprotty.symbolsIds[id];
     }
   }
+
+  renderChildren(element: Readonly<SParentElementImpl>, args?: IViewArgs): VNode[] {
+    const context = args
+      ? new ElkModelRenderer(
+          this.viewRegistry,
+          this.targetKind,
+          this['postprocessors'], // postprocessors is private to the parent class
+          this.source,
+          { ...args, parentArgs: this.args },
+        )
+      : this;
+
+    return element.children
+      .map((child) => context.renderElement(child))
+      .filter((vnode) => vnode != null) as VNode[];
+  }
 }
 
 function getPosition(element: InternalBoundsAware & SChildElementImpl): Point {
   let x = 0;
   let y = 0;
-  while (element !== undefined) {
+  while (element != null) {
     x = x + (element.bounds?.x || 0);
     y = y + (element.bounds?.y || 0);
     element = element?.parent as InternalBoundsAware & SChildElementImpl;

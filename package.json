@@ -68,6 +68,7 @@
     "prettier": "^3.3.0",
     "prettier-package-json": "^2.8.0",
     "prettier-plugin-sort-json": "^4.0",
+    "raw-loader": "^4.0.2",
     "rimraf": "^6.0.1",
     "source-map-loader": "^5.0.0",
     "ts-json-schema-generator": "^2.3.0",

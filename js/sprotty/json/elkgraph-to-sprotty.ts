@@ -37,7 +37,7 @@ import { IElkSymbol, IElkSymbols, SElkConnectorSymbol } from './symbols';
  * Checks the given type string and potentially returns the default type
  */
 export function getType(type: string | undefined, defaultType: string = ''): string {
-  if (type == undefined || type.length == 0) {
+  if (type == null || type.length == 0) {
     return defaultType;
   }
   return type;
@@ -292,7 +292,7 @@ export class ElkGraphJsonToSprotty {
   }
 
   private checkAndRememberId(e: ElkGraphElement, set: Set<string>) {
-    if (e.id == undefined) {
+    if (e.id == null) {
       throw Error('An element is missing an id.');
     } else if (set.has(e.id)) {
       throw Error('Duplicate id: ' + e.id + '.');

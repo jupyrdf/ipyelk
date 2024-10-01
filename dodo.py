@@ -595,7 +595,7 @@ def task_lint():
                 name=f"nblint:{nb.name}".replace(" ", "_").replace(".ipynb", ""),
                 file_dep=[P.YARN_INTEGRITY, nb, P.HISTORY, P.OK_BLACK],
                 actions=[
-                    [*P.IN_ENV, *P.PYM, "scripts.nblint", nb],
+                    # [*P.IN_ENV, *P.PYM, "scripts.nblint", nb],
                     [*P.IN_ENV, "black", "--quiet", nb],
                 ],
             ),

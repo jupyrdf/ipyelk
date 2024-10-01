@@ -8,8 +8,16 @@ ${JLAB XP MENU LABEL}           //div[@class='lm-MenuBar-itemLabel']
 ${JLAB XP DOCK TAB}
 ...                             xpath://div[contains(@class, 'lm-DockPanel-tabBar')]//li[contains(@class, 'lm-TabBar-tab')]
 ${JLAB XP CODE CELLS}
-...                             xpath://*[contains(@class, 'jp-NotebookPanel-notebook')]/*[contains(@class, 'jp-CodeCell')]
+...                             xpath://*[contains(@class, 'jp-NotebookPanel-notebook')]//*[contains(@class, 'jp-CodeCell')]
+${JLAB CSS CELL}                css:.jp-Cell
+${JLAB XP CELLS}                xpath://*[contains(@class, 'jp-NotebookPanel-notebook')]//*[contains(@class, 'jp-Cell')]
+${JLAB CSS NOTEBOOK}            css:.jp-NotebookPanel-notebook
+${JLAB CSS NOTEBOOK SCROLL}     ${JLAB CSS NOTEBOOK} .jp-WindowedPanel-outer
+${JLAB CSS WINDOW SCROLL}       css:.jp-mod-virtual-scrollbar .jp-WindowedPanel-scrollbar
+
+${JLAB CSS WINDOW TOGGLE}       css:[data-command='notebook:toggle-virtual-scrollbar']
 ${JLAB XP LAST CODE CELL}       ${JLAB XP CODE CELLS}\[last()]
+${JLAB CSS NB FOOTER}           css:.jp-Notebook-footer
 ${JLAB XP LAST CODE PROMPT}     ${JLAB XP LAST CODE CELL}//*[contains(@class, 'jp-InputArea-prompt')]
 ${JLAB XP STDERR}               xpath://*[@data-mime-type="application/vnd.jupyter.stderr"]
 ${JLAB XP KERNEL IDLE}          xpath://div[contains(@id, 'jp-main-statusbar')]//span[contains(., "Idle")]

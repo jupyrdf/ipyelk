@@ -37,8 +37,8 @@ import {
 import createContainer from './sprotty/di-config';
 import { JLModelSource } from './sprotty/diagram-server';
 // import { VNode } from 'snabbdom';
-import { ELK_CSS, NAME, TAnyELKMessage, VERSION } from './tokens';
-// import { NodeExpandTool, NodeSelectTool } from './tools';
+import { ELK_CSS, IELKFitMessage, NAME, TAnyELKMessage, VERSION } from './tokens';
+import { NodeExpandTool, NodeSelectTool } from './tools';
 import {
   FeedbackActionDispatcher,
   IFeedbackActionDispatcher,
@@ -197,8 +197,8 @@ export class ELKViewerView extends DOMWidgetView {
 
     // Register Tools
     // this.toolManager.registerDefaultTools(
-    //   container.resolve(NodeSelectTool),
-    //   container.resolve(NodeExpandTool),
+    container.resolve(NodeSelectTool).enable();
+    container.resolve(NodeExpandTool).enable();
     // );
     // this.toolManager.enableDefaultTools();
 
@@ -210,7 +210,12 @@ export class ELKViewerView extends DOMWidgetView {
     // box being stale but added resize call to the `fit` and `center` actions
     // as additional protection.
     setTimeout(() => {
-      this.resize();
+      // this.resize();
+      this.handleMessage({
+        action: 'fit',
+        animate: false,
+        padding: 0,
+      } as IELKFitMessage);
     }, 10 * POLL);
   }
 

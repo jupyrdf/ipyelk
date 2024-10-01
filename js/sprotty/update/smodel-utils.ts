@@ -12,8 +12,7 @@ export function containsSome(
   root: SModelRootImpl,
   element: SChildElementImpl,
 ): boolean {
-  const test = (element: SChildElementImpl) =>
-    root.index.getById(element.id) !== undefined;
+  const test = (element: SChildElementImpl) => root.index.getById(element.id) != null;
   const find = (elements: readonly SChildElementImpl[]): boolean =>
     elements.some((element) => test(element) || find(element.children));
   return find([element]);

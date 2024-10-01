@@ -16,8 +16,9 @@ class SSymbolGraph extends SGraphImpl {
 @injectable()
 export class SGraphView implements IView {
   render(model: Readonly<SSymbolGraph>, context: ElkModelRenderer): VNode {
-    const transform = `scale(${model.zoom}) translate(${-model.scroll.x},${-model.scroll
-      .y})`;
+    const x = model.scroll.x ? model.scroll.x : 0;
+    const y = model.scroll.y ? model.scroll.y : 0;
+    const transform = `scale(${model.zoom}) translate(${-x},${-y})`;
     let graph = svg(
       'svg',
       { class: { 'sprotty-graph': true } },
