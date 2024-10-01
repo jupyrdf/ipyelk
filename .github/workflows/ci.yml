@@ -18,7 +18,7 @@ env:
   CONDA_EXE: mamba
   # our stuff
   SKIP_CONDA_PREFLIGHT: 1
-  CACHE_EPOCH: 0
+  CACHE_EPOCH: 1
 
 jobs:
   build:
