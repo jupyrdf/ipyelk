@@ -21,6 +21,8 @@ Open JupyterLab
     ${service args} =    Create List    --log    info
     Set Global Variable    ${NEXT BROWSER}    ${NEXT BROWSER.__add__(1)}
     ${geckolog} =    Set Variable    ${OUTPUT DIR}${/}logs${/}geckodriver-${NEXT BROWSER}.log
+    # normalize windows slashes
+    ${geckolog} =    Set Variable    ${geckolog.replace('\\', '/')}
 
     Open Browser
     ...    about:blank
