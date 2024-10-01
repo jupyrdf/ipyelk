@@ -1,13 +1,13 @@
 # Changelog
 
-## `2.1.0`
+## `2.1.0a0`
 
-### `@jupyrdf/jupyter-elk 2.1.0`
+### `@jupyrdf/jupyter-elk 2.1.0-alpha0`
 
 - Update dependencies `elkjs 0.9.3`, `sprotty 1.3`, `jupyterlab 4.2`
 - Add shim for `reflect-metadata` vs `fast-foundation`
 
-### `ipyelk 2.1.0`
+### `ipyelk 2.1.0a0`
 
 - Support `pydantic >=1,<3`
 
