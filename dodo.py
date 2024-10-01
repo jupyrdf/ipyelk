@@ -328,9 +328,6 @@ def task_setup():
         else:
             install_targets += [P.YARN_LOCK]
 
-        if P.CI:
-            install_args += ["--immutable"]
-
         install_actions = [[*P.IN_ENV, *install_args]]
 
         if not P.CI:

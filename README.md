@@ -36,7 +36,7 @@
 ### `ipyelk` with `conda` (recommended)
 
 ```bash
-conda install -c conda-forge ipyelk jupyterlab=3
+conda install -c conda-forge ipyelk jupyterlab=4
 ```
 
 ### `ipyelk` with `pip`
@@ -44,7 +44,7 @@ conda install -c conda-forge ipyelk jupyterlab=3
 install `nodejs` with a [package manager][package-manager]
 
 ```bash
-pip install ipyelk jupyterlab=3
+pip install ipyelk jupyterlab=4
 ```
 
 ### Developing
