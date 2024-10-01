@@ -1,5 +1,15 @@
 # Changelog
 
+## `2.1.0a1`
+
+### `@jupyrdf/jupyter-elk 2.1.0-alpha1`
+
+> TBD
+
+### `ipyelk 2.1.0a1`
+
+> TBD
+
 ## `2.1.0a0`
 
 ### `@jupyrdf/jupyter-elk 2.1.0-alpha0`
