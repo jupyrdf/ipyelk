@@ -16,12 +16,12 @@ ${SCREENS}      ${SCREENS ROOT}${/}examples${/}01_Linking
     [Tags]    data:simple.json    tool:fit
     Example Should Restart-and-Run-All    ${LINKING}
     ${counts} =    Create Dictionary    n=${2}    &{SIMPLE COUNTS}
-    Click Elk Tool    Fit
     Click Elk Tool    Fit    1
+    Click Elk Tool    Fit    2
     Elk Counts Should Be    &{counts}
     Create Linked Elk Output View
-    Click Elk Tool    Fit    2
     Click Elk Tool    Fit    3
+    Click Elk Tool    Fit    4
     Sleep    1s
     Linked Elk Output Counts Should Be    &{counts}    open=${FALSE}
     Custom Elk Selectors Should Exist    @{SIMPLE CUSTOM}

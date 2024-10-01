@@ -3,30 +3,27 @@ channels:
   - nodefaults
 dependencies:
   # runtimes
-  - python >=3.7,<3.12.0a0
-  - jupyterlab >=3,<4
+  - python >=3.9,<3.13.0a0
+  - jupyterlab >=4.2,<5
   - ipykernel !=6.19.*
   # real deps
   - ipywidgets >=8.0.1,<9
   - networkx
-  - pydantic >=1
+  - pydantic >=1.10.17,<3
   # build
   - doit
-  - flit >=3.7.1,<4
+  - flit >=3.9.0,<4
   - keyring
-  - nodejs >=18,<19
+  - nodejs >=22,<23
   - pip
   - tomli
   - twine
   - wheel
-  - packaging <22
-  - pytoolconfig <1.2.4
+  - packaging
   # demo
-  - bqplot >=0.12.20
+  - bqplot
   - importnb
   - ipython >=7
-  - jupyterlab-deck
-  - jupyterlab-myst
   - pandas
   # lint
   - black-jupyter
@@ -41,7 +38,7 @@ dependencies:
   - pytest-html
   - pytest-xdist
   # atest
-  - firefox =102
+  - firefox ==128.*
   - geckodriver
   - robotframework-pabot
   - robotframework-robocop
@@ -58,9 +55,5 @@ dependencies:
   - sphinx-autobuild
   - sphinx-autodoc-typehints
   # lite
-  - jupyterlab-webrtc-docprovider
-  - pkginfo
-  - python-libarchive-c
-  # this is handled by `doit lite:pip:install`
-  # - pip:
-  #   - jupyterlite ==0.1.0b15
+  - jupyterlite-pyodide-kernel >=0.4.2,<0.5
+  - jupyterlite-core >=0.4.1,<0.5

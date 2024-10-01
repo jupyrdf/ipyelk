@@ -18,15 +18,16 @@
 
 ## Prerequisites
 
-- `python >=3.7`
+- `python >=3.11`
 
 ### JupyterLab compatibility
 
-| `jupyterlab` | `ipyelk` | special concerns                                                                                                          |
-| ------------ | -------- | ------------------------------------------------------------------------------------------------------------------------- |
-| `==1.*`      | `>1`     | needs `nodejs >10`<br/>`jupyter labextension install @jupyrdf/jupyter-elk`<br/>backports, etc. land on the `0.3.x` branch |
-| `==2.*`      | `>1`     | _untested_                                                                                                                |
-| `==3.*`      | `>=1`    |
+| `jupyterlab` | `ipyelk`   | special concerns                                                                                                          |
+| ------------ | ---------- | ------------------------------------------------------------------------------------------------------------------------- |
+| `==1.*`      | `>1`       | needs `nodejs >10`<br/>`jupyter labextension install @jupyrdf/jupyter-elk`<br/>backports, etc. land on the `0.3.x` branch |
+| `==2.*`      | `>1`       | _untested_                                                                                                                |
+| `==3.*`      | `>=1,<2.1` |
+| `==4.*`      | `>=2.1`    |
 
 ## Install
 
@@ -35,7 +36,7 @@
 ### `ipyelk` with `conda` (recommended)
 
 ```bash
-conda install -c conda-forge ipyelk jupyterlab=3
+conda install -c conda-forge ipyelk jupyterlab=4
 ```
 
 ### `ipyelk` with `pip`
@@ -43,7 +44,7 @@ conda install -c conda-forge ipyelk jupyterlab=3
 install `nodejs` with a [package manager][package-manager]
 
 ```bash
-pip install ipyelk jupyterlab=3
+pip install ipyelk jupyterlab=4
 ```
 
 ### Developing

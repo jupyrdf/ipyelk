@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2022 ipyelk contributors.
+ * # Copyright (c) 2024 ipyelk contributors.
  * Distributed under the terms of the Modified BSD License.
  */
 
@@ -20,9 +20,11 @@
  ********************************************************************************/
 import { injectable } from 'inversify';
 import { inject } from 'inversify';
+
+import { Action } from 'sprotty-protocol';
+
 import { IActionDispatcher } from 'sprotty/lib';
 import { ILogger } from 'sprotty/lib';
-import { Action } from 'sprotty/lib';
 import { TYPES } from 'sprotty/lib';
 
 export interface IFeedbackEmitter {}
@@ -73,7 +75,7 @@ export class FeedbackActionDispatcher implements IFeedbackActionDispatcher {
   constructor(
     @inject(TYPES.IActionDispatcherProvider)
     protected actionDispatcher: () => Promise<IActionDispatcher>,
-    @inject(TYPES.ILogger) protected logger: ILogger
+    @inject(TYPES.ILogger) protected logger: ILogger,
   ) {}
 
   registerFeedback(feedbackEmitter: IFeedbackEmitter, actions: Action[]): void {
@@ -90,10 +92,10 @@ export class FeedbackActionDispatcher implements IFeedbackActionDispatcher {
     this.actionDispatcher()
       .then((dispatcher) => dispatcher.dispatchAll(actions))
       .then(() =>
-        this.logger.info(this, `Dispatched feedback actions for ${feedbackEmitter}`)
+        this.logger.info(this, `Dispatched feedback actions for ${feedbackEmitter}`),
       )
       .catch((reason) =>
-        this.logger.error(this, 'Failed to dispatch feedback actions', reason)
+        this.logger.error(this, 'Failed to dispatch feedback actions', reason),
       );
   }
 

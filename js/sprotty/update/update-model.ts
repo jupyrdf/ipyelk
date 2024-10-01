@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2022 ipyelk contributors.
+ * # Copyright (c) 2024 ipyelk contributors.
  * Distributed under the terms of the Modified BSD License.
  * FIX BELOW FROM:
  */
@@ -20,17 +20,19 @@
  * SPDX-License-Identifier: EPL-2.0 OR GPL-2.0 WITH Classpath-exception-2.0
  ********************************************************************************/
 import { injectable } from 'inversify';
+
+import { Fadeable } from 'sprotty-protocol';
+
 import {
   Animation,
   CommandExecutionContext,
   CompoundAnimation,
-  Fadeable,
   MatchResult,
   ResolvedElementFade,
-  SChildElement,
-  SModelElement,
-  SModelRoot,
-  SParentElement,
+  SChildElementImpl,
+  SModelElementImpl,
+  SModelRootImpl,
+  SParentElementImpl,
   forEachMatch,
   isFadeable,
 } from 'sprotty';
@@ -41,24 +43,24 @@ import { containsSome } from './smodel-utils';
 @injectable()
 export class UpdateModelCommand2 extends UpdateModelCommand {
   protected computeAnimation(
-    newRoot: SModelRoot,
+    newRoot: SModelRootImpl,
     matchResult: MatchResult,
-    context: CommandExecutionContext
-  ): SModelRoot | Animation {
+    context: CommandExecutionContext,
+  ): SModelRootImpl | Animation {
     const animationData: UpdateAnimationData = {
       fades: [] as ResolvedElementFade[],
     };
     forEachMatch(matchResult, (id, match) => {
-      if (match.left !== undefined && match.right !== undefined) {
+      if (match.left != null && match.right != null) {
         // The element is still there, but may have been moved
         this.updateElement(
-          match.left as SModelElement,
-          match.right as SModelElement,
-          animationData
+          match.left as SModelElementImpl,
+          match.right as SModelElementImpl,
+          animationData,
         );
-      } else if (match.right !== undefined) {
+      } else if (match.right != null) {
         // An element has been added
-        const right = match.right as SModelElement;
+        const right = match.right as SModelElementImpl;
         if (isFadeable(right)) {
           right.opacity = 0;
           animationData.fades.push({
@@ -66,16 +68,16 @@ export class UpdateModelCommand2 extends UpdateModelCommand {
             type: 'in',
           });
         }
-      } else if (match.left instanceof SChildElement) {
+      } else if (match.left instanceof SChildElementImpl) {
         // An element has been removed
         const left = match.left;
-        if (isFadeable(left) && match.leftParentId !== undefined) {
+        if (isFadeable(left) && match.leftParentId != null) {
           if (!containsSome(newRoot, left)) {
             const parent = newRoot.index.getById(match.leftParentId);
-            if (parent instanceof SParentElement) {
+            if (parent instanceof SParentElementImpl) {
               const leftCopy = context.modelFactory.createElement(
-                left
-              ) as SChildElement & Fadeable;
+                left,
+              ) as SChildElementImpl & Fadeable;
               parent.add(leftCopy);
               animationData.fades.push({
                 element: leftCopy,

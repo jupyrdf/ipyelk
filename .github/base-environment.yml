@@ -3,6 +3,7 @@ channels:
   - nodefaults
 
 dependencies:
+  - conda
   - doit
   - mamba >=1.1.0
   - python >=3.11,<3.12

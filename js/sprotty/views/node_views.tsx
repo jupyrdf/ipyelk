@@ -10,12 +10,16 @@
  * which accompanies this distribution, and is available at
  * http://www.eclipse.org/legal/epl-v10.html
  *******************************************************************************/
+
+/** @jsx svg */
+import { VNode } from 'snabbdom';
+
 import { injectable } from 'inversify';
-import * as snabbdom from 'snabbdom-jsx';
-import { html, svg } from 'snabbdom-jsx';
-import { VNode } from 'snabbdom/vnode';
+
+import { Dimension, Point } from 'sprotty-protocol';
+
 import {
-  Dimension, // HtmlRootView,
+  // HtmlRootView,
   // PreRenderedElement,
   // PreRenderedView,
   // ExpandButtonView,
@@ -23,19 +27,15 @@ import {
   // RoutableView,
   // getSubType
   // IView
-  Point,
-  RectangularNodeView,
-  ShapeView,
-  ViewportRootElement,
+  html,
   setClass,
+  svg,
 } from 'sprotty';
 
 import { ElkModelRenderer } from '../renderer';
 import { ElkLabel, ElkNode, ElkPort } from '../sprotty-model';
 
-// import { useCallback } from 'react';
-
-const JSX = { createElement: snabbdom.svg };
+import { RectangularNodeView, ShapeView } from './base';
 
 function svgStr(point: Point) {
   return `${point.x},${point.y}`;
@@ -121,9 +121,9 @@ export class ElkRoundNodeView extends ElkNodeView {
     let rx = node.size.width / 2;
     let ry = node.size.height / 2;
     let x = node.properties?.shape?.x;
-    if (x == undefined) x = rx;
+    if (x == null) x = rx;
     let y = node.properties?.shape?.y;
-    if (y == undefined) y = ry;
+    if (y == null) y = ry;
     return <ellipse rx={rx} ry={ry} cx={x} cy={y} />;
   }
 }
@@ -184,14 +184,10 @@ export class ElkSVGNodeView extends ElkNodeView {
   renderMark(node: ElkNode, context: ElkModelRenderer): VNode {
     let x = node.properties?.shape?.x || 0;
     let y = node.properties?.shape?.y || 0;
-    return JSX.createElement(
-      'g',
-      {
-        props: { innerHTML: node?.properties?.shape?.use },
-        transform: `translate(${x} ${y})`,
-      },
-      []
-    );
+    return svg('g', {
+      props: { innerHTML: node?.properties?.shape?.use },
+      transform: `translate(${x} ${y})`,
+    });
   }
 }
 
@@ -211,11 +207,7 @@ export class ElkCompartmentNodeView extends ElkNodeView {
 @injectable()
 export class ElkForeignObjectNodeView extends ElkNodeView {
   renderMark(node: ElkNode, context: ElkModelRenderer): VNode {
-    let contents = html(
-      'div',
-      { props: { innerHTML: node?.properties?.shape?.use } },
-      []
-    );
+    let contents = html('div', { props: { innerHTML: node?.properties?.shape?.use } });
     return (
       <foreignObject
         requiredFeatures="http://www.w3.org/TR/SVG11/feature#Extensibility"
@@ -258,7 +250,8 @@ export class ElkJLNodeView extends ElkNodeView {
             context.registerJLWidgetNode(vnode, node, this.isVisible(node, context)),
         },
       },
-      [mark, <g class-elkchildren={true}>{this.renderChildren(node, context)}</g>]
+      mark,
+      <g class-elkchildren={true}>{this.renderChildren(node, context)}</g>,
     );
   }
 }
@@ -390,7 +383,8 @@ export class ElkLabelView extends ShapeView {
       return false;
     }
     // check if label should be rendered due to zoom level and min size
-    let zoom = (label.root as ViewportRootElement).zoom;
+    const root = label.root;
+    let zoom = root['zoom']; // should there be a method on the context to get the zoom level?
     let heightLOD: boolean;
     if (label.size.height) {
       heightLOD = zoom * label.size.height > 3;

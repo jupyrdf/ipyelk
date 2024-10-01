@@ -1,11 +1,11 @@
-# Copyright (c) 2022 ipyelk contributors.
+# Copyright (c) 2024 ipyelk contributors.
 # Distributed under the terms of the Modified BSD License.
 # from typing import Dict, List, Optional
 
 from typing import Optional, Set
 
 from ipywidgets import DOMWidget
-from pydantic import BaseModel, Field, validator
+from pydantic.v1 import BaseModel, Field, validator
 
 from .common import add_excluded_fields
 

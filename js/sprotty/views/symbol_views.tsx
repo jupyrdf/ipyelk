@@ -1,12 +1,12 @@
+/** @jsx svg */
+import { VNode } from 'snabbdom';
+
 import { injectable } from 'inversify';
-import { svg } from 'snabbdom-jsx';
-import { VNode } from 'snabbdom/vnode';
-import { IView } from 'sprotty';
+
+import { IView, svg } from 'sprotty';
 
 import { ElkModelRenderer } from '../renderer';
 import { ElkNode } from '../sprotty-model';
-
-// const JSX = { createElement: svg };
 
 @injectable()
 export class SymbolNodeView implements IView {
@@ -24,6 +24,6 @@ export class SymbolNodeView implements IView {
     if (width && height) {
       attrs['viewBox'] = `${x} ${y} ${width} ${height}`;
     }
-    return svg('symbol', attrs, context.renderChildren(symbol));
+    return svg('symbol', attrs, ...context.renderChildren(symbol));
   }
 }

@@ -3,7 +3,7 @@
     this should not import anything not in py36+ stdlib, or any local paths
 """
 
-# Copyright (c) 2022 ipyelk contributors.
+# Copyright (c) 2024 ipyelk contributors.
 # Distributed under the terms of the Modified BSD License.
 
 import itertools
@@ -26,7 +26,7 @@ PY_PKG = "ipyelk"
 PLATFORM = os.environ.get("FAKE_PLATFORM", platform.system())
 THIS_SUBDIR = {
     "Windows": "win-64",
-    "Darwin": "osx-64",
+    "Darwin": "osx-arm64",
     "Linux": "linux-64",
 }.get(PLATFORM)
 WIN = PLATFORM == "Windows"
@@ -85,7 +85,7 @@ JS_NEEDS_INSTALL_KEYS = [
 ]
 JS_PKG = JS_PACKAGE_DATA["name"]
 JS_VERSION = JS_PACKAGE_DATA["version"]
-YARN_INTEGRITY = NODE_MODULES / ".yarn-integrity"
+YARN_INTEGRITY = NODE_MODULES / ".yarn-state.yml"
 YARN_LOCK = ROOT / "yarn.lock"
 GH = ROOT / ".github"
 DODO = ROOT / "dodo.py"
@@ -122,7 +122,7 @@ ENV = Path(sys.prefix) if IN_RTD or IN_BINDER else ROOT / f"envs/py_{IPYELK_PY}"
 LOCK_ENV = ROOT / "envs/lock"
 
 CONDA_RUN = ["conda", "run", "--live-stream", "--prefix"]
-MAMBA_CREATE = ["mamba", "create", "-y", "--prefix"]
+MAMBA_CREATE = ["mamba", "create", "--quiet", "-y", "--prefix"]
 CONDA_LOCK = ["conda-lock", "--kind=explicit", "--mamba"]
 
 if BUILDING_IN_CI:
@@ -140,13 +140,13 @@ PYM = [*PY, "-m"]
 PIP = [*PYM, "pip"]
 
 JLPM = ["jlpm"]
-JLPM_INSTALL = [*JLPM, "--prefer-offline"]
+JLPM_INSTALL = [*JLPM]
 PREFLIGHT = [*PYM, "scripts.preflight"]
 LAB_EXT = ["jupyter", "labextension"]
 CONDA_BUILD = ["conda-build"]
 LAB = ["jupyter", "lab"]
 PRETTIER = [*JLPM, "--silent", "prettier"]
-JUPYTERLAB_EXE = [*IN_ENV, "jupyter-lab", "--no-browser", "--debug"]
+JUPYTERLAB_EXE = [*IN_ENV, "jupyter-lab", "--no-browser"]
 
 # python stuff
 PY_SRC = ROOT / "src" / PY_PKG
@@ -159,7 +159,6 @@ LITE_JSON = [*LITE.glob("*.json")]
 DOCS_BUILD = BUILD / "docs"
 DOCS_CONF = DOCS / "conf.py"
 DICTIONARY = DOCS / "dictionary.txt"
-LITE_SPEC = ["--pre", "jupyterlite==0.1.0b15"]
 LITE_BUILD = BUILD / "lite"
 LITE_SHA256SUMS = LITE_BUILD / "SHA256SUMS"
 
@@ -167,6 +166,7 @@ LITE_SHA256SUMS = LITE_BUILD / "SHA256SUMS"
 # js stuff
 JS_LIB = ROOT / "lib"
 TSBUILDINFO = BUILD / ".src.tsbuildinfo"
+WEBPACKCONFIG = ROOT / "webpack.config.js"
 TS_SRC = ROOT / "js"
 TS_SCHEMA = TS_SRC / "sprotty" / "json" / "elkschema.ts"
 STYLE = ROOT / "style"
@@ -206,7 +206,7 @@ ALL_MD = [*ROOT.glob("*.md"), *ALL_DOCS_MD]
 ALL_TS = [*TS_SRC.rglob("*.ts")]
 ALL_CSS = [*STYLE.rglob("*.css")]
 PRETTIER_IGNORE = ROOT / ".prettierignore"
-ALL_PRETTIER = [*ALL_YML, *ALL_JSON, *ALL_MD, *ALL_TS, *ALL_CSS]
+ALL_PRETTIER = [*ALL_YML, *ALL_JSON, *ALL_MD, *ALL_TS, *ALL_CSS, WEBPACKCONFIG]
 
 # built files
 OK_RELEASE = BUILD / "release.ok"
@@ -249,7 +249,7 @@ SHA256SUMS = DIST / "SHA256SUMS"
 # robot testing
 ATEST = ROOT / "atest"
 ALL_ROBOT = [*ATEST.rglob("*.robot")]
-ATEST_OUT = ATEST / "output"
+ATEST_OUT = BUILD / "reports/atest"
 ATEST_CANARY = BUILD / f"robot.{PLATFORM.lower()}_success.ok"
 
 # docs

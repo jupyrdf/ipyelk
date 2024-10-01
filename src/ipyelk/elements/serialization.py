@@ -1,10 +1,10 @@
-# Copyright (c) 2022 ipyelk contributors.
+# Copyright (c) 2024 ipyelk contributors.
 # Distributed under the terms of the Modified BSD License.
 
 from typing import Dict, Optional
 
 from ipywidgets import DOMWidget
-from pydantic import BaseModel
+from pydantic.v1 import BaseModel
 
 from .elements import Node
 from .index import HierarchicalIndex, VisIndex

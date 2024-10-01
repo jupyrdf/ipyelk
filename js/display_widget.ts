@@ -1,25 +1,26 @@
 /**
- * Copyright (c) 2022 ipyelk contributors.
+ * # Copyright (c) 2024 ipyelk contributors.
  * Distributed under the terms of the Modified BSD License.
  */
 import difference from 'lodash/difference';
-import 'reflect-metadata';
+
+import {
+  Action,
+  HoverFeedbackAction,
+  SModelRoot,
+  SelectAction,
+  SelectionResult, // SModelRegistry,
+  SetModelAction,
+  UpdateModelAction,
+} from 'sprotty-protocol';
+
 // import { WidgetManager } from '@jupyter-widgets/jupyterlab-manager';
 // import { ManagerBase } from '@jupyter-widgets/base';
 import {
-  Action,
   ActionDispatcher,
-  ActionHandlerRegistry,
-  HoverFeedbackAction, // SModelRegistry,
-  // IModelFactory,
+  ActionHandlerRegistry, // IModelFactory,
   // SModelFactory,
-  SModelRootSchema,
-  SelectAction,
-  SelectionResult,
-  SetModelAction,
   TYPES,
-  ToolManager,
-  UpdateModelAction,
 } from 'sprotty';
 
 import { PromiseDelegate } from '@lumino/coreutils';
@@ -35,8 +36,8 @@ import {
 
 import createContainer from './sprotty/di-config';
 import { JLModelSource } from './sprotty/diagram-server';
-// import { VNode } from 'snabbdom/vnode';
-import { ELK_CSS, NAME, TAnyELKMessage, VERSION } from './tokens';
+// import { VNode } from 'snabbdom';
+import { ELK_CSS, IELKFitMessage, NAME, TAnyELKMessage, VERSION } from './tokens';
 import { NodeExpandTool, NodeSelectTool } from './tools';
 import {
   FeedbackActionDispatcher,
@@ -111,12 +112,12 @@ export class ELKViewerView extends DOMWidgetView {
   source: JLModelSource;
   container: any;
   private div_id: string;
-  toolManager: ToolManager;
+  // toolManager: ToolManager;
   registry: ActionHandlerRegistry;
   actionDispatcher: ActionDispatcher;
   feedbackDispatcher: IFeedbackActionDispatcher;
   // elementRegistry: SModelRegistry;
-  currentRoot: SModelRootSchema;
+  currentRoot: SModelRoot;
   was_shown = new PromiseDelegate<void>();
 
   initialize(parameters: any) {
@@ -164,11 +165,11 @@ export class ELKViewerView extends DOMWidgetView {
     this.source.diagramWidget = this;
     this.source.widget_manager = this.model.widget_manager as any;
     this.source.factory = container.get(TYPES.IModelFactory);
-    this.toolManager = container.get<ToolManager>(TYPES.IToolManager);
+    // this.toolManager = container.get<ToolManager>(TYPES.IToolManager);
     this.registry = container.get<ActionHandlerRegistry>(ActionHandlerRegistry);
     this.actionDispatcher = container.get<ActionDispatcher>(TYPES.IActionDispatcher);
     this.feedbackDispatcher = container.get<FeedbackActionDispatcher>(
-      ToolTYPES.IFeedbackActionDispatcher
+      ToolTYPES.IFeedbackActionDispatcher,
     );
     // this.model.on('change:mark_layout', this.diagramLayout, this);
     this.model.on('change:selection', this.updateSelectedTool, this);
@@ -195,21 +196,26 @@ export class ELKViewerView extends DOMWidgetView {
     this.registry.register(UpdateModelAction.KIND, this);
 
     // Register Tools
-    this.toolManager.registerDefaultTools(
-      container.resolve(NodeSelectTool),
-      container.resolve(NodeExpandTool)
-    );
-    this.toolManager.enableDefaultTools();
+    // this.toolManager.registerDefaultTools(
+    container.resolve(NodeSelectTool).enable();
+    container.resolve(NodeExpandTool).enable();
+    // );
+    // this.toolManager.enableDefaultTools();
 
     this.diagramLayout().catch((err) =>
-      console.warn('ELK Failed initial view render', err)
+      console.warn('ELK Failed initial view render', err),
     );
 
     // timeout is ugly workaround for gh issue #94. Still potential for bounding
     // box being stale but added resize call to the `fit` and `center` actions
     // as additional protection.
     setTimeout(() => {
-      this.resize();
+      // this.resize();
+      this.handleMessage({
+        action: 'fit',
+        animate: false,
+        padding: 0,
+      } as IELKFitMessage);
     }, 10 * POLL);
   }
 
@@ -304,7 +310,12 @@ export class ELKViewerView extends DOMWidgetView {
       let old_selected: string[] = selection.previous('ids');
       let exiting: string[] = difference(old_selected, selected);
       let entering: string[] = difference(selected, old_selected);
-      await this.actionDispatcher.dispatch(new SelectAction(entering, exiting));
+      await this.actionDispatcher.dispatch(
+        SelectAction.create({
+          selectedElementsIDs: entering,
+          deselectedElementsIDs: exiting,
+        }),
+      );
       this.setSelectedNodes(selected);
       this.model.diagramUpdated.emit(void 0);
     }
@@ -315,7 +326,7 @@ export class ELKViewerView extends DOMWidgetView {
    */
   async setSelectedNodes(selected: string[]) {
     this.source.selectedNodes = selected.map(
-      (id) => this.source.index.getById(id) as any
+      (id) => this.source.index.getById(id) as any,
     );
   }
 
@@ -332,8 +343,11 @@ export class ELKViewerView extends DOMWidgetView {
       let hovered: string = hover.get('ids');
       let old_hovered: string = hover.previous('ids');
       await this.actionDispatcher.dispatchAll([
-        new HoverFeedbackAction(hovered, true),
-        new HoverFeedbackAction(old_hovered, false),
+        HoverFeedbackAction.create({ mouseoverElement: hovered, mouseIsOver: true }),
+        HoverFeedbackAction.create({
+          mouseoverElement: old_hovered,
+          mouseIsOver: false,
+        }),
       ]);
       this.model.diagramUpdated.emit(void 0);
     }
@@ -374,7 +388,7 @@ export class ELKViewerView extends DOMWidgetView {
         this.source.center(
           this.normalizeElementIds(content.model_id),
           content.animate,
-          content.retain_zoom
+          content.retain_zoom,
         );
         break;
       case 'fit':
@@ -383,7 +397,7 @@ export class ELKViewerView extends DOMWidgetView {
           this.normalizeElementIds(content.model_id),
           content.padding == null ? 0 : content.padding,
           content.max_zoom == null ? Infinity : content.max_zoom,
-          content.animate == null ? true : content.animate
+          content.animate == null ? true : content.animate,
         );
         break;
       default:

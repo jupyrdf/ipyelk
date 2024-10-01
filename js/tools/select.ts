@@ -1,23 +1,24 @@
 /**
- * Copyright (c) 2022 ipyelk contributors.
+ * # Copyright (c) 2024 ipyelk contributors.
  * Distributed under the terms of the Modified BSD License.
  */
 //inspired from :
 // https://github.com/eclipsesource/graphical-lsp/blob/abc742641f6fc993f708f0c8cef937eb7a0b028a/client/packages/sprotty-client/src/features/tools/creation-tool.ts
+import { VNode } from 'snabbdom';
+
 import { inject, injectable } from 'inversify';
-import { VNode } from 'snabbdom/vnode';
+
+import { Action, SelectAction } from 'sprotty-protocol';
+
 import {
-  Action,
   MouseTool,
-  SModelElement,
-  SModelRoot,
-  SRoutingHandle,
-  SelectAction,
+  SModelElementImpl,
+  SRoutingHandleImpl,
   findParentByFeature,
   isCtrlOrCmd,
   isSelectable,
   setClass,
-} from 'sprotty/lib';
+} from 'sprotty';
 import { toArray } from 'sprotty/lib/utils/iterable';
 
 import { DragAwareHoverMouseListener } from './draw-aware-mouse-listener';
@@ -35,7 +36,7 @@ export class NodeSelectTool extends DiagramTool {
   constructor(
     @inject(MouseTool) protected mouseTool: IMouseTool,
     @inject(ToolTYPES.IFeedbackActionDispatcher)
-    protected feedbackDispatcher: IFeedbackActionDispatcher
+    protected feedbackDispatcher: IFeedbackActionDispatcher,
   ) {
     super();
   }
@@ -43,7 +44,7 @@ export class NodeSelectTool extends DiagramTool {
   enable() {
     this.selectionToolMouseListener = new NodeSelectToolMouseListener(
       this.elementTypeId,
-      this
+      this,
     );
     this.mouseTool.register(this.selectionToolMouseListener);
   }
@@ -55,16 +56,19 @@ export class NodeSelectTool extends DiagramTool {
 
 @injectable()
 export class NodeSelectToolMouseListener extends DragAwareHoverMouseListener {
-  constructor(protected elementTypeId: string, protected tool: NodeSelectTool) {
+  constructor(
+    protected elementTypeId: string,
+    protected tool: NodeSelectTool,
+  ) {
     super(elementTypeId, tool);
   }
 
-  nonDraggingMouseUp(target: SModelElement, event: MouseEvent): Action[] {
-    let entering: SModelElement[] = []; // elements entering selection
-    let exiting: SModelElement[] = []; // element exiting selection
+  nonDraggingMouseUp(target: SModelElementImpl, event: MouseEvent): Action[] {
+    let entering: SModelElementImpl[] = []; // elements entering selection
+    let exiting: SModelElementImpl[] = []; // element exiting selection
     if (event.button === 0 && !isJLWidget(event.target as Element)) {
       const selectableTarget = findParentByFeature(target, isSelectable);
-      if (selectableTarget != null || target instanceof SModelRoot) {
+      if (selectableTarget != null) {
         // multi-selection?
         if (!isCtrlOrCmd(event)) {
           exiting = toArray(
@@ -75,10 +79,10 @@ export class NodeSelectToolMouseListener extends DragAwareHoverMouseListener {
                   isSelectable(element) &&
                   element.selected &&
                   !(
-                    selectableTarget instanceof SRoutingHandle &&
-                    element === (selectableTarget.parent as SModelElement)
-                  )
-              )
+                    selectableTarget instanceof SRoutingHandleImpl &&
+                    element === (selectableTarget.parent as SModelElementImpl)
+                  ),
+              ),
           );
         }
         if (selectableTarget != null) {
@@ -91,7 +95,12 @@ export class NodeSelectToolMouseListener extends DragAwareHoverMouseListener {
       }
     }
 
-    return [new SelectAction(entering.map(idGetter), exiting.map(idGetter))];
+    return [
+      SelectAction.create({
+        selectedElementsIDs: entering.map(idGetter),
+        deselectedElementsIDs: exiting.map(idGetter),
+      }),
+    ];
   }
 
   /**
@@ -99,7 +108,7 @@ export class NodeSelectToolMouseListener extends DragAwareHoverMouseListener {
    * @param vnode
    * @param element
    */
-  decorate(vnode: VNode, element: SModelElement): VNode {
+  decorate(vnode: VNode, element: SModelElementImpl): VNode {
     const selectableTarget = findParentByFeature(element, isSelectable);
     if (selectableTarget != null)
       setClass(vnode, 'selected', selectableTarget.selected);

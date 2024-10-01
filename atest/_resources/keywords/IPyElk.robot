@@ -3,6 +3,7 @@ Library     Collections
 Library     XML    WITH NAME    XML
 Library     OperatingSystem
 Resource    ../variables/IPyElk.robot
+Resource    Lab.robot
 
 
 *** Keywords ***
@@ -26,8 +27,8 @@ Open IPyElk Notebook
     ${files} =    Get All IPyElk Example Paths
     Copy Support Files    ${files}
     Open File    ${full path}    ${MENU NOTEBOOK}
-    Wait Until Page Contains Element    ${JLAB XP KERNEL IDLE}    timeout=30s
-    Lab Command    Clear All Outputs
+    Wait Until Element Is Visible    ${JLAB XP KERNEL IDLE}    timeout=30s
+    Lab Command    Clear Outputs of All Cells
     Ensure Sidebar Is Closed
     Capture Page Screenshot    01-loaded.png
 
@@ -46,7 +47,6 @@ Example Should Restart-and-Run-All
     Elk Counts Should Be    # all 0
     Restart and Run All
     Wait For All Cells To Run    60s
-    Capture All Code Cells
     Page Should Not Contain Contain Standard Errors
     Capture Page Screenshot    10-ran-all-without-stderr.png
 
@@ -68,7 +68,14 @@ Custom Elk Selectors Should Exist
     END
 
 Elk Counts Should Be
-    [Arguments]    ${nodes}=${0}    ${edges}=${0}    ${labels}=${0}    ${ports}=${0}    ${prefix}=${EMPTY}    ${n}=${1}    ${screen}=20-counted.png
+    [Arguments]
+    ...    ${nodes}=${0}
+    ...    ${edges}=${0}
+    ...    ${labels}=${0}
+    ...    ${ports}=${0}
+    ...    ${prefix}=${EMPTY}
+    ...    ${n}=${1}
+    ...    ${screen}=20-counted.png
     Wait Until Keyword Succeeds
     ...    5x
     ...    1s
@@ -82,11 +89,14 @@ Elk Counts Should Be
     ...    screen=${screen}
 
 Elk Counts Should Really Be
-    [Arguments]    ${nodes}=${0}    ${edges}=${0}    ${labels}=${0}    ${ports}=${0}    ${prefix}=${EMPTY}    ${n}=${1}    ${screen}=20-counted.png
-    IF    ${nodes} + ${edges} + ${labels} + ${ports}
-        Wait Until Element Is Visible
-        ...    css:${prefix}${CSS ELK NODE}, ${prefix}${CSS ELK EDGE}, ${prefix}${CSS ELK LABEL}, ${prefix}${CSS ELK PORT}
-    END
+    [Arguments]
+    ...    ${nodes}=${0}
+    ...    ${edges}=${0}
+    ...    ${labels}=${0}
+    ...    ${ports}=${0}
+    ...    ${prefix}=${EMPTY}
+    ...    ${n}=${1}
+    ...    ${screen}=20-counted.png
     ${found nodes} =    Get Elk Node Count    prefix=${prefix}
     ${found edges} =    Get Elk Edge Count    prefix=${prefix}
     ${found labels} =    Get Elk Label Count    prefix=${prefix}
@@ -97,15 +107,22 @@ Elk Counts Should Really Be
     ...    nodes:${nodes.__mul__(${n})} edges:${edges.__mul__(${n})} labels:${labels.__mul__(${n})} ports:${ports.__mul__(${n})}
 
 Create Linked Elk Output View
-    Wait Until Page Contains Element    css:${CSS ELK VIEW}
+    Wait Until Element Is Visible    css:${CSS ELK VIEW}
     Click Element    css:${CSS ELK VIEW}
     Open Context Menu    css:${CSS ELK VIEW}
     Wait Until Keyword Succeeds    3x    0.5s    Mouse Over    css:${JLAB CSS CREATE OUTPUT}
     Press Keys    None    RETURN
-    Wait Until Page Contains Element    css:${JLAB CSS LINKED OUTPUT} ${CSS ELK VIEW} ${CSS ELK NODE}
+    Wait Until Element Is Visible    css:${JLAB CSS LINKED OUTPUT} ${CSS ELK VIEW} ${CSS ELK NODE}
 
 Linked Elk Output Counts Should Be
-    [Arguments]    ${nodes}=${0}    ${edges}=${0}    ${labels}=${0}    ${ports}=${0}    ${n}=${1}    ${screen}=30-linked.png    ${open}=${TRUE}
+    [Arguments]
+    ...    ${nodes}=${0}
+    ...    ${edges}=${0}
+    ...    ${labels}=${0}
+    ...    ${ports}=${0}
+    ...    ${n}=${1}
+    ...    ${screen}=30-linked.png
+    ...    ${open}=${TRUE}
     IF    ${open}    Create Linked Elk Output View
     Elk Counts Should Be    nodes=${nodes}    edges=${edges}    labels=${labels}    ports=${ports}    n=${n}
     ...    prefix=${JLAB CSS LINKED OUTPUT}${SPACE}    screen=${screen}
@@ -131,12 +148,18 @@ Get Elk Port Count
     RETURN    ${ports}
 
 Click Elk Tool
-    [Arguments]    ${label}    ${index}=${0}
-    ${elkSelector} =    Set Variable    xpath://div[contains(@class,"jp-ElkApp")]
-    ${elkApps} =    Get WebElements    ${elkSelector}
-    Log    ${elkApps}
-    Mouse Over    ${elkApps[${index}]}
-    ${tools} =    Get WebElements    ${elkSelector}//button[contains(.,"${label}")]
-    Log    ${tools}
-    Wait Until Element Is Visible    ${tools[${index}]}
-    Click Element    ${tools[${index}]}
+    [Arguments]    ${label}    ${index}=${1}
+    ${elkSelector} =    Set Variable    xpath:(//div[contains(@class,"jp-ElkApp")])[${index}]
+    ${buttonSelector} =    Set Variable    ${elkSelector}//button[contains(.,"${label}")]
+    ${elkApp} =    Get WebElement    ${elkSelector}
+    Log    ${elkApp}
+    Mouse Over    ${elkApp}
+    Click Element    ${elkApp}
+    Sleep    0.3s
+    ${tool} =    Get WebElement    ${buttonSelector}
+    Log    ${tool}
+    Wait Until Element Is Visible    ${tool}
+    Click Element    ${tool}
+    Sleep    0.3s
+    Click Element    ${JLAB CSS NOTEBOOK}
+    Sleep    0.3s

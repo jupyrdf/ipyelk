@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2022 ipyelk contributors.
+ * # Copyright (c) 2024 ipyelk contributors.
  * Distributed under the terms of the Modified BSD License.
  */
 import { random } from 'lodash';
@@ -42,7 +42,7 @@ export class ELKTextSizerModel extends DOMWidgetModel {
       model_id: string;
       comm?: any;
       widget_manager: any;
-    }
+    },
   ) {
     super.initialize(attributes, options);
     ELK_DEBUG && console.warn('ELK Test Sizer Init');
@@ -53,13 +53,13 @@ export class ELKTextSizerModel extends DOMWidgetModel {
   make_container(): HTMLElement {
     const el: HTMLElement = document.createElement('div');
     const styledClass = this.get('_dom_classes').filter(
-      (dc: string) => dc.indexOf('styled-widget-') === 0
+      (dc: string) => dc.indexOf('styled-widget-') === 0,
     )[0];
     el.classList.add(
-      'p-Widget',
+      'lm-Widget',
       ELK_CSS.widget_class,
       ELK_CSS.sizer_class,
-      styledClass
+      styledClass,
     );
     const raw_css: string = this.get('namespaced_css'); //TODO should this `raw_css` string be escaped?
     el.innerHTML = `<div class="sprotty"><style>${raw_css}</style><svg class="sprotty-graph"><g></g></svg></div>`;
@@ -160,7 +160,6 @@ export class ELKTextSizerModel extends DOMWidgetModel {
 
 export class ELKTextSizerView extends DOMWidgetView {
   static view_name = 'ELKTextSizerView';
-
   model: ELKTextSizerModel;
   async render() {}
 }

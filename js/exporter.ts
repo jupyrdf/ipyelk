@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2022 ipyelk contributors.
+ * # Copyright (c) 2024 ipyelk contributors.
  * Distributed under the terms of the Modified BSD License.
  */
 import { WidgetModel, WidgetView } from '@jupyter-widgets/base';
@@ -192,7 +192,7 @@ export class ELKExporterModel extends WidgetModel {
           width / scaleFactor + padding
         } ${height / scaleFactor + padding}" $1>
           ${style}
-        `
+        `,
       )
       .replace(/ transform=".*?"/, '');
 

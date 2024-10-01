@@ -1,6 +1,7 @@
 """ Run acceptance tests with robot framework
 """
-# Copyright (c) 2022 ipyelk contributors.
+
+# Copyright (c) 2024 ipyelk contributors.
 # Distributed under the terms of the Modified BSD License.
 
 # pylint: disable=broad-except
@@ -8,6 +9,7 @@ import os
 import shutil
 import sys
 import time
+from pathlib import Path
 
 import robot
 from pabot import pabot
@@ -28,10 +30,22 @@ def get_stem(attempt, extra_args):
     return stem
 
 
+def which(path: str) -> str | None:
+    """Resolve a binary to a POSIX path."""
+    for extension in ["", ".exe", ".bat"]:
+        exe = shutil.which(f"{path}{extension}")
+        if exe:
+            return Path(exe).as_posix()
+    return None
+
+
 def atest(attempt, extra_args):
     """perform a single attempt of the acceptance tests"""
     stem = get_stem(attempt, extra_args)
-
+    firefox = which("firefox")
+    geckodriver = which("geckodriver")
+    if None in [firefox, geckodriver]:
+        raise RuntimeError(f"Unable to find browser: {firefox}  {geckodriver}")
     if attempt != 1:
         previous = P.ATEST_OUT / f"{get_stem(attempt - 1, extra_args)}" / "output.xml"
         print(f"Attempt {attempt} will try to re-run tests from {previous}")
@@ -52,12 +66,12 @@ def atest(attempt, extra_args):
         *["--variable", f"OS:{P.PLATFORM}"],
         *["--variable", f"IPYELK_EXAMPLES:{P.EXAMPLES}"],
         *["--variable", f"""JUPYTERLAB_EXE:{" ".join(map(str, P.JUPYTERLAB_EXE))}"""],
+        *["--variable", f"FIREFOX:{firefox}"],
+        *["--variable", f"GECKODRIVER:{geckodriver}"],
         *["--randomize", "all"],
         *(extra_args or []),
         *(os.environ.get("ATEST_ARGS", "").split()),
     ]
-
-    os.chdir(P.ATEST)
 
     if out_dir.exists():
         print("trying to clean out {}".format(out_dir))
@@ -65,6 +79,8 @@ def atest(attempt, extra_args):
             shutil.rmtree(out_dir)
         except Exception as err:
             print("Error deleting {}, hopefully harmless: {}".format(out_dir, err))
+    out_dir.mkdir(parents=True)
+    os.chdir(out_dir)
 
     if "--dryrun" in extra_args or PROCESSES == 1:
         run_robot = robot.run_cli
@@ -81,7 +97,7 @@ def atest(attempt, extra_args):
             *args,
         ]
 
-    args += ["."]
+    args += [P.ATEST]
 
     print(f"[{fake_cmd} test root]\n", P.ATEST)
     print(f"[{fake_cmd} arguments]\n", " ".join(list(map(str, args))))

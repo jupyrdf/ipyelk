@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2022 ipyelk contributors.
+ * # Copyright (c) 2024 ipyelk contributors.
  * Distributed under the terms of the Modified BSD License.
  * FIX BELOW FROM:
  * back porting to fix duplicate ids
@@ -7,6 +7,7 @@
  * remove after next sprotty release > 0.9
  */
 import { ContainerModule } from 'inversify';
+
 import { configureCommand } from 'sprotty';
 
 import { UpdateModelCommand2 } from './update-model';

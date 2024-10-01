@@ -1,10 +1,10 @@
-# Copyright (c) 2022 ipyelk contributors.
+# Copyright (c) 2024 ipyelk contributors.
 # Distributed under the terms of the Modified BSD License.
 from collections import defaultdict
 from typing import Dict, Iterator, List, Mapping, Optional, Set, Tuple, Type
 
 import networkx as nx
-from pydantic import BaseModel, Field
+from pydantic.v1 import BaseModel, Field
 
 from ..exceptions import NotFoundError
 from .common import EMPTY_SENTINEL

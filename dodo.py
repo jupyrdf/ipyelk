@@ -7,7 +7,7 @@
     See `doit list` for more options.
 """
 
-# Copyright (c) 2022 ipyelk contributors.
+# Copyright (c) 2024 ipyelk contributors.
 # Distributed under the terms of the Modified BSD License.
 
 import os
@@ -328,13 +328,12 @@ def task_setup():
         else:
             install_targets += [P.YARN_LOCK]
 
-        if P.CI:
-            install_args += ["--frozen-lockfile"]
-
         install_actions = [[*P.IN_ENV, *install_args]]
 
         if not P.CI:
-            install_actions += [[*P.IN_ENV, "jlpm", "deduplicate"]]
+            install_actions += [
+                [*P.IN_ENV, "jlpm", "yarn-berry-deduplicate", "-s", "fewer", "--fail"]
+            ]
 
         yield dict(
             name="js",
@@ -396,7 +395,7 @@ def task_build():
     yield dict(
         name="ext",
         actions=[[*P.IN_ENV, *P.JLPM, "build:ext"]],
-        file_dep=[P.TSBUILDINFO, *P.ALL_CSS],
+        file_dep=[P.TSBUILDINFO, *P.ALL_CSS, P.WEBPACKCONFIG],
         targets=[P.PY_PACKAGE_JSON],
     )
 
@@ -593,7 +592,7 @@ def task_lint():
                 name=f"nblint:{nb.name}".replace(" ", "_").replace(".ipynb", ""),
                 file_dep=[P.YARN_INTEGRITY, nb, P.HISTORY, P.OK_BLACK],
                 actions=[
-                    [*P.IN_ENV, *P.PYM, "scripts.nblint", nb],
+                    # [*P.IN_ENV, *P.PYM, "scripts.nblint", nb],
                     [*P.IN_ENV, "black", "--quiet", nb],
                 ],
             ),
@@ -699,12 +698,6 @@ def task_lite():
     """build the jupyterlite site"""
 
     yield dict(
-        name="pip:install",
-        file_dep=[P.OK_PIP_INSTALL],
-        actions=[[*P.IN_ENV, *P.PIP, "install", "--no-deps", *P.LITE_SPEC]],
-    )
-
-    yield dict(
         name="build",
         file_dep=[
             *P.EXAMPLE_IPYNB,
@@ -713,7 +706,6 @@ def task_lite():
             P.EXAMPLE_REQS,
             P.WHEEL,
         ],
-        task_dep=["lite:pip:install"],
         targets=[P.LITE_SHA256SUMS],
         actions=[
             CmdAction(

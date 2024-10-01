@@ -9,22 +9,31 @@ Resource    ../variables/Browser.robot
 *** Keywords ***
 Open JupyterLab
     Set Environment Variable    MOZ_HEADLESS    ${HEADLESS}
-    ${firefox} =    Which    firefox
-    ${geckodriver} =    Which    geckodriver
+    ${options} =    Evaluate
+    ...    selenium.webdriver.FirefoxOptions()
+    ...    selenium.webdriver
+    ${options.binary_location} =    Set Variable    ${FIREFOX}
+    Call Method    ${options}    set_preference    ui.prefersReducedMotion    ${1}
+    Call Method    ${options}    set_preference    devtools.console.stdout.content    ${True}
+
     ${service args} =    Create List    --log    info
     Set Global Variable    ${NEXT BROWSER}    ${NEXT BROWSER.__add__(1)}
-    Wait Until Keyword Succeeds    5x    5s    Create WebDriver    Firefox
-    ...    executable_path=${geckodriver}
-    ...    firefox_binary=${firefox}
-    ...    service_log_path=${OUTPUT DIR}${/}geckodriver-${NEXT BROWSER}.log
-    ...    service_args=${service args}
+    ${geckolog} =    Set Variable    ${OUTPUT DIR}${/}logs${/}geckodriver-${NEXT BROWSER}.log
+    # normalize windows slashes
+    ${geckolog} =    Set Variable    ${geckolog.replace('\\', '/')}
+
+    Open Browser
+    ...    about:blank
+    ...    headlessfirefox
+    ...    options=${options}
+    ...    service=log_output='${geckolog}'; executable_path='${GECKODRIVER}'
     Wait Until Keyword Succeeds    3x    5s    Wait For Splash
 
 Wait For Splash
     Go To    ${URL}lab?reset&token=${TOKEN}
     Set Window Size    1920    1080
-    Wait Until Page Contains Element    ${SPLASH}    timeout=30s
-    Wait Until Page Does Not Contain Element    ${SPLASH}    timeout=10s
+    Wait Until Element Is Visible    ${SPLASH}    timeout=30s
+    Wait Until Element Is Not Visible    ${SPLASH}    timeout=10s
     Execute Javascript    window.onbeforeunload \= function (){}
 
 Try to Close All Tabs
@@ -37,15 +46,30 @@ Close All Tabs
 
 Wait For All Cells To Run
     [Arguments]    ${timeout}=10s
+    Scroll To Notebook Bottom
     Wait Until Element Does Not Contain    ${JLAB XP LAST CODE PROMPT}    [*]:    timeout=${timeout}
     Wait Until Element is Visible    ${JLAB XP KERNEL IDLE}    timeout=${timeout}
+    Scroll To Notebook Top
+
+Scroll To Notebook Bottom
+    Ensure Notebook Window Scrollbar is Open
+    Click Element    ${JLAB CSS WINDOW SCROLL} li:last-child
+
+Scroll To Notebook Cell
+    [Arguments]    ${index}=${0}
+    Ensure Notebook Window Scrollbar is Open
+    Click Element    ${JLAB CSS WINDOW SCROLL} li:nth-child(${index})
+
+Scroll To Notebook Top
+    Ensure Notebook Window Scrollbar is Open
+    Click Element    ${JLAB CSS WINDOW SCROLL} li:first-child
 
 Click JupyterLab Menu
     [Documentation]    Click a top-level JupyterLab menu bar item with by ``label``,
     ...    e.g. File, Help, etc.
     [Arguments]    ${label}
     ${xpath} =    Set Variable    ${JLAB XP TOP}${JLAB XP MENU LABEL}\[text() = '${label}']
-    Wait Until Page Contains Element    ${xpath}
+    Wait Until Element Is Visible    ${xpath}
     Mouse Over    ${xpath}
     Click Element    ${xpath}
 
@@ -53,7 +77,7 @@ Click JupyterLab Menu Item
     [Documentation]    Click a currently-visible JupyterLab menu item by ``label``.
     [Arguments]    ${label}
     ${item} =    Set Variable    ${JLAB XP MENU ITEM LABEL}\[text() = '${label}']
-    Wait Until Page Contains Element    ${item}
+    Wait Until Element Is Visible    ${item}
     Mouse Over    ${item}
     Click Element    ${item}
 
@@ -65,8 +89,12 @@ Open With JupyterLab Menu
         Click JupyterLab Menu Item    ${submenu}
     END
 
+Ensure Notebook Window Scrollbar is Open
+    ${els} =    Get WebElements    ${JLAB CSS WINDOW SCROLL}
+    IF    not ${els.__len__()}    Click Element    ${JLAB CSS WINDOW TOGGLE}
+
 Ensure File Browser is Open
-    ${sel} =    Set Variable    css:.p-TabBar-tab[data-id="filebrowser"]:not(.p-mod-current)
+    ${sel} =    Set Variable    css:.lm-TabBar-tab[data-id="filebrowser"]:not(.lm-mod-current)
     ${els} =    Get WebElements    ${sel}
     IF    ${els.__len__()}    Click Element    ${sel}
 
@@ -74,15 +102,15 @@ Ensure Sidebar Is Closed
     [Arguments]    ${side}=left
     ${els} =    Get WebElements    css:#jp-${side}-stack
     IF    ${els.__len__()} and ${els[0].is_displayed()}
-        Wait Until Keyword Succeeds    3x    0.5s    Click Element    css:.jp-mod-${side} .p-TabBar-tab.p-mod-current
+        Wait Until Keyword Succeeds    3x    0.5s    Click Element    css:.jp-mod-${side} .lm-TabBar-tab.lm-mod-current
     END
 
 Open Context Menu for File
     [Arguments]    ${file}
     Ensure File Browser is Open
-    Click Element    css:button[data-command="filebrowser:refresh"]
+    Click Element    css:jp-button[data-command="filebrowser:refresh"]
     ${selector} =    Set Variable    xpath://span[@class='jp-DirListing-itemText']//span\[text() = '${file}']
-    Wait Until Page Contains Element    ${selector}
+    Wait Until Element Is Visible    ${selector}
     Open Context Menu    ${selector}
 
 Rename Jupyter File
@@ -104,7 +132,7 @@ Input Into Dialog
 Open ${file} in ${editor}
     Open Context Menu for File    ${file}
     Mouse Over    ${MENU OPEN WITH}
-    Wait Until Page Contains Element    ${editor}
+    Wait Until Element Is Visible    ${editor}
     Mouse Over    ${editor}
     Click Element    ${editor}
 
@@ -117,7 +145,7 @@ Clean Up After Working With Files
     Maybe Reset Application State
 
 Wait For Dialog
-    Wait Until Page Contains Element    ${DIALOG WINDOW}    timeout=180s
+    Wait Until Element Is Visible    ${DIALOG WINDOW}    timeout=40s
 
 Gently Reset Workspace
     Try to Close All Tabs
@@ -191,19 +219,8 @@ Lab Command
     Wait Until Element Is Visible    ${CMD PALETTE ITEM ACTIVE}
     Wait Until Keyword Succeeds    5x    0.5s    Click Element    ${CMD PALETTE ITEM ACTIVE}
 
-Capture All Code Cells
-    [Arguments]    ${prefix}=${EMPTY}    ${timeout}=30s
-    ${cells} =    Get WebElements    ${JLAB XP CODE CELLS}
-    Lab Command    Expand All Code
-    Ensure Sidebar Is Closed
-    FOR    ${idx}    ${cell}    IN ENUMERATE    @{cells}
-        ${sel} =    Set Variable    ${JLAB XP CODE CELLS}\[${idx.__add__(1)}]
-        Run Keyword and Ignore Error    Wait Until Element does not contain    ${sel}    [*]:    timeout=${timeout}
-        Capture Element Screenshot    ${sel}    ${prefix}cell-${idx.__repr__().zfill(3)}.png
-    END
-
 Restart and Run All
-    Lab Command    Clear All Outputs
+    Lab Command    Clear Outputs of All Cells
     Lab Command    Restart Kernel and Run All Cells
     Accept Default Dialog Option
     Ensure Sidebar Is Closed
@@ -241,8 +258,4 @@ Ensure All Kernels Are Shut Down
 Page Should Not Contain Contain Standard Errors
     [Arguments]    ${prefix}=${EMPTY}    ${exceptions}=${None}
     ${errors} =    Get WebElements    ${JLAB XP STDERR}
-    FOR    ${idx}    ${error}    IN ENUMERATE    @{errors}
-        ${sel} =    Set Variable    ${JLAB XP STDERR}\[${idx.__add__(1)}]
-        Capture Element Screenshot    ${sel}    ${prefix}error-${idx.__repr__().zfill(3)}.png
-    END
     Page Should Not Contain Element    ${JLAB XP STDERR}

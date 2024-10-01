@@ -1,9 +1,9 @@
-# Copyright (c) 2022 ipyelk contributors.
+# Copyright (c) 2024 ipyelk contributors.
 # Distributed under the terms of the Modified BSD License.
 from typing import Any, Optional
 
 import networkx as nx
-from pydantic import BaseModel, Field
+from pydantic.v1 import BaseModel, Field
 
 from .elements import BaseElement, Edge, Node
 from .registry import Registry

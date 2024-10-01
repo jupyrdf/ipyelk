@@ -1,10 +1,10 @@
-# Copyright (c) 2022 ipyelk contributors.
+# Copyright (c) 2024 ipyelk contributors.
 # Distributed under the terms of the Modified BSD License.
 import abc
 import textwrap
 from typing import Dict, List, Optional, Type, Union
 
-from pydantic import BaseModel, Field, PrivateAttr
+from pydantic.v1 import BaseModel, Field, PrivateAttr
 
 from ..exceptions import NotFoundError, NotUniqueError
 from .common import CounterContextManager, add_excluded_fields

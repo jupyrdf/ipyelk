@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2022 ipyelk contributors.
+ * # Copyright (c) 2024 ipyelk contributors.
  * Distributed under the terms of the Modified BSD License.
  */
 
@@ -19,11 +19,13 @@
  * SPDX-License-Identifier: EPL-2.0 OR GPL-2.0 WITH Classpath-exception-2.0
  ********************************************************************************/
 import { inject, injectable } from 'inversify';
+
+import { Action } from 'sprotty-protocol';
+
 import {
-  Action,
   CommandExecutionContext,
-  SModelElement,
-  SModelRoot,
+  SModelElementImpl,
+  SModelRootImpl,
   TYPES,
 } from 'sprotty/lib';
 
@@ -45,7 +47,10 @@ export enum CursorCSS {
 
 export class ApplyCSSFeedbackAction implements Action {
   kind = ApplyCursorCSSFeedbackActionCommand.KIND;
-  constructor(readonly target?: SModelElement, readonly cssClass?: CursorCSS) {}
+  constructor(
+    readonly target?: SModelElementImpl,
+    readonly cssClass?: CursorCSS,
+  ) {}
 }
 
 @injectable()
@@ -55,7 +60,7 @@ export class ApplyCursorCSSFeedbackActionCommand extends FeedbackCommand {
   constructor(@inject(TYPES.Action) readonly action: ApplyCSSFeedbackAction) {
     super();
   }
-  execute(context: CommandExecutionContext): SModelRoot {
+  execute(context: CommandExecutionContext): SModelRootImpl {
     removeCssClasses(this.action.target, Object.values(CursorCSS));
     if (this.action.cssClass) {
       addCssClasses(this.action.target, [this.action.cssClass]);

@@ -5,6 +5,8 @@ __pycache__/
 
 # C extensions
 *.so
+.yarn
+
 
 # Distribution / packaging
 .Python
@@ -163,7 +165,5 @@ _d/
 
 # task stuff
 *.doit.db*
-.pabotsuitenames
-atest/output
 *.tsbuildinfo*
 *.isorted

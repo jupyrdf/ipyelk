@@ -10,22 +10,26 @@
  * which accompanies this distribution, and is available at
  * http://www.eclipse.org/legal/epl-v10.html
  *******************************************************************************/
+
+/** @jsx svg */
+import { VNode } from 'snabbdom';
+
 import { injectable } from 'inversify';
-import * as snabbdom from 'snabbdom-jsx';
-import { VNode } from 'snabbdom/vnode';
+
+import { Point, angleOfPoint, toDegrees } from 'sprotty-protocol';
+
 import {
-  CircularNodeView,
-  Point,
   PolylineEdgeView,
-  angleOfPoint,
+  SRoutableElementImpl,
+  getAbsoluteRouteBounds,
   setClass,
-  toDegrees,
+  svg,
 } from 'sprotty';
 
 import { ElkModelRenderer } from '../renderer';
 import { ElkEdge, ElkJunction } from '../sprotty-model';
 
-const JSX = { createElement: snabbdom.svg };
+import { CircularNodeView, validCanvasBounds } from './base';
 
 @injectable()
 export class JunctionView extends CircularNodeView {
@@ -45,6 +49,34 @@ export class JunctionView extends CircularNodeView {
 
 @injectable()
 export class ElkEdgeView extends PolylineEdgeView {
+  isVisible(
+    model: Readonly<SRoutableElementImpl>,
+    route: Point[],
+    context: ElkModelRenderer,
+  ): boolean {
+    if (context.targetKind === 'hidden') {
+      // Don't hide any element for hidden rendering
+      return true;
+    }
+    if (route.length === 0) {
+      // We should hide only if we know the element's route
+      return true;
+    }
+
+    const canvasBounds = model.root.canvasBounds;
+    if (!validCanvasBounds(canvasBounds)) {
+      // only hide if the canvas's size is set
+      return true;
+    }
+    const ab = getAbsoluteRouteBounds(model, route);
+    return (
+      ab.x <= canvasBounds.width &&
+      ab.x + ab.width >= 0 &&
+      ab.y <= canvasBounds.height &&
+      ab.y + ab.height >= 0
+    );
+  }
+
   render(edge: Readonly<ElkEdge>, context: ElkModelRenderer): VNode | undefined {
     const router = this.edgeRouterRegistry.get(edge.routerKind);
     const route = router.route(edge);
@@ -72,7 +104,7 @@ export class ElkEdgeView extends PolylineEdgeView {
   protected renderLine(
     edge: ElkEdge,
     segments: Point[],
-    context: ElkModelRenderer
+    context: ElkModelRenderer,
   ): VNode {
     const p1_s = segments[1];
     const p2_s = segments[0];
@@ -99,7 +131,7 @@ export class ElkEdgeView extends PolylineEdgeView {
   protected getAnchorOffset(
     id: string | undefined,
     context: ElkModelRenderer,
-    r: number
+    r: number,
   ): Point {
     let connection = context.getConnector(id);
     if (connection?.symbol_offset) {
@@ -115,7 +147,7 @@ export class ElkEdgeView extends PolylineEdgeView {
   protected getPathOffset(
     id: string | undefined,
     context: ElkModelRenderer,
-    r: number
+    r: number,
   ): Point {
     let connection = context.getConnector(id);
     if (connection?.path_offset) {
@@ -132,7 +164,7 @@ export class ElkEdgeView extends PolylineEdgeView {
   protected renderAdditionals(
     edge: ElkEdge,
     segments: Point[],
-    context: ElkModelRenderer
+    context: ElkModelRenderer,
   ): VNode[] {
     let connectors: VNode[] = [];
     let href: string;

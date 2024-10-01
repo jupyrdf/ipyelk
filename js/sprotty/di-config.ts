@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2022 ipyelk contributors.
+ * # Copyright (c) 2024 ipyelk contributors.
  * Distributed under the terms of the Modified BSD License.
  */
 
@@ -10,7 +10,8 @@
  * which accompanies this distribution, and is available at
  * http://www.eclipse.org/legal/epl-v10.html
  *******************************************************************************/
-import { Container, ContainerModule } from 'inversify';
+import { Container, ContainerModule, interfaces } from 'inversify';
+
 import {
   // SGraphView,
   // DiamondNodeView,
@@ -26,12 +27,13 @@ import {
   // configureActionHandler,
   HoverFeedbackCommand,
   IVNodePostprocessor,
+  IViewArgs, // InitializeCanvasBoundsCommand,
   LogLevel, // HoverFeedbackAction
   // LocalModelSource,
   //
   // ModelRenderer,
   RenderingTargetKind,
-  SGraph,
+  SGraphImpl,
   SvgExporter,
   TYPES,
   ViewRegistry,
@@ -40,7 +42,8 @@ import {
   configureModelElement,
   configureViewerOptions,
   defaultModule,
-  edgeEditModule, // hoverModule,
+  edgeEditModule,
+  edgeLayoutModule, // hoverModule,
   // Tool,
   // MouseTool,
   exportModule,
@@ -91,7 +94,7 @@ export default (containerId: string, view: DOMWidgetView) => {
     const context = { bind, unbind, isBound, rebind };
 
     // Initialize model element views
-    configureModelElement(context, 'graph', SGraph, v.SGraphView);
+    configureModelElement(context, 'graph', SGraphImpl, v.SGraphView);
     configureModelElement(context, 'node', ElkNode, v.ElkNodeView);
     configureModelElement(context, 'node:use', ElkNode, v.ElkUseNodeView);
     configureModelElement(context, 'node:diamond', ElkNode, v.ElkDiamondNodeView);
@@ -106,13 +109,13 @@ export default (containerId: string, view: DOMWidgetView) => {
       context,
       'node:compartment',
       ElkNode,
-      v.ElkCompartmentNodeView
+      v.ElkCompartmentNodeView,
     );
     configureModelElement(
       context,
       'node:foreignobject',
       ElkNode,
-      v.ElkForeignObjectNodeView
+      v.ElkForeignObjectNodeView,
     );
 
     configureModelElement(context, 'port', ElkPort, v.ElkPortView);
@@ -132,19 +135,25 @@ export default (containerId: string, view: DOMWidgetView) => {
     configureModelElement(context, 'symbol', SymbolNode, v.SymbolNodeView);
 
     // Expose extracted path and connector offset to the rendering context
-    rebind(TYPES.ModelRendererFactory).toFactory<ElkModelRenderer>((ctx) => {
-      return (targetKind: RenderingTargetKind, processors: IVNodePostprocessor[]) => {
-        const viewRegistry = ctx.container.get<ViewRegistry>(TYPES.ViewRegistry);
-        const modelSource = ctx.container.get<JLModelSource>(TYPES.ModelSource);
-        const renderer = new ElkModelRenderer(
-          viewRegistry,
-          targetKind,
-          processors,
-          modelSource
-        );
-        return renderer;
-      };
-    });
+    rebind(TYPES.ModelRendererFactory).toFactory(
+      (ctx: interfaces.Context) =>
+        (
+          targetKind: RenderingTargetKind,
+          processors: IVNodePostprocessor[],
+          args: IViewArgs,
+        ) => {
+          const viewRegistry = ctx.container.get<ViewRegistry>(TYPES.ViewRegistry);
+          const modelSource = ctx.container.get<JLModelSource>(TYPES.ModelSource);
+          const renderer = new ElkModelRenderer(
+            viewRegistry,
+            targetKind,
+            processors,
+            modelSource,
+            args,
+          );
+          return renderer;
+        },
+    );
 
     rebind(TYPES.IModelFactory).to(SSymbolModelFactory).inSingletonScope();
   });
@@ -155,7 +164,7 @@ export default (containerId: string, view: DOMWidgetView) => {
     boundsModule,
     moveModule,
     fadeModule,
-    //    hoverModule,
+    // //    hoverModule,
     updateModule,
     undoRedoModule,
     viewportModule,
@@ -165,7 +174,8 @@ export default (containerId: string, view: DOMWidgetView) => {
     edgeEditModule,
     labelEditModule,
     toolFeedbackModule,
-    elkGraphModule
+    edgeLayoutModule,
+    elkGraphModule,
   );
   return container;
 };

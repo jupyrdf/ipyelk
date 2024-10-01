@@ -1,17 +1,17 @@
 /**
- * Copyright (c) 2022 ipyelk contributors.
+ * # Copyright (c) 2024 ipyelk contributors.
  * Distributed under the terms of the Modified BSD License.
  */
-import { Point, SModelElementSchema } from 'sprotty';
+import { Point, SModelElement } from 'sprotty-protocol';
 
 import { ElkNode, ElkProperties } from './elkgraph-json';
 
-export interface IElement extends SModelElementSchema {
+export interface IElement extends SModelElement {
   x: number;
   y: number;
 }
 
-export interface IElkSymbol extends SModelElementSchema {
+export interface IElkSymbol extends SModelElement {
   element: ElkNode;
   properties: ElkProperties;
 }
