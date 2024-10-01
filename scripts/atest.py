@@ -29,10 +29,22 @@ def get_stem(attempt, extra_args):
     return stem
 
 
+def which(path: str) -> str:
+    """Resolve a binary."""
+    for extension in ["", ".exe", ".bat"]:
+        exe = shutil.which(f"{path}{extension}")
+        if exe:
+            return exe
+    return None
+
+
 def atest(attempt, extra_args):
     """perform a single attempt of the acceptance tests"""
     stem = get_stem(attempt, extra_args)
-
+    firefox = which("firefox")
+    geckodriver = which("geckodriver")
+    if None in [firefox, geckodriver]:
+        raise RuntimeError(f"Unable to find browser: {firefox}  {geckodriver}")
     if attempt != 1:
         previous = P.ATEST_OUT / f"{get_stem(attempt - 1, extra_args)}" / "output.xml"
         print(f"Attempt {attempt} will try to re-run tests from {previous}")
@@ -53,6 +65,8 @@ def atest(attempt, extra_args):
         *["--variable", f"OS:{P.PLATFORM}"],
         *["--variable", f"IPYELK_EXAMPLES:{P.EXAMPLES}"],
         *["--variable", f"""JUPYTERLAB_EXE:{" ".join(map(str, P.JUPYTERLAB_EXE))}"""],
+        *["--variable", f"FIREFOX:{firefox}"],
+        *["--variable", f"GECKODRIVER:{geckodriver}"],
         *["--randomize", "all"],
         *(extra_args or []),
         *(os.environ.get("ATEST_ARGS", "").split()),

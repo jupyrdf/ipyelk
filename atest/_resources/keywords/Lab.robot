@@ -14,9 +14,7 @@ Open JupyterLab
     ...    selenium.webdriver
     Call Method    ${options}    add_argument    --headless
 
-    ${firefox} =    Which    firefox
-    ${geckodriver} =    Which    geckodriver
-    ${options.binary_location} =    Set Variable    ${firefox}
+    ${options.binary_location} =    Set Variable    ${FIREFOX}
     Call Method    ${options}    set_preference    ui.prefersReducedMotion    ${1}
     Call Method    ${options}    set_preference    devtools.console.stdout.content    ${True}
 
@@ -28,7 +26,7 @@ Open JupyterLab
     ...    about:blank
     ...    headlessfirefox
     ...    options=${options}
-    ...    service=log_output='${geckolog}'; executable_path='${geckodriver}'
+    ...    service=log_output='${geckolog}'; executable_path='${GECKODRIVER}'
     Wait Until Keyword Succeeds    3x    5s    Wait For Splash
 
 Wait For Splash
