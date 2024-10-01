@@ -9,6 +9,7 @@ import os
 import shutil
 import sys
 import time
+from pathlib import Path
 
 import robot
 from pabot import pabot
@@ -29,12 +30,12 @@ def get_stem(attempt, extra_args):
     return stem
 
 
-def which(path: str) -> str:
-    """Resolve a binary."""
+def which(path: str) -> str | None:
+    """Resolve a binary to a POSIX path."""
     for extension in ["", ".exe", ".bat"]:
         exe = shutil.which(f"{path}{extension}")
         if exe:
-            return exe
+            return Path(exe).as_posix()
     return None
 
 
