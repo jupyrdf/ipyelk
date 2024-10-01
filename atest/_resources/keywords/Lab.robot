@@ -12,8 +12,6 @@ Open JupyterLab
     ${options} =    Evaluate
     ...    selenium.webdriver.FirefoxOptions()
     ...    selenium.webdriver
-    Call Method    ${options}    add_argument    --headless
-
     ${options.binary_location} =    Set Variable    ${FIREFOX}
     Call Method    ${options}    set_preference    ui.prefersReducedMotion    ${1}
     Call Method    ${options}    set_preference    devtools.console.stdout.content    ${True}
