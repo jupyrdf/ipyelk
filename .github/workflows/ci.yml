@@ -32,21 +32,21 @@ jobs:
         py: ['3.11']
     steps:
       - name: git checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: setup (python)
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.py }}
           architecture: x64
 
       - name: setup (node)
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
-          node-version: '18'
+          node-version: '22'
 
       - name: cache (pip)
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: ~/.cache/pip
           key: |
@@ -55,24 +55,12 @@ jobs:
             ${{ env.CACHE_EPOCH }}-${{ runner.os }}-pip-build-
 
       - name: cache (node)
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         id: cache-node-modules
         with:
           path: '**/node_modules'
           key: |
             ${{ env.CACHE_EPOCH }}-${{ runner.os }}-node-build-${{ hashFiles('yarn.lock') }}
-
-      - name: cache (yarn)
-        uses: actions/cache@v3
-        if: steps.cache-node-modules.outputs.cache-hit != 'true'
-        id: cache-yarn-packages
-        with:
-          path: .yarn-packages
-          key: |
-            ${{ env.CACHE_EPOCH }}-yarn-${{ runner.os }}-${{ hashFiles('yarn.lock') }}
-          restore-keys: |
-            ${{ env.CACHE_EPOCH }}-yarn-${{ runner.os }}-
-            ${{ env.CACHE_EPOCH }}-yarn-
 
       - name: setup (pip)
         run: pip install -U pip wheel setuptools
@@ -98,7 +86,7 @@ jobs:
           doit preflight:release
 
       - name: publish dists
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: ipyelk-${{ github.run_number }}-dist
           path: ./dist
@@ -111,19 +99,19 @@ jobs:
         os: [ubuntu]
     steps:
       - name: git checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: cache (yarn)
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: node_modules/
           key: yarn-${{ runner.os }}-${{ hashFiles('yarn.lock', '.yarnrc') }}
 
       - name: base env (conda)
-        uses: conda-incubator/setup-miniconda@v2
+        uses: conda-incubator/setup-miniconda@v3
         with:
           environment-file: .github/base-environment.yml
-          miniforge-variant: Mambaforge
+          miniforge-variant: Miniforge3
           use-mamba: true
 
       - name: lint
@@ -136,14 +124,14 @@ jobs:
         run: doit -n4 docs
 
       - name: upload docs
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: ipyelk-${{ github.run_number }}-docs
           path: |
             ./build/docs
 
       - name: cache (docs)
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: build/links
           key: |
@@ -168,7 +156,7 @@ jobs:
           - os: ubuntu
             subdir: linux-64
           - os: macos
-            subdir: osx-64
+            subdir: osx-arm64
           - os: windows
             subdir: win-64
           - py: '3.11'
@@ -184,16 +172,16 @@ jobs:
           git config --global core.autocrlf false
 
       - name: git checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: env (conda)
-        uses: conda-incubator/setup-miniconda@v2
+        uses: conda-incubator/setup-miniconda@v3
         with:
           environment-file: .github/base-environment.yml
-          miniforge-variant: Mambaforge
+          miniforge-variant: Miniforge3
           use-mamba: true
 
-      - uses: actions/download-artifact@v3
+      - uses: actions/download-artifact@v4
         with:
           name: ipyelk-${{ github.run_number }}-dist
           path: ./dist
@@ -218,12 +206,12 @@ jobs:
         run: doit test || doit test || exit 1
 
       - name: reports
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: |-
             ipyelk-${{ github.run_number }}-${{ job.status }}-reports-${{ matrix.os }}-${{ matrix.py }}
           path: |
             ./build/reports
-            ./build/htmcov
+            ./build/htmlcov
             ./build/pytest.html
         if: always()

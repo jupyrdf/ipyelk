@@ -26,7 +26,7 @@ PY_PKG = "ipyelk"
 PLATFORM = os.environ.get("FAKE_PLATFORM", platform.system())
 THIS_SUBDIR = {
     "Windows": "win-64",
-    "Darwin": "osx-64",
+    "Darwin": "osx-arm64",
     "Linux": "linux-64",
 }.get(PLATFORM)
 WIN = PLATFORM == "Windows"
