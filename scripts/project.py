@@ -122,7 +122,7 @@ ENV = Path(sys.prefix) if IN_RTD or IN_BINDER else ROOT / f"envs/py_{IPYELK_PY}"
 LOCK_ENV = ROOT / "envs/lock"
 
 CONDA_RUN = ["conda", "run", "--live-stream", "--prefix"]
-MAMBA_CREATE = ["mamba", "create", "-y", "--prefix"]
+MAMBA_CREATE = ["mamba", "create", "--quiet", "-y", "--prefix"]
 CONDA_LOCK = ["conda-lock", "--kind=explicit", "--mamba"]
 
 if BUILDING_IN_CI:
