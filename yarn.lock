@@ -1931,12 +1931,11 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/react@file:./scripts/not-a-package::locator=%40jupyrdf%2Fjupyter-elk%40workspace%3A.":
-  version: 0.0.0
-  resolution: "@types/react@file:./scripts/not-a-package#./scripts/not-a-package::hash=b79066&locator=%40jupyrdf%2Fjupyter-elk%40workspace%3A."
-  checksum: dcc19ae2232d5c05699eadbc5baac3b547e2ee5263573633c7df281ec9943cef2b4b893ae3056582a05a52032d4fccb0ea2cf07ff9fc923855606f11d8806bc0
+"@types/react@link:./scripts/not-a-package::locator=%40jupyrdf%2Fjupyter-elk%40workspace%3A.":
+  version: 0.0.0-use.local
+  resolution: "@types/react@link:./scripts/not-a-package::locator=%40jupyrdf%2Fjupyter-elk%40workspace%3A."
   languageName: node
-  linkType: hard
+  linkType: soft
 
 "@types/responselike@npm:^1.0.0":
   version: 1.0.3

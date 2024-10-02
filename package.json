@@ -1,6 +1,6 @@
 {
   "name": "@jupyrdf/jupyter-elk",
-  "version": "2.1.0-alpha0",
+  "version": "2.1.0-alpha1",
   "description": "ElkJS widget for Jupyter",
   "license": "BSD-3-Clause",
   "author": "Dane Freeman",
@@ -38,8 +38,8 @@
   ],
   "types": "lib/index.d.ts",
   "resolutions": {
-    "verdaccio": "file:./scripts/not-a-package",
-    "@types/react": "file:./scripts/not-a-package",
+    "verdaccio": "link:./scripts/not-a-package",
+    "@types/react": "link:./scripts/not-a-package",
     "typescript": "5.2.2",
     "prettier": "^3.3.0",
     "elkjs": "0.9.3",
