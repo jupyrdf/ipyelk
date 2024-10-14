@@ -3,7 +3,7 @@
 # tasks ################################################################################
 [tasks]
 build = {depends-on = ["build-py-schema", "build-js-lib", "build-js-ext"]}
-dist = {depends-on = ["dist-npm", "dist-pypi"]}
+dist = {depends-on = ["dist-npm", "dist-pypi", "dist-hash"]}
 fix = {depends-on = ["fix-taplo", "fix-ruff-format", "fix-ruff-check", "fix-js-dupes"]}
 lint = {depends-on = ["lint-ruff-format", "lint-ruff-check"]}
 dev = {depends-on = ["fix", "lint", "build", "dist"]}
@@ -61,6 +61,15 @@ inputs = [
 outputs = ["dist/*.{whl,tar.gz}"]
 depends-on = ["build-py-schema", "build-js-ext"]
 
+[feature.tasks-build.tasks.dist-hash]
+cmd = """python -c '
+import pathlib, hashlib; d = pathlib.Path("dist");
+[print(f"{hashlib.sha256(p.read_bytes()).hexdigest()}  {p.name}")
+for p in sorted(d.glob("*.*"))]
+' > dist/SHA256SUMS"""
+inputs = ["dist/", "!SHA256SUMS"]
+depends-on = ["dist-pypi", "dist-npm"]
+outputs = ["dist/SHA256SUMS"]
 # linting ##############################################################################
 [feature.tasks-lint.tasks.fix-taplo]
 description = "consistently format TOML files"
@@ -73,20 +82,36 @@ inputs = ["*.toml"]
 
 [feature.tasks-lint.tasks.lint-ruff-format]
 cmd = "ruff format --check"
-inputs = ["{scripts,src,tests,docs,atest,examples}/**/*.{py,ipynb}", "pyproject.toml"]
+inputs = [
+  "{scripts,src,tests,docs,atest,examples}/**/*.{py,ipynb}",
+  "pyproject.toml",
+  "!**/.ipynb_checkpoints/",
+]
 
 [feature.tasks-lint.tasks.lint-ruff-check]
 cmd = "ruff check"
-inputs = ["{scripts,src,tests,docs,atest,examples}/**/*.{py,ipynb}", "pyproject.toml"]
+inputs = [
+  "{scripts,src,tests,docs,atest,examples}/**/*.{py,ipynb}",
+  "pyproject.toml",
+  "!**/.ipynb_checkpoints/",
+]
 
 [feature.tasks-lint.tasks.fix-ruff-format]
 cmd = "ruff format"
-inputs = ["{scripts,src,tests,docs,atest,examples}/**/*.{py,ipynb}", "pyproject.toml"]
+inputs = [
+  "{scripts,src,tests,docs,atest,examples}/**/*.{py,ipynb}",
+  "pyproject.toml",
+  "!**/.ipynb_checkpoints/",
+]
 
 [feature.tasks-lint.tasks.fix-ruff-check]
 cmd = "ruff check --fix-only"
 depends-on = ["fix-ruff-format"]
-inputs = ["{scripts,src,tests,docs,atest,examples}/**/*.{py,ipynb}", "pyproject.toml"]
+inputs = [
+  "{scripts,src,tests,docs,atest,examples}/**/*.{py,ipynb}",
+  "pyproject.toml",
+  "!**/.ipynb_checkpoints/",
+]
 
 [feature.tasks-lint.tasks.fix-js-dupes]
 cmd = "jlpm yarn-berry-deduplicate -s fewer --fail"
