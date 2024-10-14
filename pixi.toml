@@ -6,7 +6,33 @@ build = {depends-on = ["build-py-schema", "build-js-lib", "build-js-ext"]}
 dist = {depends-on = ["dist-npm", "dist-pypi", "dist-hash"]}
 fix = {depends-on = ["fix-taplo", "fix-ruff-format", "fix-ruff-check", "fix-js-dupes"]}
 lint = {depends-on = ["lint-ruff-format", "lint-ruff-check"]}
-dev = {depends-on = ["fix", "lint", "build", "dist"]}
+test = {depends-on = ["test-pytest-cov"]}
+dev = {depends-on = ["fix", "lint", "build", "dist", "test"]}
+
+# fragments ############################################################################
+[tasks.pip-e--]
+cmd = """rm -f build/pip-freeze/$PIXI_ENVIRONMENT_NAME.txt
+&& python -m pip install -e .
+  --disable-pip-version-check
+  --ignore-installed
+  --no-cache-dir
+  --no-deps
+&& pip check
+&& mkdir -p build/pip-freeze
+&& pip list --format=freeze > build/pip-freeze/$PIXI_ENVIRONMENT_NAME.txt"""
+
+[tasks.pytest-cov--]
+cmd = """export COVERAGE_FILE=$PIXI_PROJECT_ROOT/build/reports/$PIXI_ENVIRONMENT_NAME/.coverage
+&& pytest
+    --cov ipyelk
+    --cov-report html:build/reports/$PIXI_ENVIRONMENT_NAME/htmlcov
+    --cov-report term-missing:skip-covered
+    --cov-context test
+    --html build/reports/$PIXI_ENVIRONMENT_NAME/pytest.html
+    --junitxml build/reports/$PIXI_ENVIRONMENT_NAME/pytest.xunit.xml
+    --no-cov-on-fail
+    --self-contained-html
+"""
 
 # setup ################################################################################
 [feature.tasks-build.tasks.setup-js]
@@ -52,12 +78,7 @@ outputs = ["dist/*.tgz"]
 
 [feature.tasks-build.tasks.dist-pypi]
 cmd = "pyproject-build . --no-isolation"
-inputs = [
-  "{README.md,LICENSE,pyproject.toml}",
-  "src/_d",
-  "src/ipyelk",
-  "!**/__pycache__",
-]
+inputs = ["{README.md,LICENSE,pyproject.toml}", "src/", "tests/", "!**/__pycache__"]
 outputs = ["dist/*.{whl,tar.gz}"]
 depends-on = ["build-py-schema", "build-js-ext"]
 
@@ -70,7 +91,25 @@ for p in sorted(d.glob("*.*"))]
 inputs = ["dist/", "!SHA256SUMS"]
 depends-on = ["dist-pypi", "dist-npm"]
 outputs = ["dist/SHA256SUMS"]
-# linting ##############################################################################
+
+# test #################################################################################
+[feature.tasks-test.tasks.pip-test]
+cmd = """pixi r -e test pip-e--"""
+inputs = ["pyproject.toml"]
+outputs = ["build/pip-freeze/test.txt"]
+
+[feature.tasks-test.tasks.test-pytest-cov]
+cmd = "pixi r -e test pytest-cov--"
+depends-on = ["pip-test"]
+inputs = [
+  "build/pip-freeze/test.txt",
+  "pyproject.toml",
+  "{tests,src}/**/*.{py,json}",
+  "!**/.ipynb_checkpoints",
+]
+outputs = ["build/reports/test/{pytest.html,pytest.xunit.xml,htmlcov/status.json}"]
+
+# lint #################################################################################
 [feature.tasks-lint.tasks.fix-taplo]
 description = "consistently format TOML files"
 cmd = """taplo fmt
@@ -133,20 +172,61 @@ python = ">=3.9"
 [feature.deps-lab.dependencies]
 jupyterlab = ">=4.2.0,<5"
 
-[feature.deps-build.dependencies]
+[feature.deps-flit.dependencies]
 flit-core = ">=3.9.0,<4"
+
+[feature.deps-build.dependencies]
 python-build = "*"
 
 [feature.deps-run.dependencies]
+jsonschema = ">=4.18"
 ipywidgets = ">=8.0.1,<9"
 networkx = "*"
 pydantic = ">=1.10.17,<3"
 
+[feature.deps-pip.dependencies]
+pip = "*"
+flit-core = "*"
+
+[feature.deps-test.dependencies]
+pytest = "*"
+pytest-html = "*"
+pytest-asyncio = "*"
+
+[feature.deps-cov.dependencies]
+pytest-cov = "*"
+
 # environments #########################################################################
 [environments]
 lint = {features = ["deps-lab", "deps-py", "deps-js", "deps-lint", "tasks-lint"]}
-build = {features = ["deps-lab", "deps-py", "deps-js", "deps-build", "tasks-build"]}
-dev = {features = ["deps-lab", "deps-py", "deps-js", "deps-build", "deps-run"]}
+build = {features = [
+  "deps-build",
+  "deps-flit",
+  "deps-js",
+  "deps-lab",
+  "deps-py",
+  "tasks-build",
+]}
+test = {features = [
+  "deps-cov",
+  "deps-flit",
+  "deps-pip",
+  "deps-py",
+  "deps-run",
+  "deps-test",
+  "tasks-test",
+]}
+dev = {features = [
+  "deps-build",
+  "deps-cov",
+  "deps-flit",
+  "deps-js",
+  "deps-lab",
+  "deps-pip",
+  "deps-py",
+  "deps-run",
+  "deps-test",
+]}
 
 # meta #################################################################################
 [project]
