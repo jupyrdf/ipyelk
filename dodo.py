@@ -239,15 +239,6 @@ def task_build():
     if P.TESTING_IN_CI:
         return
 
-    ts_dep = [
-        *P.ALL_TS,
-        *P.ALL_TSCONFIG,
-        P.HISTORY,
-        P.PACKAGE_JSON,
-        P.PY_SCHEMA,
-        P.YARN_INTEGRITY,
-    ]
-
     py_dep = [
         *P.ALL_PY_SRC,
         P.HISTORY,
@@ -258,32 +249,7 @@ def task_build():
     ]
 
     if P.USE_LOCK_ENV:
-        ts_dep += [P.OK_PRETTIER]
         py_dep += [P.OK_LINT]
-
-    yield dict(
-        name="ts",
-        file_dep=ts_dep,
-        actions=[[*P.IN_ENV, *P.JLPM, "build:ts"]],
-        targets=[P.TSBUILDINFO],
-    )
-
-    yield dict(
-        name="ext",
-        actions=[[*P.IN_ENV, *P.JLPM, "build:ext"]],
-        file_dep=[P.TSBUILDINFO, *P.ALL_CSS, P.WEBPACKCONFIG],
-        targets=[P.PY_PACKAGE_JSON],
-    )
-
-    yield dict(
-        name="pack",
-        file_dep=[P.TSBUILDINFO, P.PACKAGE_JSON, *P.ALL_CSS, P.README, P.LICENSE],
-        actions=[
-            (create_folder, [P.DIST]),
-            CmdAction([*P.IN_ENV, "npm", "pack", ".."], shell=False, cwd=str(P.DIST)),
-        ],
-        targets=[P.NPM_TGZ],
-    )
 
     yield dict(
         name="py",

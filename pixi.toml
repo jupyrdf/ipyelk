@@ -3,9 +3,10 @@
 # tasks ################################################################################
 [tasks]
 build = {depends-on = ["build-py-schema", "build-js-lib", "build-js-ext"]}
+dist = {depends-on = ["dist-npm", "dist-pypi"]}
 fix = {depends-on = ["fix-taplo", "fix-ruff-format", "fix-ruff-check", "fix-js-dupes"]}
 lint = {depends-on = ["lint-ruff-format", "lint-ruff-check"]}
-dev = {depends-on = ["fix", "lint", "build"]}
+dev = {depends-on = ["fix", "lint", "build", "dist"]}
 
 # setup ################################################################################
 [feature.tasks-build.tasks.setup-js]
@@ -41,6 +42,24 @@ inputs = [
   "webpack.config.js",
 ]
 outputs = ["src/_d/share/jupyter/labextensions/@jupyrdf/jupyter-elk/package.json"]
+
+# ship #################################################################################
+[feature.tasks-build.tasks.dist-npm]
+cmd = "mkdir -p dist && cd dist && npm pack .."
+depends-on = ["build-js-lib"]
+inputs = ["build/.src.tsbuildinfo", "{package.json,README.md,LICENSE}"]
+outputs = ["dist/*.tgz"]
+
+[feature.tasks-build.tasks.dist-pypi]
+cmd = "pyproject-build . --no-isolation"
+inputs = [
+  "{README.md,LICENSE,pyproject.toml}",
+  "src/_d",
+  "src/ipyelk",
+  "!**/__pycache__",
+]
+outputs = ["dist/*.{whl,tar.gz}"]
+depends-on = ["build-py-schema", "build-js-ext"]
 
 # linting ##############################################################################
 [feature.tasks-lint.tasks.fix-taplo]
@@ -91,6 +110,7 @@ jupyterlab = ">=4.2.0,<5"
 
 [feature.deps-build.dependencies]
 flit-core = ">=3.9.0,<4"
+python-build = "*"
 
 [feature.deps-run.dependencies]
 ipywidgets = ">=8.0.1,<9"
