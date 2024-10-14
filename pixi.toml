@@ -37,7 +37,7 @@ cmd = """export COVERAGE_FILE=$PIXI_PROJECT_ROOT/build/reports/$PIXI_ENVIRONMENT
 # setup ################################################################################
 [feature.tasks-build.tasks.setup-js]
 cmd = """jlpm"""
-inputs = ["yarnrc.yml", "package.json"]
+inputs = [".yarnrc.yml", "package.json", "yarn.lock"]
 outputs = ["yarn.lock", "node_modules/.yarn-state.yml"]
 
 # build ################################################################################
