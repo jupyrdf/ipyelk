@@ -50,38 +50,6 @@ def task_watch():
     )
 
 
-def task_lite():
-    """build the jupyterlite site"""
-
-    yield dict(
-        name="build",
-        file_dep=[
-            *P.EXAMPLE_IPYNB,
-            *P.EXAMPLE_JSON,
-            *P.LITE_JSON,
-            P.EXAMPLE_REQS,
-            P.WHEEL,
-        ],
-        targets=[P.LITE_SHA256SUMS],
-        actions=[
-            CmdAction(
-                [*P.IN_ENV, "jupyter", "lite", "build"], shell=False, cwd=str(P.LITE)
-            ),
-            CmdAction(
-                [
-                    *P.IN_ENV,
-                    "jupyter",
-                    "lite",
-                    "doit",
-                    "--",
-                    "pre_archive:report:SHA256SUMS",
-                ],
-                shell=False,
-                cwd=str(P.LITE),
-            ),
-        ],
-    )
-
 
 def task_docs():
     """build the docs (mostly as readthedocs would)"""
