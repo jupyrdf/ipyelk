@@ -9,31 +9,29 @@ build-backend = "flit_core.buildapi"
 name = "ipyelk"
 version = "2.1.0a1"
 description = "ELK widget for Jupyter"
-authors = [
-    {name = "Dane Freeman", email = "dane.freeman@gtri.gatech.edu"},
-]
+authors = [{name = "Dane Freeman", email = "dane.freeman@gtri.gatech.edu"}]
 readme = "README.md"
 classifiers = [
-    "Framework :: Jupyter :: JupyterLab :: 4",
-    "Framework :: Jupyter :: JupyterLab :: Extensions :: Prebuilt",
-    "Framework :: Jupyter :: JupyterLab :: Extensions",
-    "Framework :: Jupyter :: JupyterLab",
-    "Framework :: Jupyter",
-    "Intended Audience :: Developers",
-    "Intended Audience :: Science/Research",
-    "License :: OSI Approved :: BSD License",
-    "Programming Language :: Python :: 3 :: Only",
-    "Programming Language :: Python :: 3.10",
-    "Programming Language :: Python :: 3.11",
-    "Programming Language :: Python :: 3.12",
-    "Programming Language :: Python :: 3.9",
-    "Programming Language :: Python :: 3",
+  "Framework :: Jupyter :: JupyterLab :: 4",
+  "Framework :: Jupyter :: JupyterLab :: Extensions :: Prebuilt",
+  "Framework :: Jupyter :: JupyterLab :: Extensions",
+  "Framework :: Jupyter :: JupyterLab",
+  "Framework :: Jupyter",
+  "Intended Audience :: Developers",
+  "Intended Audience :: Science/Research",
+  "License :: OSI Approved :: BSD License",
+  "Programming Language :: Python :: 3 :: Only",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.9",
+  "Programming Language :: Python :: 3",
 ]
 requires-python = ">=3.9"
 dependencies = [
-    "ipywidgets >=8.0.1,<9",
-    "networkx",
-    "pydantic >=1.10.17,<3",
+  "ipywidgets >=8.0.1,<9",
+  "networkx",
+  "pydantic >=1.10.17,<3", # uses the v1 compatibility layer
 ]
 
 [project.urls]

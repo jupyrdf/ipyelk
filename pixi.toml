@@ -1,0 +1,30 @@
+"$schema" = "https://pixi.sh/v0.32.1/schema/manifest/schema.json"
+
+# tasks ################################################################################
+[tasks]
+fix = {depends-on = ["fix-taplo"]}
+dev = {depends-on = ["fix"]}
+
+# linting ##############################################################################
+[feature.tasks-lint.tasks.fix-taplo]
+description = "consistently format TOML files"
+cmd = """taplo fmt
+  *.toml
+  --option=array_auto_collapse=true
+  --option=compact_inline_tables=true
+  --option=column_width=88"""
+inputs = ["*.toml"]
+
+# dependencies #########################################################################
+[feature.deps-lint.dependencies]
+taplo = "*"
+
+# environments #########################################################################
+[environments]
+lint = {features = ["deps-lint", "tasks-lint"]}
+
+# meta #################################################################################
+[project]
+name = "ipyelk"
+channels = ["conda-forge"]
+platforms = ["linux-64", "osx-64", "osx-arm64", "win-64"]
