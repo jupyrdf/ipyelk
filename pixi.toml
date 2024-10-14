@@ -155,6 +155,7 @@ outputs = ["build/pip-freeze/atest.txt"]
 cmd = "python -m scripts.atest"
 depends-on = ["pip-atest"]
 inputs = ["atest", "src", "scripts/atest.py"]
+outputs = ["build/reports/atest/**/pabot_results/**/*.*"]
 
 # lint #################################################################################
 [feature.tasks-lint.tasks.fix-taplo]
