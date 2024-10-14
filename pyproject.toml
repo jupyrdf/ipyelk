@@ -59,7 +59,7 @@ init_typed = true
 warn_required_dynamic_aliases = true
 warn_untyped_fields = true
 
-# coverage #####################################################################
+# coverage #############################################################################
 [tool.coverage.run]
 parallel = true
 branch = true
@@ -78,7 +78,7 @@ exclude_lines = [
   """if __name__ == "__main__":""",
 ]
 
-# pytest #######################################################################
+# pytest ###############################################################################
 [tool.pytest.ini_options]
 addopts = ["-vv", "--color=yes", "--tb=long"]
 asyncio_default_fixture_loop_scope = "function"
@@ -88,7 +88,7 @@ generate_report_on_test = true
 junit_family = "xunit2"
 testpaths = ["tests"]
 
-# ruff #########################################################################
+# ruff #################################################################################
 [tool.ruff]
 preview = true
 target-version = "py39"

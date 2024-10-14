@@ -6,7 +6,7 @@ build = {depends-on = ["build-py-schema", "build-js-lib", "build-js-ext"]}
 dist = {depends-on = ["dist-npm", "dist-pypi", "dist-hash"]}
 fix = {depends-on = ["fix-taplo", "fix-ruff-format", "fix-ruff-check", "fix-js-dupes"]}
 lint = {depends-on = ["lint-ruff-format", "lint-ruff-check"]}
-test = {depends-on = ["test-pytest-cov"]}
+test = {depends-on = ["utest-pytest-cov", "itest-nbconvert"]}
 dev = {depends-on = ["fix", "lint", "build", "dist", "test"]}
 
 # fragments ############################################################################
@@ -32,6 +32,22 @@ cmd = """export COVERAGE_FILE=$PIXI_PROJECT_ROOT/build/reports/$PIXI_ENVIRONMENT
     --junitxml build/reports/$PIXI_ENVIRONMENT_NAME/pytest.xunit.xml
     --no-cov-on-fail
     --self-contained-html
+"""
+
+[tasks.nbconvert--]
+cmd = """
+export
+    NBCONVERT_DIR=$PIXI_PROJECT_ROOT/build/reports/$PIXI_ENVIRONMENT_NAME/nbconvert
+    IPYELK_TESTING=true
+&& rm -rf $NBCONVERT_DIR
+&& mkdir -p $NBCONVERT_DIR
+&& cd $NBCONVERT_DIR
+&& jupyter nbconvert
+    --to html
+    --output-dir .
+    --execute
+    --ExecutePreprocessor.timeout=1200
+    $PIXI_PROJECT_ROOT/examples/**/*.ipynb
 """
 
 # setup ################################################################################
@@ -92,22 +108,34 @@ inputs = ["dist/", "!SHA256SUMS"]
 depends-on = ["dist-pypi", "dist-npm"]
 outputs = ["dist/SHA256SUMS"]
 
-# test #################################################################################
-[feature.tasks-test.tasks.pip-test]
-cmd = """pixi r -e test pip-e--"""
+# unit test ############################################################################
+[feature.tasks-utest.tasks.pip-utest]
+cmd = """pixi r -e utest pip-e--"""
 inputs = ["pyproject.toml"]
-outputs = ["build/pip-freeze/test.txt"]
+outputs = ["build/pip-freeze/utest.txt"]
 
-[feature.tasks-test.tasks.test-pytest-cov]
-cmd = "pixi r -e test pytest-cov--"
-depends-on = ["pip-test"]
+[feature.tasks-utest.tasks.utest-pytest-cov]
+cmd = "pixi r -e utest pytest-cov--"
+depends-on = ["pip-utest"]
 inputs = [
-  "build/pip-freeze/test.txt",
+  "build/pip-freeze/utest.txt",
   "pyproject.toml",
   "{tests,src}/**/*.{py,json}",
   "!**/.ipynb_checkpoints",
 ]
-outputs = ["build/reports/test/{pytest.html,pytest.xunit.xml,htmlcov/status.json}"]
+outputs = ["build/reports/utest/{pytest.html,pytest.xunit.xml,htmlcov/status.json}"]
+
+# integration test #####################################################################
+[feature.tasks-utest.tasks.pip-itest]
+cmd = """pixi r -e itest pip-e--"""
+inputs = ["pyproject.toml"]
+outputs = ["build/pip-freeze/itest.txt"]
+
+[feature.tasks-itest.tasks.itest-nbconvert]
+cmd = """pixi r -e itest nbconvert--"""
+depends-on = ["pip-itest"]
+inputs = ["examples/", "!**/.ipynb_checkpoints"]
+outputs = ["build/reports/itest/nbconvert/"]
 
 # lint #################################################################################
 [feature.tasks-lint.tasks.fix-taplo]
@@ -188,10 +216,16 @@ pydantic = ">=1.10.17,<3"
 pip = "*"
 flit-core = "*"
 
-[feature.deps-test.dependencies]
+[feature.deps-utest.dependencies]
 pytest = "*"
 pytest-html = "*"
 pytest-asyncio = "*"
+
+[feature.deps-itest.dependencies]
+nbconvert = "*"
+ipykernel = "*"
+importnb = "*"
+bqplot = "*"
 
 [feature.deps-cov.dependencies]
 pytest-cov = "*"
@@ -207,14 +241,22 @@ build = {features = [
   "deps-py",
   "tasks-build",
 ]}
-test = {features = [
+utest = {features = [
   "deps-cov",
   "deps-flit",
   "deps-pip",
   "deps-py",
   "deps-run",
-  "deps-test",
-  "tasks-test",
+  "deps-utest",
+  "tasks-utest",
+]}
+itest = {features = [
+  "deps-flit",
+  "deps-pip",
+  "deps-py",
+  "deps-run",
+  "deps-itest",
+  "tasks-itest",
 ]}
 dev = {features = [
   "deps-build",
@@ -225,7 +267,8 @@ dev = {features = [
   "deps-pip",
   "deps-py",
   "deps-run",
-  "deps-test",
+  "deps-utest",
+  "deps-itest",
 ]}
 
 # meta #################################################################################

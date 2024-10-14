@@ -238,49 +238,6 @@ def task_setup():
 def task_test():
     """run all the notebooks"""
 
-    def _nb_test(nb):
-        def _test():
-            env = dict(os.environ)
-            env.update(IPYELK_TESTING="true")
-            args = [
-                *P.IN_ENV,
-                "jupyter",
-                "nbconvert",
-                "--to",
-                "html",
-                "--output-dir",
-                P.BUILD_NBHTML,
-                "--execute",
-                "--ExecutePreprocessor.timeout=1200",
-                nb,
-            ]
-            return CmdAction(args, env=env, shell=False)
-
-        file_dep = [
-            *P.ALL_PY_SRC,
-            *P.EXAMPLE_IPYNB,
-            *P.EXAMPLE_JSON,
-            P.HISTORY,
-            P.OK_PIP_INSTALL,
-            P.OK_PREFLIGHT_KERNEL,
-            *([] if P.TESTING_IN_CI else [P.OK_NBLINT[nb.name]]),
-        ]
-
-        if not P.TESTING_IN_CI:
-            file_dep += [
-                P.PY_SCHEMA,
-            ]
-
-        return dict(
-            name=f"nb:{nb.name}".replace(" ", "_").replace(".ipynb", ""),
-            file_dep=file_dep,
-            actions=[_test()],
-            targets=[P.BUILD_NBHTML / nb.name.replace(".ipynb", ".html")],
-        )
-
-    for nb in P.EXAMPLE_IPYNB:
-        yield _nb_test(nb)
-
     def _pabot_logs():
         for robot_out in sorted(P.ATEST_OUT.rglob("robot_*.out")):
             print(f"\n[{robot_out.relative_to(P.ROOT)}]")
