@@ -266,49 +266,6 @@ def task_lint():
     if P.TESTING_IN_CI:
         return
 
-    yield _ok(
-        dict(
-            name="black",
-            file_dep=[*P.ALL_PY, P.HISTORY],
-            actions=[
-                [*P.IN_ENV, "isort", "--quiet", "--ac", *P.ALL_PY],
-                [*P.IN_ENV, "black", "--quiet", *P.ALL_PY],
-            ],
-        ),
-        P.OK_BLACK,
-    )
-    yield _ok(
-        dict(
-            name="pyflakes",
-            file_dep=[*P.ALL_PY, P.OK_BLACK],
-            actions=[[*P.IN_ENV, "pyflakes", *P.ALL_PY]],
-        ),
-        P.OK_PYFLAKES,
-    )
-    yield _ok(
-        dict(
-            name="prettier",
-            uptodate=[
-                config_changed(
-                    dict(
-                        conf=P.JS_PACKAGE_DATA["prettier"],
-                        script=P.JS_PACKAGE_DATA["scripts"]["lint:prettier"],
-                    )
-                )
-            ],
-            file_dep=[
-                *P.ALL_PRETTIER,
-                P.HISTORY,
-                P.PRETTIER_IGNORE,
-                P.YARN_INTEGRITY,
-            ],
-            actions=[
-                [*P.IN_ENV, "npm", "run", "lint:prettier"],
-            ],
-        ),
-        P.OK_PRETTIER,
-    )
-
     for nb in P.EXAMPLE_IPYNB:
         yield _ok(
             dict(
@@ -321,25 +278,6 @@ def task_lint():
             ),
             P.OK_NBLINT[nb.name],
         )
-
-    yield _ok(
-        dict(
-            name="robot",
-            file_dep=[
-                *P.ALL_ROBOT,
-                *P.ALL_PY_SRC,
-                *P.ALL_TS,
-                P.SCRIPTS / "atest.py",
-                P.OK_PYFLAKES,
-                P.HISTORY,
-            ],
-            actions=[
-                [*P.IN_ENV, *P.PYM, "robotidy", *P.ALL_ROBOT],
-                [*P.IN_ENV, *P.PYM, "scripts.atest", "--dryrun"],
-            ],
-        ),
-        P.OK_ROBOT_LINT,
-    )
 
     index_src = P.EXAMPLE_INDEX.read_text(encoding="utf-8")
 

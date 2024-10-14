@@ -48,11 +48,6 @@ include = ["src/_d", "tests"]
 [tool.flit.external-data]
 directory = "src/_d"
 
-[tool.mypy]
-plugins = ["pydantic.mypy"]
-files = "src"
-allow_redefinition = true
-
 [tool.pydantic-mypy]
 init_forbid_extra = true
 init_typed = true
@@ -77,6 +72,13 @@ exclude_lines = [
   "@abc.abstractmethod",
   """if __name__ == "__main__":""",
 ]
+
+# mypy #################################################################################
+[tool.mypy]
+cache_dir = "build/.cache/.mypy_cache"
+plugins = ["pydantic.mypy"]
+files = "src"
+allow_redefinition = true
 
 # pytest ###############################################################################
 [tool.pytest.ini_options]

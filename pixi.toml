@@ -6,6 +6,7 @@ build = {depends-on = ["build-py-schema", "build-js-lib", "build-js-ext"]}
 dist = {depends-on = ["dist-npm", "dist-pypi", "dist-hash"]}
 fix = {depends-on = [
   "fix-taplo",
+  "fix-prettier",
   "fix-ruff-format",
   "fix-ruff-check",
   "fix-js-dupes",
@@ -211,6 +212,15 @@ inputs = ["atest/"]
 [feature.tasks-lint.tasks.lint-robot-dryrun]
 cmd = "python -m scripts.atest --dryrun"
 inputs = ["atest/", "scripts/atest.py"]
+
+[feature.tasks-lint.tasks.fix-prettier]
+cmd = "jlpm lint:prettier"
+depends-on = ["setup-js"]
+inputs = [
+  ".*{md,json,yml,yaml}",
+  "node_modules/.yarn-state.yml",
+  "{style,js,.github,examples,lite,atest,docs,scripts}/**/*.{css,md,json,yml,yaml,ts,tsx}",
+]
 
 # interactive development ##############################################################
 [feature.tasks-dev.tasks.pip-dev]
