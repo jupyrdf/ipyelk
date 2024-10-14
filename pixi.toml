@@ -15,7 +15,7 @@ fix = {depends-on = [
 ]}
 lint = {depends-on = ["lint-ruff-format", "lint-ruff-check", "lint-robot-dryrun"]}
 test = {depends-on = ["utest-pytest-cov", "itest-nbconvert", "atest-robot"]}
-release = {depends-on = ["fix", "lint", "build", "dist", "test"]}
+release = {depends-on = ["fix", "lint", "build", "dist", "test", "lite"]}
 
 # fragments ############################################################################
 [tasks.pip-e--]
@@ -229,6 +229,16 @@ cmd = "python scripts/nblint.py examples"
 depends-on = ["setup-js"]
 inputs = ["examples", "!**/.ipynb_checkpoints/"]
 
+# lite #################################################################################
+[feature.tasks-lite.tasks.lite]
+cmd = """
+cd lite
+&& jupyter lite doit -- pre_archive:report:SHA256SUMS
+"""
+depends-on = ["dist-pypi"]
+inputs = ["exmaples/", "lite/*.json", "!**.ipynb_checkpoints/"]
+outputs = ["build/lite/SHA256SUMS"]
+
 # interactive development ##############################################################
 [feature.tasks-dev.tasks.pip-dev]
 cmd = """pixi r -e dev pip-e--"""
@@ -279,11 +289,13 @@ pytest = "*"
 pytest-html = "*"
 pytest-asyncio = "*"
 
+[feature.deps-demo.dependencies]
+importnb = "*"
+bqplot = "*"
+
 [feature.deps-itest.dependencies]
 nbconvert = "*"
 ipykernel = "*"
-importnb = "*"
-bqplot = "*"
 
 [feature.deps-cov.dependencies]
 pytest-cov = "*"
@@ -296,6 +308,12 @@ robotframework-tidy = "*"
 [feature.deps-firefox.dependencies]
 firefox = "128.*"
 geckodriver = "*"
+
+[feature.deps-lite.dependencies]
+jupyterlite-core = "0.4.2"
+jupyterlab_server = "*"
+python-libarchive-c = "*"
+jupyterlite-pyodide-kernel = "0.4.2"
 
 # environments #########################################################################
 [environments]
@@ -325,15 +343,17 @@ utest = {features = [
   "tasks-utest",
 ]}
 itest = {features = [
+  "deps-demo",
   "deps-flit",
+  "deps-itest",
   "deps-pip",
   "deps-py",
   "deps-run",
-  "deps-itest",
   "tasks-itest",
 ]}
 atest = {features = [
   "deps-atest",
+  "deps-demo",
   "deps-firefox",
   "deps-flit",
   "deps-itest",
@@ -342,6 +362,11 @@ atest = {features = [
   "deps-py",
   "deps-run",
   "tasks-atest",
+]}
+lite = {features = [
+  "deps-lite",
+  "deps-demo",
+  "tasks-lite"
 ]}
 dev = {features = [
   "deps-atest",
