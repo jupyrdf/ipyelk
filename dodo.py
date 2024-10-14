@@ -234,33 +234,6 @@ def task_setup():
         )
 
 
-
-def task_test():
-    """run all the notebooks"""
-
-    def _pabot_logs():
-        for robot_out in sorted(P.ATEST_OUT.rglob("robot_*.out")):
-            print(f"\n[{robot_out.relative_to(P.ROOT)}]")
-            print(robot_out.read_text() or "<EMPTY>")
-
-    yield dict(
-        name="atest",
-        file_dep=[
-            *P.ALL_PY_SRC,
-            *P.ALL_ROBOT,
-            *P.EXAMPLE_IPYNB,
-            *P.EXAMPLE_JSON,
-            P.OK_PIP_INSTALL,
-            P.OK_PREFLIGHT_LAB,
-            P.SCRIPTS / "atest.py",
-            *([] if P.TESTING_IN_CI else [P.OK_ROBOT_LINT, *P.OK_NBLINT.values()]),
-        ],
-        task_dep=["pytest"],
-        actions=[[*P.IN_ENV, *P.PYM, "scripts.atest"], _pabot_logs],
-        targets=[P.ATEST_CANARY],
-    )
-
-
 def task_lint():
     """format all source files"""
     if P.TESTING_IN_CI:

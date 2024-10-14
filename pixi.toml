@@ -11,6 +11,7 @@ fix = {depends-on = [
   "fix-ruff-check",
   "fix-js-dupes",
   "fix-robot-tidy",
+  "fix-nblint",
 ]}
 lint = {depends-on = ["lint-ruff-format", "lint-ruff-check", "lint-robot-dryrun"]}
 test = {depends-on = ["utest-pytest-cov", "itest-nbconvert", "atest-robot"]}
@@ -223,6 +224,11 @@ inputs = [
   "{style,js,.github,examples,lite,atest,docs,scripts}/**/*.{css,md,json,yml,yaml,ts,tsx}",
 ]
 
+[feature.tasks-lint.tasks.fix-nblint]
+cmd = "python scripts/nblint.py examples"
+depends-on = ["setup-js"]
+inputs = ["examples", "!**/.ipynb_checkpoints/"]
+
 # interactive development ##############################################################
 [feature.tasks-dev.tasks.pip-dev]
 cmd = """pixi r -e dev pip-e--"""
@@ -244,6 +250,7 @@ nodejs = "22.*"
 [feature.deps-lint.dependencies]
 taplo = "*"
 ruff = "*"
+nbconvert-core = "*"
 
 [feature.deps-py.dependencies]
 python = ">=3.9"

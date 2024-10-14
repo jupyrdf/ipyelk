@@ -1,103 +1,120 @@
-"""linter and formatter of notebooks"""
+"""Apply prettier formatting to notebook markdown cells."""
 
 # Copyright (c) 2024 ipyelk contributors.
 # Distributed under the terms of the Modified BSD License.
-
 import shutil
-import subprocess
 import sys
-from hashlib import sha256
+from argparse import ArgumentParser
 from pathlib import Path
+from subprocess import call
+from uuid import uuid4
 
-import isort
 import nbformat
-from isort.api import sort_code_string
+import nbformat.validator
 
-from . import project as P
+NBFORMAT_VERSION = (4, 5)
 
-NODE = [shutil.which("node") or shutil.which("node.exe") or shutil.which("node.cmd")]
-
-NB_METADATA_KEYS = ["kernelspec", "language_info"]
-
-ISORT_CONFIG = isort.settings.Config(settings_path=P.PY_PROJ)
-
-
-def nblint_one(nb_node):
-    """format/lint one notebook"""
-    changes = 0
-    has_empty = 0
-    nb_metadata_keys = list(nb_node.metadata.keys())
-    for key in nb_metadata_keys:
-        if key not in NB_METADATA_KEYS:
-            nb_node.metadata.pop(key)
-    for cell in nb_node.cells:
-        cell_type = cell["cell_type"]
-        source = "".join(cell["source"])
-        if not source.strip():
-            has_empty += 1
-        if cell_type == "markdown":
-            args = [*P.PRETTIER, "--stdin-filepath", "foo.md"]
-            prettier = subprocess.Popen(
-                list(map(str, args)),
-                stdin=subprocess.PIPE,
-                stdout=subprocess.PIPE,
-            )
-            out, _err = prettier.communicate(source.encode("utf-8"))
-            new = out.decode("utf-8").rstrip()
-            if new != source:
-                cell["source"] = new.splitlines(True)
-                changes += 1
-        elif cell_type == "code":
-            if cell["outputs"] or cell["execution_count"]:
-                cell["outputs"] = []
-                cell["execution_count"] = None
-                changes += 1
-            if [line for line in source.splitlines() if line.strip().startswith("!")]:
-                continue
-            if source.startswith("%"):
-                continue
-            new = sort_code_string(source, config=ISORT_CONFIG)
-            if new != source:
-                cell["source"] = new.splitlines(True)
-                changes += 1
-
-    if has_empty:
-        changes += 1
-        nb_node.cells = [
-            cell for cell in nb_node.cells if "".join(cell["source"]).strip()
-        ]
-
-    return nb_node
+HERE = Path(__file__).parent
+ROOT = HERE.parent
+CELL_MD = ROOT / "build/nblint"
+CELL_MD_GLOB = f"{CELL_MD}/**/*.md"
+UTF8 = {"encoding": "utf8"}
+UTF8_NL = {**UTF8, "newline": "\n"}
+PRETTIER = ["jlpm", "prettier", "--write", CELL_MD_GLOB]
 
 
-def nb_hash(nb_text):
-    """Hash one notebook"""
-    return sha256(nb_text.encode("utf-8")).hexdigest()
-
-
-def nblint(nb_paths):
-    """Lint a number of notebook paths"""
-    len_paths = len(nb_paths)
-
-    for i, nb_path in enumerate(nb_paths):
-        nb_text = nb_path.read_text(encoding="utf-8")
-        pre_hash = nb_hash(nb_text)
-
-        if len_paths > 1:
-            print(f"[{i + 1} of {len_paths}] {nb_path}", flush=True)
-
-        nb_node = nblint_one(nbformat.reads(nb_text, 4))
-
-        with nb_path.open("w", encoding="utf-8") as fpt:
-            nbformat.write(nb_node, fpt)
-
-        post_hash = nb_hash(nb_path.read_text(encoding="utf-8"))
-
-        if post_hash != pre_hash:
-            print(f"\t{nb_path.name} formatted")
-
+def handle_one_cell(
+    cell: nbformat.NotebookNode,
+    idx: int,
+    nb_out: Path,
+    *,
+    fix: bool = False,
+    write: bool = False,
+) -> int:
+    """Handle a single cell."""
+    if "id" not in cell:
+        cell["id"] = str(uuid4())
+    if cell["cell_type"] != "markdown":
+        return 0
+    cell_out = nb_out / f"""cell-{idx + 1}.md"""
+    if write:
+        old = cell["source"]
+        new = cell_out.read_text(**UTF8).strip()
+        if old != new:
+            if fix:
+                print(f"... cell is now prettier: {cell_out.relative_to(CELL_MD)}")
+            else:
+                print(f"... cell is NOT pretty: {cell_out.relative_to(CELL_MD)}")
+            if fix:
+                cell["source"] = new
+            else:
+                return 1
+    else:
+        nb_out.mkdir(parents=True, exist_ok=True)
+        cell_out.write_text(cell["source"].strip() + "\n", **UTF8_NL)
     return 0
 
 
+def handle_one_nb(ipynb: Path, *, fix: bool = False, write: bool = False) -> int:
+    """Handle a single notebook."""
+    rel = str(ipynb.relative_to(ROOT))
+    with ipynb.open(**UTF8) as nbfp:
+        nb: nbformat.NotebookNode = nbformat.read(nbfp, as_version=4)
+    nb["nbformat"], nb["nbformat_minor"] = NBFORMAT_VERSION
+    nb_out = CELL_MD / rel
+
+    try:
+        error_count = sum(
+            handle_one_cell(cell, idx, nb_out, fix=fix, write=write)
+            for idx, cell in enumerate(nb["cells"])
+        )
+    except Exception as err:
+        print(ipynb, err)
+        error_count = 1
+
+    if write and not error_count:
+        if len(nb["cells"]) >= 1 and not nb["cells"][-1]["source"].strip():
+            print(f"""... removed trailing empty cell from: {ipynb}""")
+            nb["cells"] = nb["cells"][:-1]
+        normalized = nbformat.NotebookNode(
+            nbformat.validator.normalize(nb, *NBFORMAT_VERSION)[1]
+        )
+        with ipynb.open(mode="w", **UTF8) as nbfp:
+            nbformat.write(normalized, nbfp)
+
+    return error_count
+
+
+def nblint(roots: list[Path], fix: bool = False) -> int:
+    """Make the cells pretty."""
+    shutil.rmtree(CELL_MD, ignore_errors=True)
+    error_count = 0
+    all_ipynb = []
+    for root in roots:
+        all_ipynb += sorted(
+            p
+            for p in root.resolve().rglob("*.ipynb")
+            if "ipynb_checkpoints" not in str(p)
+        )
+
+    print("fixing" if fix else "checking", len(all_ipynb), "notebooks...")
+    error_count += sum(handle_one_nb(path, fix=fix) for path in all_ipynb)
+    if not error_count:
+        error_count += call(PRETTIER)
+    if not error_count:
+        error_count += sum(
+            handle_one_nb(path, fix=fix, write=True) for path in all_ipynb
+        )
+    return error_count
+
+
+def get_parser() -> ArgumentParser:
+    """Build a CLI parser."""
+    parser = ArgumentParser()
+    parser.add_argument("--fix", action="store_true")
+    parser.add_argument("roots", nargs="+", type=Path)
+    return parser
+
+
 if __name__ == "__main__":
-    sys.exit(nblint([Path(p) for p in sys.argv[1:]] or P.EXAMPLE_IPYNB))
+    sys.exit(nblint(**vars(get_parser().parse_args())))
