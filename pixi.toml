@@ -2,9 +2,15 @@
 
 # tasks ################################################################################
 [tasks]
-fix = {depends-on = ["fix-taplo", "fix-ruff-format", "fix-ruff-check"]}
+fix = {depends-on = ["fix-taplo", "fix-ruff-format", "fix-ruff-check", "fix-js-dupes"]}
 lint = {depends-on = ["lint-ruff-format", "lint-ruff-check"]}
 dev = {depends-on = ["fix", "lint"]}
+
+# setup ################################################################################
+[feature.tasks-build.tasks.setup-js]
+cmd = """jlpm"""
+inputs = ["yarnrc.yml", "package.json"]
+outputs = ["yarn.lock"]
 
 # linting ##############################################################################
 [feature.tasks-lint.tasks.fix-taplo]
@@ -33,14 +39,38 @@ cmd = "ruff check --fix-only"
 depends-on = ["fix-ruff-format"]
 inputs = ["{scripts,src,tests,docs,atest,examples}/**/*.{py,ipynb}", "pyproject.toml"]
 
+[feature.tasks-lint.tasks.fix-js-dupes]
+cmd = "jlpm yarn-berry-deduplicate -s fewer --fail"
+inputs = ["yarn.lock"]
+depends-on = ["setup-js"]
+
 # dependencies #########################################################################
+[feature.deps-js.dependencies]
+nodejs = "22.*"
+
 [feature.deps-lint.dependencies]
 taplo = "*"
 ruff = "*"
 
+[feature.deps-py.dependencies]
+python = ">=3.9"
+
+[feature.deps-lab.dependencies]
+jupyterlab = ">=4.2.0,<5"
+
+[feature.deps-build.dependencies]
+flit-core = ">=3.9.0,<4"
+
+[feature.deps-run.dependencies]
+ipywidgets = ">=8.0.1,<9"
+networkx = "*"
+pydantic = ">=1.10.17,<3"
+
 # environments #########################################################################
 [environments]
-lint = {features = ["deps-lint", "tasks-lint"]}
+lint = {features = ["deps-lab", "deps-py", "deps-js", "deps-lint", "tasks-lint"]}
+build = {features = ["deps-lab", "deps-py", "deps-js", "deps-build", "tasks-build"]}
+dev = {features = ["deps-lab", "deps-py", "deps-js", "deps-build", "deps-run"]}
 
 # meta #################################################################################
 [project]

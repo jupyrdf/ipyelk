@@ -74,105 +74,9 @@ def task_all():
     )
 
 
-def task_lock():
-    """create lockfiles from the binder environment and CI excursions."""
-
-    if not P.USE_LOCK_ENV:
-        return
-
-    def _lock_comment(env_yamls: Paths) -> str:
-        deps = []
-        for env_file in reversed(env_yamls):
-            found_deps = False
-            for line in env_file.read_text(encoding="utf-8").strip().splitlines():
-                line = line.strip()
-                if line.startswith("dependencies"):
-                    found_deps = True
-                if not found_deps:
-                    continue
-                if line.startswith("- "):
-                    deps += [line]
-        comment = textwrap.indent("\n".join(sorted(set(deps))), "# ")
-        return comment
-
-    def _needs_lock(lockfile: Path, env_yamls: Paths) -> bool:
-        if not lockfile.exists():
-            return True
-        lock_text = lockfile.read_text(encoding="utf-8")
-        comment = _lock_comment(env_yamls)
-        return comment not in lock_text
-
-    def _lock_one(lockfile: Path, env_yamls: typing.List[Path]) -> None:
-        if not _needs_lock(lockfile, env_yamls):
-            print(f"lockfile up-to-date: {lockfile}")
-            return
-
-        lock_args = [*P.CONDA_LOCK]
-        comment = _lock_comment(env_yamls)
-        for env_file in reversed(env_yamls):
-            lock_args += ["--file", env_file]
-        platform = next(p.stem for p in env_yamls if "subdir" in p.parent.name)
-        lock_args += ["--platform", platform]
-
-        if P.LOCK_HISTORY.exists():
-            lock_args = [*P.IN_LOCK_ENV, *lock_args]
-        elif not P.HAS_CONDA_LOCK:
-            print(
-                "Can't bootstrap lockfiles without `conda-lock`, please:\n\n\t"
-                "mamba install -c conda-forge conda-lock\n\n"
-                "and re-run `doit lock`"
-            )
-            return False
-
-        str_args = list(map(str, lock_args))
-        print(">>>", *str_args)
-
-        with tempfile.TemporaryDirectory() as td:
-            tdp = Path(td)
-            tmp_lock = tdp / f"conda-{platform}.lock"
-            subprocess.check_call(str_args, cwd=td)
-            raw = tmp_lock.read_text(encoding="utf-8").split(P.EXPLICIT)[1].strip()
-
-        lockfile.parent.mkdir(exist_ok=True, parents=True)
-        lockfile.write_text("\n".join([comment, P.EXPLICIT, raw, ""]), encoding="utf-8")
-
-    for env_yamls in P.ENV_MATRIX:
-        file_dep = [*env_yamls]
-        lock_name = "_".join([f"{p.stem}" for p in env_yamls])
-        lockfile = P.LOCKS / f"{lock_name}.conda.lock"
-
-        if not _needs_lock(lockfile, env_yamls):
-            continue
-
-        if P.LOCK_ENV_YAML not in env_yamls:
-            file_dep += [P.LOCK_HISTORY]
-
-        yield dict(
-            name=lock_name,
-            actions=[(_lock_one, [lockfile, env_yamls])],
-            file_dep=file_dep,
-            targets=[lockfile],
-        )
-
-
 def task_preflight():
     """ensure a sane development environment"""
     file_dep = [P.SCRIPTS / "preflight.py"]
-
-    yield _ok(
-        dict(
-            uptodate=[config_changed({"commit": P.COMMIT})],
-            name="conda",
-            doc="ensure the conda envs have a chance of working",
-            file_dep=file_dep,
-            actions=(
-                [_echo_ok("skipping preflight, hope you know what you're doing!")]
-                if P.SKIP_CONDA_PREFLIGHT
-                else [[*P.PREFLIGHT, "conda"]]
-            ),
-        ),
-        P.OK_PREFLIGHT_CONDA,
-    )
 
     yield _ok(
         dict(
@@ -225,30 +129,6 @@ def task_binder():
     return dict(
         file_dep=[P.OK_LABEXT],
         actions=[_echo_ok("ready to run JupyterLab with:\n\n\tdoit lab\n")],
-    )
-
-
-def task_env():
-    """prepare project envs"""
-    if not P.USE_LOCK_ENV:
-        return
-
-    yield dict(
-        name="lock",
-        file_dep=[P.LOCK_LOCKFILE],
-        targets=[P.LOCK_HISTORY],
-        actions=[
-            [*P.MAMBA_CREATE, P.LOCK_ENV, "--file", P.LOCK_LOCKFILE],
-        ],
-    )
-
-    yield dict(
-        name="dev",
-        file_dep=[P.LOCKFILE],
-        targets=[P.HISTORY],
-        actions=[
-            [*P.MAMBA_CREATE, P.ENV, "--file", P.LOCKFILE],
-        ],
     )
 
 
