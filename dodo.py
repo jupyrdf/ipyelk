@@ -239,13 +239,6 @@ def task_build():
     if P.TESTING_IN_CI:
         return
 
-    yield dict(
-        name="schema",
-        file_dep=[P.YARN_INTEGRITY, P.TS_SCHEMA, P.HISTORY],
-        actions=[[*P.IN_ENV, *P.JLPM, "schema"]],
-        targets=[P.PY_SCHEMA],
-    )
-
     ts_dep = [
         *P.ALL_TS,
         *P.ALL_TSCONFIG,

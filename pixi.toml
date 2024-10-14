@@ -2,15 +2,34 @@
 
 # tasks ################################################################################
 [tasks]
+build = {depends-on = ["build-py-schema", "build-ts-lib"]}
 fix = {depends-on = ["fix-taplo", "fix-ruff-format", "fix-ruff-check", "fix-js-dupes"]}
 lint = {depends-on = ["lint-ruff-format", "lint-ruff-check"]}
-dev = {depends-on = ["fix", "lint"]}
+dev = {depends-on = ["fix", "lint", "build"]}
 
 # setup ################################################################################
 [feature.tasks-build.tasks.setup-js]
 cmd = """jlpm"""
 inputs = ["yarnrc.yml", "package.json"]
-outputs = ["yarn.lock"]
+outputs = ["yarn.lock", "node_modules/.yarn-state.yml"]
+
+# build ################################################################################
+[feature.tasks-build.tasks.build-py-schema]
+cmd = "jlpm schema"
+depends-on = ["setup-js"]
+inputs = ["js/sprotty/json/elkschema.ts", "node_modules/.yarn-state.yml"]
+outputs = ["src/ipyelk/schema/elkschema.json"]
+
+[feature.tasks-build.tasks.build-ts-lib]
+cmd = "jlpm build:ts"
+depends-on = ["build-py-schema"]
+inputs = [
+  "{tsconfigbase,package}.json",
+  "js/",
+  "node_modules/.yarn-state.yml",
+  "src/ipyelk/schema/elkschema.json",
+]
+outputs = ["build/.src.tsbuildinfo"]
 
 # linting ##############################################################################
 [feature.tasks-lint.tasks.fix-taplo]
@@ -41,7 +60,8 @@ inputs = ["{scripts,src,tests,docs,atest,examples}/**/*.{py,ipynb}", "pyproject.
 
 [feature.tasks-lint.tasks.fix-js-dupes]
 cmd = "jlpm yarn-berry-deduplicate -s fewer --fail"
-inputs = ["yarn.lock"]
+inputs = ["package.json"]
+outputs = ["yarn.lock", "node_modules/.yarn-state.yml"]
 depends-on = ["setup-js"]
 
 # dependencies #########################################################################
