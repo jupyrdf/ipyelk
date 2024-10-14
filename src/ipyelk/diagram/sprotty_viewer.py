@@ -22,7 +22,7 @@ class SprottyViewer(DOMWidget, Viewer):
     """Jupyterlab widget for displaying and interacting with views generated
     from ELK JSON.
 
-    Setting the instance's `value` traitlet to valid `Eclipse Layout Kernal JSON
+    Setting the instance's `value` traitlet to valid `Eclipse Layout Kernel JSON
     <https://www.eclipse.org/elk/documentation/tooldevelopers/
     graphdatastructure/jsonformat.html>`_  will call the `elkjs layout method
     <https://github.com/kieler/elkjs>`_ and display the returned `mark_layout`
