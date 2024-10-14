@@ -283,7 +283,6 @@ pytest-cov = "*"
 
 [feature.deps-atest.dependencies]
 robotframework-pabot = "*"
-robotframework-robocop = "*"
 robotframework-seleniumlibrary = "*"
 robotframework-tidy = "*"
 

@@ -154,7 +154,6 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/robotframework-7.1-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/robotframework-pabot-2.18.0-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/robotframework-pythonlibcore-4.4.1-pyhd8ed1ab_0.conda
-      - conda: https://conda.anaconda.org/conda-forge/noarch/robotframework-robocop-5.4.0-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/robotframework-seleniumlibrary-6.6.1-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/robotframework-stacktrace-0.4.1-pyhd8ed1ab_0.tar.bz2
       - conda: https://conda.anaconda.org/conda-forge/noarch/robotframework-tidy-4.14.0-pyhd8ed1ab_0.conda
@@ -340,7 +339,6 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/robotframework-7.1-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/robotframework-pabot-2.18.0-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/robotframework-pythonlibcore-4.4.1-pyhd8ed1ab_0.conda
-      - conda: https://conda.anaconda.org/conda-forge/noarch/robotframework-robocop-5.4.0-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/robotframework-seleniumlibrary-6.6.1-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/robotframework-stacktrace-0.4.1-pyhd8ed1ab_0.tar.bz2
       - conda: https://conda.anaconda.org/conda-forge/noarch/robotframework-tidy-4.14.0-pyhd8ed1ab_0.conda
@@ -525,7 +523,6 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/robotframework-7.1-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/robotframework-pabot-2.18.0-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/robotframework-pythonlibcore-4.4.1-pyhd8ed1ab_0.conda
-      - conda: https://conda.anaconda.org/conda-forge/noarch/robotframework-robocop-5.4.0-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/robotframework-seleniumlibrary-6.6.1-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/robotframework-stacktrace-0.4.1-pyhd8ed1ab_0.tar.bz2
       - conda: https://conda.anaconda.org/conda-forge/noarch/robotframework-tidy-4.14.0-pyhd8ed1ab_0.conda
@@ -708,7 +705,6 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/robotframework-7.1-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/robotframework-pabot-2.18.0-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/robotframework-pythonlibcore-4.4.1-pyhd8ed1ab_0.conda
-      - conda: https://conda.anaconda.org/conda-forge/noarch/robotframework-robocop-5.4.0-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/robotframework-seleniumlibrary-6.6.1-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/robotframework-stacktrace-0.4.1-pyhd8ed1ab_0.tar.bz2
       - conda: https://conda.anaconda.org/conda-forge/noarch/robotframework-tidy-4.14.0-pyhd8ed1ab_0.conda
@@ -1513,7 +1509,6 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/robotframework-7.1-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/robotframework-pabot-2.18.0-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/robotframework-pythonlibcore-4.4.1-pyhd8ed1ab_0.conda
-      - conda: https://conda.anaconda.org/conda-forge/noarch/robotframework-robocop-5.4.0-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/robotframework-seleniumlibrary-6.6.1-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/robotframework-stacktrace-0.4.1-pyhd8ed1ab_0.tar.bz2
       - conda: https://conda.anaconda.org/conda-forge/noarch/robotframework-tidy-4.14.0-pyhd8ed1ab_0.conda
@@ -1712,7 +1707,6 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/robotframework-7.1-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/robotframework-pabot-2.18.0-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/robotframework-pythonlibcore-4.4.1-pyhd8ed1ab_0.conda
-      - conda: https://conda.anaconda.org/conda-forge/noarch/robotframework-robocop-5.4.0-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/robotframework-seleniumlibrary-6.6.1-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/robotframework-stacktrace-0.4.1-pyhd8ed1ab_0.tar.bz2
       - conda: https://conda.anaconda.org/conda-forge/noarch/robotframework-tidy-4.14.0-pyhd8ed1ab_0.conda
@@ -1911,7 +1905,6 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/robotframework-7.1-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/robotframework-pabot-2.18.0-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/robotframework-pythonlibcore-4.4.1-pyhd8ed1ab_0.conda
-      - conda: https://conda.anaconda.org/conda-forge/noarch/robotframework-robocop-5.4.0-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/robotframework-seleniumlibrary-6.6.1-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/robotframework-stacktrace-0.4.1-pyhd8ed1ab_0.tar.bz2
       - conda: https://conda.anaconda.org/conda-forge/noarch/robotframework-tidy-4.14.0-pyhd8ed1ab_0.conda
@@ -2104,7 +2097,6 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/robotframework-7.1-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/robotframework-pabot-2.18.0-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/robotframework-pythonlibcore-4.4.1-pyhd8ed1ab_0.conda
-      - conda: https://conda.anaconda.org/conda-forge/noarch/robotframework-robocop-5.4.0-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/robotframework-seleniumlibrary-6.6.1-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/robotframework-stacktrace-0.4.1-pyhd8ed1ab_0.tar.bz2
       - conda: https://conda.anaconda.org/conda-forge/noarch/robotframework-tidy-4.14.0-pyhd8ed1ab_0.conda
@@ -2725,7 +2717,6 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/robotframework-7.1-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/robotframework-pabot-2.18.0-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/robotframework-pythonlibcore-4.4.1-pyhd8ed1ab_0.conda
-      - conda: https://conda.anaconda.org/conda-forge/noarch/robotframework-robocop-5.4.0-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/robotframework-seleniumlibrary-6.6.1-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/robotframework-stacktrace-0.4.1-pyhd8ed1ab_0.tar.bz2
       - conda: https://conda.anaconda.org/conda-forge/noarch/robotframework-tidy-4.14.0-pyhd8ed1ab_0.conda
@@ -2890,7 +2881,6 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/robotframework-7.1-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/robotframework-pabot-2.18.0-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/robotframework-pythonlibcore-4.4.1-pyhd8ed1ab_0.conda
-      - conda: https://conda.anaconda.org/conda-forge/noarch/robotframework-robocop-5.4.0-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/robotframework-seleniumlibrary-6.6.1-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/robotframework-stacktrace-0.4.1-pyhd8ed1ab_0.tar.bz2
       - conda: https://conda.anaconda.org/conda-forge/noarch/robotframework-tidy-4.14.0-pyhd8ed1ab_0.conda
@@ -3055,7 +3045,6 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/robotframework-7.1-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/robotframework-pabot-2.18.0-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/robotframework-pythonlibcore-4.4.1-pyhd8ed1ab_0.conda
-      - conda: https://conda.anaconda.org/conda-forge/noarch/robotframework-robocop-5.4.0-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/robotframework-seleniumlibrary-6.6.1-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/robotframework-stacktrace-0.4.1-pyhd8ed1ab_0.tar.bz2
       - conda: https://conda.anaconda.org/conda-forge/noarch/robotframework-tidy-4.14.0-pyhd8ed1ab_0.conda
@@ -3212,7 +3201,6 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/robotframework-7.1-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/robotframework-pabot-2.18.0-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/robotframework-pythonlibcore-4.4.1-pyhd8ed1ab_0.conda
-      - conda: https://conda.anaconda.org/conda-forge/noarch/robotframework-robocop-5.4.0-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/robotframework-seleniumlibrary-6.6.1-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/robotframework-stacktrace-0.4.1-pyhd8ed1ab_0.tar.bz2
       - conda: https://conda.anaconda.org/conda-forge/noarch/robotframework-tidy-4.14.0-pyhd8ed1ab_0.conda
@@ -9354,28 +9342,6 @@ packages:
   license_family: APACHE
   size: 17831
   timestamp: 1712421206376
-- kind: conda
-  name: robotframework-robocop
-  version: 5.4.0
-  build: pyhd8ed1ab_0
-  subdir: noarch
-  noarch: python
-  url: https://conda.anaconda.org/conda-forge/noarch/robotframework-robocop-5.4.0-pyhd8ed1ab_0.conda
-  sha256: ef670317e85a24a3f935c945dc272fce6ab674d0779e1a6c65c0aced9d20d1fa
-  md5: 4a4d60ca7c181264d7a6dd799e7fa1ac
-  depends:
-  - jinja2 >=3.0,<4.0
-  - pathspec >=0.9,<0.13
-  - platformdirs >=3.2.0,<4.3.0
-  - python >=3.8
-  - python-dateutil >=2.8.2
-  - pytz >=2022.7
-  - robotframework >=3.2.2
-  - tomli >=2.0.0
-  license: Apache-2.0
-  license_family: APACHE
-  size: 186397
-  timestamp: 1724330923978
 - kind: conda
   name: robotframework-seleniumlibrary
   version: 6.6.1
