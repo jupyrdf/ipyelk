@@ -274,9 +274,13 @@ inputs = ["build/docs/**/*.html", "vale.ini", "scripts/vale/", "*.md"]
 
 [feature.tasks-check.tasks.check-links]
 cmd = """
-pytest-check-links build/docs/
-  --check-links-ignore 'https?://'
+export JUPYTER_PLATFORM_DIRS=1
+&& pytest-check-links
+  build/docs/
+  --config-file=scripts/pytest-check-links.toml
+  --check-links-ignore '(https?://|#attributes)'
   --check-anchors
+  -k "not (_static or contributing)"
 """
 inputs = ["build/docs/**/*.html"]
 
