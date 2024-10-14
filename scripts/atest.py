@@ -43,7 +43,7 @@ def atest(attempt, extra_args):
     stem = get_stem(attempt, extra_args)
     firefox = which("firefox")
     geckodriver = which("geckodriver")
-    if None in [firefox, geckodriver]:
+    if None in [firefox, geckodriver] and "--dryrun" not in extra_args:
         raise RuntimeError(f"Unable to find browser: {firefox}  {geckodriver}")
     if attempt != 1:
         previous = P.ATEST_OUT / f"{get_stem(attempt - 1, extra_args)}" / "output.xml"
@@ -64,7 +64,6 @@ def atest(attempt, extra_args):
         *["--xunit", out_dir / "xunit.xml"],
         *["--variable", f"OS:{P.PLATFORM}"],
         *["--variable", f"IPYELK_EXAMPLES:{P.EXAMPLES}"],
-        *["--variable", f"""JUPYTERLAB_EXE:{" ".join(map(str, P.JUPYTERLAB_EXE))}"""],
         *["--variable", f"FIREFOX:{firefox}"],
         *["--variable", f"GECKODRIVER:{geckodriver}"],
         *["--randomize", "all"],

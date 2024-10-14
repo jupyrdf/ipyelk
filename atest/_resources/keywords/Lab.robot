@@ -258,4 +258,8 @@ Ensure All Kernels Are Shut Down
 Page Should Not Contain Contain Standard Errors
     [Arguments]    ${prefix}=${EMPTY}    ${exceptions}=${None}
     ${errors} =    Get WebElements    ${JLAB XP STDERR}
+    FOR    ${error}    IN    @{errors}
+        ${error_text} =    Get Text    ${error}
+        Log    ${error_text}    level=ERROR
+    END
     Page Should Not Contain Element    ${JLAB XP STDERR}

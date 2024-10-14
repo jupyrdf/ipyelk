@@ -4,9 +4,15 @@
 [tasks]
 build = {depends-on = ["build-py-schema", "build-js-lib", "build-js-ext"]}
 dist = {depends-on = ["dist-npm", "dist-pypi", "dist-hash"]}
-fix = {depends-on = ["fix-taplo", "fix-ruff-format", "fix-ruff-check", "fix-js-dupes"]}
-lint = {depends-on = ["lint-ruff-format", "lint-ruff-check"]}
-test = {depends-on = ["utest-pytest-cov", "itest-nbconvert"]}
+fix = {depends-on = [
+  "fix-taplo",
+  "fix-ruff-format",
+  "fix-ruff-check",
+  "fix-js-dupes",
+  "fix-robot-tidy",
+]}
+lint = {depends-on = ["lint-ruff-format", "lint-ruff-check", "lint-robot-dryrun"]}
+test = {depends-on = ["utest-pytest-cov", "itest-nbconvert", "atest-robot"]}
 dev = {depends-on = ["fix", "lint", "build", "dist", "test"]}
 
 # fragments ############################################################################
@@ -41,13 +47,14 @@ export
     IPYELK_TESTING=true
 && rm -rf $NBCONVERT_DIR
 && mkdir -p $NBCONVERT_DIR
-&& cd $NBCONVERT_DIR
+&& cd examples
+&& rm -rf .ipynb_checkpoints/
 && jupyter nbconvert
     --to html
-    --output-dir .
+    --output-dir $NBCONVERT_DIR
     --execute
     --ExecutePreprocessor.timeout=1200
-    $PIXI_PROJECT_ROOT/examples/**/*.ipynb
+    ./**/*.ipynb
 """
 
 # setup ################################################################################
@@ -137,6 +144,17 @@ depends-on = ["pip-itest"]
 inputs = ["examples/", "!**/.ipynb_checkpoints"]
 outputs = ["build/reports/itest/nbconvert/"]
 
+# acceptance test ######################################################################
+[feature.tasks-atest.tasks.pip-atest]
+cmd = """pixi r -e atest pip-e--"""
+inputs = ["pyproject.toml"]
+outputs = ["build/pip-freeze/atest.txt"]
+
+[feature.tasks-atest.tasks.atest-robot]
+cmd = "python -m scripts.atest"
+depends-on = ["pip-atest"]
+inputs = ["atest", "src", "scripts/atest.py"]
+
 # lint #################################################################################
 [feature.tasks-lint.tasks.fix-taplo]
 description = "consistently format TOML files"
@@ -186,6 +204,28 @@ inputs = ["package.json"]
 outputs = ["yarn.lock", "node_modules/.yarn-state.yml"]
 depends-on = ["setup-js"]
 
+[feature.tasks-lint.tasks.fix-robot-tidy]
+cmd = "robotidy atest"
+inputs = ["atest/"]
+
+[feature.tasks-lint.tasks.lint-robot-dryrun]
+cmd = "python -m scripts.atest --dryrun"
+inputs = ["atest/", "scripts/atest.py"]
+
+# interactive development ##############################################################
+[feature.tasks-dev.tasks.pip-dev]
+cmd = """pixi r -e dev pip-e--"""
+inputs = ["pyproject.toml"]
+outputs = ["build/pip-freeze/dev.txt"]
+
+[feature.tasks-dev.tasks.dev-ext]
+cmd = """jupyter labextension develop --overwrite ."""
+depends-on = ["pip-dev"]
+
+[feature.tasks-dev.tasks.lab]
+depends-on = ["pip-dev", "dev-ext"]
+cmd = "jupyter lab --no-browser --debug"
+
 # dependencies #########################################################################
 [feature.deps-js.dependencies]
 nodejs = "22.*"
@@ -230,9 +270,26 @@ bqplot = "*"
 [feature.deps-cov.dependencies]
 pytest-cov = "*"
 
+[feature.deps-atest.dependencies]
+robotframework-pabot = "*"
+robotframework-robocop = "*"
+robotframework-seleniumlibrary = "*"
+robotframework-tidy = "*"
+
+[feature.deps-firefox.dependencies]
+firefox = "128.*"
+geckodriver = "*"
+
 # environments #########################################################################
 [environments]
-lint = {features = ["deps-lab", "deps-py", "deps-js", "deps-lint", "tasks-lint"]}
+lint = {features = [
+  "deps-lab",
+  "deps-py",
+  "deps-js",
+  "deps-lint",
+  "deps-atest",
+  "tasks-lint",
+]}
 build = {features = [
   "deps-build",
   "deps-flit",
@@ -258,7 +315,19 @@ itest = {features = [
   "deps-itest",
   "tasks-itest",
 ]}
+atest = {features = [
+  "deps-atest",
+  "deps-firefox",
+  "deps-flit",
+  "deps-itest",
+  "deps-lab",
+  "deps-pip",
+  "deps-py",
+  "deps-run",
+  "tasks-atest",
+]}
 dev = {features = [
+  "deps-atest",
   "deps-build",
   "deps-cov",
   "deps-flit",
@@ -269,6 +338,7 @@ dev = {features = [
   "deps-run",
   "deps-utest",
   "deps-itest",
+  "tasks-dev",
 ]}
 
 # meta #################################################################################

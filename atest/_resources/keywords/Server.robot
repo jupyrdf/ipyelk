@@ -48,7 +48,7 @@ Create Lab Launch Command
     ${path args} =    Set Variable
     ...    --LabApp.user_settings_dir\='${SETTINGS DIR.replace('\\', '\\\\')}' --LabApp.workspaces_dir\='${WORKSPACES DIR.replace('\\', '\\\\')}'
     ${cmd} =    Set Variable
-    ...    ${JUPYTERLAB_EXE} ${app args} ${path args}
+    ...    jupyter-lab ${app args} ${path args}
     RETURN    ${cmd}
 
 Create Notebok Server Config
