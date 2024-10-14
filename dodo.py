@@ -11,25 +11,19 @@
 # Distributed under the terms of the Modified BSD License.
 
 import os
-import subprocess
-import tempfile
-import textwrap
 import typing
-from hashlib import sha256
 from pathlib import Path
 
 from doit import create_after
 from doit.action import CmdAction
 from doit.tools import (
     LongRunning,
-    PythonInteractiveAction,
     config_changed,
     create_folder,
 )
 
 from scripts import project as P
 from scripts import reporter
-from scripts import utils as U
 
 os.environ.update(
     MAMBA_NO_BANNER="1",
@@ -77,35 +71,6 @@ def task_all():
 def task_preflight():
     """ensure a sane development environment"""
     file_dep = [P.SCRIPTS / "preflight.py"]
-
-    yield _ok(
-        dict(
-            name="kernel",
-            doc="ensure the kernel has a chance of working",
-            file_dep=[*file_dep, P.HISTORY],
-            actions=[[*P.IN_ENV, *P.PREFLIGHT, "kernel"]],
-        ),
-        P.OK_PREFLIGHT_KERNEL,
-    )
-
-    yield _ok(
-        dict(
-            name="lab",
-            file_dep=[*file_dep, P.OK_LABEXT, P.HISTORY],
-            actions=[[*P.IN_ENV, *P.PREFLIGHT, "lab"]],
-        ),
-        P.OK_PREFLIGHT_LAB,
-    )
-
-    yield _ok(
-        dict(
-            name="build",
-            doc="ensure the build has a chance of succeeding",
-            file_dep=[*file_dep, P.YARN_LOCK, P.HISTORY],
-            actions=[[*P.IN_ENV, *P.PREFLIGHT, "build"]],
-        ),
-        P.OK_PREFLIGHT_BUILD,
-    )
 
     yield _ok(
         dict(
@@ -290,30 +255,6 @@ def task_lint():
         P.OK_LINT,
     )
 
-
-def task_lab():
-    """run JupyterLab "normally" (not watching sources)"""
-
-    def lab():
-        proc = subprocess.Popen(
-            list(map(str, P.JUPYTERLAB_EXE)),
-            stdin=subprocess.PIPE,
-        )
-        try:
-            proc.wait()
-        except KeyboardInterrupt:
-            print("attempting to stop lab, you may want to check your process monitor")
-            proc.terminate()
-            proc.communicate(b"y\n")
-
-        proc.wait()
-        return True
-
-    return dict(
-        uptodate=[lambda: False],
-        file_dep=[P.OK_PIP_INSTALL, P.OK_PREFLIGHT_LAB],
-        actions=[PythonInteractiveAction(lab)],
-    )
 
 
 def task_watch():

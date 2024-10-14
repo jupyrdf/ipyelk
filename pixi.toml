@@ -15,7 +15,7 @@ fix = {depends-on = [
 ]}
 lint = {depends-on = ["lint-ruff-format", "lint-ruff-check", "lint-robot-dryrun"]}
 test = {depends-on = ["utest-pytest-cov", "itest-nbconvert", "atest-robot"]}
-dev = {depends-on = ["fix", "lint", "build", "dist", "test"]}
+release = {depends-on = ["fix", "lint", "build", "dist", "test"]}
 
 # fragments ############################################################################
 [tasks.pip-e--]
