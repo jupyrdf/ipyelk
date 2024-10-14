@@ -3,4 +3,4 @@
 
 from .validator import SCHEMA, ElkSchemaValidator, validate_elk_json
 
-__all__ = ["ElkSchemaValidator", "SCHEMA", "validate_elk_json"]
+__all__ = ["SCHEMA", "ElkSchemaValidator", "validate_elk_json"]

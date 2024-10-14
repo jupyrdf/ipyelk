@@ -1,5 +1,4 @@
-"""Widget to get text size from DOM
-"""
+"""Widget to get text size from DOM"""
 
 # Copyright (c) 2024 ipyelk contributors.
 # Distributed under the terms of the Modified BSD License.
@@ -30,7 +29,7 @@ class TextSizer(Pipe):
 
     async def run(self):
         if self.inlet.value is None:
-            return
+            return None
 
         # make copy of source value?
         for el in index.iter_elements(self.source.value):
@@ -50,7 +49,6 @@ def size(label: Label):
 
 
 def size_nested_label(label: Label) -> Label:
-
     shape = label.properties.get_shape()
     width = label.width or shape.width or 0
     height = label.height or shape.height or 0

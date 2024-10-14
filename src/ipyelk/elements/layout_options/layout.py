@@ -17,9 +17,7 @@ class Algorithm:
 
 
 class Draw2DLayout(Algorithm):
-    """
-    https://www.eclipse.org/elk/reference/algorithms/org-eclipse-elk-conn-gmf-layouter-Draw2D.html
-    """
+    """https://www.eclipse.org/elk/reference/algorithms/org-eclipse-elk-conn-gmf-layouter-Draw2D.html"""
 
     identifier = "org.eclipse.elk.conn.gmf.layouter.Draw2D"
     metadata_provider = "GmfMetaDataProvider"
@@ -27,9 +25,7 @@ class Draw2DLayout(Algorithm):
 
 
 class ELKBox(Algorithm):
-    """
-    https://www.eclipse.org/elk/reference/algorithms/org-eclipse-elk-box.html
-    """
+    """https://www.eclipse.org/elk/reference/algorithms/org-eclipse-elk-box.html"""
 
     identifier = "org.eclipse.elk.box"
     metadata_provider = "core.options.CoreOptions"
@@ -37,9 +33,7 @@ class ELKBox(Algorithm):
 
 
 class ELKRadial(Algorithm):
-    """
-    https://www.eclipse.org/elk/reference/algorithms/org-eclipse-elk-radial.html
-    """
+    """https://www.eclipse.org/elk/reference/algorithms/org-eclipse-elk-radial.html"""
 
     identifier = "org.eclipse.elk.radial"
     metadata_provider = "options.RadialMetaDataProvider"
@@ -47,9 +41,7 @@ class ELKRadial(Algorithm):
 
 
 class ELKLayered(Algorithm):
-    """
-    https://www.eclipse.org/elk/reference/algorithms/org-eclipse-elk-layered.html
-    """
+    """https://www.eclipse.org/elk/reference/algorithms/org-eclipse-elk-layered.html"""
 
     identifier = "org.eclipse.elk.layered"
     metadata_provider = "options.LayeredMetaDataProvider"
@@ -57,9 +49,7 @@ class ELKLayered(Algorithm):
 
 
 class ELKRectanglePacking(Algorithm):
-    """
-    https://www.eclipse.org/elk/reference/algorithms/org-eclipse-elk-rectpacking.html
-    """
+    """https://www.eclipse.org/elk/reference/algorithms/org-eclipse-elk-rectpacking.html"""
 
     identifier = "org.eclipse.elk.rectpacking"
     metadata_provider = "options.RectPackingMetaDataProvider"
@@ -103,7 +93,6 @@ class LayoutAlgorithm(LayoutOptionWidget):
         """Change Handler to update the metadata provider based on current
         selected algorithm
         """
-
         provider = ALGORITHM_OPTIONS[self.value].metadata_provider
         self.metadata_provider = provider
         return provider

@@ -1,6 +1,6 @@
-""" important project paths
+"""important project paths
 
-    this should not import anything not in py36+ stdlib, or any local paths
+this should not import anything not in py36+ stdlib, or any local paths
 """
 
 # Copyright (c) 2024 ipyelk contributors.

@@ -1,6 +1,6 @@
-""" ensure the development environment is sane
+"""ensure the development environment is sane
 
-    be careful about imports here:
+be careful about imports here:
 """
 
 # Copyright (c) 2024 ipyelk contributors.
@@ -70,8 +70,7 @@ def check_drives(path_a, path_b, message):
 
 
 def preflight_conda():
-    """this should only run from the `base` env"""
-
+    """This should only run from the `base` env"""
     conda_prefix = os.environ.get("CONDA_PREFIX", NOT_DEFINED)
     errors = [
         *check_path(
@@ -124,7 +123,7 @@ def preflight_build():
 
 
 def preflight_kernel():
-    """this should only run from the `dev` env"""
+    """This should only run from the `dev` env"""
     print("Checking kernel list...", flush=True)
     raw = subprocess.check_output(["jupyter", "kernelspec", "list", "--json"])
     specs = json.loads(raw.decode("utf-8"))["kernelspecs"]
@@ -202,13 +201,13 @@ def preflight_release():
 def preflight(stage):
     if stage == "conda":
         return preflight_conda()
-    elif stage == "build":
+    if stage == "build":
         return preflight_build()
-    elif stage == "kernel":
+    if stage == "kernel":
         return preflight_kernel()
-    elif stage == "lab":
+    if stage == "lab":
         return preflight_lab()
-    elif stage == "release":
+    if stage == "release":
         return preflight_release()
 
     print(f"Don't know how to preflight: {stage}")

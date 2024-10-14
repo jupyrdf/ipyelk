@@ -29,6 +29,7 @@ class Viewer(W.Widget):
     control_overlay: :py:class:`~ipyelk.tools.ControlOverlay`
         additional jupyterlab widgets that can be rendered ontop of the diagram
         based on the current selected states.
+
     """
 
     source: MarkElementWidget = T.Instance(MarkElementWidget, allow_none=True).tag(

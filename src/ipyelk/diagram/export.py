@@ -1,5 +1,4 @@
-"""Widget for exporting a diagram. Currently supports SVG.
-"""
+"""Widget for exporting a diagram. Currently supports SVG."""
 
 # Copyright (c) 2024 ipyelk contributors.
 # Distributed under the terms of the Modified BSD License.

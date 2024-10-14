@@ -1,5 +1,4 @@
-""" linter and formatter of notebooks
-"""
+"""linter and formatter of notebooks"""
 
 # Copyright (c) 2024 ipyelk contributors.
 # Distributed under the terms of the Modified BSD License.
@@ -72,12 +71,12 @@ def nblint_one(nb_node):
 
 
 def nb_hash(nb_text):
-    """hash one notebook"""
+    """Hash one notebook"""
     return sha256(nb_text.encode("utf-8")).hexdigest()
 
 
 def nblint(nb_paths):
-    """lint a number of notebook paths"""
+    """Lint a number of notebook paths"""
     len_paths = len(nb_paths)
 
     for i, nb_path in enumerate(nb_paths):

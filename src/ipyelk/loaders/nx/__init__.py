@@ -4,6 +4,6 @@
 from .nxloader import NXLoader, from_nx
 
 __all__ = [
-    "from_nx",
     "NXLoader",
+    "from_nx",
 ]

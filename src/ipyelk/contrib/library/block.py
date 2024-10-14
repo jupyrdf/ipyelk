@@ -4,9 +4,15 @@ from typing import Dict, Type
 
 from pydantic.v1 import Field
 
-from ...elements import Edge, EdgeProperties, Partition, Record, SymbolSpec
+from ...elements import (
+    Edge,
+    EdgeProperties,
+    Partition,
+    Record,
+    SymbolSpec,
+    merge_excluded,
+)
 from ...elements import layout_options as opt
-from ...elements import merge_excluded
 from ..molds import connectors
 
 content_label_opts = opt.OptionsWidget(

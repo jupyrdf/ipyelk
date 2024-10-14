@@ -1,5 +1,4 @@
-""" Run acceptance tests with robot framework
-"""
+"""Run acceptance tests with robot framework"""
 
 # Copyright (c) 2024 ipyelk contributors.
 # Distributed under the terms of the Modified BSD License.
@@ -21,7 +20,7 @@ RETRIES = int(os.environ.get("ATEST_RETRIES", "0"))
 
 
 def get_stem(attempt, extra_args):
-    """make a directory stem with the run type, python and os version"""
+    """Make a directory stem with the run type, python and os version"""
     stem = "_".join([P.PLATFORM, str(attempt)]).replace(".", "_").lower()
 
     if "--dryrun" in extra_args:
@@ -40,7 +39,7 @@ def which(path: str) -> str | None:
 
 
 def atest(attempt, extra_args):
-    """perform a single attempt of the acceptance tests"""
+    """Perform a single attempt of the acceptance tests"""
     stem = get_stem(attempt, extra_args)
     firefox = which("firefox")
     geckodriver = which("geckodriver")
@@ -74,11 +73,11 @@ def atest(attempt, extra_args):
     ]
 
     if out_dir.exists():
-        print("trying to clean out {}".format(out_dir))
+        print(f"trying to clean out {out_dir}")
         try:
             shutil.rmtree(out_dir)
         except Exception as err:
-            print("Error deleting {}, hopefully harmless: {}".format(out_dir, err))
+            print(f"Error deleting {out_dir}, hopefully harmless: {err}")
     out_dir.mkdir(parents=True)
     os.chdir(out_dir)
 
@@ -111,7 +110,7 @@ def atest(attempt, extra_args):
 
 
 def attempt_atest_with_retries(*extra_args):
-    """retry the robot tests a number of times"""
+    """Retry the robot tests a number of times"""
     attempt = 0
     error_count = -1
 
@@ -122,7 +121,7 @@ def attempt_atest_with_retries(*extra_args):
 
     while error_count != 0 and attempt <= RETRIES:
         attempt += 1
-        print("attempt {} of {}...".format(attempt, RETRIES + 1))
+        print(f"attempt {attempt} of {RETRIES + 1}...")
         start_time = time.time()
         error_count = atest(attempt=attempt, extra_args=list(extra_args))
         print(error_count, "errors in", int(time.time() - start_time), "seconds")

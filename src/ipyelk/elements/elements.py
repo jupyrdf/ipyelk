@@ -147,8 +147,7 @@ class BaseElement(IDElement, abc.ABC):
         excluded = merge_excluded(IDElement, "metadata", "labels")
 
     def add_class(self, *className: str) -> "BaseElement":
-        """
-        Adds a class to the top level element of the widget.
+        """Adds a class to the top level element of the widget.
 
         Doesn't add the class if it already exists.
         """
@@ -158,8 +157,7 @@ class BaseElement(IDElement, abc.ABC):
         return self
 
     def remove_class(self, *className: str) -> "BaseElement":
-        """
-        Removes a class from the top level element of the widget.
+        """Removes a class from the top level element of the widget.
 
         Doesn't remove the class if it doesn't exist.
         """
@@ -378,12 +376,9 @@ class Node(HierarchicalElement):
         found = len(matches)
         if found == 1:
             return matches[0]
-        elif found == 0:
+        if found == 0:
             raise NotFoundError("Child not found")
-        else:
-            raise NotUniqueError(
-                f"{key} is not unique. Found {found} matching children."
-            )
+        raise NotUniqueError(f"{key} is not unique. Found {found} matching children.")
 
     def add_port(self, port: Port, key: Optional[str] = None) -> Port:
         self.ports.append(port.set_parent(self).set_key(key))
@@ -401,10 +396,9 @@ class Node(HierarchicalElement):
         found = len(matches)
         if found == 1:
             return matches[0]
-        elif found == 0:
+        if found == 0:
             raise NotFoundError("Port not found")
-        else:
-            raise NotUniqueError(f"{key} is not unique. Found {found} matching ports.")
+        raise NotUniqueError(f"{key} is not unique. Found {found} matching ports.")
 
     def add_edge(
         self,

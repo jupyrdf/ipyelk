@@ -1,5 +1,4 @@
-""" handle lingering issues with jupyterlab 1.x build
-"""
+"""handle lingering issues with jupyterlab 1.x build"""
 
 # Copyright (c) 2024 ipyelk contributors.
 # Distributed under the terms of the Modified BSD License.
@@ -16,7 +15,7 @@ JLPM = shutil.which("jlpm")
 
 
 def watch():
-    """after preparing, start watchers"""
+    """After preparing, start watchers"""
     print("watching src...", flush=True)
     ts = subprocess.Popen([JLPM, "watch"], cwd=str(ROOT))
     ext = subprocess.Popen(["jupyter", "labextension", "watch", "."])

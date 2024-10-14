@@ -1,6 +1,6 @@
-""" Python Quick Types from JSON Schema
+"""Python Quick Types from JSON Schema
 
-    https://app.quicktype.io/?share=v69WIlc7rT81xJjmW3XY
+https://app.quicktype.io/?share=v69WIlc7rT81xJjmW3XY
 """
 
 # Copyright (c) 2024 ipyelk contributors.

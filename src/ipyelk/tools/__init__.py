@@ -23,7 +23,7 @@ __all__ = [
     "SetTool",
     "ToggleCollapsedTool",
     "Tool",
-    "Toolbar",
     "ToolButton",
+    "Toolbar",
     "Zoom",
 ]

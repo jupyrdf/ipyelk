@@ -17,7 +17,6 @@ from .base import Pipe
 
 
 class VisibilityPipe(Pipe):
-
     observes = TypedTuple(
         T.Unicode(),
         default_value=(
@@ -32,7 +31,7 @@ class VisibilityPipe(Pipe):
 
     async def run(self):
         if self.outlet is None or self.inlet is None:
-            return
+            return None
 
         root = self.inlet.index.root
         # generate an index of hidden elements

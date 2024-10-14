@@ -21,7 +21,6 @@ class PipeDisposition(Enum):
 
 
 class PipeStatus(W.Widget):
-
     disposition = T.Instance(PipeDisposition, default_value=PipeDisposition.done)
     elapsed: Optional[timedelta] = T.Instance(timedelta, allow_none=True)
     exception = T.Instance(Exception, allow_none=True)
@@ -82,14 +81,13 @@ def rep_elapsed(delta: Optional[timedelta]):
     minutes, seconds = divmod(seconds, 60)
     if days > 0:
         return "%dd%dh%dm%ds" % (days, hours, minutes, seconds)
-    elif hours > 0:
+    if hours > 0:
         return "%dh%dm%ds" % (hours, minutes, seconds)
-    elif minutes > 0:
+    if minutes > 0:
         return "%dm%ds" % (minutes, seconds)
-    elif seconds >= 1:
+    if seconds >= 1:
         return f"{seconds:.2g}s"
-    else:
-        return f"{seconds*1000:.3g}ms"
+    return f"{seconds * 1000:.3g}ms"
 
 
 class PipeStatusView(W.VBox):
@@ -101,6 +99,7 @@ class PipeStatusView(W.VBox):
         exception captured
     html: string
         built status html to display
+
     """
 
     include_exception = T.Bool(default_value=False)
@@ -115,7 +114,7 @@ class PipeStatusView(W.VBox):
             '<circle cx="{r}" cy="{r}" r="{r}"></circle>'
             "</svg>"
         ).format(
-            box=f"{-margin} {-margin} {2*r+2*margin} {2*r+2*margin}",
+            box=f"{-margin} {-margin} {2 * r + 2 * margin} {2 * r + 2 * margin}",
             r=r,
         )
 
@@ -206,7 +205,7 @@ class Pipe(W.Widget):
 
     def _repr_mimebundle_(self, **kwargs):
         if self.status_widget is None:
-            raise NotImplementedError()
+            raise NotImplementedError
         return self.status_widget._repr_mimebundle_(**kwargs)
 
     def schedule_run(self, change: T.Bunch = None) -> asyncio.Task:

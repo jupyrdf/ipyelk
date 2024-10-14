@@ -1,5 +1,4 @@
-"""Widget for interacting with ELK rendered using Sprotty
-"""
+"""Widget for interacting with ELK rendered using Sprotty"""
 
 # Copyright (c) 2024 ipyelk contributors.
 # Distributed under the terms of the Modified BSD License.
@@ -54,14 +53,12 @@ class SprottyViewer(DOMWidget, Viewer):
         :param animate: specify is the view animates to the given marks
         :param retain_zoom: specify if the current zoom level is maintained
         """
-        self.send(
-            {
-                "action": "center",
-                "model_id": model_ids,
-                "animate": True if animate is None else animate,
-                "retain_zoom": False if retain_zoom is None else retain_zoom,
-            }
-        )
+        self.send({
+            "action": "center",
+            "model_id": model_ids,
+            "animate": True if animate is None else animate,
+            "retain_zoom": False if retain_zoom is None else retain_zoom,
+        })
 
     def fit(
         self,
@@ -77,15 +74,13 @@ class SprottyViewer(DOMWidget, Viewer):
         :param max_zoom: specify if the max zoom level
         :param padding: specify if the viewport padding around the marks
         """
-        self.send(
-            {
-                "action": "fit",
-                "model_id": model_ids,
-                "animate": True if animate is None else animate,
-                "max_zoom": max_zoom,
-                "padding": padding,
-            }
-        )
+        self.send({
+            "action": "fit",
+            "model_id": model_ids,
+            "animate": True if animate is None else animate,
+            "max_zoom": max_zoom,
+            "padding": padding,
+        })
 
     @T.default("fit_tool")
     def _default_fit_tool(self) -> FitTool:

@@ -8,8 +8,8 @@ EMPTY_SENTINEL = namedtuple("Sentinel", [])
 
 def add_excluded_fields(kwargs: Dict, excluded: List) -> Dict:
     """Shim function to help manipulate excluded fields from the `dict`
-    method"""
-
+    method
+    """
     exclude = kwargs.pop("exclude", None) or set()
     if isinstance(exclude, set):
         for i in excluded:

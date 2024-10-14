@@ -9,9 +9,9 @@ from .nx import NXLoader, from_nx
 __all__ = [
     "ElementLoader",
     "ElkJSONLoader",
-    "from_elkjson",
-    "from_nx",
     "Loader",
     "NXLoader",
     "from_element",
+    "from_elkjson",
+    "from_nx",
 ]

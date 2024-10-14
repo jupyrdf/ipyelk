@@ -39,7 +39,7 @@ class ToggleCollapsedTool(Tool):
     def get_related(self, element: BaseElement):
         if isinstance(element, Compartment):
             return element.get_parent().children[1:]
-        elif isinstance(element, Node):
+        if isinstance(element, Node):
             return element.children
 
         return []

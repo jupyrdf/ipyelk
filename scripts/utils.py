@@ -14,7 +14,7 @@ PATTERNS = [RE_TIMESTAMP, RE_PYTEST_TIMESTAMP]
 
 
 def strip_timestamps(*paths, slug="TIMESTAMP"):
-    """replace timestamps with a less churn-y value"""
+    """Replace timestamps with a less churn-y value"""
     for path in paths:
         if not path.exists():
             continue

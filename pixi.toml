@@ -2,8 +2,9 @@
 
 # tasks ################################################################################
 [tasks]
-fix = {depends-on = ["fix-taplo"]}
-dev = {depends-on = ["fix"]}
+fix = {depends-on = ["fix-taplo", "fix-ruff-format", "fix-ruff-check"]}
+lint = {depends-on = ["lint-ruff-format", "lint-ruff-check"]}
+dev = {depends-on = ["fix", "lint"]}
 
 # linting ##############################################################################
 [feature.tasks-lint.tasks.fix-taplo]
@@ -15,9 +16,27 @@ cmd = """taplo fmt
   --option=column_width=88"""
 inputs = ["*.toml"]
 
+[feature.tasks-lint.tasks.lint-ruff-format]
+cmd = "ruff format --check"
+inputs = ["{scripts,src,tests,docs,atest,examples}/**/*.{py,ipynb}", "pyproject.toml"]
+
+[feature.tasks-lint.tasks.lint-ruff-check]
+cmd = "ruff check"
+inputs = ["{scripts,src,tests,docs,atest,examples}/**/*.{py,ipynb}", "pyproject.toml"]
+
+[feature.tasks-lint.tasks.fix-ruff-format]
+cmd = "ruff format"
+inputs = ["{scripts,src,tests,docs,atest,examples}/**/*.{py,ipynb}", "pyproject.toml"]
+
+[feature.tasks-lint.tasks.fix-ruff-check]
+cmd = "ruff check --fix-only"
+depends-on = ["fix-ruff-format"]
+inputs = ["{scripts,src,tests,docs,atest,examples}/**/*.{py,ipynb}", "pyproject.toml"]
+
 # dependencies #########################################################################
 [feature.deps-lint.dependencies]
 taplo = "*"
+ruff = "*"
 
 # environments #########################################################################
 [environments]
