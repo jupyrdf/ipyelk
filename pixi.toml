@@ -2,7 +2,7 @@
 
 # tasks ################################################################################
 [tasks]
-build = {depends-on = ["build-py-schema", "build-ts-lib"]}
+build = {depends-on = ["build-py-schema", "build-js-lib", "build-js-ext"]}
 fix = {depends-on = ["fix-taplo", "fix-ruff-format", "fix-ruff-check", "fix-js-dupes"]}
 lint = {depends-on = ["lint-ruff-format", "lint-ruff-check"]}
 dev = {depends-on = ["fix", "lint", "build"]}
@@ -20,9 +20,9 @@ depends-on = ["setup-js"]
 inputs = ["js/sprotty/json/elkschema.ts", "node_modules/.yarn-state.yml"]
 outputs = ["src/ipyelk/schema/elkschema.json"]
 
-[feature.tasks-build.tasks.build-ts-lib]
+[feature.tasks-build.tasks.build-js-lib]
 cmd = "jlpm build:ts"
-depends-on = ["build-py-schema"]
+depends-on = ["build-py-schema", "setup-js"]
 inputs = [
   "{tsconfigbase,package}.json",
   "js/",
@@ -30,6 +30,17 @@ inputs = [
   "src/ipyelk/schema/elkschema.json",
 ]
 outputs = ["build/.src.tsbuildinfo"]
+
+[feature.tasks-build.tasks.build-js-ext]
+cmd = "jlpm build:ext"
+depends-on = ["setup-js", "build-js-lib"]
+inputs = [
+  "node_modules/.yarn-state.yml",
+  "style/",
+  "build/.src.tsbuildinfo",
+  "webpack.config.js",
+]
+outputs = ["src/_d/share/jupyter/labextensions/@jupyrdf/jupyter-elk/package.json"]
 
 # linting ##############################################################################
 [feature.tasks-lint.tasks.fix-taplo]
