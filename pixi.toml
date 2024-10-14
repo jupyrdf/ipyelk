@@ -13,7 +13,12 @@ fix = {depends-on = [
   "fix-robot-tidy",
   "fix-nblint",
 ]}
-lint = {depends-on = ["lint-ruff-format", "lint-ruff-check", "lint-robot-dryrun"]}
+lint = {depends-on = [
+  "lint-ruff-format",
+  "lint-ruff-check",
+  "lint-robot-dryrun",
+  "lint-actionlint",
+]}
 test = {depends-on = ["utest-pytest-cov", "itest-nbconvert", "atest-robot"]}
 docs = {depends-on = ["docs-lite", "docs-sphinx"]}
 check = {depends-on = ["check-links", "check-spelling"]}
@@ -32,7 +37,9 @@ cmd = """rm -f build/pip-freeze/$PIXI_ENVIRONMENT_NAME.txt
 && pip list --format=freeze > build/pip-freeze/$PIXI_ENVIRONMENT_NAME.txt"""
 
 [tasks.pytest-cov--]
-cmd = """export COVERAGE_FILE=$PIXI_PROJECT_ROOT/build/reports/$PIXI_ENVIRONMENT_NAME/.coverage
+cmd = """
+export
+  COVERAGE_FILE=$PIXI_PROJECT_ROOT/build/reports/$PIXI_ENVIRONMENT_NAME/.coverage
 && pytest
     --cov ipyelk
     --cov-report html:build/reports/$PIXI_ENVIRONMENT_NAME/htmlcov
@@ -232,6 +239,10 @@ cmd = "python scripts/nblint.py examples"
 depends-on = ["setup-js"]
 inputs = ["examples/", "!**/{.ipynb_checkpoints,__pycache__}/"]
 
+[feature.tasks-lint.tasks.lint-actionlint]
+cmd = "actionlint -shellcheck=shellcheck -pyflakes=pyflakes"
+inputs = [".github/workflows"]
+
 # lite #################################################################################
 [feature.tasks-lite.tasks.docs-lite]
 cmd = """
@@ -306,6 +317,7 @@ nodejs = "22.*"
 taplo = "*"
 ruff = "*"
 nbconvert-core = "*"
+actionlint-with-all = "*"
 
 [feature.deps-py.dependencies]
 python = ">=3.9"
