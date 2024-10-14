@@ -16,7 +16,8 @@ fix = {depends-on = [
 lint = {depends-on = ["lint-ruff-format", "lint-ruff-check", "lint-robot-dryrun"]}
 test = {depends-on = ["utest-pytest-cov", "itest-nbconvert", "atest-robot"]}
 docs = {depends-on = ["docs-lite", "docs-sphinx"]}
-release = {depends-on = ["fix", "lint", "build", "dist", "test", "docs"]}
+check = {depends-on = ["check-links", "check-spelling"]}
+release = {depends-on = ["fix", "lint", "build", "dist", "test", "docs", "check"]}
 
 # fragments ############################################################################
 [tasks.pip-e--]
@@ -269,7 +270,15 @@ rm -rf build/reports/vale.txt
 ) || cat build/reports/vale.txt
 """
 depends-on = ["docs-sphinx"]
-inputs = ["docs/**/*.html", "vale.ini", "scripts/vale/", "*.md"]
+inputs = ["build/docs/**/*.html", "vale.ini", "scripts/vale/", "*.md"]
+
+[feature.tasks-check.tasks.check-links]
+cmd = """
+pytest-check-links build/docs/
+  --check-links-ignore 'https?://'
+  --check-anchors
+"""
+inputs = ["build/docs/**/*.html"]
 
 # interactive development ##############################################################
 [feature.tasks-dev.tasks.pip-dev]
@@ -305,6 +314,7 @@ flit-core = ">=3.9.0,<4"
 
 [feature.deps-build.dependencies]
 python-build = "*"
+twine = "*"
 
 [feature.deps-run.dependencies]
 jsonschema = ">=4.18"
@@ -358,7 +368,6 @@ sphinx-autodoc-typehints = "*"
 [feature.deps-check.dependencies]
 pytest-check-links = "*"
 vale = "*"
-twine = "*"
 vale-spelling-aoo-mozilla-en-dict-gb = "*"
 vale-spelling-aoo-mozilla-en-dict-us = "*"
 
