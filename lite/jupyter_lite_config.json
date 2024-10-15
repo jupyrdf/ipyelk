@@ -2,7 +2,10 @@
   "LiteBuildConfig": {
     "output_dir": "../build/lite",
     "contents": ["../examples"],
-    "cache_dir": "../build/.cache/lite"
+    "cache_dir": "../build/.cache/lite",
+    "federated_extensions": [
+      "../src/_d/share/jupyter/labextensions/@jupyrdf/jupyter-elk"
+    ]
   },
   "PipliteAddon": {
     "piplite_urls": ["../dist"]

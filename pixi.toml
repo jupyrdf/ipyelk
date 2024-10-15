@@ -49,7 +49,6 @@ cmd = "pixi r pip-- --editable . && pixi r pip-check--"
 cmd = """
 pixi r pip-- --find-links=dist --no-index ipyelk
 && pixi r pip-check--
-&& jupyter labextension list
 """
 
 [tasks.pip-check--]
@@ -326,12 +325,21 @@ cmd = "actionlint -shellcheck=shellcheck -pyflakes=pyflakes"
 inputs = [".github/workflows"]
 
 # lite #################################################################################
+[feature.tasks-lite.tasks.pip-lite]
+cmd = """pixi r -e docs pip-dist--"""
+depends-on = ["dist-pypi"]
+inputs = ["dist/*.whl"]
+outputs = ["build/reports/pip-freeze/lite.txt"]
+
+[feature.tasks-lite.tasks.clean-docs-lite]
+cmd = """rm -rf build/.cache/lite lite/.jupyterlite.doit.db"""
+
 [feature.tasks-lite.tasks.docs-lite]
 cmd = """
 cd lite
 && jupyter lite doit -- pre_archive:report:SHA256SUMS
 """
-depends-on = ["dist-pypi"]
+depends-on = ["pip-lite"]
 inputs = ["exmaples/", "lite/*.json", "!**{.ipynb_checkpoints,__pycache__}/"]
 outputs = ["build/lite/SHA256SUMS"]
 
