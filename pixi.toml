@@ -62,7 +62,7 @@ export
 
 # setup ################################################################################
 [feature.tasks-build.tasks.setup-js]
-cmd = """jlpm"""
+cmd = """cat node_modules/.cached-in-ci || jlpm"""
 inputs = [".yarnrc.yml", "package.json", "yarn.lock"]
 outputs = ["yarn.lock", "node_modules/.yarn-state.yml"]
 
@@ -201,8 +201,18 @@ outputs = ["build/pip-freeze/atest.txt"]
 [feature.tasks-atest.tasks.atest-robot]
 cmd = "python scripts/atest.py"
 depends-on = ["pip-atest"]
-inputs = ["atest", "src", "scripts/atest.py", "!**/__pycache__/"]
-outputs = ["build/reports/atest/**/pabot_results/**/*.*"]
+inputs = [
+  "examples",
+  "atest",
+  "src",
+  "scripts/atest.py",
+  "!**/__pycache__/",
+  "!**/.ipynb_checkpoints",
+]
+outputs = [
+  "build/reports/atest/**/pabot_results/**/*.*",
+  "build/reports/atest/robot.ok",
+]
 
 [feature.tasks-atest-oldest.tasks.pip-atest-oldest]
 cmd = """pixi r -e atest-oldest pip-e--"""
@@ -212,8 +222,18 @@ outputs = ["build/pip-freeze/atest-oldest.txt"]
 [feature.tasks-atest.tasks.atest-oldest-robot]
 cmd = "python scripts/atest.py"
 depends-on = ["pip-atest-oldest"]
-inputs = ["atest", "src", "scripts/atest.py", "!**/__pycache__/"]
-outputs = ["build/reports/atest-oldest/**/pabot_results/**/*.*"]
+inputs = [
+  "examples",
+  "atest",
+  "src",
+  "scripts/atest.py",
+  "!**/__pycache__/",
+  "!**/.ipynb_checkpoints",
+]
+outputs = [
+  "build/reports/atest-oldest/**/pabot_results/**/*.*",
+  "build/reports/atest-oldest/robot.ok",
+]
 
 # lint #################################################################################
 [feature.tasks-lint.tasks.fix-taplo]
@@ -270,7 +290,7 @@ inputs = ["atest/**/*.{robot,resource}"]
 
 [feature.tasks-lint.tasks.lint-robot-dryrun]
 cmd = "python scripts/atest.py --dryrun"
-inputs = ["atest/", "scripts/atest.py", "!**/__pycache__/"]
+inputs = ["atest/", "scripts/atest.py", "!**/__pycache__/", "!**/.ipynb_checkpoints"]
 
 [feature.tasks-lint.tasks.fix-prettier]
 cmd = "jlpm lint:prettier"

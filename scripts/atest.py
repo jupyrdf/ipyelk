@@ -22,11 +22,11 @@ PLATFORM = platform.system()
 HERE = Path(__file__).parent
 ROOT = HERE.parent
 EXAMPLES = ROOT / "examples"
+ATEST = ROOT / "atest"
 
 BUILD = ROOT / "build"
-ATEST_OUT = BUILD / ENV_NAME
-ATEST = ROOT / "atest"
-ATEST_CANARY = BUILD / f"robot.{ENV_NAME}.{PLATFORM.lower()}.ok"
+ATEST_OUT = BUILD / "reports" / ENV_NAME
+ATEST_CANARY = ATEST_OUT / "robot.ok"
 
 
 def get_stem(attempt, extra_args):
