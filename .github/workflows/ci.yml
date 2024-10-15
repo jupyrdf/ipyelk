@@ -11,7 +11,7 @@ env:
   PYTHONIOENCODING: utf-8
   PYTHONUNBUFFERED: '1'
   PIP_DISABLE_PIP_VERSION_CHECK: '1'
-  CACHE_EPOCH: 2
+  CACHE_EPOCH: 3
 
 jobs:
   build:
@@ -26,16 +26,16 @@ jobs:
           cache-key: job-build
       - uses: actions/cache@v4
         with:
-          path: node_modules
+          path: |
+            node_modules
+            ./.pixi/task-cache-v0
           key: |
             ${{ env.CACHE_EPOCH }}-${{ runner.os }}-node_modules-${{ hashFiles('yarn.lock') }}
       - run: pixi run dist
       - uses: actions/upload-artifact@v4
         with:
           name: ipyelk-${{ github.run_number }}-dist
-          path: |
-            ./dist
-            ./.pixi/task-cache-v0
+          path: ./dist
 
   lint:
     runs-on: ubuntu-latest
@@ -48,9 +48,6 @@ jobs:
           cache: true
           environments: build lint
           cache-key: job-lint
-      - uses: actions/download-artifact@v4
-        with:
-          name: ipyelk-${{ github.run_number }}-dist
       - name: cache (node)
         uses: actions/cache@v4
         with:
