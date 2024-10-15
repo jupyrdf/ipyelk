@@ -1,6 +1,6 @@
-## Tool Widgets
+# Tool Widgets
 
-### Tools
+## Tools
 
 ```{eval-rst}
 .. currentmodule:: ipyelk.tools
@@ -11,7 +11,7 @@
     :members:
 ```
 
-### Tool View Widgets
+## Tool View Widgets
 
 ```{eval-rst}
 .. autoclass:: ipyelk.tools.Toolbar
