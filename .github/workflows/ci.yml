@@ -108,9 +108,10 @@ jobs:
         with:
           name: ipyelk-${{ github.run_number }}-dist
           path: ./dist
-      - run: pixi run u${{ matrix.task }}
-      - run: pixi run i${{ matrix.task }}
-      - run: pixi run a${{ matrix.task }}
+      - run: pixi run u${{ matrix.task }}-pytest
+      - run: pixi run i${{ matrix.task }}-nbconvert
+      - run: pixi run a${{ matrix.task }}-robot
+      - run: pixi run ${{ matrix.task }}
       - uses: actions/upload-artifact@v4
         if: always()
         with:

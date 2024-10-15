@@ -21,9 +21,9 @@ lint = {depends-on = [
 ]}
 test = {depends-on = ["utest-pytest", "itest-nbconvert", "atest-robot"]}
 test-oldest = {depends-on = [
-  "utest-pytest-oldest",
-  "itest-nbconvert-oldest",
-  "atest-robot-oldest",
+  "utest-oldest-pytest",
+  "itest-oldest-nbconvert",
+  "atest-oldest-robot",
 ]}
 test-all = {depends-on = ["test", "test-oldest"]}
 docs = {depends-on = ["docs-lite", "docs-sphinx"]}
@@ -152,7 +152,7 @@ cmd = """pixi r -e utest-oldest pip-e--"""
 inputs = ["pyproject.toml"]
 outputs = ["build/pip-freeze/utest-oldest.txt"]
 
-[feature.tasks-utest-oldest.tasks.utest-pytest-oldest]
+[feature.tasks-utest-oldest.tasks.utest-oldest-pytest]
 cmd = """
 export JUPYTER_PLATFORM_DIRS=1
 && pytest
@@ -186,7 +186,7 @@ cmd = """pixi r -e itest-oldest pip-e--"""
 inputs = ["pyproject.toml"]
 outputs = ["build/pip-freeze/itest-oldest.txt"]
 
-[feature.tasks-itest-oldest.tasks.itest-nbconvert-oldest]
+[feature.tasks-itest-oldest.tasks.itest-oldest-nbconvert]
 cmd = """pixi r -e itest-oldest nbconvert--"""
 depends-on = ["pip-itest-oldest"]
 inputs = ["examples/", "!**/{.ipynb_checkpoints,__pycache__}"]
@@ -209,7 +209,7 @@ cmd = """pixi r -e atest-oldest pip-e--"""
 inputs = ["pyproject.toml"]
 outputs = ["build/pip-freeze/atest-oldest.txt"]
 
-[feature.tasks-atest.tasks.atest-robot-oldest]
+[feature.tasks-atest.tasks.atest-oldest-robot]
 cmd = "python scripts/atest.py"
 depends-on = ["pip-atest-oldest"]
 inputs = ["atest", "src", "scripts/atest.py", "!**/__pycache__/"]
