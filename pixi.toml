@@ -19,10 +19,16 @@ lint = {depends-on = [
   "lint-robot-dryrun",
   "lint-actionlint",
 ]}
-test = {depends-on = ["utest-pytest-cov", "itest-nbconvert", "atest-robot"]}
+test = {depends-on = ["utest-pytest", "itest-nbconvert", "atest-robot"]}
+test-oldest = {depends-on = [
+  "utest-pytest-oldest",
+  "itest-nbconvert-oldest",
+  "atest-robot-oldest",
+]}
+test-all = {depends-on = ["test", "test-oldest"]}
 docs = {depends-on = ["docs-lite", "docs-sphinx"]}
 check = {depends-on = ["check-links", "check-spelling"]}
-release = {depends-on = ["fix", "lint", "build", "dist", "test", "docs", "check"]}
+release = {depends-on = ["fix", "lint", "build", "dist", "test-all", "docs", "check"]}
 
 # fragments ############################################################################
 [tasks.pip-e--]
@@ -30,26 +36,12 @@ cmd = """rm -f build/pip-freeze/$PIXI_ENVIRONMENT_NAME.txt
 && python -m pip install -e .
   --disable-pip-version-check
   --ignore-installed
+  --no-build-isolation
   --no-cache-dir
   --no-deps
 && pip check
 && mkdir -p build/pip-freeze
 && pip list --format=freeze > build/pip-freeze/$PIXI_ENVIRONMENT_NAME.txt"""
-
-[tasks.pytest-cov--]
-cmd = """
-export
-  COVERAGE_FILE=$PIXI_PROJECT_ROOT/build/reports/$PIXI_ENVIRONMENT_NAME/.coverage
-&& pytest
-    --cov ipyelk
-    --cov-report html:build/reports/$PIXI_ENVIRONMENT_NAME/htmlcov
-    --cov-report term-missing:skip-covered
-    --cov-context test
-    --html build/reports/$PIXI_ENVIRONMENT_NAME/pytest.html
-    --junitxml build/reports/$PIXI_ENVIRONMENT_NAME/pytest.xunit.xml
-    --no-cov-on-fail
-    --self-contained-html
-"""
 
 [tasks.nbconvert--]
 cmd = """
@@ -132,8 +124,20 @@ cmd = """pixi r -e utest pip-e--"""
 inputs = ["pyproject.toml"]
 outputs = ["build/pip-freeze/utest.txt"]
 
-[feature.tasks-utest.tasks.utest-pytest-cov]
-cmd = "pixi r -e utest pytest-cov--"
+[feature.tasks-utest.tasks.utest-pytest]
+cmd = """
+export
+  COVERAGE_FILE=$PIXI_PROJECT_ROOT/build/reports/utest/.coverage
+&& pytest
+  --cov ipyelk
+  --cov-report html:build/reports/utest/htmlcov
+  --cov-report term-missing:skip-covered
+  --cov-context test
+  --html build/reports/utest/pytest.html
+  --junitxml build/reports/utest/pytest.xunit.xml
+  --no-cov-on-fail
+  --self-contained-html
+"""
 depends-on = ["pip-utest"]
 inputs = [
   "build/pip-freeze/utest.txt",
@@ -142,6 +146,28 @@ inputs = [
   "!**/.ipynb_checkpoints",
 ]
 outputs = ["build/reports/utest/{pytest.html,pytest.xunit.xml,htmlcov/status.json}"]
+
+[feature.tasks-utest-oldest.tasks.pip-utest-oldest]
+cmd = """pixi r -e utest-oldest pip-e--"""
+inputs = ["pyproject.toml"]
+outputs = ["build/pip-freeze/utest-oldest.txt"]
+
+[feature.tasks-utest-oldest.tasks.utest-pytest-oldest]
+cmd = """
+export JUPYTER_PLATFORM_DIRS=1
+&& pytest
+  --html build/reports/utest-oldest/pytest.html
+  --junitxml build/reports/utest-oldest/pytest.xunit.xml
+  --self-contained-html
+"""
+depends-on = ["pip-utest-oldest"]
+inputs = [
+  "build/pip-freeze/utest-oldest.txt",
+  "pyproject.toml",
+  "{tests,src}/**/*.{py,json}",
+  "!**/.ipynb_checkpoints",
+]
+outputs = ["build/reports/utest/{pytest.html,pytest.xunit.xml}"]
 
 # integration test #####################################################################
 [feature.tasks-utest.tasks.pip-itest]
@@ -155,6 +181,17 @@ depends-on = ["pip-itest"]
 inputs = ["examples/", "!**/{.ipynb_checkpoints,__pycache__}"]
 outputs = ["build/reports/itest/nbconvert/**/*.html"]
 
+[feature.tasks-utest-oldest.tasks.pip-itest-oldest]
+cmd = """pixi r -e itest-oldest pip-e--"""
+inputs = ["pyproject.toml"]
+outputs = ["build/pip-freeze/itest-oldest.txt"]
+
+[feature.tasks-itest-oldest.tasks.itest-nbconvert-oldest]
+cmd = """pixi r -e itest-oldest nbconvert--"""
+depends-on = ["pip-itest-oldest"]
+inputs = ["examples/", "!**/{.ipynb_checkpoints,__pycache__}"]
+outputs = ["build/reports/itest-oldest/nbconvert/**/*.html"]
+
 # acceptance test ######################################################################
 [feature.tasks-atest.tasks.pip-atest]
 cmd = """pixi r -e atest pip-e--"""
@@ -166,6 +203,17 @@ cmd = "python -m scripts.atest"
 depends-on = ["pip-atest"]
 inputs = ["atest", "src", "scripts/atest.py"]
 outputs = ["build/reports/atest/**/pabot_results/**/*.*"]
+
+[feature.tasks-atest-oldest.tasks.pip-atest-oldest]
+cmd = """pixi r -e atest-oldest pip-e--"""
+inputs = ["pyproject.toml"]
+outputs = ["build/pip-freeze/atest-oldest.txt"]
+
+[feature.tasks-atest.tasks.atest-robot-oldest]
+cmd = "python -m scripts.atest"
+depends-on = ["pip-atest-oldest"]
+inputs = ["atest", "src", "scripts/atest.py"]
+outputs = ["build/reports/atest-oldest/**/pabot_results/**/*.*"]
 
 # lint #################################################################################
 [feature.tasks-lint.tasks.fix-taplo]
@@ -309,6 +357,10 @@ depends-on = ["pip-dev"]
 depends-on = ["pip-dev", "dev-ext"]
 cmd = "jupyter lab --no-browser --debug"
 
+[feature.tasks-atest.tasks.lab-oldest]
+depends-on = ["pip-atest-oldest"]
+cmd = "jupyter lab --no-browser --debug"
+
 # dependencies #########################################################################
 [feature.deps-js.dependencies]
 nodejs = "22.*"
@@ -321,6 +373,8 @@ actionlint-with-all = "*"
 
 [feature.deps-py.dependencies]
 python = ">=3.9"
+[feature.deps-py-oldest.dependencies]
+python = "<3.10"
 
 [feature.deps-lab.dependencies]
 jupyterlab = ">=4.2.0,<5"
@@ -337,6 +391,11 @@ jsonschema = ">=4.18"
 ipywidgets = ">=8.0.1,<9"
 networkx = "*"
 pydantic = ">=1.10.17,<3"
+[feature.deps-run-oldest.dependencies]
+jsonschema = "==4.18"
+ipywidgets = "==8.0.1"
+networkx = "*"
+pydantic = "==1.10.17"
 
 [feature.deps-pip.dependencies]
 pip = "*"
@@ -460,6 +519,43 @@ dev = {features = [
   "tasks-dev",
 ]}
 check = {features = ["deps-check", "tasks-check"]}
+
+# oldest supported #####################################################################
+utest-oldest = {features = [
+  "deps-flit",
+  "deps-pip",
+  "deps-py-oldest",
+  "deps-py",
+  "deps-run-oldest",
+  "deps-run",
+  "deps-utest",
+  "tasks-utest-oldest",
+]}
+itest-oldest = {features = [
+  "deps-demo",
+  "deps-flit",
+  "deps-itest",
+  "deps-pip",
+  "deps-py-oldest",
+  "deps-py",
+  "deps-run-oldest",
+  "deps-run",
+  "tasks-itest-oldest",
+]}
+atest-oldest = {features = [
+  "deps-atest",
+  "deps-demo",
+  "deps-firefox",
+  "deps-flit",
+  "deps-itest",
+  "deps-lab",
+  "deps-pip",
+  "deps-py-oldest",
+  "deps-py",
+  "deps-run-oldest",
+  "deps-run",
+  "tasks-atest-oldest",
+]}
 
 # meta #################################################################################
 [project]

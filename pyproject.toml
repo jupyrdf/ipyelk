@@ -85,7 +85,11 @@ allow_redefinition = true
 addopts = ["-vv", "--color=yes", "--tb=long"]
 asyncio_default_fixture_loop_scope = "function"
 cache_dir = "build/.cache/pytest"
-filterwarnings = ["error", "ignore::DeprecationWarning:pydantic"]
+filterwarnings = [
+  "error",
+  "ignore::DeprecationWarning:pydantic",
+  "ignore:.*create_comm.*:DeprecationWarning",
+]
 generate_report_on_test = true
 junit_family = "xunit2"
 testpaths = ["tests"]

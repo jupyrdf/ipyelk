@@ -56,3 +56,39 @@ jobs:
             ${{ env.CACHE_EPOCH }}-${{ runner.os }}-node_modules-${{ hashFiles('yarn.lock') }}
       - run: pixi run fix
       - run: pixi run lint
+
+  test:
+    needs: [build]
+    name: ${{ matrix.task }} (${{ matrix.vm }})
+    runs-on: ${{ matrix.vm }}
+    strategy:
+      fail-fast: false
+      matrix:
+        vm: [ubuntu-latest, windows-latest, macos-13, macos-latest]
+        task: [test, test-oldest]
+        exclude:
+          - { vm: macos-13, task: test }
+          - { vm: macos-latest, task: test-oldest }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: prefix-dev/setup-pixi@v0.8.1
+        with:
+          pixi-version: v0.32.1
+          cache: true
+          environments: |
+            a${{ matrix.task }}
+            i${{ matrix.task }}
+            u${{ matrix.task }}
+          cache-key: job-${{ matrix.task }}
+      - uses: actions/download-artifact@v4
+        with:
+          name: ipyelk-${{ github.run_number }}-dist
+          path: ./dist
+      - run: pixi run u${{ matrix.task }}
+      - run: pixi run i${{ matrix.task }}
+      - run: pixi run a${{ matrix.task }}
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ipyelk-${{ github.run_number }}-${{ matrix.task }}-${{ matrix.vm }}
+          path: ./build/reports
