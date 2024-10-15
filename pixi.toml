@@ -56,6 +56,9 @@ cmd = """python -m pip check
 && mkdir -p build/reports/pip-freeze
 && pip list --format=freeze > build/reports/pip-freeze/$PIXI_ENVIRONMENT_NAME.txt"""
 
+[tasks.ext-check--]
+cmd = """jupyter labextension list"""
+
 [tasks.nbconvert--]
 cmd = """
 export
@@ -207,8 +210,8 @@ outputs = ["build/reports/itest-oldest/nbconvert/**/*.html"]
 
 # acceptance test ######################################################################
 [feature.tasks-atest.tasks.pip-atest]
-cmd = """pixi r -e atest pip-editable--"""
-inputs = ["pyproject.toml"]
+cmd = """pixi r pip-dist-- && pixi r ext-check--"""
+inputs = ["dist/*.whl"]
 outputs = ["build/reports/pip-freeze/atest.txt"]
 
 [feature.tasks-atest.tasks.atest-robot]
@@ -228,11 +231,11 @@ outputs = [
 ]
 
 [feature.tasks-atest-oldest.tasks.pip-atest-oldest]
-cmd = """pixi r -e atest-oldest pip-dist--"""
+cmd = """pixi r pip-dist-- && pixi r ext-check--"""
 inputs = ["dist/*.whl"]
 outputs = ["build/reports/pip-freeze/atest-oldest.txt"]
 
-[feature.tasks-atest.tasks.atest-oldest-robot]
+[feature.tasks-atest-oldest.tasks.atest-oldest-robot]
 cmd = "python scripts/atest.py"
 depends-on = ["pip-atest-oldest"]
 inputs = [
@@ -404,7 +407,7 @@ depends-on = ["pip-dev"]
 depends-on = ["pip-dev", "dev-ext"]
 cmd = "jupyter lab --no-browser --debug"
 
-[feature.tasks-atest.tasks.lab-oldest]
+[feature.tasks-atest-oldest.tasks.lab-oldest]
 depends-on = ["pip-atest-oldest"]
 cmd = "jupyter lab --no-browser --debug"
 
