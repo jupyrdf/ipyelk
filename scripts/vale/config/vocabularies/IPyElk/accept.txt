@@ -57,7 +57,6 @@ networkx
 NetworkX
 npm
 NXLoad
-ontop
 Pan/Zoom
 PipeStatus
 PipeStatusView

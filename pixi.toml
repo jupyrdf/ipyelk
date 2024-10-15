@@ -253,7 +253,6 @@ outputs = [
 
 # lint #################################################################################
 [feature.tasks-lint.tasks.fix-taplo]
-description = "consistently format TOML files"
 cmd = """taplo fmt
   *.toml
   --option=array_auto_collapse=true
@@ -357,7 +356,7 @@ inputs = ["pyproject.toml"]
 outputs = ["build/reports/pip-freeze/docs.txt"]
 
 [feature.tasks-docs.tasks.docs-sphinx]
-cmd = "sphinx-build -b html docs build/docs"
+cmd = "sphinx-build -W -b html docs build/docs"
 depends-on = ["pip-docs", "docs-lite"]
 inputs = ["docs", "!**/.ipynb_checkpoints/"]
 outputs = ["build/docs/.buildinfo"]
@@ -411,9 +410,13 @@ depends-on = ["pip-dev", "build-js-ext"]
 depends-on = ["pip-dev", "dev-ext"]
 cmd = "jupyter lab --no-browser --debug"
 
-[feature.tasks-dev.tasks.watch]
+[feature.tasks-dev.tasks.watch-js]
 depends-on = ["setup-js", "dev-ext"]
 cmd = "python scripts/watch.py"
+
+[feature.tasks-dev.tasks.watch-docs]
+depends-on = ["dev-ext", "dist-pypi"]
+cmd = "sphinx-autobuild docs build/watch-docs --watch src"
 
 [feature.tasks-atest-oldest.tasks.lab-oldest]
 depends-on = ["pip-atest-oldest"]
@@ -504,6 +507,9 @@ pydata-sphinx-theme = "*"
 sphinx = "*"
 sphinx-autodoc-typehints = "*"
 
+[feature.deps-dev.dependencies]
+sphinx-autobuild = "*"
+
 [feature.deps-check.dependencies]
 pytest-check-links = "*"
 pytest-html = "*"
@@ -575,6 +581,7 @@ dev = {features = [
   "deps-atest",
   "deps-build",
   "deps-cov",
+  "deps-dev",
   "deps-docs",
   "deps-flit",
   "deps-itest",
