@@ -3,7 +3,8 @@
 # Copyright (c) 2024 ipyelk contributors.
 # Distributed under the terms of the Modified BSD License.
 
-# pylint: disable=broad-except
+from __future__ import annotations
+
 import os
 import platform
 import shutil
