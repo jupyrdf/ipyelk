@@ -322,7 +322,6 @@ class AdditionalPortSpace(LayoutOptionWidget):
     space = T.Int(min=0, default_value=0)
 
     def _ui(self) -> List[W.Widget]:
-
         slider = W.IntSlider(description="Additional Port Space")
         T.link((self, "space"), (slider, "value"))
 

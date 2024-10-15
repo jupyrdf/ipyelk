@@ -54,8 +54,7 @@ class Loader(Tool):
             opts = self.default_edge_opts
         if opts is None:
             return dict()
-        else:
-            return dict(**opts)
+        return dict(**opts)
 
     def clear_defaults(self) -> "Loader":
         """Removes the current default layout options for the loader"""

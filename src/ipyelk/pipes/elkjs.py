@@ -11,7 +11,8 @@ from .util import wait_for_change
 
 class ElkJS(SyncedPipe):
     """Jupyterlab widget for calling `elkjs <https://github.com/kieler/elkjs>`_
-    layout given a valid elkjson dictionary"""
+    layout given a valid elkjson dictionary
+    """
 
     _model_name = T.Unicode("ELKLayoutModel").tag(sync=True)
     _model_module = T.Unicode(EXTENSION_NAME).tag(sync=True)

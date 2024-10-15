@@ -1,7 +1,8 @@
 # Copyright (c) 2024 ipyelk contributors.
 # Distributed under the terms of the Modified BSD License.
 from collections import defaultdict
-from typing import Dict, Iterator, List, Mapping, Optional, Set, Tuple, Type
+from collections.abc import Iterator, Mapping
+from typing import Dict, List, Optional, Set, Tuple, Type
 
 import networkx as nx
 from pydantic.v1 import BaseModel, Field
@@ -139,7 +140,6 @@ class ElementIndex(BaseModel):
 
     @classmethod
     def from_els(cls, *els: BaseElement) -> "ElementIndex":
-
         elements = {el.get_id(): el for el in iter_elements(*els)}
         return cls(
             elements=elements,
@@ -232,7 +232,8 @@ class ElementIndex(BaseModel):
     def check_edges(self) -> EdgeReport:
         """Check edges' endpoints for references to nodes outside of the current
         hierarchy as well as which edges should be remapped to the appropriate
-        lowest common ancestor."""
+        lowest common ancestor.
+        """
         from ..loaders.nx.nxutils import get_owner
 
         orphans: Set[Node] = set()
@@ -244,7 +245,6 @@ class ElementIndex(BaseModel):
         for el, edge in iter_edges(root):
             for endpt in (edge.source, edge.target):
                 if endpt.get_id() not in self.elements:
-
                     # get the top ancestor of endpt and add to the orphan set
                     ancestor = get_ancestor(endpt)
                     assert isinstance(ancestor, Node)
@@ -283,7 +283,6 @@ class HierarchicalIndex(ElementIndex):
     def from_els(
         cls, *els: BaseElement, vis_index: Optional[VisIndex] = None
     ) -> "HierarchicalIndex":
-
         elements = {
             el.get_id(): el
             for el in iter_elements(*els)
@@ -477,5 +476,4 @@ def get_ancestor(element: HierarchicalElement) -> HierarchicalElement:
     parent = element.get_parent()
     if parent is None:
         return element
-    else:
-        return get_ancestor(parent)
+    return get_ancestor(parent)

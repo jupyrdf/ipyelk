@@ -53,16 +53,19 @@ Wait For All Cells To Run
 
 Scroll To Notebook Bottom
     Ensure Notebook Window Scrollbar is Open
-    Click Element    ${JLAB CSS WINDOW SCROLL} li:last-child
+    Wait Until Keyword Succeeds    5x    0.1s
+    ...    Click Element    ${JLAB CSS WINDOW SCROLL} li:last-child
 
 Scroll To Notebook Cell
     [Arguments]    ${index}=${0}
     Ensure Notebook Window Scrollbar is Open
-    Click Element    ${JLAB CSS WINDOW SCROLL} li:nth-child(${index})
+    Wait Until Keyword Succeeds    5x    0.1s
+    ...    Click Element    ${JLAB CSS WINDOW SCROLL} li:nth-child(${index})
 
 Scroll To Notebook Top
     Ensure Notebook Window Scrollbar is Open
-    Click Element    ${JLAB CSS WINDOW SCROLL} li:first-child
+    Wait Until Keyword Succeeds    5x    0.1s
+    ...    Click Element    ${JLAB CSS WINDOW SCROLL} li:first-child
 
 Click JupyterLab Menu
     [Documentation]    Click a top-level JupyterLab menu bar item with by ``label``,
@@ -258,4 +261,8 @@ Ensure All Kernels Are Shut Down
 Page Should Not Contain Contain Standard Errors
     [Arguments]    ${prefix}=${EMPTY}    ${exceptions}=${None}
     ${errors} =    Get WebElements    ${JLAB XP STDERR}
+    FOR    ${error}    IN    @{errors}
+        ${error_text} =    Get Text    ${error}
+        Log    ${error_text}    level=ERROR
+    END
     Page Should Not Contain Element    ${JLAB XP STDERR}

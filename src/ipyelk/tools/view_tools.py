@@ -1,6 +1,7 @@
 # Copyright (c) 2024 ipyelk contributors.
 # Distributed under the terms of the Modified BSD License.
-from typing import Iterator, Set, Tuple
+from collections.abc import Iterator
+from typing import Set, Tuple
 
 import ipywidgets as W
 import traitlets as T
@@ -78,15 +79,12 @@ class SetTool(Tool):
 
     @T.default("css_classes")
     def _default_css_classes(self):
-        return tuple(
-            [
-                "active-set",
-            ]
-        )
+        return tuple([
+            "active-set",
+        ])
 
     @T.observe("active")
     def handler(self, change):
-
         try:
             new = set(change.new)
         except Exception:

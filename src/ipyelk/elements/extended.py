@@ -158,7 +158,7 @@ class Compartment(Node):
             heading_cls = "heading"
         heading = [
             Label(text=text, layoutOptions=heading_label_opts).add_class(
-                f"{heading_cls}_{i+1}"
+                f"{heading_cls}_{i + 1}"
             )
             for i, text in enumerate(headings)
         ]

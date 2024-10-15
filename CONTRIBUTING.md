@@ -2,11 +2,11 @@
 
 ## Install
 
-- Get [Mambaforge](https://github.com/conda-forge/miniforge)
-- Get [doit](https://pydoit.org)
+- Get [Miniforge](https://github.com/conda-forge/miniforge)
+- Get [pixi](https://pixi.sh)
 
 ```bash
-mamba install doit
+mamba install pixi
 ```
 
 ## Get Started
@@ -14,38 +14,38 @@ mamba install doit
 ```bash
 git clone https://github.com/jupyrdf/ipyelk
 cd ipyelk
-doit list --all # see what you can do
-doit            # this is _basically_ what happens on binder
-doit lab        # start lab
+pixi task list      # that's a lot
+pixi run release    # this is _basically_ what happens on CI
+pixi run lab        # start lab
 ```
 
 ## Branches
 
 Presently, on GitHub:
 
-- `master`: the `1.x` line, which distributes the lab extension inside the python
-  distribution for JupyterLab `>3`
+- `master`: the `2.x` line, which distributes the lab extension inside the python
+  distribution for JupyterLab `>=4.2`
   - generates the `latest` tag on ReadTheDocs
-  - PRs welcome for new features or bugfixes here, backport fixes to `0.3.x`
-- `0.3.x`: the JupyterLab 1 (and, theoretically, 2) -compatible maintenance branch
-  - generates the `0.3.x` tag on ReadTheDocs
-  - PRs welcome for fixes here, forward-port to `master`
 
 ## Important Paths
 
 | Path                               | Purpose                                              |
 | ---------------------------------- | ---------------------------------------------------- |
 | `atest/`                           | Robot Framework source for acceptance tests          |
-| `dodo.py`                          | task automation tool                                 |
+| `pixi.toml`                        | task automation tool                                 |
+| `pixi.lock`                        | pinned build/test/docs environments                  |
 | `js/`                              | TypeScript source for `@jupyrdf/jupyter-elk`         |
 | `package.json/`                    | `npm` package description for `@jupyrdf/jupyter-elk` |
 | `pyproject.toml`                   | package description for `ipyelk`                     |
 | `src/`                             | Python source for `ipyelk`                           |
 | `src/ipyelk/schema/elkschema.json` | JSON schema derived from the TypeScript source       |
 | `yarn.lock`                        | frozen `npm` dependencies                            |
+| `docs/`                            | documentation                                        |
+| `examples/`                        | examples, used in demo and test                      |
+| `lite/`                            | JupyterLite demo configuration                       |
 
-- Run `doit` to get ready to develop
-- Most commands are run with `doit all` (this is what CI does)
+- Run `pixi run dev-ext` to get ready to develop
+- Most commands are run with `pixi run release` (this is what CI does)
 
 ## Live Development
 
@@ -55,7 +55,7 @@ in the extension's source and automatically rebuild the extension and applicatio
 - Run:
 
 ```bash
-doit watch
+pixi run watch
 ```
 
 - Open a tab with the provided URL in a standards-compliant browser of choice
@@ -69,7 +69,7 @@ there's actually a problem.
 
 For more verbose output, add `ELK_DEBUG` anywhere in a new browser URL, e.g.
 
-```http
+```bash
 http://localhost:8888/lab#ELK_DEBUG
 ```
 
@@ -85,10 +85,11 @@ _Log Console_, opened with the _Show Log Console_ command.
 - Run:
 
 ```bash
-doit lint
+pixi run fix
+pixi run lint
 ```
 
-- Ensure the [examples](./examples) work. These will be tested in CI with:
+- Ensure the `examples/` work. These will be tested in CI with:
   - `nbconvert --execute`
   - in JupyterLab by Robot Framework with _Restart Kernel and Run All Cells_
 - If you add new features:
@@ -113,7 +114,7 @@ Some Test
 Then run:
 
 ```bash
-ATEST_ARGS="--exclude NOTsome:tag" doit test:atest
+ATEST_ARGS="--exclude NOTsome:tag" pixi run atest-robot
 ```
 
 ## Building Documentation
@@ -122,11 +123,11 @@ To build (and check the spelling and link health) of what _would_ go to
 `ipyelk.readthedocs.org`, we:
 
 - build with `sphinx` and `myst-nb`
-- check spelling with `hunspell`
+- check spelling with `vale`
 - check links with `pytest-check-links`
 
 ```bash
-doit -n8 checkdocs
+pixi run check
 ```
 
 ### Watch the Docs
@@ -136,7 +137,7 @@ live-reloading website. A number of files (e.g. `_static`) won't often update co
 but will usually work when restarted.
 
 ```bash
-doit watch_docs
+pixi run watch-docs
 ```
 
 ## Releasing
@@ -167,30 +168,23 @@ twine upload where-you-expanded-the-archive/ipyelk-*
 
 ### Python Dependencies
 
-- Edit the `dependencies` section of [environment specs](./.github/env_specs/) or the
-  [binder environment](./.binder/environment.yml).
+- Edit the `feature.*.dependencies` section of `pixi.toml`
 - Run:
 
 ```bash
-doit lock
+pixi run fix
 ```
 
-- Commit the changes to the env specs and the [lock files](./.github/locks).
-
-> if you delete _all_ the lockfiles, you'll need to `conda-lock` on path with e.g.
->
-> ```bash
-> mamba install -c conda-forge conda-lock
-> ```
+- Commit the changes to `pixi.toml` and `pixi.lock`
 
 ### Browser Dependencies
 
-- Edit the appropriate section of the [package file](./package.json).
+- Edit the appropriate section of `./package.json`.
 - Run:
 
 ```bash
-doit setup:js || doit setup:js || doit setup:js
-doit lint
+pixi run setup-js || pixi run setup-js || pixi run setup-js
+pixi run fix
 ```
 
-- Commit the changes to the package file and the [yarn lock file](./yarn.lock).
+- Commit the changes to `./package.json` and the `./yarn.lock`.

@@ -15,4 +15,4 @@ EXTENSION_SPEC_VERSION = (
     __version__.replace("a", "-alpha").replace("b", "-beta").replace("rc", "-rc")
 )
 
-__all__ = ["__version__", "EXTENSION_NAME", "EXTENSION_SPEC_VERSION"]
+__all__ = ["EXTENSION_NAME", "EXTENSION_SPEC_VERSION", "__version__"]

@@ -9,31 +9,31 @@ build-backend = "flit_core.buildapi"
 name = "ipyelk"
 version = "2.1.0a1"
 description = "ELK widget for Jupyter"
-authors = [
-    {name = "Dane Freeman", email = "dane.freeman@gtri.gatech.edu"},
-]
+authors = [{name = "Dane Freeman", email = "dane.freeman@gtri.gatech.edu"}]
 readme = "README.md"
 classifiers = [
-    "Framework :: Jupyter :: JupyterLab :: 4",
-    "Framework :: Jupyter :: JupyterLab :: Extensions :: Prebuilt",
-    "Framework :: Jupyter :: JupyterLab :: Extensions",
-    "Framework :: Jupyter :: JupyterLab",
-    "Framework :: Jupyter",
-    "Intended Audience :: Developers",
-    "Intended Audience :: Science/Research",
-    "License :: OSI Approved :: BSD License",
-    "Programming Language :: Python :: 3 :: Only",
-    "Programming Language :: Python :: 3.10",
-    "Programming Language :: Python :: 3.11",
-    "Programming Language :: Python :: 3.12",
-    "Programming Language :: Python :: 3.9",
-    "Programming Language :: Python :: 3",
+  "Framework :: Jupyter :: JupyterLab :: 4",
+  "Framework :: Jupyter :: JupyterLab :: Extensions :: Prebuilt",
+  "Framework :: Jupyter :: JupyterLab :: Extensions",
+  "Framework :: Jupyter :: JupyterLab",
+  "Framework :: Jupyter",
+  "Intended Audience :: Developers",
+  "Intended Audience :: Science/Research",
+  "License :: OSI Approved :: BSD License",
+  "Programming Language :: Python :: 3 :: Only",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Programming Language :: Python :: 3.9",
+  "Programming Language :: Python :: 3",
 ]
 requires-python = ">=3.9"
 dependencies = [
-    "ipywidgets >=8.0.1,<9",
-    "networkx",
-    "pydantic >=1.10.17,<3",
+  "ipywidgets >=8.0.1,<9",
+  "jsonschema >=4.18",
+  "networkx",
+  "pydantic >=1.10.17,<3", # uses the v1 compatibility layer
 ]
 
 [project.urls]
@@ -43,19 +43,10 @@ dependencies = [
 "Source" = "https://github.com/jupyrdf/ipyelk"
 
 [tool.flit.sdist]
-include = ["src/_d"]
+include = ["src/_d", "tests"]
 
 [tool.flit.external-data]
 directory = "src/_d"
-
-[tool.isort]
-profile = "black"
-known_first_party = "ipyelk"
-
-[tool.mypy]
-plugins = ["pydantic.mypy"]
-files = "src"
-allow_redefinition = true
 
 [tool.pydantic-mypy]
 init_forbid_extra = true
@@ -63,6 +54,215 @@ init_typed = true
 warn_required_dynamic_aliases = true
 warn_untyped_fields = true
 
+# coverage #############################################################################
+[tool.coverage.run]
+parallel = true
+branch = true
+disable_warnings = ["module-not-imported", "no-data-collected"]
+
+[tool.coverage.html]
+show_contexts = true
+
+[tool.coverage.report]
+exclude_lines = [
+  "except ImportError as err:",
+  "if TYPE_CHECKING:",
+  "pragma: no cover",
+  "NotImplementedError",
+  "@abc.abstractmethod",
+  """if __name__ == "__main__":""",
+]
+
+# mypy #################################################################################
+[tool.mypy]
+cache_dir = "build/.cache/.mypy_cache"
+plugins = ["pydantic.mypy"]
+files = "src"
+allow_redefinition = true
+
+# pytest ###############################################################################
 [tool.pytest.ini_options]
+addopts = ["-vv", "--color=yes", "--tb=long"]
+asyncio_default_fixture_loop_scope = "function"
+cache_dir = "build/.cache/pytest"
+filterwarnings = [
+  "error",
+  "ignore::DeprecationWarning:pydantic",
+  "ignore:.*create_comm.*:DeprecationWarning",
+]
+generate_report_on_test = true
 junit_family = "xunit2"
-addopts = "-vv --ff --pyargs ipyelk --cov ipyelk --cov-report term-missing:skip-covered --cov-report html:build/htmlcov --no-cov-on-fail --html build/pytest.html --self-contained-html --junitxml build/pytest.xunit.xml"
+testpaths = ["tests"]
+
+# ruff #################################################################################
+[tool.ruff]
+preview = true
+target-version = "py39"
+include = ["{scripts,src,tests,docs,atest,examples}/**/*.{py,ipynb}"]
+cache-dir = "build/.cache/ruff"
+
+[tool.ruff.format]
+line-ending = "lf"
+
+[tool.ruff.lint]
+select = ["ALL"]
+flake8-copyright.notice-rgx = '(?i)Copyright \(c\) ipyelk contributors'
+isort.known-first-party = ["ipyelk"]
+ignore = [
+  # TOOD: #121 fix these on a follow-on PR
+  "A002",
+  "A005",
+  "ANN001",
+  "ANN002",
+  "ANN003",
+  "ANN201",
+  "ANN202",
+  "ANN204",
+  "ANN206",
+  "ARG001",
+  "ARG002",
+  "B007",
+  "B904",
+  "BLE001",
+  "C401",
+  "C405",
+  "C409",
+  "C416",
+  "C417",
+  "C901",
+  "CPY001",
+  "D100",
+  "D101",
+  "D102",
+  "D103",
+  "D104",
+  "D105",
+  "D106",
+  "D400",
+  "D415",
+  "D417",
+  "D419",
+  "DOC402",
+  "DTZ005",
+  "E501",
+  "E721",
+  "E722",
+  "EM101",
+  "EM102",
+  "ERA001",
+  "F822",
+  "F841",
+  "FA100",
+  "FBT002",
+  "FBT003",
+  "FIX002",
+  "FLY002",
+  "G004",
+  "ICN001",
+  "N801",
+  "N802",
+  "N803",
+  "N805",
+  "N815",
+  "N818",
+  "PERF102",
+  "PGH003",
+  "PGH004",
+  "PLC0415",
+  "PLR6301",
+  "PLW2901",
+  "PLW3201",
+  "PYI024",
+  "RET503",
+  "RET504",
+  "RUF002",
+  "RUF005",
+  "RUF012",
+  "RUF013",
+  "RUF022",
+  "RUF027",
+  "S101",
+  "SIM102",
+  "SIM118",
+  "SLF001",
+  "TCH003",
+  "TD002",
+  "TD003",
+  "TD004",
+  "TID252",
+  "TRY003",
+  "TRY201",
+  "UP006",
+  "UP028",
+  "UP031",
+  "UP035",
+  # evaluate these
+  "C408",
+  "COM812",
+  "D107",
+  "D203",
+  "D205",
+  "D211",
+  "D213",
+  "D401",
+  "DOC201",
+  "DOC501",
+  "FBT001",
+  "ISC001",
+  "N812",
+  "PD013",
+  "S404",
+  "S603",
+  "SIM108",
+]
+
+[tool.ruff.lint.per-file-ignores]
+"**/tests/*.py" = [
+  "ANN401",
+  "ARG001",
+  "D400",
+  "DOC402",
+  "F841",
+  "PLC0415",
+  "PLR2004",
+  "RUF029",
+  "S101",
+  "S607",
+  "T201",
+]
+"atest/**/*.py" = ["INP001"]
+"docs/**/*.py" = ["INP001", "A001", "ANN401"]
+"**/*.ipynb" = [
+  "A004",
+  "T201",
+  "PLR0917",
+  "T203",
+  "TRY002",
+  "RUF015",
+  "FBT003",
+  "DTZ001",
+  "PLW0603",
+  "NPY002",
+  "PLR0913",
+  "PLR2004",
+  "PLR6104",
+  "N802",
+  "E501",
+  "ARG005",
+  "A001",
+  "RUF006",
+  "PLR0914",
+  "W391",
+]
+"scripts/**/*.py" = [
+  "T201",
+  "FA102",
+  "PLR6201",
+  "S607",
+  "FBT003",
+  "T203",
+  "PTH111",
+  "TRY300",
+  "D404",
+]
+"model.py" = ["N806", "ANN401", "A001", "PT015", "PERF203", "PT018", "B011"]

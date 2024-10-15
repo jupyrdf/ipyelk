@@ -1,7 +1,8 @@
 # Copyright (c) 2024 ipyelk contributors.
 # Distributed under the terms of the Modified BSD License.
+from collections.abc import Hashable
 from dataclasses import dataclass
-from typing import Dict, Hashable, List, Optional
+from typing import Dict, List, Optional
 
 from .. import elements  # import Mark, Node, BaseElement
 from ..model.model import ElkNode, ElkPort

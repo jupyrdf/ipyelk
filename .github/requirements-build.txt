@@ -1,3 +1,0 @@
-doit
-flit >=3.9.0
-jupyterlab >=4.2,<5

@@ -1,11 +1,12 @@
-""" Run acceptance tests with robot framework
-"""
+"""Run acceptance tests with robot framework"""
 
 # Copyright (c) 2024 ipyelk contributors.
 # Distributed under the terms of the Modified BSD License.
 
-# pylint: disable=broad-except
+from __future__ import annotations
+
 import os
+import platform
 import shutil
 import sys
 import time
@@ -14,15 +15,24 @@ from pathlib import Path
 import robot
 from pabot import pabot
 
-from . import project as P
-
+ENV_NAME = os.environ["PIXI_ENVIRONMENT_NAME"]
 PROCESSES = int(os.environ.get("ATEST_PROCESSES", "4"))
 RETRIES = int(os.environ.get("ATEST_RETRIES", "0"))
+PLATFORM = platform.system()
+
+HERE = Path(__file__).parent
+ROOT = HERE.parent
+EXAMPLES = ROOT / "examples"
+ATEST = ROOT / "atest"
+
+BUILD = ROOT / "build"
+ATEST_OUT = BUILD / "reports" / ENV_NAME
+ATEST_CANARY = ATEST_OUT / "robot.ok"
 
 
 def get_stem(attempt, extra_args):
-    """make a directory stem with the run type, python and os version"""
-    stem = "_".join([P.PLATFORM, str(attempt)]).replace(".", "_").lower()
+    """Make a directory stem with the run type, python and os version"""
+    stem = "_".join([PLATFORM, str(attempt)]).replace(".", "_").lower()
 
     if "--dryrun" in extra_args:
         stem = f"dry_run_{stem}"
@@ -40,14 +50,14 @@ def which(path: str) -> str | None:
 
 
 def atest(attempt, extra_args):
-    """perform a single attempt of the acceptance tests"""
+    """Perform a single attempt of the acceptance tests"""
     stem = get_stem(attempt, extra_args)
     firefox = which("firefox")
     geckodriver = which("geckodriver")
-    if None in [firefox, geckodriver]:
+    if None in [firefox, geckodriver] and "--dryrun" not in extra_args:
         raise RuntimeError(f"Unable to find browser: {firefox}  {geckodriver}")
     if attempt != 1:
-        previous = P.ATEST_OUT / f"{get_stem(attempt - 1, extra_args)}" / "output.xml"
+        previous = ATEST_OUT / f"{get_stem(attempt - 1, extra_args)}" / "output.xml"
         print(f"Attempt {attempt} will try to re-run tests from {previous}")
 
         if previous.exists():
@@ -55,17 +65,16 @@ def atest(attempt, extra_args):
         else:
             print(f"... can't re-run failed, missing: {previous}")
 
-    out_dir = P.ATEST_OUT / stem
+    out_dir = ATEST_OUT / stem
 
     args = [
-        *["--name", f"{P.PLATFORM}"],
+        *["--name", f"{PLATFORM}"],
         *["--outputdir", out_dir],
         *["--log", out_dir / "log.html"],
         *["--report", out_dir / "report.html"],
         *["--xunit", out_dir / "xunit.xml"],
-        *["--variable", f"OS:{P.PLATFORM}"],
-        *["--variable", f"IPYELK_EXAMPLES:{P.EXAMPLES}"],
-        *["--variable", f"""JUPYTERLAB_EXE:{" ".join(map(str, P.JUPYTERLAB_EXE))}"""],
+        *["--variable", f"OS:{PLATFORM}"],
+        *["--variable", f"IPYELK_EXAMPLES:{EXAMPLES}"],
         *["--variable", f"FIREFOX:{firefox}"],
         *["--variable", f"GECKODRIVER:{geckodriver}"],
         *["--randomize", "all"],
@@ -74,11 +83,11 @@ def atest(attempt, extra_args):
     ]
 
     if out_dir.exists():
-        print("trying to clean out {}".format(out_dir))
+        print(f"trying to clean out {out_dir}")
         try:
             shutil.rmtree(out_dir)
         except Exception as err:
-            print("Error deleting {}, hopefully harmless: {}".format(out_dir, err))
+            print(f"Error deleting {out_dir}, hopefully harmless: {err}")
     out_dir.mkdir(parents=True)
     os.chdir(out_dir)
 
@@ -97,9 +106,9 @@ def atest(attempt, extra_args):
             *args,
         ]
 
-    args += [P.ATEST]
+    args += [ATEST]
 
-    print(f"[{fake_cmd} test root]\n", P.ATEST)
+    print(f"[{fake_cmd} test root]\n", ATEST)
     print(f"[{fake_cmd} arguments]\n", " ".join(list(map(str, args))))
 
     try:
@@ -111,24 +120,24 @@ def atest(attempt, extra_args):
 
 
 def attempt_atest_with_retries(*extra_args):
-    """retry the robot tests a number of times"""
+    """Retry the robot tests a number of times"""
     attempt = 0
     error_count = -1
 
     is_real = "--dryrun" not in extra_args
 
-    if is_real and P.ATEST_CANARY.exists():
-        P.ATEST_CANARY.unlink()
+    if is_real and ATEST_CANARY.exists():
+        ATEST_CANARY.unlink()
 
     while error_count != 0 and attempt <= RETRIES:
         attempt += 1
-        print("attempt {} of {}...".format(attempt, RETRIES + 1))
+        print(f"attempt {attempt} of {RETRIES + 1}...")
         start_time = time.time()
         error_count = atest(attempt=attempt, extra_args=list(extra_args))
         print(error_count, "errors in", int(time.time() - start_time), "seconds")
 
     if is_real and not error_count:
-        P.ATEST_CANARY.touch()
+        ATEST_CANARY.touch()
 
     return error_count
 

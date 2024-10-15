@@ -36,10 +36,8 @@ class Mark(BaseModel):
         if isinstance(self.element, Edge):
             if self.selector is None:
                 raise ValueError("Edge Selector not set")
-            else:
-                return self.selector
-        else:
-            return self
+            return self.selector
+        return self
 
     def set_edge_selector(self, u, v, key):
         self.selector = (u, v, key)

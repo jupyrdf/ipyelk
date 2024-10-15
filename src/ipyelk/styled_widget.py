@@ -36,9 +36,9 @@ class StyledWidget(W.Box):
                 # if the `_cls` begins with a whitespace prefix the selector
                 # with the style widget's unique class
                 selector = f".{self._css_class}{_cls}" if _cls.startswith(" ") else _cls
-                css_attributes = "\n".join(
-                    [f"{key}: {value};" for key, value in attrs.items()]
-                )
+                css_attributes = "\n".join([
+                    f"{key}: {value};" for key, value in attrs.items()
+                ])
                 raw_css += [f"{_cls}{{ {css_attributes} }}"]
             else:
                 # process keyframe css

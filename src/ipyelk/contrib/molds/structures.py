@@ -24,22 +24,18 @@ def XCircle(radius=6) -> Node:
             Node(properties=NodeProperties(shape=shapes.Circle(radius=r))),
             Node(
                 properties=NodeProperties(
-                    shape=shapes.Path.from_list(
-                        [
-                            (r + r * 2**-0.5, r + r * 2**-0.5),
-                            (r - r * 2**-0.5, r - r * 2**-0.5),
-                        ]
-                    )
+                    shape=shapes.Path.from_list([
+                        (r + r * 2**-0.5, r + r * 2**-0.5),
+                        (r - r * 2**-0.5, r - r * 2**-0.5),
+                    ])
                 )
             ),
             Node(
                 properties=NodeProperties(
-                    shape=shapes.Path.from_list(
-                        [
-                            (r - r * 2**-0.5, r + r * 2**-0.5),
-                            (r + r * 2**-0.5, r - r * 2**-0.5),
-                        ]
-                    )
+                    shape=shapes.Path.from_list([
+                        (r - r * 2**-0.5, r + r * 2**-0.5),
+                        (r + r * 2**-0.5, r - r * 2**-0.5),
+                    ])
                 )
             ),
         ]

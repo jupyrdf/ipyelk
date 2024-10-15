@@ -420,7 +420,6 @@ class Padding(LayoutOptionWidget):
     _elk_traits = ["top", "bottom", "left", "right"]
 
     def _ui(self) -> List[W.Widget]:
-
         sliders = []
         for trait in self._traits:
             slider = W.FloatSlider(description=f"{trait.title()} Padding")

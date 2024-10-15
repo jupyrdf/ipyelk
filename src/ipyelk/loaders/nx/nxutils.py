@@ -1,7 +1,8 @@
 # Copyright (c) 2024 ipyelk contributors.
 # Distributed under the terms of the Modified BSD License.
 
-from typing import Dict, Hashable, Iterator, Optional
+from collections.abc import Hashable, Iterator
+from typing import Dict, Optional
 
 import networkx as nx
 
@@ -66,14 +67,11 @@ def get_endpoint(
             el = el_map.get(port_key)  # port_key was a global id
             if isinstance(el, Port) and el._parent is pt:
                 return el
-            else:
-                # TODO a new exception type?
-                raise ValueError(
-                    (
-                        "Given `port_key:{port_key}`} maps to an global element "
-                        "that isn't consistent with the edge."
-                    )
-                ) from e
+            # TODO a new exception type?
+            raise ValueError(
+                "Given `port_key:{port_key}`} maps to an global element "
+                "that isn't consistent with the edge."
+            ) from e
 
         # okay to make a new port?
         port = pt.add_port(Port(width=5, height=5), key=port_key)
@@ -104,7 +102,6 @@ def single_root(g) -> bool:
 
 
 def process_hierarchy(graph, hierarchy: Optional[nx.DiGraph]) -> nx.DiGraph:
-
     if hierarchy is None:
         hierarchy = nx.DiGraph()
     else:
@@ -151,12 +148,11 @@ def as_in_hierarchy(
     :raises NotFoundError: If unable to find a matching node
     :return: Node as it exists in the hierarchical graph
     """
-
     parent = node._parent if isinstance(node, Port) else node
 
     if parent in hierarchy:
         return parent
-    elif nx_node_map and parent in nx_node_map:
+    if nx_node_map and parent in nx_node_map:
         return nx_node_map[parent]
 
     if isinstance(parent, HierarchicalElement):

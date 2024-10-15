@@ -1,12 +1,10 @@
-""" Python Quick Types from JSON Schema
+"""Python Quick Types from JSON Schema
 
-    https://app.quicktype.io/?share=v69WIlc7rT81xJjmW3XY
+https://app.quicktype.io/?share=v69WIlc7rT81xJjmW3XY
 """
-
 # Copyright (c) 2024 ipyelk contributors.
 # Distributed under the terms of the Modified BSD License.
 
-# flake8: noqa
 from collections import namedtuple
 from dataclasses import dataclass
 from typing import Any, Callable, Dict, List, Optional, Type, TypeVar, Union, cast
@@ -99,8 +97,6 @@ def from_bool(x: Any) -> bool:
 
 @dataclass
 class Elk:
-    pass
-
     @staticmethod
     def from_dict(obj: Any) -> "Elk":
         assert isinstance(obj, dict)

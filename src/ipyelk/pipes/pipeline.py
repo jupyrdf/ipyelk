@@ -11,7 +11,6 @@ from .base import Pipe, PipeStatus, PipeStatusView, SyncedOutletPipe
 
 
 class PipelineStatusView(PipeStatusView):
-
     toggle_btn = T.Instance(W.Button)
     include_exception = T.Bool(default_value=True)
     collapsed = T.Bool(default_value=True)
@@ -38,12 +37,10 @@ class PipelineStatusView(PipeStatusView):
     @T.observe("collapsed", "statuses")
     def _update_children(self, change=None):
         children = [
-            W.HBox(
-                [
-                    self.toggle_btn,
-                    self.html,
-                ]
-            ),
+            W.HBox([
+                self.toggle_btn,
+                self.html,
+            ]),
         ]
         if not self.collapsed:
             children.extend(self.statuses)
@@ -52,13 +49,11 @@ class PipelineStatusView(PipeStatusView):
     def update_children(self, pipe: "Pipeline"):
         statuses = [p.status_widget for p in pipe.pipes]
         self.statuses = [
-            W.HBox(
-                [
-                    W.HTML(value="<pre>  </pre>").add_class("elk-pipe-space"),
-                    status,
-                    W.HTML(value=f'<pre class="elk-pipe-accessor">.pipes[{i}]</pre>'),
-                ]
-            )
+            W.HBox([
+                W.HTML(value="<pre>  </pre>").add_class("elk-pipe-space"),
+                status,
+                W.HTML(value=f'<pre class="elk-pipe-accessor">.pipes[{i}]</pre>'),
+            ])
             for i, status in enumerate(statuses)
         ]
 

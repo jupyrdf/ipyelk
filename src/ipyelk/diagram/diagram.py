@@ -37,6 +37,7 @@ class Diagram(StyledWidget):
     symbols: :py:class:`~ipyelk.elements.SymbolSpec`
         additional shape definitions that can be used in rendering the diagram.
         For example unique arrow head shapes or custom node shapes.
+
     """
 
     source: MarkElementWidget = T.Instance(
@@ -137,7 +138,7 @@ class Diagram(StyledWidget):
         num_matches = len(matches)
         if num_matches > 1:
             raise NotUniqueError(f"Found too many tools with type {tool_type}")
-        elif num_matches == 0:
+        if num_matches == 0:
             raise NotFoundError(f"No tool matching type {tool_type}")
 
         return matches[0]
@@ -160,7 +161,8 @@ class Diagram(StyledWidget):
 
     def refresh(self, change: T.Bunch = None) -> asyncio.Task:
         """Create asynchronous refresh task which will update the view given any
-        changes."""
+        changes.
+        """
         self.log.debug("Refreshing diagram")
         task: asyncio.Task = self.pipe.schedule_run()
 

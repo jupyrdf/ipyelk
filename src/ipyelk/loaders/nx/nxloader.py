@@ -1,6 +1,7 @@
 # Copyright (c) 2024 ipyelk contributors.
 # Distributed under the terms of the Modified BSD License.
-from typing import Dict, Hashable, Optional
+from collections.abc import Hashable
+from typing import Dict, Optional
 
 import networkx as nx
 import traitlets as T

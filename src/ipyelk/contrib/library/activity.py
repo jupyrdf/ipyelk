@@ -14,9 +14,9 @@ from ...elements import (
     Port,
     Symbol,
     SymbolSpec,
+    shapes,
 )
 from ...elements import layout_options as opt
-from ...elements import shapes
 from ..molds import connectors, structures
 
 center_label_opts = opt.OptionsWidget(

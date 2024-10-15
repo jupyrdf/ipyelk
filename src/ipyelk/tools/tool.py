@@ -39,17 +39,19 @@ class Tool(W.Widget):
             self.tee.inlet.flow = self.reports
 
     async def run(self):
-        raise NotImplementedError()
+        raise NotImplementedError
 
     # TODO reconcile `on_run` and `on_done`
     def on_run(self, callback, remove=False):
         """Register a callback to execute when the button is clicked.
         The callback will be called with one argument, the clicked button
         widget instance.
+
         Parameters
         ----------
         remove: bool (optional)
             Set to true to remove the callback from the list of callbacks.
+
         """
         self._on_run_handlers.register_callback(callback, remove=remove)
 

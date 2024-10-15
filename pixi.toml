@@ -1,0 +1,641 @@
+"$schema" = "https://pixi.sh/v0.32.1/schema/manifest/schema.json"
+
+# tasks ################################################################################
+[tasks]
+build = {depends-on = ["build-py-schema", "build-js-lib", "build-js-ext"]}
+dist = {depends-on = ["dist-npm", "dist-pypi", "dist-hash"]}
+fix = {depends-on = [
+  "fix-taplo",
+  "fix-prettier",
+  "fix-ruff-format",
+  "fix-ruff-check",
+  "fix-js-dupes",
+  "fix-robot-tidy",
+  "fix-nblint",
+]}
+lint = {depends-on = [
+  "lint-ruff-format",
+  "lint-ruff-check",
+  "lint-robot-dryrun",
+  "lint-actionlint",
+]}
+test = {depends-on = ["utest-pytest", "itest-nbconvert", "atest-robot"]}
+test-oldest = {depends-on = [
+  "utest-oldest-pytest",
+  "itest-oldest-nbconvert",
+  "atest-oldest-robot",
+]}
+test-all = {depends-on = ["test", "test-oldest"]}
+docs = {depends-on = ["docs-lite", "docs-sphinx"]}
+check = {depends-on = ["check-links", "check-spelling"]}
+release = {depends-on = ["fix", "lint", "build", "dist", "test-all", "docs", "check"]}
+
+# fragments ############################################################################
+[tasks.pip--]
+cmd = """
+rm -f build/reports/pip-freeze/$PIXI_ENVIRONMENT_NAME.txt
+&& python -m pip install
+  -vv
+  --disable-pip-version-check
+  --ignore-installed
+  --no-build-isolation
+  --no-cache-dir
+  --no-deps"""
+
+[tasks.pip-editable--]
+cmd = "pixi r pip-- --editable . && pixi r pip-check--"
+
+[tasks.pip-dist--]
+cmd = """
+pixi r pip-- --find-links=dist --no-index ipyelk
+&& pixi r pip-check--
+"""
+
+[tasks.pip-check--]
+cmd = """python -m pip check
+&& mkdir -p build/reports/pip-freeze
+&& pip list --format=freeze > build/reports/pip-freeze/$PIXI_ENVIRONMENT_NAME.txt"""
+
+[tasks.ext-check--]
+cmd = """jupyter labextension list"""
+
+[tasks.nbconvert--]
+cmd = """
+export
+    NBCONVERT_DIR=$PIXI_PROJECT_ROOT/build/reports/$PIXI_ENVIRONMENT_NAME/nbconvert
+    IPYELK_TESTING=true
+&& rm -rf $NBCONVERT_DIR
+&& mkdir -p $NBCONVERT_DIR
+&& cd examples
+&& rm -rf .ipynb_checkpoints/
+&& jupyter nbconvert
+    --to html
+    --output-dir $NBCONVERT_DIR
+    --execute
+    --ExecutePreprocessor.timeout=1200
+    ./**/*.ipynb
+"""
+
+# setup ################################################################################
+[feature.tasks-build.tasks.setup-js]
+cmd = """cat node_modules/.cached-in-ci || jlpm"""
+inputs = [".yarnrc.yml", "package.json", "yarn.lock"]
+outputs = ["yarn.lock", "node_modules/.yarn-state.yml"]
+
+# build ################################################################################
+[feature.tasks-build.tasks.build-py-schema]
+cmd = "jlpm schema"
+depends-on = ["setup-js"]
+inputs = ["js/sprotty/json/elkschema.ts", "node_modules/.yarn-state.yml"]
+outputs = ["src/ipyelk/schema/elkschema.json"]
+
+[feature.tasks-build.tasks.build-js-lib]
+cmd = "jlpm build:ts"
+depends-on = ["build-py-schema", "setup-js"]
+inputs = [
+  "{tsconfigbase,package}.json",
+  "js/",
+  "node_modules/.yarn-state.yml",
+  "src/ipyelk/schema/elkschema.json",
+]
+outputs = ["build/.src.tsbuildinfo"]
+
+[feature.tasks-build.tasks.build-js-ext]
+cmd = "jlpm build:ext"
+depends-on = ["setup-js", "build-js-lib"]
+inputs = [
+  "node_modules/.yarn-state.yml",
+  "style/",
+  "build/.src.tsbuildinfo",
+  "webpack.config.js",
+]
+outputs = ["src/_d/share/jupyter/labextensions/@jupyrdf/jupyter-elk/package.json"]
+
+# ship #################################################################################
+[feature.tasks-build.tasks.dist-npm]
+cmd = "mkdir -p dist && cd dist && npm pack .."
+depends-on = ["build-js-lib"]
+inputs = ["build/.src.tsbuildinfo", "{package.json,README.md,LICENSE}"]
+outputs = ["dist/*.tgz"]
+
+[feature.tasks-build.tasks.dist-pypi]
+cmd = "pyproject-build . --no-isolation"
+inputs = ["{README.md,LICENSE,pyproject.toml}", "src/", "tests/", "!**/__pycache__"]
+outputs = ["dist/*.{whl,tar.gz}"]
+depends-on = ["build-py-schema", "build-js-ext"]
+
+[feature.tasks-build.tasks.dist-hash]
+cmd = """python -c '
+import pathlib, hashlib; d = pathlib.Path("dist");
+[print(f"{hashlib.sha256(p.read_bytes()).hexdigest()}  {p.name}")
+for p in sorted(d.glob("*.*"))]
+' > dist/SHA256SUMS"""
+inputs = ["dist/", "!SHA256SUMS"]
+depends-on = ["dist-pypi", "dist-npm"]
+outputs = ["dist/SHA256SUMS"]
+
+# unit test ############################################################################
+[feature.tasks-utest.tasks.pip-utest]
+cmd = """pixi r -e utest pip-editable--"""
+inputs = ["pyproject.toml"]
+outputs = ["build/reports/pip-freeze/utest.txt"]
+
+[feature.tasks-utest.tasks.utest-pytest]
+cmd = """
+export
+  COVERAGE_FILE=$PIXI_PROJECT_ROOT/build/reports/utest/.coverage
+&& pytest
+  --cov ipyelk
+  --cov-report html:build/reports/utest/htmlcov
+  --cov-report term-missing:skip-covered
+  --cov-context test
+  --html build/reports/utest/pytest.html
+  --junitxml build/reports/utest/pytest.xunit.xml
+  --no-cov-on-fail
+  --self-contained-html
+"""
+depends-on = ["pip-utest"]
+inputs = [
+  "build/reports/pip-freeze/utest.txt",
+  "pyproject.toml",
+  "{tests,src}/**/*.{py,json}",
+  "!**/.ipynb_checkpoints",
+]
+outputs = ["build/reports/utest/{pytest.html,pytest.xunit.xml,htmlcov/status.json}"]
+
+[feature.tasks-utest-oldest.tasks.pip-utest-oldest]
+cmd = """pixi r -e utest-oldest pip-dist--"""
+inputs = ["dist/*.whl"]
+outputs = ["build/reports/pip-freeze/utest-oldest.txt"]
+
+[feature.tasks-utest-oldest.tasks.utest-oldest-pytest]
+cmd = """
+export JUPYTER_PLATFORM_DIRS=1
+&& pytest
+  --html build/reports/utest-oldest/pytest.html
+  --junitxml build/reports/utest-oldest/pytest.xunit.xml
+  --self-contained-html
+"""
+depends-on = ["pip-utest-oldest"]
+inputs = [
+  "build/reports/pip-freeze/utest-oldest.txt",
+  "pyproject.toml",
+  "{tests,src}/**/*.{py,json}",
+  "!**/.ipynb_checkpoints",
+]
+outputs = ["build/reports/utest/{pytest.html,pytest.xunit.xml}"]
+
+# integration test #####################################################################
+[feature.tasks-utest.tasks.pip-itest]
+cmd = """pixi r -e itest pip-editable--"""
+inputs = ["pyproject.toml"]
+outputs = ["build/reports/pip-freeze/itest.txt"]
+
+[feature.tasks-itest.tasks.itest-nbconvert]
+cmd = """pixi r -e itest nbconvert--"""
+depends-on = ["pip-itest"]
+inputs = ["examples/", "!**/{.ipynb_checkpoints,__pycache__}"]
+outputs = ["build/reports/itest/nbconvert/**/*.html"]
+
+[feature.tasks-utest-oldest.tasks.pip-itest-oldest]
+cmd = """pixi r -e itest-oldest pip-editable--"""
+inputs = ["pyproject.toml"]
+outputs = ["build/reports/pip-freeze/itest-oldest.txt"]
+
+[feature.tasks-itest-oldest.tasks.itest-oldest-nbconvert]
+cmd = """pixi r -e itest-oldest nbconvert--"""
+depends-on = ["pip-itest-oldest"]
+inputs = ["examples/", "!**/{.ipynb_checkpoints,__pycache__}"]
+outputs = ["build/reports/itest-oldest/nbconvert/**/*.html"]
+
+# acceptance test ######################################################################
+[feature.tasks-atest.tasks.pip-atest]
+cmd = """pixi r pip-dist-- && pixi r ext-check--"""
+inputs = ["dist/*.whl"]
+outputs = ["build/reports/pip-freeze/atest.txt"]
+
+[feature.tasks-atest.tasks.atest-robot]
+cmd = "python scripts/atest.py"
+depends-on = ["pip-atest"]
+inputs = [
+  "examples",
+  "atest",
+  "src",
+  "scripts/atest.py",
+  "!**/__pycache__/",
+  "!**/.ipynb_checkpoints",
+]
+outputs = [
+  "build/reports/atest/**/pabot_results/**/*.*",
+  "build/reports/atest/robot.ok",
+]
+
+[feature.tasks-atest-oldest.tasks.pip-atest-oldest]
+cmd = """pixi r pip-dist-- && pixi r ext-check--"""
+inputs = ["dist/*.whl"]
+outputs = ["build/reports/pip-freeze/atest-oldest.txt"]
+
+[feature.tasks-atest-oldest.tasks.atest-oldest-robot]
+cmd = "python scripts/atest.py"
+depends-on = ["pip-atest-oldest"]
+inputs = [
+  "examples",
+  "atest",
+  "src",
+  "scripts/atest.py",
+  "!**/__pycache__/",
+  "!**/.ipynb_checkpoints",
+]
+outputs = [
+  "build/reports/atest-oldest/**/pabot_results/**/*.*",
+  "build/reports/atest-oldest/robot.ok",
+]
+
+# lint #################################################################################
+[feature.tasks-lint.tasks.fix-taplo]
+cmd = """taplo fmt
+  *.toml
+  --option=array_auto_collapse=true
+  --option=compact_inline_tables=true
+  --option=column_width=88"""
+inputs = ["*.toml", "scripts/*.toml"]
+
+[feature.tasks-lint.tasks.lint-ruff-format]
+cmd = "ruff format --check"
+inputs = [
+  "{scripts,src,tests,docs,atest,examples}/**/*.{py,ipynb}",
+  "pyproject.toml",
+  "!**/.ipynb_checkpoints/",
+]
+
+[feature.tasks-lint.tasks.lint-ruff-check]
+cmd = "ruff check"
+inputs = [
+  "{scripts,src,tests,docs,atest,examples}/**/*.{py,ipynb}",
+  "pyproject.toml",
+  "!**/.ipynb_checkpoints/",
+]
+
+[feature.tasks-lint.tasks.fix-ruff-format]
+cmd = "ruff format"
+inputs = [
+  "{scripts,src,tests,docs,atest,examples}/**/*.{py,ipynb}",
+  "pyproject.toml",
+  "!**/.ipynb_checkpoints/",
+]
+
+[feature.tasks-lint.tasks.fix-ruff-check]
+cmd = "ruff check --fix-only"
+depends-on = ["fix-ruff-format"]
+inputs = [
+  "{scripts,src,tests,docs,atest,examples}/**/*.{py,ipynb}",
+  "pyproject.toml",
+  "!**/.ipynb_checkpoints/",
+]
+
+[feature.tasks-lint.tasks.fix-js-dupes]
+cmd = "jlpm yarn-berry-deduplicate -s fewer --fail"
+inputs = ["package.json"]
+outputs = ["yarn.lock", "node_modules/.yarn-state.yml"]
+depends-on = ["setup-js"]
+
+[feature.tasks-lint.tasks.fix-robot-tidy]
+cmd = "robotidy atest"
+inputs = ["atest/**/*.{robot,resource}"]
+
+[feature.tasks-lint.tasks.lint-robot-dryrun]
+cmd = "python scripts/atest.py --dryrun"
+inputs = ["atest/", "scripts/atest.py", "!**/__pycache__/", "!**/.ipynb_checkpoints"]
+
+[feature.tasks-lint.tasks.fix-prettier]
+cmd = "jlpm lint:prettier"
+depends-on = ["setup-js"]
+inputs = [
+  ".prettierignore",
+  "*.*{md,json,yml,yaml}",
+  "node_modules/.yarn-state.yml",
+  "{style,js,.github,examples,lite,atest,docs,scripts}/**/*.{css,md,json,yml,yaml,ts,tsx}",
+]
+
+[feature.tasks-lint.tasks.fix-nblint]
+cmd = "python scripts/nblint.py examples"
+depends-on = ["setup-js"]
+inputs = ["examples/", "!**/{.ipynb_checkpoints,__pycache__}/"]
+
+[feature.tasks-lint.tasks.lint-actionlint]
+cmd = "actionlint -shellcheck=shellcheck -pyflakes=pyflakes"
+inputs = [".github/workflows"]
+
+# lite #################################################################################
+[feature.tasks-lite.tasks.pip-lite]
+cmd = """pixi r -e docs pip-dist--"""
+depends-on = ["dist-pypi"]
+inputs = ["dist/*.whl"]
+outputs = ["build/reports/pip-freeze/lite.txt"]
+
+[feature.tasks-lite.tasks.clean-docs-lite]
+cmd = """rm -rf build/.cache/lite lite/.jupyterlite.doit.db"""
+
+[feature.tasks-lite.tasks.docs-lite]
+cmd = """
+cd lite
+&& jupyter lite doit -- pre_archive:report:SHA256SUMS
+"""
+depends-on = ["pip-lite"]
+inputs = ["examples/", "lite/*.json", "!**{.ipynb_checkpoints,__pycache__}/"]
+outputs = [
+  "build/lite/SHA256SUMS",
+  "build/lite/extensions/@jupyrdf/jupyter-elk/package.json",
+  "build/lite/pypi/ipyelk-.*-py3-none-any.whl",
+]
+
+# docs #################################################################################
+[feature.tasks-docs.tasks.pip-docs]
+cmd = """pixi r -e docs pip-editable--"""
+inputs = ["pyproject.toml"]
+outputs = ["build/reports/pip-freeze/docs.txt"]
+
+[feature.tasks-docs.tasks.docs-sphinx]
+cmd = "sphinx-build -W -b html docs build/docs"
+depends-on = ["pip-docs", "docs-lite"]
+inputs = ["docs", "!**/.ipynb_checkpoints/"]
+outputs = ["build/docs/.buildinfo"]
+
+[feature.tasks-docs.tasks.docs-rtd]
+cmd = """
+  rm -rf $READTHEDOCS_OUTPUT/html
+  && cp -r build/docs $READTHEDOCS_OUTPUT/html
+"""
+depends-on = ["docs-sphinx"]
+inputs = ["build/docs/.buildinfo"]
+
+# check ################################################################################
+[feature.tasks-check.tasks.check-spelling]
+cmd = """
+rm -rf build/reports/vale.txt
+&& mkdir -p build/reports
+&& (
+  vale
+    build/docs
+    --no-wrap
+    --glob='!**/.ipynb_checkpoints/*'
+    --output scripts/vale/output.tmpl
+  >> build/reports/vale.txt
+  && cat build/reports/vale.txt
+) || cat build/reports/vale.txt
+"""
+depends-on = ["docs-sphinx"]
+inputs = ["build/docs/**/*.html", "vale.ini", "scripts/vale/", "*.md"]
+
+[feature.tasks-check.tasks.check-links]
+cmd = """
+export JUPYTER_PLATFORM_DIRS=1
+&& pytest-check-links
+  build/docs/
+  --config-file=scripts/pytest-check-links.toml
+"""
+inputs = ["build/docs/**/*.html", "scripts/pytest-check-links.toml"]
+
+# interactive development ##############################################################
+[feature.tasks-dev.tasks.pip-dev]
+cmd = """pixi r -e dev pip-editable--"""
+inputs = ["pyproject.toml"]
+outputs = ["build/reports/pip-freeze/dev.txt"]
+
+[feature.tasks-dev.tasks.dev-ext]
+cmd = """jupyter labextension develop --overwrite ."""
+depends-on = ["pip-dev", "build-js-ext"]
+
+[feature.tasks-dev.tasks.lab]
+depends-on = ["pip-dev", "dev-ext"]
+cmd = "jupyter lab --no-browser --debug"
+
+[feature.tasks-dev.tasks.watch-js]
+depends-on = ["setup-js", "dev-ext"]
+cmd = "python scripts/watch.py"
+
+[feature.tasks-dev.tasks.watch-docs]
+depends-on = ["dev-ext", "dist-pypi"]
+cmd = "sphinx-autobuild docs build/watch-docs --watch src"
+
+[feature.tasks-atest-oldest.tasks.lab-oldest]
+depends-on = ["pip-atest-oldest"]
+cmd = "jupyter lab --no-browser --debug"
+
+# dependencies #########################################################################
+[feature.deps-js.dependencies]
+nodejs = "22.*"
+
+[feature.deps-lint.dependencies]
+taplo = "*"
+ruff = "*"
+nbconvert-core = "*"
+actionlint-with-all = "*"
+
+[feature.deps-py.dependencies]
+python = ">=3.9"
+[feature.deps-py-oldest.dependencies]
+python = "<3.10"
+[feature.deps-py-latest.dependencies]
+python = ">=3.13"
+
+[feature.deps-lab.dependencies]
+jupyterlab = ">=4.2.0,<5"
+
+[feature.deps-flit.dependencies]
+flit-core = ">=3.9.0,<4"
+
+[feature.deps-build.dependencies]
+python-build = "*"
+twine = "*"
+
+[feature.deps-run.dependencies]
+jsonschema = ">=4.18"
+ipywidgets = ">=8.0.1,<9"
+networkx = "*"
+pydantic = ">=1.10.17,<3"
+[feature.deps-run-oldest.dependencies]
+jsonschema = "==4.18"
+ipywidgets = "==8.0.1"
+networkx = "*"
+pydantic = "==1.10.17"
+
+[feature.deps-pip.dependencies]
+pip = "*"
+flit-core = "*"
+
+[feature.deps-utest.dependencies]
+pytest = "*"
+pytest-html = "*"
+pytest-asyncio = "*"
+
+[feature.deps-demo.dependencies]
+importnb = "*"
+bqplot = "*"
+
+[feature.deps-itest.dependencies]
+nbconvert = "*"
+ipykernel = "*"
+
+[feature.deps-cov.dependencies]
+pytest-cov = "*"
+
+[feature.deps-atest.dependencies]
+robotframework-pabot = "*"
+robotframework-seleniumlibrary = "*"
+robotframework-tidy = "*"
+
+[feature.deps-firefox.dependencies]
+firefox = ">=128"
+geckodriver = "*"
+
+[feature.deps-firefox-oldest.dependencies]
+firefox = "128.*"
+geckodriver = "*"
+
+[feature.deps-lite.dependencies]
+jupyterlite-core = "0.4.3"
+jupyterlab_server = "*"
+python-libarchive-c = "*"
+jupyterlite-pyodide-kernel = "0.4.2"
+
+[feature.deps-docs.dependencies]
+ansi2html = "*"
+docutils = ">=0.19"
+myst-nb = "*"
+pydata-sphinx-theme = "*"
+sphinx = "*"
+sphinx-autodoc-typehints = "*"
+
+[feature.deps-dev.dependencies]
+sphinx-autobuild = "*"
+
+[feature.deps-check.dependencies]
+pytest-check-links = "*"
+pytest-html = "*"
+vale = "*"
+vale-spelling-aoo-mozilla-en-dict-gb = "*"
+vale-spelling-aoo-mozilla-en-dict-us = "*"
+
+# environments #########################################################################
+[environments]
+lint = {features = [
+  "deps-lab",
+  "deps-py",
+  "deps-js",
+  "deps-lint",
+  "deps-atest",
+  "tasks-lint",
+]}
+build = {features = [
+  "deps-build",
+  "deps-flit",
+  "deps-js",
+  "deps-lab",
+  "deps-py",
+  "tasks-build",
+]}
+utest = {features = [
+  "deps-cov",
+  "deps-flit",
+  "deps-pip",
+  "deps-py",
+  "deps-py-latest",
+  "deps-run",
+  "deps-utest",
+  "tasks-utest",
+]}
+itest = {features = [
+  "deps-demo",
+  "deps-flit",
+  "deps-itest",
+  "deps-pip",
+  "deps-py",
+  "deps-py-latest",
+  "deps-run",
+  "tasks-itest",
+]}
+atest = {features = [
+  "deps-atest",
+  "deps-demo",
+  "deps-firefox",
+  "deps-flit",
+  "deps-itest",
+  "deps-lab",
+  "deps-pip",
+  "deps-py",
+  "deps-py-latest",
+  "deps-run",
+  "tasks-atest",
+]}
+lite = {features = ["deps-lite", "deps-demo", "tasks-lite"]}
+docs = {features = [
+  "deps-py",
+  "deps-flit",
+  "deps-pip",
+  "deps-run",
+  "deps-docs",
+  "tasks-docs",
+]}
+dev = {features = [
+  "deps-atest",
+  "deps-build",
+  "deps-cov",
+  "deps-dev",
+  "deps-docs",
+  "deps-flit",
+  "deps-itest",
+  "deps-js",
+  "deps-lab",
+  "deps-lite",
+  "deps-pip",
+  "deps-py",
+  "deps-run",
+  "deps-utest",
+  "tasks-dev",
+]}
+check = {features = ["deps-check", "tasks-check"]}
+
+# oldest supported #####################################################################
+utest-oldest = {features = [
+  "deps-flit",
+  "deps-pip",
+  "deps-py-oldest",
+  "deps-py",
+  "deps-run-oldest",
+  "deps-run",
+  "deps-utest",
+  "tasks-utest-oldest",
+]}
+itest-oldest = {features = [
+  "deps-demo",
+  "deps-flit",
+  "deps-itest",
+  "deps-pip",
+  "deps-py-oldest",
+  "deps-py",
+  "deps-run-oldest",
+  "deps-run",
+  "tasks-itest-oldest",
+]}
+atest-oldest = {features = [
+  "deps-atest",
+  "deps-demo",
+  "deps-firefox",
+  "deps-firefox-oldest",
+  "deps-flit",
+  "deps-itest",
+  "deps-lab",
+  "deps-pip",
+  "deps-py-oldest",
+  "deps-py",
+  "deps-run-oldest",
+  "deps-run",
+  "tasks-atest-oldest",
+]}
+
+# meta #################################################################################
+[project]
+name = "ipyelk"
+channels = ["conda-forge"]
+platforms = ["linux-64", "osx-64", "osx-arm64", "win-64"]

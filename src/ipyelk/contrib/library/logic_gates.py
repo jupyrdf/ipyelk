@@ -9,9 +9,8 @@ Based on https://upload.wikimedia.org/wikipedia/commons/c/cb/Circuit_elements.sv
 from typing import Dict, List, Optional
 from uuid import uuid4
 
-from ...elements import Node, NodeProperties, Port, Symbol, SymbolSpec
+from ...elements import Node, NodeProperties, Port, Symbol, SymbolSpec, shapes
 from ...elements import layout_options as opt
-from ...elements import shapes
 
 
 class Gate(Symbol):

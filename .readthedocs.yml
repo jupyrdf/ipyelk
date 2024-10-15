@@ -1,17 +1,21 @@
 version: 2
 
 build:
-  os: ubuntu-20.04
+  os: ubuntu-22.04
   tools:
-    python: mambaforge-4.10
+    python: mambaforge-latest
   jobs:
     pre_build:
-      - doit setup
-      - doit lite
+      - pixi install --environment=build
+      - pixi install --environment=lite
+      - pixi install --environment=docs
+      - pixi run setup-js
+      - pixi run build
+      - pixi run docs-lite
+
+conda:
+  environment: docs/rtd.yml
 
 sphinx:
   builder: html
   configuration: docs/conf.py
-
-conda:
-  environment: .binder/environment.yml

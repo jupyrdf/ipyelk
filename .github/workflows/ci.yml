@@ -1,217 +1,125 @@
 name: CI
 
 on:
-  push:
-    branches:
-      - master
-      - 0.3.x
   pull_request:
-    branches:
-      - master
-      - 0.3.x
+    branches: [master]
+  push:
+    branches: [master]
+  workflow_dispatch:
 
 env:
   PYTHONIOENCODING: utf-8
   PYTHONUNBUFFERED: '1'
   PIP_DISABLE_PIP_VERSION_CHECK: '1'
-  # until have mamabforge...
-  CONDA_EXE: mamba
-  # our stuff
-  SKIP_CONDA_PREFLIGHT: 1
-  CACHE_EPOCH: 2
+  CACHE_EPOCH: 6
+  ATEST_RETRIES: 2
 
 jobs:
   build:
-    runs-on: ${{ matrix.os }}-latest
-    env:
-      BUILDING_IN_CI: 1
-    strategy:
-      fail-fast: true
-      matrix:
-        os: [ubuntu]
-        py: ['3.11']
+    runs-on: ubuntu-latest
     steps:
-      - name: git checkout
-        uses: actions/checkout@v4
-
-      - name: setup (python)
-        uses: actions/setup-python@v5
+      - uses: actions/checkout@v4
+      - uses: prefix-dev/setup-pixi@v0.8.1
         with:
-          python-version: ${{ matrix.py }}
-          architecture: x64
-
-      - name: setup (node)
-        uses: actions/setup-node@v4
+          pixi-version: v0.32.1
+          cache: true
+          environments: build
+          cache-key: job-build
+      - uses: actions/cache@v4
         with:
-          node-version: '22'
-
-      - name: cache (pip)
-        uses: actions/cache@v4
-        with:
-          path: ~/.cache/pip
-          key: |
-            ${{ env.CACHE_EPOCH }}-${{ runner.os }}-pip-build-${{ hashFiles('.github/requirements-build.txt') }}
-          restore-keys: |
-            ${{ env.CACHE_EPOCH }}-${{ runner.os }}-pip-build-
-
-      - name: cache (node)
-        uses: actions/cache@v4
-        id: cache-node-modules
-        with:
-          path: '**/node_modules'
-          key: |
-            ${{ env.CACHE_EPOCH }}-${{ runner.os }}-node-build-${{ hashFiles('yarn.lock') }}
-
-      - name: setup (pip)
-        run: pip install -U pip wheel setuptools
-
-      - name: setup (pip build)
-        run: pip install -U -v -r .github/requirements-build.txt
-
-      - name: check (pip)
-        run: |
-          set -eux
-          mkdir -p build/pip
-          pip freeze | tee build/pip/dist.pip.freeze
-          pip check
-
-      - name: build
-        shell: bash -l {0}
-        run: |
-          doit build || doit build
-
-      - name: build
-        shell: bash -l {0}
-        run: |
-          doit preflight:release
-
-      - name: publish dists
-        uses: actions/upload-artifact@v4
+          path: node_modules
+          key: ${{ env.CACHE_EPOCH }}-${{ hashFiles('yarn.lock') }}-node-modules
+      - run: pixi run setup-js
+      - run: touch node_modules/.cached-in-ci
+      - run: pixi run dist
+      - uses: actions/upload-artifact@v4
         with:
           name: ipyelk-${{ github.run_number }}-dist
-          path: ./dist
+          path: |
+            ./dist
+            src/_d
+            .pixi/task-cache-v0
 
   lint:
-    runs-on: ${{ matrix.os }}-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [ubuntu]
+    runs-on: ubuntu-latest
+    needs: [build]
     steps:
-      - name: git checkout
-        uses: actions/checkout@v4
-
-      - name: cache (yarn)
+      - uses: actions/checkout@v4
+      - uses: prefix-dev/setup-pixi@v0.8.1
+        with:
+          pixi-version: v0.32.1
+          cache: true
+          environments: build lint
+          cache-key: job-lint
+      - name: cache (node)
         uses: actions/cache@v4
         with:
-          path: node_modules/
-          key: yarn-${{ runner.os }}-${{ hashFiles('yarn.lock', '.yarnrc') }}
-
-      - name: base env (conda)
-        uses: conda-incubator/setup-miniconda@v3
+          path: node_modules
+          key: ${{ env.CACHE_EPOCH }}-${{ hashFiles('yarn.lock') }}-node-modules
+      - uses: actions/download-artifact@v4
         with:
-          environment-file: .github/base-environment.yml
-          miniforge-variant: Miniforge3
-          use-mamba: true
+          name: ipyelk-${{ github.run_number }}-dist
+      - run: pixi run fix && pixi run fix
+      - run: pixi run lint
 
-      - name: lint
-        shell: bash -l {0}
-        run: |
-          doit -n4 lint || doit lint || exit 1
-
-      - name: build docs
-        shell: bash -l {0}
-        run: doit -n4 docs
-
-      - name: upload docs
-        uses: actions/upload-artifact@v4
+  docs:
+    runs-on: ubuntu-latest
+    needs: [build]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: prefix-dev/setup-pixi@v0.8.1
+        with:
+          pixi-version: v0.32.1
+          cache: true
+          environments: build check docs lite
+          cache-key: job-lint
+      - name: cache (node)
+        uses: actions/cache@v4
+        with:
+          path: node_modules
+          key: ${{ env.CACHE_EPOCH }}-${{ hashFiles('yarn.lock') }}-node-modules
+      - uses: actions/download-artifact@v4
+        with:
+          name: ipyelk-${{ github.run_number }}-dist
+      - run: pixi run docs-lite
+      - run: pixi run docs
+      - run: pixi run check
+      - uses: actions/upload-artifact@v4
         with:
           name: ipyelk-${{ github.run_number }}-docs
           path: |
             ./build/docs
-
-      - name: cache (docs)
-        uses: actions/cache@v4
-        with:
-          path: build/links
-          key: |
-            ${{ env.CACHE_EPOCH }}-links-${{ runner.os }}-${{ hashFiles('.github/base-environment.yml') }}
-          restore-keys: |
-            ${{ env.CACHE_EPOCH }}-links-${{ runner.os }}-
-            ${{ env.CACHE_EPOCH }}-links-
-
-      - name: docs
-        shell: bash -l {0}
-        run: doit -n4 checkdocs
+            ./build/reports
 
   test:
-    runs-on: ${{ matrix.os }}-latest
     needs: [build]
+    name: ${{ matrix.task }} (${{ matrix.vm }})
+    runs-on: ${{ matrix.vm }}
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu, macos, windows]
-        py: ['3.11']
-        include:
-          - os: ubuntu
-            subdir: linux-64
-          - os: macos
-            subdir: osx-arm64
-          - os: windows
-            subdir: win-64
-          - py: '3.11'
-            artifact: wheel
-    env:
-      INSTALL_ARTIFACT: ${{ matrix.artifact }}
-      TESTING_IN_CI: 'true'
-      ATEST_RETRIES: '2'
-      IPYELK_PY: ${{ matrix.py }}
+        vm: [ubuntu-latest, windows-latest, macos-13, macos-latest]
+        task: [test, test-oldest]
+        exclude:
+          - { vm: macos-13, task: test }
+          - { vm: macos-latest, task: test-oldest }
     steps:
-      - name: configure line endings
-        run: |
-          git config --global core.autocrlf false
-
-      - name: git checkout
-        uses: actions/checkout@v4
-
-      - name: env (conda)
-        uses: conda-incubator/setup-miniconda@v3
+      - uses: actions/checkout@v4
+      - uses: prefix-dev/setup-pixi@v0.8.1
         with:
-          environment-file: .github/base-environment.yml
-          miniforge-variant: Miniforge3
-          use-mamba: true
-
+          pixi-version: v0.32.1
+          cache: true
+          environments: a${{ matrix.task }} i${{ matrix.task }} u${{ matrix.task }}
+          cache-key: job-${{ matrix.task }}
       - uses: actions/download-artifact@v4
         with:
           name: ipyelk-${{ github.run_number }}-dist
-          path: ./dist
-
-      - name: test (linux)
-        if: ${{ contains(matrix.os, 'ubuntu') }}
-        shell: bash -l {0}
-        run: |
-          doit -n4 test || doit test || exit 1
-
-      - name: test (macos)
-        if: ${{ contains(matrix.os, 'macos') }}
-        shell: bash -l {0}
-        run: doit -n4 test || doit test || exit 1
-
-      - name: test (windows)
-        if: ${{ contains(matrix.os, 'windows') }}
-        shell: cmd /C CALL {0}
-        env:
-          ATEST_PROCESSES: 1
-          WIN_CI: 1
-        run: doit test || doit test || exit 1
-
-      - name: reports
-        uses: actions/upload-artifact@v4
-        with:
-          name: |-
-            ipyelk-${{ github.run_number }}-${{ job.status }}-reports-${{ matrix.os }}-${{ matrix.py }}
-          path: |
-            ./build/reports
-            ./build/htmlcov
-            ./build/pytest.html
+      - run: pixi run u${{ matrix.task }}-pytest
+      - run: pixi run i${{ matrix.task }}-nbconvert
+      - run: pixi run a${{ matrix.task }}-robot
+      - run: pixi run ${{ matrix.task }}
+      - uses: actions/upload-artifact@v4
         if: always()
+        with:
+          name: ipyelk-${{ github.run_number }}-${{ matrix.task }}-${{ matrix.vm }}
+          path: ./build/reports

@@ -341,7 +341,6 @@ class FeedbackEdges(LayoutOptionWidget):
     reroute = T.Bool(default_value=False)
 
     def _ui(self) -> List[W.Widget]:
-
         cb = W.Checkbox()
 
         T.link((self, "reroute"), (cb, "value"))

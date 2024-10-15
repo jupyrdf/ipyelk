@@ -23,14 +23,9 @@ def _jupyter_labextension_paths():
 
 
 __all__ = [
-    "__version__",
-    "_jupyter_labextension_paths",
     "Diagram",
     "ElementLoader",
     "ElkJSONLoader",
-    "from_element",
-    "from_elkjson",
-    "from_nx",
     "Loader",
     "MarkElementWidget",
     "NXLoader",
@@ -38,4 +33,9 @@ __all__ = [
     "Pipeline",
     "Tool",
     "Viewer",
+    "__version__",
+    "_jupyter_labextension_paths",
+    "from_element",
+    "from_elkjson",
+    "from_nx",
 ]
