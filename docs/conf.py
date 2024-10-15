@@ -10,6 +10,9 @@ from typing import TYPE_CHECKING, Any
 if TYPE_CHECKING:
     from sphinx.application import Sphinx
 
+# our project data
+HERE = Path(__file__).parent
+ROOT = HERE.parent
 
 RTD = "READTHEDOCS"
 
@@ -32,10 +35,6 @@ else:
         import tomllib
     except Exception:
         import tomli as tomllib
-
-    # our project data
-    HERE = Path(__file__).parent
-    ROOT = HERE.parent
 
     PY_PROJ = tomllib.loads((ROOT / "pyproject.toml").read_text(encoding="utf-8"))
     PROJ = PY_PROJ["project"]

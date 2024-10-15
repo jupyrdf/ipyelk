@@ -537,15 +537,16 @@ dev = {features = [
   "deps-atest",
   "deps-build",
   "deps-cov",
+  "deps-docs",
   "deps-flit",
+  "deps-itest",
   "deps-js",
   "deps-lab",
+  "deps-lite",
   "deps-pip",
   "deps-py",
   "deps-run",
   "deps-utest",
-  "deps-itest",
-  "deps-lite",
   "tasks-dev",
 ]}
 check = {features = ["deps-check", "tasks-check"]}
