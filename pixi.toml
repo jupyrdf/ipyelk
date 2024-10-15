@@ -405,11 +405,15 @@ outputs = ["build/reports/pip-freeze/dev.txt"]
 
 [feature.tasks-dev.tasks.dev-ext]
 cmd = """jupyter labextension develop --overwrite ."""
-depends-on = ["pip-dev"]
+depends-on = ["pip-dev", "build-js-ext"]
 
 [feature.tasks-dev.tasks.lab]
 depends-on = ["pip-dev", "dev-ext"]
 cmd = "jupyter lab --no-browser --debug"
+
+[feature.tasks-dev.tasks.watch]
+depends-on = ["setup-js", "dev-ext"]
+cmd = "python scripts/watch.py"
 
 [feature.tasks-atest-oldest.tasks.lab-oldest]
 depends-on = ["pip-atest-oldest"]
