@@ -2,16 +2,16 @@ name: CI
 
 on:
   pull_request:
-    branches: [master, 0.3.x]
+    branches: [master]
   push:
-    branches: [master, 0.3.x]
+    branches: [master]
   workflow_dispatch:
 
 env:
   PYTHONIOENCODING: utf-8
   PYTHONUNBUFFERED: '1'
   PIP_DISABLE_PIP_VERSION_CHECK: '1'
-  CACHE_EPOCH: 5
+  CACHE_EPOCH: 6
   ATEST_RETRIES: 2
 
 jobs:
@@ -38,6 +38,7 @@ jobs:
           path: |
             ./dist
             src/_d
+            .pixi/task-cache-v0
 
   lint:
     runs-on: ubuntu-latest
@@ -55,6 +56,9 @@ jobs:
         with:
           path: node_modules
           key: ${{ env.CACHE_EPOCH }}-${{ hashFiles('yarn.lock') }}-node-modules
+      - uses: actions/download-artifact@v4
+        with:
+          name: ipyelk-${{ github.run_number }}-dist
       - run: pixi run fix && pixi run fix
       - run: pixi run lint
 
@@ -74,6 +78,9 @@ jobs:
         with:
           path: node_modules
           key: ${{ env.CACHE_EPOCH }}-${{ hashFiles('yarn.lock') }}-node-modules
+      - uses: actions/download-artifact@v4
+        with:
+          name: ipyelk-${{ github.run_number }}-dist
       - run: pixi run docs-lite
       - run: pixi run docs
       - run: pixi run check
