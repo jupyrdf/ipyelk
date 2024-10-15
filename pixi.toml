@@ -243,7 +243,7 @@ cmd = """taplo fmt
   --option=array_auto_collapse=true
   --option=compact_inline_tables=true
   --option=column_width=88"""
-inputs = ["*.toml"]
+inputs = ["*.toml", "scripts/*.toml"]
 
 [feature.tasks-lint.tasks.lint-ruff-format]
 cmd = "ruff format --check"
@@ -357,11 +357,8 @@ export JUPYTER_PLATFORM_DIRS=1
 && pytest-check-links
   build/docs/
   --config-file=scripts/pytest-check-links.toml
-  --check-links-ignore '(https?://|#attributes)'
-  --check-anchors
-  -k "not (_static or contributing)"
 """
-inputs = ["build/docs/**/*.html"]
+inputs = ["build/docs/**/*.html", "scripts/pytest-check-links.toml"]
 
 # interactive development ##############################################################
 [feature.tasks-dev.tasks.pip-dev]
@@ -466,6 +463,7 @@ sphinx-autodoc-typehints = "*"
 
 [feature.deps-check.dependencies]
 pytest-check-links = "*"
+pytest-html = "*"
 vale = "*"
 vale-spelling-aoo-mozilla-en-dict-gb = "*"
 vale-spelling-aoo-mozilla-en-dict-us = "*"

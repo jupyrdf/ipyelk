@@ -1,1 +1,12 @@
 [tool.pytest.ini_options]
+filterwarnings = ["error", "ignore::DeprecationWarning"]
+addopts = [
+  "--check-links-ignore",
+  "(https?://|#attributes)",
+  "--check-anchors",
+  "-k",
+  "not (_static or contributing)",
+  "--html",
+  "build/reports/pytest-check-links.html",
+  "--self-contained-html",
+]
