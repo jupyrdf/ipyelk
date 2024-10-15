@@ -343,8 +343,12 @@ cd lite
 && jupyter lite doit -- pre_archive:report:SHA256SUMS
 """
 depends-on = ["pip-lite"]
-inputs = ["exmaples/", "lite/*.json", "!**{.ipynb_checkpoints,__pycache__}/"]
-outputs = ["build/lite/SHA256SUMS"]
+inputs = ["examples/", "lite/*.json", "!**{.ipynb_checkpoints,__pycache__}/"]
+outputs = [
+  "build/lite/SHA256SUMS",
+  "build/lite/extensions/@jupyrdf/jupyter-elk/package.json",
+  "build/lite/pypi/ipyelk-.*-py3-none-any.whl",
+]
 
 # docs #################################################################################
 [feature.tasks-docs.tasks.pip-docs]
