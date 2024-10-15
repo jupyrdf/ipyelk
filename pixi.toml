@@ -199,9 +199,9 @@ inputs = ["pyproject.toml"]
 outputs = ["build/pip-freeze/atest.txt"]
 
 [feature.tasks-atest.tasks.atest-robot]
-cmd = "python -m scripts.atest"
+cmd = "python scripts/atest.py"
 depends-on = ["pip-atest"]
-inputs = ["atest", "src", "scripts/atest.py"]
+inputs = ["atest", "src", "scripts/atest.py", "!**/__pycache__/"]
 outputs = ["build/reports/atest/**/pabot_results/**/*.*"]
 
 [feature.tasks-atest-oldest.tasks.pip-atest-oldest]
@@ -210,9 +210,9 @@ inputs = ["pyproject.toml"]
 outputs = ["build/pip-freeze/atest-oldest.txt"]
 
 [feature.tasks-atest.tasks.atest-robot-oldest]
-cmd = "python -m scripts.atest"
+cmd = "python scripts/atest.py"
 depends-on = ["pip-atest-oldest"]
-inputs = ["atest", "src", "scripts/atest.py"]
+inputs = ["atest", "src", "scripts/atest.py", "!**/__pycache__/"]
 outputs = ["build/reports/atest-oldest/**/pabot_results/**/*.*"]
 
 # lint #################################################################################
@@ -266,11 +266,11 @@ depends-on = ["setup-js"]
 
 [feature.tasks-lint.tasks.fix-robot-tidy]
 cmd = "robotidy atest"
-inputs = ["atest/"]
+inputs = ["atest/**/*.{robot,resource}"]
 
 [feature.tasks-lint.tasks.lint-robot-dryrun]
-cmd = "python -m scripts.atest --dryrun"
-inputs = ["atest/", "scripts/atest.py"]
+cmd = "python scripts/atest.py --dryrun"
+inputs = ["atest/", "scripts/atest.py", "!**/__pycache__/"]
 
 [feature.tasks-lint.tasks.fix-prettier]
 cmd = "jlpm lint:prettier"
@@ -423,11 +423,15 @@ robotframework-seleniumlibrary = "*"
 robotframework-tidy = "*"
 
 [feature.deps-firefox.dependencies]
+firefox = ">=128"
+geckodriver = "*"
+
+[feature.deps-firefox-oldest.dependencies]
 firefox = "128.*"
 geckodriver = "*"
 
 [feature.deps-lite.dependencies]
-jupyterlite-core = "0.4.2"
+jupyterlite-core = "0.4.3"
 jupyterlab_server = "*"
 python-libarchive-c = "*"
 jupyterlite-pyodide-kernel = "0.4.2"
@@ -546,6 +550,7 @@ atest-oldest = {features = [
   "deps-atest",
   "deps-demo",
   "deps-firefox",
+  "deps-firefox-oldest",
   "deps-flit",
   "deps-itest",
   "deps-lab",
