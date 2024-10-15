@@ -31,17 +31,31 @@ check = {depends-on = ["check-links", "check-spelling"]}
 release = {depends-on = ["fix", "lint", "build", "dist", "test-all", "docs", "check"]}
 
 # fragments ############################################################################
-[tasks.pip-e--]
-cmd = """rm -f build/pip-freeze/$PIXI_ENVIRONMENT_NAME.txt
-&& python -m pip install -e .
+[tasks.pip--]
+cmd = """
+rm -f build/reports/pip-freeze/$PIXI_ENVIRONMENT_NAME.txt
+&& python -m pip install
+  -vv
   --disable-pip-version-check
   --ignore-installed
   --no-build-isolation
   --no-cache-dir
-  --no-deps
-&& pip check
-&& mkdir -p build/pip-freeze
-&& pip list --format=freeze > build/pip-freeze/$PIXI_ENVIRONMENT_NAME.txt"""
+  --no-deps"""
+
+[tasks.pip-editable--]
+cmd = "pixi r pip-- --editable . && pixi r pip-check--"
+
+[tasks.pip-dist--]
+cmd = """
+pixi r pip-- --find-links=dist --no-index ipyelk
+&& pixi r pip-check--
+&& jupyter labextension list
+"""
+
+[tasks.pip-check--]
+cmd = """python -m pip check
+&& mkdir -p build/reports/pip-freeze
+&& pip list --format=freeze > build/reports/pip-freeze/$PIXI_ENVIRONMENT_NAME.txt"""
 
 [tasks.nbconvert--]
 cmd = """
@@ -120,9 +134,9 @@ outputs = ["dist/SHA256SUMS"]
 
 # unit test ############################################################################
 [feature.tasks-utest.tasks.pip-utest]
-cmd = """pixi r -e utest pip-e--"""
+cmd = """pixi r -e utest pip-editable--"""
 inputs = ["pyproject.toml"]
-outputs = ["build/pip-freeze/utest.txt"]
+outputs = ["build/reports/pip-freeze/utest.txt"]
 
 [feature.tasks-utest.tasks.utest-pytest]
 cmd = """
@@ -140,7 +154,7 @@ export
 """
 depends-on = ["pip-utest"]
 inputs = [
-  "build/pip-freeze/utest.txt",
+  "build/reports/pip-freeze/utest.txt",
   "pyproject.toml",
   "{tests,src}/**/*.{py,json}",
   "!**/.ipynb_checkpoints",
@@ -148,9 +162,9 @@ inputs = [
 outputs = ["build/reports/utest/{pytest.html,pytest.xunit.xml,htmlcov/status.json}"]
 
 [feature.tasks-utest-oldest.tasks.pip-utest-oldest]
-cmd = """pixi r -e utest-oldest pip-e--"""
-inputs = ["pyproject.toml"]
-outputs = ["build/pip-freeze/utest-oldest.txt"]
+cmd = """pixi r -e utest-oldest pip-dist--"""
+inputs = ["dist/*.whl"]
+outputs = ["build/reports/pip-freeze/utest-oldest.txt"]
 
 [feature.tasks-utest-oldest.tasks.utest-oldest-pytest]
 cmd = """
@@ -162,7 +176,7 @@ export JUPYTER_PLATFORM_DIRS=1
 """
 depends-on = ["pip-utest-oldest"]
 inputs = [
-  "build/pip-freeze/utest-oldest.txt",
+  "build/reports/pip-freeze/utest-oldest.txt",
   "pyproject.toml",
   "{tests,src}/**/*.{py,json}",
   "!**/.ipynb_checkpoints",
@@ -171,9 +185,9 @@ outputs = ["build/reports/utest/{pytest.html,pytest.xunit.xml}"]
 
 # integration test #####################################################################
 [feature.tasks-utest.tasks.pip-itest]
-cmd = """pixi r -e itest pip-e--"""
+cmd = """pixi r -e itest pip-editable--"""
 inputs = ["pyproject.toml"]
-outputs = ["build/pip-freeze/itest.txt"]
+outputs = ["build/reports/pip-freeze/itest.txt"]
 
 [feature.tasks-itest.tasks.itest-nbconvert]
 cmd = """pixi r -e itest nbconvert--"""
@@ -182,9 +196,9 @@ inputs = ["examples/", "!**/{.ipynb_checkpoints,__pycache__}"]
 outputs = ["build/reports/itest/nbconvert/**/*.html"]
 
 [feature.tasks-utest-oldest.tasks.pip-itest-oldest]
-cmd = """pixi r -e itest-oldest pip-e--"""
+cmd = """pixi r -e itest-oldest pip-editable--"""
 inputs = ["pyproject.toml"]
-outputs = ["build/pip-freeze/itest-oldest.txt"]
+outputs = ["build/reports/pip-freeze/itest-oldest.txt"]
 
 [feature.tasks-itest-oldest.tasks.itest-oldest-nbconvert]
 cmd = """pixi r -e itest-oldest nbconvert--"""
@@ -194,9 +208,9 @@ outputs = ["build/reports/itest-oldest/nbconvert/**/*.html"]
 
 # acceptance test ######################################################################
 [feature.tasks-atest.tasks.pip-atest]
-cmd = """pixi r -e atest pip-e--"""
+cmd = """pixi r -e atest pip-editable--"""
 inputs = ["pyproject.toml"]
-outputs = ["build/pip-freeze/atest.txt"]
+outputs = ["build/reports/pip-freeze/atest.txt"]
 
 [feature.tasks-atest.tasks.atest-robot]
 cmd = "python scripts/atest.py"
@@ -215,9 +229,9 @@ outputs = [
 ]
 
 [feature.tasks-atest-oldest.tasks.pip-atest-oldest]
-cmd = """pixi r -e atest-oldest pip-e--"""
-inputs = ["pyproject.toml"]
-outputs = ["build/pip-freeze/atest-oldest.txt"]
+cmd = """pixi r -e atest-oldest pip-dist--"""
+inputs = ["dist/*.whl"]
+outputs = ["build/reports/pip-freeze/atest-oldest.txt"]
 
 [feature.tasks-atest.tasks.atest-oldest-robot]
 cmd = "python scripts/atest.py"
@@ -323,9 +337,9 @@ outputs = ["build/lite/SHA256SUMS"]
 
 # docs #################################################################################
 [feature.tasks-docs.tasks.pip-docs]
-cmd = """pixi r -e docs pip-e--"""
+cmd = """pixi r -e docs pip-editable--"""
 inputs = ["pyproject.toml"]
-outputs = ["build/pip-freeze/docs.txt"]
+outputs = ["build/reports/pip-freeze/docs.txt"]
 
 [feature.tasks-docs.tasks.docs-sphinx]
 cmd = "sphinx-build -b html docs build/docs"
@@ -370,9 +384,9 @@ inputs = ["build/docs/**/*.html", "scripts/pytest-check-links.toml"]
 
 # interactive development ##############################################################
 [feature.tasks-dev.tasks.pip-dev]
-cmd = """pixi r -e dev pip-e--"""
+cmd = """pixi r -e dev pip-editable--"""
 inputs = ["pyproject.toml"]
-outputs = ["build/pip-freeze/dev.txt"]
+outputs = ["build/reports/pip-freeze/dev.txt"]
 
 [feature.tasks-dev.tasks.dev-ext]
 cmd = """jupyter labextension develop --overwrite ."""
@@ -400,6 +414,8 @@ actionlint-with-all = "*"
 python = ">=3.9"
 [feature.deps-py-oldest.dependencies]
 python = "<3.10"
+[feature.deps-py-latest.dependencies]
+python = ">=3.13"
 
 [feature.deps-lab.dependencies]
 jupyterlab = ">=4.2.0,<5"
@@ -499,6 +515,7 @@ utest = {features = [
   "deps-flit",
   "deps-pip",
   "deps-py",
+  "deps-py-latest",
   "deps-run",
   "deps-utest",
   "tasks-utest",
@@ -509,6 +526,7 @@ itest = {features = [
   "deps-itest",
   "deps-pip",
   "deps-py",
+  "deps-py-latest",
   "deps-run",
   "tasks-itest",
 ]}
@@ -521,6 +539,7 @@ atest = {features = [
   "deps-lab",
   "deps-pip",
   "deps-py",
+  "deps-py-latest",
   "deps-run",
   "tasks-atest",
 ]}
