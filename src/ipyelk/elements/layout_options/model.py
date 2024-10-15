@@ -97,8 +97,6 @@ def from_bool(x: Any) -> bool:
 
 @dataclass
 class Elk:
-    pass
-
     @staticmethod
     def from_dict(obj: Any) -> "Elk":
         assert isinstance(obj, dict)

@@ -55,7 +55,7 @@ jobs:
         with:
           path: node_modules
           key: ${{ env.CACHE_EPOCH }}-${{ hashFiles('yarn.lock') }}-node-modules
-      - run: pixi run fix
+      - run: pixi run fix && pixi run fix
       - run: pixi run lint
 
   docs:
