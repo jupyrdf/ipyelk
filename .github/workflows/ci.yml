@@ -35,7 +35,9 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: ipyelk-${{ github.run_number }}-dist
-          path: ./dist
+          path: |
+            ./dist
+            src/_d
 
   lint:
     runs-on: ubuntu-latest
