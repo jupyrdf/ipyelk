@@ -32,7 +32,9 @@ FAIL_UNDER = (
     or re.findall(rf"{COV_ENV_VAR}: (\d+)", CI_YML.read_text(**UTF8))[0]
 )
 
-if platform.system() == "Windows":
+WIN = platform.system() == "Windows"
+
+if WIN:
     print("Not checking windows coverage...")
     FAIL_UNDER = "0"
 
@@ -60,7 +62,7 @@ def js_cov() -> int:
 
     if not all_js_cov:
         print("No JS coverage from atest")
-        return 1
+        return 0 if WIN else 1
 
     with tempfile.TemporaryDirectory() as td:
         for js_cov in all_js_cov:
@@ -90,7 +92,7 @@ def py_cov() -> int:
 
     if not all_py_cov:
         print("No Python coverage found")
-        return 1
+        return 0 if WIN else 1
 
     with tempfile.TemporaryDirectory() as td:
         kwargs: Any = {"cwd": td}
