@@ -33,7 +33,6 @@ directory = "{REPORT_ALLCOV}"
 
 [tool.coverage.report]
 show_missing = true
-skip_covered = true
 """
 
 
@@ -52,8 +51,11 @@ def main() -> int:
         tdp = Path(td)
         (tdp / "pyproject.toml").write_text(PYPROJECT, **UTF8)
         call(["coverage", "combine", "--keep", *all_py_cov], **kwargs)
-        rc = call(["coverage", "report"], **kwargs)
+        rc = call(["coverage", "report", "--skip-covered"], **kwargs)
         call(["coverage", "html"], **kwargs)
+        for path in REPORT_ALLCOV.rglob("*.html"):
+            path.write_text(path.read_text(**UTF8).replace(f"{ROOT}/", ""), **UTF8)
+
     return rc
 
 
