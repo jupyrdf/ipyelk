@@ -82,6 +82,7 @@ def atest(attempt, extra_args):
         *["--variable", f"GECKODRIVER:{geckodriver}"],
         *["--variable", f"TOTAL_COVERAGE:{TOTAL_COVERAGE}"],
         *["--randomize", "all"],
+        *["--consolecolors=on"],
         *(extra_args or []),
         *(os.environ.get("ATEST_ARGS", "").split()),
     ]
