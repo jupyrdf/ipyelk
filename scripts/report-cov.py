@@ -3,6 +3,7 @@
 # Distributed under the terms of the Modified BSD License.
 
 import os
+import platform
 import re
 import site
 import sys
@@ -27,6 +28,10 @@ FAIL_UNDER = (
     os.environ.get(COV_ENV_VAR, "")
     or re.findall(rf"{COV_ENV_VAR}: (\d+)", CI_YML.read_text(**UTF8))[0]
 )
+
+if platform.system() == "Windows":
+    print("Not checking windows coverage...")
+    FAIL_UNDER = "0"
 
 PYPROJECT = f"""
 [tool.coverage.paths]

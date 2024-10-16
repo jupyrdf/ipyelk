@@ -407,6 +407,10 @@ rm -rf build/reports/vale.txt
     --output scripts/vale/output.tmpl
   >> build/reports/vale.txt
   && cat build/reports/vale.txt
+  && python -c "
+v = __import__('pathlib').Path('build/reports/vale.txt').read_text(encoding='utf-8');
+assert v.strip().endswith('0 errors, 0 warnings and 0 suggestions in 0 files.')
+  "
 ) || cat build/reports/vale.txt
 """
 depends-on = ["docs-sphinx"]

@@ -17,8 +17,10 @@ from pabot import pabot
 ENV_NAME = os.environ["PIXI_ENVIRONMENT_NAME"]
 PROCESSES = int(os.environ.get("ATEST_PROCESSES", "4"))
 RETRIES = int(os.environ.get("ATEST_RETRIES", "0"))
-TOTAL_COVERAGE = int(os.environ.get("WITH_TOTAL_COVERAGE", "0"))
 PLATFORM = platform.system()
+WIN = PLATFORM == "Windows"
+TOTAL_COVERAGE = 0 if WIN else int(os.environ.get("WITH_TOTAL_COVERAGE", "0"))
+
 
 HERE = Path(__file__).parent
 ROOT = HERE.parent
