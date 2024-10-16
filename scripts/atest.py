@@ -17,6 +17,7 @@ from pabot import pabot
 ENV_NAME = os.environ["PIXI_ENVIRONMENT_NAME"]
 PROCESSES = int(os.environ.get("ATEST_PROCESSES", "4"))
 RETRIES = int(os.environ.get("ATEST_RETRIES", "0"))
+ATTEMPT = int(os.environ.get("ATEST_ATTEMPT", "0"))
 PLATFORM = platform.system()
 WIN = PLATFORM == "Windows"
 TOTAL_COVERAGE = 0 if WIN else int(os.environ.get("WITH_TOTAL_COVERAGE", "0"))
@@ -124,13 +125,16 @@ def atest(attempt, extra_args):
 
 def attempt_atest_with_retries(*extra_args):
     """Retry the robot tests a number of times"""
-    attempt = 0
+    attempt = ATTEMPT
     error_count = -1
 
     is_real = "--dryrun" not in extra_args
 
     if is_real and ATEST_CANARY.exists():
         ATEST_CANARY.unlink()
+
+    if not ATTEMPT:
+        shutil.rmtree(ATEST_OUT, ignore_errors=True)
 
     while error_count != 0 and attempt <= RETRIES:
         attempt += 1

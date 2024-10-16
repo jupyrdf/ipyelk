@@ -5,6 +5,7 @@
 import os
 import platform
 import re
+import shutil
 import site
 import sys
 import tempfile
@@ -18,9 +19,11 @@ ROOT = HERE.parent
 SRC = ROOT / "src"
 BUILD = ROOT / "build"
 REPORTS = BUILD / "reports"
+
 REPORT_ATEST = REPORTS / "atest"
 REPORT_UTEST = REPORTS / "utest"
-REPORT_ALLCOV = REPORTS / "htmlcov"
+REPORT_PY_ALLCOV = REPORTS / "htmlcov"
+REPORT_JS_ALLCOV = REPORTS / "nyc"
 
 CI_YML = ROOT / ".github/workflows/ci.yml"
 COV_ENV_VAR = "ALL_PY_COV_FAIL_UNDER"
@@ -44,14 +47,42 @@ source = [
 skip_empty = true
 title = "ALL"
 show_contexts = true
-directory = '{REPORT_ALLCOV}'
+directory = '{REPORT_PY_ALLCOV}'
 
 [tool.coverage.report]
 show_missing = true
 """
 
 
-def main() -> int:
+def js_cov() -> int:
+    """Gather coverage from all JS sources."""
+    all_js_cov = sorted(REPORT_ATEST.rglob("*/jscov/*.json"))
+
+    if not all_js_cov:
+        print("No JS coverage from atest")
+        return 1
+
+    with tempfile.TemporaryDirectory() as td:
+        for js_cov in all_js_cov:
+            shutil.copy2(js_cov, Path(td) / js_cov.name)
+
+        report_args = [
+            "jlpm",
+            "run",
+            "nyc",
+            "report",
+            f"--temp-dir={td}",
+        ]
+
+        return call([
+            *report_args,
+            f"--report-dir={REPORT_JS_ALLCOV}",
+            "--check-coverage",
+        ])
+
+
+def py_cov() -> int:
+    """Gather coverage from all python sources."""
     all_py_cov = [
         *sorted(REPORT_ATEST.glob("*/pabot_results/*/pycov/.coverage*")),
         REPORT_UTEST / ".coverage",
@@ -76,10 +107,14 @@ def main() -> int:
             **kwargs,
         )
         call(["coverage", "html"], **kwargs)
-        for path in REPORT_ALLCOV.rglob("*.html"):
+        for path in REPORT_PY_ALLCOV.rglob("*.html"):
             path.write_text(path.read_text(**UTF8).replace(f"{ROOT}/", ""), **UTF8)
 
     return rc
+
+
+def main() -> int:
+    return max([py_cov(), js_cov()])
 
 
 if __name__ == "__main__":

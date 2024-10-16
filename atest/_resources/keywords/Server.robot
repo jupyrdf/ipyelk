@@ -4,6 +4,7 @@ Library     Process
 Library     String
 Resource    Lab.robot
 Resource    Browser.robot
+Resource    Coverage.robot
 Resource    ../variables/Server.robot
 Library     ../../_libraries/Ports.py
 Library     json

@@ -86,6 +86,9 @@ export
     ./**/*.ipynb
 """
 
+[tasks.labext-develop--]
+cmd = "jupyter labextension develop --overwrite ."
+
 # setup ################################################################################
 [feature.tasks-build.tasks.setup-js]
 cmd = """cat node_modules/.cached-in-ci || jlpm"""
@@ -100,7 +103,7 @@ inputs = ["js/sprotty/json/elkschema.ts", "node_modules/.yarn-state.yml"]
 outputs = ["src/ipyelk/schema/elkschema.json"]
 
 [feature.tasks-build.tasks.build-js-lib]
-cmd = "jlpm build:ts"
+cmd = "rm -rf lib build/.*.tsbuildinfo && jlpm build:ts"
 depends-on = ["build-py-schema", "setup-js"]
 inputs = [
   "{tsconfigbase,package}.json",
@@ -108,15 +111,44 @@ inputs = [
   "node_modules/.yarn-state.yml",
   "src/ipyelk/schema/elkschema.json",
 ]
-outputs = ["build/.src.tsbuildinfo"]
+outputs = ["lib", "build/.src.tsbuildinfo"]
 
 [feature.tasks-build.tasks.build-js-ext]
-cmd = "jlpm build:ext"
+cmd = "rm -rf lib build/.*.tsbuildinfo && jlpm build:ext"
 depends-on = ["setup-js", "build-js-lib"]
 inputs = [
   "node_modules/.yarn-state.yml",
   "style/",
+  "package.json",
   "build/.src.tsbuildinfo",
+  "webpack.config.js",
+]
+outputs = ["src/_d/share/jupyter/labextensions/@jupyrdf/jupyter-elk/package.json"]
+
+# js coverage ##########################################################################
+[feature.tasks-build.tasks.build-js-lib-cov]
+cmd = "jlpm build:ts:cov"
+depends-on = ["build-py-schema", "setup-js"]
+inputs = [
+  "{tsconfigbase,package}.json",
+  "js/",
+  "node_modules/.yarn-state.yml",
+  "src/ipyelk/schema/elkschema.json",
+]
+outputs = ["lib", "build/.src.cov.tsbuildinfo"]
+
+[feature.tasks-build.tasks.build-js-ext-cov]
+cmd = """
+export WITH_TOTAL_COVERAGE=1
+&& rm -rf src/_d
+&& jlpm build:ext
+"""
+depends-on = ["setup-js", "build-js-lib-cov"]
+inputs = [
+  "node_modules/.yarn-state.yml",
+  "style/",
+  "package.json",
+  "build/.src.cov.tsbuildinfo",
   "webpack.config.js",
 ]
 outputs = ["src/_d/share/jupyter/labextensions/@jupyrdf/jupyter-elk/package.json"]
@@ -222,16 +254,20 @@ outputs = ["build/reports/itest-oldest/nbconvert/**/*.html"]
 
 # acceptance test ######################################################################
 [feature.tasks-atest.tasks.pip-atest]
-cmd = """pixi r -e atest pip-dist-- && pixi r ext-check--"""
-inputs = ["dist/*.whl"]
+cmd = """pixi r -e atest pip-editable--"""
+inputs = ["pyproject.toml"]
 outputs = ["build/reports/pip-freeze/atest.txt"]
+
+[feature.tasks-atest.tasks.atest-ext]
+cmd = """pixi r -e atest labext-develop--"""
+depends-on = ["build-js-ext-cov", "pip-atest"]
 
 [feature.tasks-atest.tasks.atest-robot]
 cmd = """
 export WITH_TOTAL_COVERAGE=1
 && python scripts/atest.py
 """
-depends-on = ["pip-atest"]
+depends-on = ["atest-ext"]
 inputs = [
   "examples",
   "atest",
@@ -247,7 +283,7 @@ outputs = [
 
 [feature.tasks-atest.tasks.report-cov]
 cmd = """python scripts/report-cov.py"""
-depends-on = ["atest-robot", "utest-pytest"]
+depends-on = ["utest-pytest", "atest-robot"]
 inputs = [
   ".github/workflows/ci.yml",
   "scripts/report-cov.py",
@@ -338,7 +374,7 @@ cmd = "jlpm lint:prettier"
 depends-on = ["setup-js"]
 inputs = [
   ".prettierignore",
-  "*.*{md,json,yml,yaml}",
+  "*.*{md,json,yml,yaml,js}",
   "node_modules/.yarn-state.yml",
   "{style,js,.github,examples,lite,atest,docs,scripts}/**/*.{css,md,json,yml,yaml,ts,tsx}",
 ]
@@ -432,7 +468,7 @@ inputs = ["pyproject.toml"]
 outputs = ["build/reports/pip-freeze/dev.txt"]
 
 [feature.tasks-dev.tasks.dev-ext]
-cmd = """jupyter labextension develop --overwrite ."""
+cmd = """pixi r -e dev labext-develop--"""
 depends-on = ["pip-dev", "build-js-ext"]
 
 [feature.tasks-dev.tasks.lab]
@@ -452,7 +488,7 @@ depends-on = ["pip-atest-oldest"]
 cmd = "jupyter lab --no-browser --debug"
 
 # dependencies #########################################################################
-[feature.deps-js.dependencies]
+[feature.deps-node.dependencies]
 nodejs = "22.*"
 
 [feature.deps-lint.dependencies]
@@ -553,18 +589,18 @@ coverage = "*"
 # environments #########################################################################
 [environments]
 lint = {features = [
-  "deps-lab",
-  "deps-py",
-  "deps-js",
-  "deps-lint",
   "deps-atest",
+  "deps-lab",
+  "deps-lint",
+  "deps-node",
+  "deps-py",
   "tasks-lint",
 ]}
 build = {features = [
   "deps-build",
   "deps-flit",
-  "deps-js",
   "deps-lab",
+  "deps-node",
   "deps-py",
   "tasks-build",
 ]}
@@ -590,15 +626,16 @@ itest = {features = [
 ]}
 atest = {features = [
   "deps-atest",
+  "deps-cov",
   "deps-demo",
   "deps-firefox",
   "deps-flit",
-  "deps-cov",
   "deps-itest",
   "deps-lab",
+  "deps-node",
   "deps-pip",
-  "deps-py",
   "deps-py-latest",
+  "deps-py",
   "deps-run",
   "tasks-atest",
 ]}
@@ -619,7 +656,7 @@ dev = {features = [
   "deps-docs",
   "deps-flit",
   "deps-itest",
-  "deps-js",
+  "deps-node",
   "deps-lab",
   "deps-lite",
   "deps-pip",

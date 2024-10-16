@@ -116,6 +116,11 @@ jobs:
           cache: true
           environments: a${{ matrix.task }} i${{ matrix.task }} u${{ matrix.task }}
           cache-key: job-${{ matrix.task }}
+      - if: matrix.task == 'test'
+        uses: actions/cache@v4
+        with:
+          path: node_modules
+          key: ${{ env.CACHE_EPOCH }}-${{ hashFiles('yarn.lock') }}-node-modules
       - uses: actions/download-artifact@v4
         with:
           name: ipyelk-${{ github.run_number }}-dist
