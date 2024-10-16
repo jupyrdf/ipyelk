@@ -352,12 +352,6 @@ cmd = "actionlint -shellcheck=shellcheck -pyflakes=pyflakes"
 inputs = [".github/workflows"]
 
 # lite #################################################################################
-[feature.tasks-lite.tasks.pip-lite]
-cmd = """pixi r -e lite pip-dist--"""
-depends-on = ["dist-pypi"]
-inputs = ["dist/*.whl"]
-outputs = ["build/reports/pip-freeze/lite.txt"]
-
 [feature.tasks-lite.tasks.clean-docs-lite]
 cmd = """rm -rf build/.cache/lite lite/.jupyterlite.doit.db"""
 
@@ -366,7 +360,6 @@ cmd = """
 cd lite
 && jupyter lite doit -- pre_archive:report:SHA256SUMS
 """
-depends-on = ["pip-lite"]
 inputs = ["examples/", "lite/*.json", "!**{.ipynb_checkpoints,__pycache__}/"]
 outputs = [
   "build/lite/SHA256SUMS",
