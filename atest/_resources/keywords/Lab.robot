@@ -2,6 +2,7 @@
 Library     OperatingSystem
 Library     SeleniumLibrary
 Resource    Browser.robot
+Resource    Coverage.robot
 Resource    ../variables/Lab.robot
 Resource    ../variables/Browser.robot
 
@@ -141,6 +142,7 @@ Open ${file} in ${editor}
 
 Clean Up After Working With Files
     [Arguments]    @{files}
+    IF    ${TOTAL_COVERAGE}    Capture Page Coverage
     FOR    ${file}    IN    @{files}
         ${src}    ${name} =    Split Path    ${file}
         Remove File    ${OUTPUT DIR}${/}home${/}${name}
@@ -202,9 +204,6 @@ Get Editor Content
     [Arguments]    ${css}=${EMPTY}
     ${content} =    Execute JavaScript    return document.querySelector('${css} .CodeMirror').CodeMirror.getValue()
     RETURN    ${content}
-
-Close JupyterLab
-    Close All Browsers
 
 Open Command Palette
     Press Keys    id:main    ${ACCEL}+SHIFT+c

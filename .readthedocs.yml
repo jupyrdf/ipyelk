@@ -11,6 +11,7 @@ build:
       - pixi install --environment=docs
       - pixi run setup-js
       - pixi run build
+      - pixi run dist
       - pixi run docs-lite
 
 conda:

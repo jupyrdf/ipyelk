@@ -2,7 +2,8 @@
 
 const webpack = require('webpack');
 const path = require('path');
-const CircularDependencyPlugin = require('circular-dependency-plugin');
+
+const { WEBPACK_WATCH, WITH_TOTAL_COVERAGE } = process.env;
 
 /** @type {import('webpack').Configuration} */
 const config = {
@@ -10,13 +11,16 @@ const config = {
     clean: true,
   },
   target: 'web',
-  mode: 'development',
   devtool: 'source-map',
+  mode: WEBPACK_WATCH ? 'development' : 'production',
   module: {
     rules: [
       {
         test: /\.js$/,
-        use: ['source-map-loader'],
+        use:
+          WITH_TOTAL_COVERAGE || WEBPACK_WATCH
+            ? ['@ephesoft/webpack.istanbul.loader']
+            : ['source-map-loader'],
       },
     ],
   },

@@ -52,6 +52,7 @@ lockfiles
 maintenance
 Mambaforge
 MarkElementWidget
+Miniforge
 multiline
 networkx
 NetworkX
@@ -60,6 +61,7 @@ NXLoad
 Pan/Zoom
 PipeStatus
 PipeStatusView
+pixi
 PRs
 PyData
 pypi
