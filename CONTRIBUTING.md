@@ -87,6 +87,7 @@ _Log Console_, opened with the _Show Log Console_ command.
 ```bash
 pixi run fix
 pixi run lint
+pixi run test
 ```
 
 - Ensure the `examples/` work. These will be tested in CI with:
@@ -97,8 +98,12 @@ pixi run lint
     - Treat each feature as a function which can be reused for other examples, with:
       - the example in a humane name, e.g. `a_basic_elk_example`
       - some suitable defaults and knobs to twiddle
-  - Add appropriate links to your new example.
-  - Add appropriate Robot Framework tests
+    - Add appropriate links to your new example.
+    - These will be picked up by `itest`
+  - Potentially add some unit `./tests`
+  - Add appropriate Robot Framework in `./atest`
+- Ensure coverage doesn't degrade from the `ALL_PY_COV_FAIL_UNDER` baseline in
+  `.github/ci.yml`
 
 ### Limiting Testing
 

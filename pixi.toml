@@ -246,10 +246,11 @@ outputs = [
 ]
 
 [feature.tasks-atest.tasks.report-cov]
-cmd = """python scripts/report.py"""
+cmd = """python scripts/report-cov.py"""
 depends-on = ["atest-robot", "utest-pytest"]
 inputs = [
-  "scripts/report.py",
+  ".github/workflows/ci.yml",
+  "scripts/report-cov.py",
   "build/reports/utest/.coverage",
   "build/reports/atest/*/pabot_results/*/pycov/.coverage*",
 ]

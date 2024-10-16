@@ -2,6 +2,8 @@
 # Copyright (c) 2024 ipyelk contributors.
 # Distributed under the terms of the Modified BSD License.
 
+import os
+import re
 import site
 import sys
 import tempfile
@@ -18,6 +20,13 @@ REPORTS = BUILD / "reports"
 REPORT_ATEST = REPORTS / "atest"
 REPORT_UTEST = REPORTS / "utest"
 REPORT_ALLCOV = REPORTS / "htmlcov"
+
+CI_YML = ROOT / ".github/workflows/ci.yml"
+COV_ENV_VAR = "ALL_PY_COV_FAIL_UNDER"
+FAIL_UNDER = (
+    os.environ.get(COV_ENV_VAR, "")
+    or re.findall(rf"{COV_ENV_VAR}: (\d+)", CI_YML.read_text(**UTF8))[0]
+)
 
 PYPROJECT = f"""
 [tool.coverage.paths]
@@ -52,7 +61,15 @@ def main() -> int:
         tdp = Path(td)
         (tdp / "pyproject.toml").write_text(PYPROJECT, **UTF8)
         call(["coverage", "combine", "--keep", *all_py_cov], **kwargs)
-        rc = call(["coverage", "report", "--skip-covered"], **kwargs)
+        rc = call(
+            [
+                "coverage",
+                "report",
+                "--skip-covered",
+                f"--fail-under={FAIL_UNDER}",
+            ],
+            **kwargs,
+        )
         call(["coverage", "html"], **kwargs)
         for path in REPORT_ALLCOV.rglob("*.html"):
             path.write_text(path.read_text(**UTF8).replace(f"{ROOT}/", ""), **UTF8)
