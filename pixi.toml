@@ -103,7 +103,7 @@ inputs = ["js/sprotty/json/elkschema.ts", "node_modules/.yarn-state.yml"]
 outputs = ["src/ipyelk/schema/elkschema.json"]
 
 [feature.tasks-build.tasks.build-js-lib]
-cmd = "rm -rf lib build/.*.tsbuildinfo && jlpm build:ts"
+cmd = "jlpm build:ts"
 depends-on = ["build-py-schema", "setup-js"]
 inputs = [
   "{tsconfigbase,package}.json",
@@ -114,7 +114,7 @@ inputs = [
 outputs = ["lib", "build/.src.tsbuildinfo"]
 
 [feature.tasks-build.tasks.build-js-ext]
-cmd = "rm -rf lib build/.*.tsbuildinfo && jlpm build:ext"
+cmd = "jlpm build:ext"
 depends-on = ["setup-js", "build-js-lib"]
 inputs = [
   "node_modules/.yarn-state.yml",
@@ -140,7 +140,6 @@ outputs = ["lib", "build/.src.cov.tsbuildinfo"]
 [feature.tasks-build.tasks.build-js-ext-cov]
 cmd = """
 export WITH_TOTAL_COVERAGE=1
-&& rm -rf src/_d
 && jlpm build:ext
 """
 depends-on = ["setup-js", "build-js-lib-cov"]
