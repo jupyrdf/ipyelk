@@ -210,7 +210,7 @@ inputs = ["examples/", "!**/{.ipynb_checkpoints,__pycache__}"]
 outputs = ["build/reports/itest/nbconvert/**/*.html"]
 
 [feature.tasks-itest-oldest.tasks.pip-itest-oldest]
-cmd = """pixi r -e utest-oldest pip-editable--"""
+cmd = """pixi r -e itest-oldest pip-editable--"""
 inputs = ["pyproject.toml"]
 outputs = ["build/reports/pip-freeze/itest-oldest.txt"]
 
