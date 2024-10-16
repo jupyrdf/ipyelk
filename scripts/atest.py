@@ -1,5 +1,4 @@
 """Run acceptance tests with robot framework"""
-
 # Copyright (c) 2024 ipyelk contributors.
 # Distributed under the terms of the Modified BSD License.
 
@@ -18,6 +17,7 @@ from pabot import pabot
 ENV_NAME = os.environ["PIXI_ENVIRONMENT_NAME"]
 PROCESSES = int(os.environ.get("ATEST_PROCESSES", "4"))
 RETRIES = int(os.environ.get("ATEST_RETRIES", "0"))
+TOTAL_COVERAGE = int(os.environ.get("WITH_TOTAL_COVERAGE", "0"))
 PLATFORM = platform.system()
 
 HERE = Path(__file__).parent
@@ -77,6 +77,7 @@ def atest(attempt, extra_args):
         *["--variable", f"IPYELK_EXAMPLES:{EXAMPLES}"],
         *["--variable", f"FIREFOX:{firefox}"],
         *["--variable", f"GECKODRIVER:{geckodriver}"],
+        *["--variable", f"TOTAL_COVERAGE:{TOTAL_COVERAGE}"],
         *["--randomize", "all"],
         *(extra_args or []),
         *(os.environ.get("ATEST_ARGS", "").split()),

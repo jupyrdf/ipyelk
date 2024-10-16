@@ -19,7 +19,7 @@ lint = {depends-on = [
   "lint-robot-dryrun",
   "lint-actionlint",
 ]}
-test = {depends-on = ["utest-pytest", "itest-nbconvert", "atest-robot"]}
+test = {depends-on = ["utest-pytest", "itest-nbconvert", "atest-robot", "report-cov"]}
 test-oldest = {depends-on = [
   "utest-oldest-pytest",
   "itest-oldest-nbconvert",
@@ -28,7 +28,17 @@ test-oldest = {depends-on = [
 test-all = {depends-on = ["test", "test-oldest"]}
 docs = {depends-on = ["docs-lite", "docs-sphinx"]}
 check = {depends-on = ["check-links", "check-spelling"]}
-release = {depends-on = ["fix", "lint", "build", "dist", "test-all", "docs", "check"]}
+report = {depends-on = ["report-cov"]}
+release = {depends-on = [
+  "fix",
+  "lint",
+  "build",
+  "dist",
+  "test-all",
+  "report",
+  "docs",
+  "check",
+]}
 
 # fragments ############################################################################
 [tasks.pip--]
@@ -136,7 +146,7 @@ outputs = ["dist/SHA256SUMS"]
 
 # unit test ############################################################################
 [feature.tasks-utest.tasks.pip-utest]
-cmd = """pixi r -e utest pip-editable--"""
+cmd = """pixi r pip-editable--"""
 inputs = ["pyproject.toml"]
 outputs = ["build/reports/pip-freeze/utest.txt"]
 
@@ -161,10 +171,12 @@ inputs = [
   "{tests,src}/**/*.{py,json}",
   "!**/.ipynb_checkpoints",
 ]
-outputs = ["build/reports/utest/{pytest.html,pytest.xunit.xml,htmlcov/status.json}"]
+outputs = [
+  "build/reports/utest/{.coverage,pytest.html,pytest.xunit.xml,htmlcov/status.json}",
+]
 
 [feature.tasks-utest-oldest.tasks.pip-utest-oldest]
-cmd = """pixi r -e utest-oldest pip-dist--"""
+cmd = """pixi r pip-dist--"""
 inputs = ["dist/*.whl"]
 outputs = ["build/reports/pip-freeze/utest-oldest.txt"]
 
@@ -187,7 +199,7 @@ outputs = ["build/reports/utest/{pytest.html,pytest.xunit.xml}"]
 
 # integration test #####################################################################
 [feature.tasks-utest.tasks.pip-itest]
-cmd = """pixi r -e itest pip-editable--"""
+cmd = """pixi r pip-editable--"""
 inputs = ["pyproject.toml"]
 outputs = ["build/reports/pip-freeze/itest.txt"]
 
@@ -198,7 +210,7 @@ inputs = ["examples/", "!**/{.ipynb_checkpoints,__pycache__}"]
 outputs = ["build/reports/itest/nbconvert/**/*.html"]
 
 [feature.tasks-utest-oldest.tasks.pip-itest-oldest]
-cmd = """pixi r -e itest-oldest pip-editable--"""
+cmd = """pixi r pip-editable--"""
 inputs = ["pyproject.toml"]
 outputs = ["build/reports/pip-freeze/itest-oldest.txt"]
 
@@ -215,7 +227,10 @@ inputs = ["dist/*.whl"]
 outputs = ["build/reports/pip-freeze/atest.txt"]
 
 [feature.tasks-atest.tasks.atest-robot]
-cmd = "python scripts/atest.py"
+cmd = """
+export WITH_TOTAL_COVERAGE=1
+&& python scripts/atest.py
+"""
 depends-on = ["pip-atest"]
 inputs = [
   "examples",
@@ -229,6 +244,16 @@ outputs = [
   "build/reports/atest/**/pabot_results/**/*.*",
   "build/reports/atest/robot.ok",
 ]
+
+[feature.tasks-atest.tasks.report-cov]
+cmd = """python scripts/report.py"""
+depends-on = ["atest-robot", "utest-pytest"]
+inputs = [
+  "scripts/report.py",
+  "build/reports/utest/.coverage",
+  "build/reports/atest/*/pabot_results/*/pycov/.coverage*",
+]
+outputs = ["build/reports/htmlcov"]
 
 [feature.tasks-atest-oldest.tasks.pip-atest-oldest]
 cmd = """pixi r pip-dist-- && pixi r ext-check--"""
@@ -328,7 +353,7 @@ inputs = [".github/workflows"]
 
 # lite #################################################################################
 [feature.tasks-lite.tasks.pip-lite]
-cmd = """pixi r -e docs pip-dist--"""
+cmd = """pixi r pip-dist--"""
 depends-on = ["dist-pypi"]
 inputs = ["dist/*.whl"]
 outputs = ["build/reports/pip-freeze/lite.txt"]
@@ -351,7 +376,7 @@ outputs = [
 
 # docs #################################################################################
 [feature.tasks-docs.tasks.pip-docs]
-cmd = """pixi r -e docs pip-editable--"""
+cmd = """pixi r pip-editable--"""
 inputs = ["pyproject.toml"]
 outputs = ["build/reports/pip-freeze/docs.txt"]
 
@@ -398,7 +423,7 @@ inputs = ["build/docs/**/*.html", "scripts/pytest-check-links.toml"]
 
 # interactive development ##############################################################
 [feature.tasks-dev.tasks.pip-dev]
-cmd = """pixi r -e dev pip-editable--"""
+cmd = """pixi r pip-editable--"""
 inputs = ["pyproject.toml"]
 outputs = ["build/reports/pip-freeze/dev.txt"]
 
@@ -477,8 +502,11 @@ bqplot = "*"
 nbconvert = "*"
 ipykernel = "*"
 
-[feature.deps-cov.dependencies]
+[feature.deps-utest-cov.dependencies]
 pytest-cov = "*"
+
+[feature.deps-cov.dependencies]
+coverage = "*"
 
 [feature.deps-atest.dependencies]
 robotframework-pabot = "*"
@@ -516,6 +544,7 @@ pytest-html = "*"
 vale = "*"
 vale-spelling-aoo-mozilla-en-dict-gb = "*"
 vale-spelling-aoo-mozilla-en-dict-us = "*"
+coverage = "*"
 
 # environments #########################################################################
 [environments]
@@ -536,7 +565,7 @@ build = {features = [
   "tasks-build",
 ]}
 utest = {features = [
-  "deps-cov",
+  "deps-utest-cov",
   "deps-flit",
   "deps-pip",
   "deps-py",
@@ -560,6 +589,7 @@ atest = {features = [
   "deps-demo",
   "deps-firefox",
   "deps-flit",
+  "deps-cov",
   "deps-itest",
   "deps-lab",
   "deps-pip",

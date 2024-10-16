@@ -6,6 +6,22 @@ Resource    Lab.robot
 Resource    Browser.robot
 Resource    ../variables/Server.robot
 Library     ../../_libraries/Ports.py
+Library     json
+
+
+*** Variables ***
+${JUPYTERLAB_EXE}           jupyter-lab
+${TOTAL_COVERAGE}           0
+${CALLER_ID}                0000
+${PABOTQUEUEINDEX}          0
+${PABOTEXECUTIONPOOLID}     0
+
+# paths relative to home
+${DOT_LOCAL_PATH}           .local
+${ETC_PATH}                 ${DOT_LOCAL_PATH}${/}etc${/}jupyter
+${SHARE_PATH}               ${DOT_LOCAL_PATH}${/}share${/}jupyter
+${KERNELS_PATH}             ${SHARE_PATH}${/}kernels
+${USER_SETTINGS_PATH}       ${ETC_PATH}${/}lab${/}user-settings
 
 
 *** Keywords ***
@@ -23,12 +39,18 @@ Setup Server and Browser
     Create Directory    ${OUTPUT DIR}${/}logs
     Create Notebok Server Config    ${home}
     Initialize User Settings
+    IF    "${TOTAL_COVERAGE}" == "1"    Initialize Coverage Kernel    ${home}
     ${cmd} =    Create Lab Launch Command    ${root}
     Set Screenshot Directory    ${SCREENS ROOT}
     Set Global Variable    ${NEXT LAB}    ${NEXT LAB.__add__(1)}
     Set Global Variable    ${LAB LOG}    ${OUTPUT DIR}${/}logs${/}lab-${NEXT LAB}.log
     Set Global Variable    ${PREVIOUS LAB LOG LENGTH}    0
-    ${server} =    Start Process    ${cmd}    shell=yes    env:HOME=${home}    cwd=${home}    stdout=${LAB LOG}
+    ${server} =    Start Process    ${cmd}    shell=yes
+    ...    env:HOME=${home}
+    ...    env:JUPYTER_CONFIG_DIR=${home}${/}${ETC_PATH}
+    ...    env:JUPYTER_PREFER_ENV_PATH=0
+    ...    cwd=${home}
+    ...    stdout=${LAB LOG}
     ...    stderr=STDOUT
     Set Global Variable    ${SERVER}    ${server}
     Wait For Jupyter Server To Be Ready
@@ -38,6 +60,36 @@ Setup Server and Browser
     Set Global Variable    ${PAGE CONFIG}    ${config}
     Set Global Variable    ${LAB VERSION}    ${config["appVersion"]}
     Set Tags    lab:${LAB VERSION}
+
+Initialize Coverage Kernel
+    [Documentation]    Copy and patch the env kernel to run under coverage.
+    [Arguments]    ${home_dir}
+    ${kernels_dir} =    Set Variable    ${home_dir}${/}${KERNELS_PATH}
+    Create Directory    ${kernels_dir}
+    ${spec_dir} =    Set Variable    ${kernels_dir}${/}python3
+    Copy Directory    %{CONDA_PREFIX}${/}share${/}jupyter${/}kernels${/}python3    ${spec_dir}
+    ${spec_path} =    Set Variable    ${spec_dir}${/}kernel.json
+    ${spec_text} =    Get File    ${spec_path}
+    ${spec_json} =    Loads    ${spec_text}
+    ${cov_path} =    Set Variable    ${OUTPUT_DIR}${/}pycov
+    Create Directory    ${cov_path}
+    ${rest} =    Get Slice From List    ${spec_json["argv"]}    1
+    ${argv} =    Create List
+    ...    ${spec_json["argv"][0]}
+    ...    -m
+    ...    coverage    run
+    ...    --parallel-mode
+    ...    --branch
+    ...    --source    ipyelk
+    ...    --context    atest-${PABOTQUEUEINDEX}-${PABOTEXECUTIONPOOLID}-${CALLER_ID}
+    ...    --concurrency    thread
+    ...    --data-file    ${cov_path}${/}.coverage
+    ...    @{rest}
+    Set To Dictionary    ${spec_json}    argv=${argv}
+    ${spec_text} =    Dumps    ${spec_json}    indent=${2}    sort_keys=${TRUE}
+    Log    ${spec_text}
+    Create File    ${spec_path}    ${spec_text}
+    RETURN    ${spec_path}
 
 Create Lab Launch Command
     [Documentation]    Create a JupyterLab CLI shell string, escaping for traitlets
