@@ -12,6 +12,7 @@ from typing import Any
 UTF8 = {"encoding": "utf-8"}
 HERE = Path(__file__).parent
 ROOT = HERE.parent
+SRC = ROOT / "src"
 BUILD = ROOT / "build"
 REPORTS = BUILD / "reports"
 REPORT_ATEST = REPORTS / "atest"
@@ -21,15 +22,15 @@ REPORT_ALLCOV = REPORTS / "htmlcov"
 PYPROJECT = f"""
 [tool.coverage.paths]
 source = [
-    "{ROOT}/src",
-    "{site.getsitepackages()[0]}",
+    '{SRC}',
+    '{site.getsitepackages()[0]}',
 ]
 
 [tool.coverage.html]
 skip_empty = true
 title = "ALL"
 show_contexts = true
-directory = "{REPORT_ALLCOV}"
+directory = '{REPORT_ALLCOV}'
 
 [tool.coverage.report]
 show_missing = true
