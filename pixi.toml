@@ -360,7 +360,13 @@ cmd = """
 cd lite
 && jupyter lite doit -- pre_archive:report:SHA256SUMS
 """
-inputs = ["examples/", "lite/*.json", "!**{.ipynb_checkpoints,__pycache__}/"]
+depends-on = ["dist-pypi"]
+inputs = [
+  "examples/",
+  "lite/*.json",
+  "dist/*.whl",
+  "!**{.ipynb_checkpoints,__pycache__}/",
+]
 outputs = [
   "build/lite/SHA256SUMS",
   "build/lite/extensions/@jupyrdf/jupyter-elk/package.json",
