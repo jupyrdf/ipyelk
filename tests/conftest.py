@@ -23,6 +23,7 @@ CONTRIB_MD = ROOT / "CONTRIBUTING.md"
 CHANGELOG_MD = ROOT / "CHANGELOG.md"
 PACKAGE_JSON = ROOT / "package.json"
 PYPROJECT_TOML = ROOT / "pyproject.toml"
+README_MD = ROOT / "README.md"
 
 PIXI_PATTERNS = {
     CI_YML: (4, r"pixi-version: v(.*)"),
@@ -73,6 +74,7 @@ def pixi_versions_in_a_file(a_file_with_pixi_versions: Path) -> set[str]:
 
 @pytest.fixture
 def the_changelog_text() -> str:
+    """Provide the text of the changelog."""
     if not CHANGELOG_MD.exists():
         pytest.skip("Not in repo")
     return CHANGELOG_MD.read_text(**UTF8)
@@ -80,15 +82,30 @@ def the_changelog_text() -> str:
 
 @pytest.fixture
 def the_js_version() -> str:
+    """Provide the source-of-truth data for the js extension."""
     return json.loads(PACKAGE_JSON.read_text(**UTF8))["version"]
 
 
 @pytest.fixture
-def the_py_version() -> str:
+def the_pyproject_data() -> dict[str, Any]:
+    """Provide the python project data."""
     try:
         import tomllib
     except ImportError:
         pytest.skip("Running on older python")
         return None
 
-    return tomllib.loads(PYPROJECT_TOML.read_text(**UTF8))["project"]["version"]
+    return tomllib.loads(PYPROJECT_TOML.read_text(**UTF8))
+
+
+@pytest.fixture
+def the_py_version(the_pyproject_data: dict[str, Any]) -> str:
+    """Provide the source-of-truth python version."""
+    return the_pyproject_data["project"]["version"]
+
+
+@pytest.fixture
+def the_readme_text() -> str:
+    if not README_MD.exists():
+        pytest.skip("Not in repo")
+    return README_MD.read_text(**UTF8)

@@ -108,6 +108,13 @@ jobs:
         exclude:
           - { vm: macos-13, task: test }
           - { vm: macos-latest, task: test-oldest }
+        include:
+          - { vm: macos-13, atest-args: '' }
+          - { vm: macos-latest, atest-args: '' }
+          - { vm: ubuntu-latest, atest-args: '' }
+          - { vm: windows-latest, atest-args: '--exclude ci:skip-win' }
+    env:
+      ATEST_ARGS: ${{ matrix.atest-args }}
     steps:
       - uses: actions/checkout@v4
       - uses: prefix-dev/setup-pixi@v0.8.1

@@ -9,6 +9,7 @@ except Exception:
     from importlib_metadata import version
 
 from pathlib import Path
+from typing import Any
 
 
 def test_meta() -> None:
@@ -50,3 +51,9 @@ def test_compatible_versions(the_js_version: str, the_py_version: str) -> None:
 
     assert __version__ == the_py_version
     assert the_js_version == EXTENSION_SPEC_VERSION
+
+
+def test_py_version(the_readme_text: str, the_pyproject_data: dict[str, Any]) -> None:
+    """Verify the bottom python pin is accurate."""
+    requires_python = the_pyproject_data["project"]["requires-python"]
+    assert f"""python {requires_python}""" in the_readme_text

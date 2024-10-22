@@ -18,7 +18,7 @@
 
 ## Prerequisites
 
-- `python >=3.11`
+- `python >=3.9`
 
 ### JupyterLab compatibility
 
