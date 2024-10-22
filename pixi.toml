@@ -1,4 +1,4 @@
-"$schema" = "https://pixi.sh/v0.32.1/schema/manifest/schema.json"
+"$schema" = "https://pixi.sh/v0.34.0/schema/manifest/schema.json"
 
 # tasks ################################################################################
 [tasks]
@@ -564,7 +564,7 @@ geckodriver = "*"
 jupyterlite-core = "0.4.3"
 jupyterlab_server = "*"
 python-libarchive-c = "*"
-jupyterlite-pyodide-kernel = "0.4.2"
+jupyterlite-pyodide-kernel = "0.4.3"
 
 [feature.deps-docs.dependencies]
 ansi2html = "*"
