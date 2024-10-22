@@ -1,0 +1,45 @@
+/**
+ * Copyright (c) 2024 ipyelk contributors.
+ * Distributed under the terms of the Modified BSD License.
+ */
+
+.jp-ElkView,
+.jp-ElkView .sprotty {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+
+.jp-ElkView .sprotty text {
+  user-select: none;
+}
+
+/* Root View */
+.jp-ElkView .sprotty-root {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.jp-ElkView .sprotty > .sprotty-root > svg.sprotty-graph {
+  width: 100%;
+  height: 100%;
+  flex: 1;
+}
+
+.jp-ElkView .sprotty > .sprotty-root > div.sprotty-overlay {
+  width: 100%;
+  height: 100%;
+  flex: 1;
+  position: absolute;
+  top: 0;
+  left: 0;
+  transform-origin: top left;
+  pointer-events: none;
+}
+
+.jp-ElkView .sprotty > .sprotty-root > div.sprotty-overlay > div.elkcontainer {
+  pointer-events: all;
+  position: absolute;
+}
