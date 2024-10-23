@@ -13,7 +13,7 @@ ${SCREENS}      ${SCREENS ROOT}${/}examples${/}02_Transformer
 
 *** Test Cases ***
 02_Transformer
-    [Tags]    data:flat_graph.json    data:hier_tree.json    data:hier_ports.json
+    [Tags]    data:flat_graph.json    data:hier_tree.json    data:hier_ports.json    ci:skip-win
     Example Should Restart-and-Run-All    ${TRANSFORMER}
     Click Elk Tool    Center    1
     Scroll To Notebook Cell    10

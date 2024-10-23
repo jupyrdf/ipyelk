@@ -2,12 +2,15 @@
 
 # Copyright (c) 2024 ipyelk contributors.
 # Distributed under the terms of the Modified BSD License.
+from __future__ import annotations
+
 import os
 import subprocess
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
+    from docutils import nodes
     from sphinx.application import Sphinx
 
 # our project data
@@ -20,8 +23,8 @@ if os.getenv(RTD) == "True":
     # provide a fake root doc
     root_doc = "rtd"
 
-    def setup(app: "Sphinx") -> None:
-        """Customize the sphinx build lifecycle."""
+    def setup(app: Sphinx) -> None:
+        """Customize the sphinx build lifecycle in the outer RTD environment."""
 
         def _run_pixi(*_args: Any) -> None:
             args = ["pixi", "run", "-v", "docs-rtd"]
@@ -31,10 +34,8 @@ if os.getenv(RTD) == "True":
         app.connect("build-finished", _run_pixi)
 
 else:
-    try:
-        import tomllib
-    except Exception:
-        import tomli as tomllib
+    import pypandoc
+    import tomllib
 
     PY_PROJ = tomllib.loads((ROOT / "pyproject.toml").read_text(encoding="utf-8"))
     PROJ = PY_PROJ["project"]
@@ -46,6 +47,7 @@ else:
         "sphinx.ext.autosummary",
         "sphinx.ext.autodoc",
         "sphinx_autodoc_typehints",
+        "sphinx-jsonschema",
     ]
 
     # meta
@@ -83,3 +85,31 @@ else:
         "doc_path": "docs",
     }
     html_static_path = ["_static", "../build/lite"]
+
+    jsonschema_options = {
+        "auto_reference": True,
+        "lift_definitions": True,
+        "lift_description": True,
+    }
+
+    def setup(app: Sphinx) -> None:
+        """Customize the sphinx build lifecycle in the inner build environemnt."""
+
+        def _md_description(
+            self, schema: dict[str, Any], container: nodes.Node | list[nodes.Node]
+        ) -> None:
+            """Convert (simple) markdown descriptions to (simple) rst."""
+            description = schema.pop("description", None)
+            if not description:
+                return
+            rst = pypandoc.convert_text(description, "rst", format="md")
+            if isinstance(container, list):
+                container.append(self._linme(self._cell(rst)))
+            else:
+                self.state.nested_parse(
+                    self._convert_content(rst), self.lineno, container
+                )
+
+        wf_cls = __import__("sphinx-jsonschema.wide_format").wide_format.WideFormat
+        wf_cls._get_description = _md_description
+        wf_cls._check_description = _md_description

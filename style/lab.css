@@ -1,0 +1,16 @@
+/**
+ * Copyright (c) 2024 ipyelk contributors.
+ * Distributed under the terms of the Modified BSD License.
+ */
+
+.jp-LinkedOutputView .jp-OutputArea:only-child,
+.jp-LinkedOutputView .jp-OutputArea-child:only-child,
+.jp-LinkedOutputView .jp-OutputArea-child:only-child .jp-OutputArea-output:only-child {
+  position: absolute;
+  left: 0;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  margin: 0;
+  padding: 0;
+}

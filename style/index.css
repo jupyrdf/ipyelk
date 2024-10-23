@@ -1,85 +1,10 @@
 /**
- * # Copyright (c) 2024 ipyelk contributors.
+ * Copyright (c) 2024 ipyelk contributors.
  * Distributed under the terms of the Modified BSD License.
  */
 
+@import url('./lab.css');
+@import url('./app.css');
+@import url('./view.css');
 @import url('./diagram.css');
 @import url('./pipe_status.css');
-
-.jp-ElkView,
-.jp-ElkView .sprotty {
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-  flex: 1;
-}
-
-.jp-ElkView .sprotty text {
-  user-select: none;
-}
-
-/* Root View */
-.jp-ElkView .sprotty-root {
-  flex: 1;
-  display: flex;
-}
-.jp-ElkView .sprotty > .sprotty-root > svg.sprotty-graph {
-  width: 100%;
-  height: 100%;
-  flex: 1;
-}
-
-.jp-ElkView .sprotty > .sprotty-root > div.sprotty-overlay {
-  width: 100%;
-  height: 100%;
-  flex: 1;
-  position: absolute;
-  top: 0;
-  left: 0;
-  transform-origin: top left;
-  pointer-events: none;
-}
-.jp-ElkView .sprotty > .sprotty-root > div.sprotty-overlay > div.elkcontainer {
-  pointer-events: all;
-  position: absolute;
-}
-
-/* Toolbar Styling */
-.jp-ElkApp .jp-ElkToolbar {
-  width: 100%;
-  visibility: hidden;
-  position: absolute;
-  opacity: 0;
-  transition: all var(--jp-elk-transition);
-  transform: translateY(calc(0px - var(--jp-widgets-inline-height)));
-}
-
-.jp-ElkApp:hover .jp-ElkToolbar {
-  visibility: visible;
-  opacity: 0.25;
-  transform: translateY(0);
-}
-
-.jp-ElkApp:hover .jp-ElkToolbar:hover {
-  opacity: 1;
-}
-
-.jp-ElkToolbar .close-btn {
-  display: block;
-  margin-left: auto;
-  width: var(--jp-widgets-inline-height);
-  padding: 0;
-  background: inherit;
-  border: inherit;
-  outline: inherit;
-}
-.jp-ElkToolbar .close-btn:hover {
-  box-shadow: inherit;
-  color: var(--jp-warn-color0);
-}
-
-.jp-ElkSizer {
-  visibility: hidden;
-  z-index: -9999;
-  pointer-events: none;
-}

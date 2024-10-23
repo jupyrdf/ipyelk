@@ -37,4 +37,4 @@
 
 {{- $table = renderTable $table -}}
 {{end}}
-{{- $e}} {{"errors" | red}}, {{$w}} {{"warnings" | yellow}} and {{$s}} {{"suggestions" | blue}} in {{$f}} {{$f | int | plural "file" "files"}}.
+{{- $e}} {{"errors"}}, {{$w}} {{"warnings"}} and {{$s}} {{"suggestions"}} in {{$f}} {{$f | int | plural "file" "files"}}.
