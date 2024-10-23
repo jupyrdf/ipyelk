@@ -37,7 +37,7 @@ import {
 import createContainer from './sprotty/di-config';
 import { JLModelSource } from './sprotty/diagram-server';
 // import { VNode } from 'snabbdom';
-import { ELK_CSS, IELKFitMessage, NAME, TAnyELKMessage, VERSION } from './tokens';
+import { ELK_CSS, NAME, TAnyELKMessage, VERSION } from './tokens';
 import { NodeExpandTool, NodeSelectTool } from './tools';
 import {
   FeedbackActionDispatcher,
@@ -210,12 +210,7 @@ export class ELKViewerView extends DOMWidgetView {
     // box being stale but added resize call to the `fit` and `center` actions
     // as additional protection.
     setTimeout(() => {
-      // this.resize();
-      this.handleMessage({
-        action: 'fit',
-        animate: false,
-        padding: 0,
-      } as IELKFitMessage);
+      this.resize();
     }, 10 * POLL);
   }
 
