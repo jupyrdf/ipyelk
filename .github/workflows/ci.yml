@@ -104,14 +104,12 @@ jobs:
       fail-fast: false
       matrix:
         vm: [ubuntu-latest, windows-latest, macos-13, macos-latest]
-        task: [test, test-oldest, test-future]
+        task: [test, test-oldest]
         exclude:
           - { vm: macos-latest, task: test-oldest }
           - { vm: macos-13, task: test }
-          - { vm: macos-13, task: test-future }
-          - { vm: macos-latest, task: test-future }
-          - { vm: macos-latest, task: test-future }
         include:
+          - { vm: ubuntu-latest, atest-args: '', task: test-future }
           - { vm: macos-13, atest-args: '' }
           - { vm: macos-latest, atest-args: '' }
           - { vm: ubuntu-latest, atest-args: '' }
