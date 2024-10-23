@@ -32,24 +32,26 @@ jobs:
           cache-key: job-build
       - uses: actions/cache@v4
         with:
-          path: node_modules
+          path: |
+            node_modules
           key: ${{ env.CACHE_EPOCH }}-${{ hashFiles('yarn.lock') }}-node-modules
       - run: pixi run setup-js
       - run: touch node_modules/.cached-in-ci
-      - run: pixi run build
       - run: pixi run dist
       - uses: actions/upload-artifact@v4
         with:
           name: ipyelk-${{ github.run_number }}-dist
-          path: ./dist/
+          path: |
+            dist
+      - run: pixi run build-js-ext-cov
       - uses: actions/upload-artifact@v4
         with:
           name: ipyelk-${{ github.run_number }}-build
           path: |
-            ./build/labextensions-cov/**
-            ./build/.*.tsbuildinfo
-            ./src/_d/**
-            ./.pixi/task-cache-v0/**
+            build/labextensions-cov
+            build/.*.tsbuildinfo
+            src/_d
+            .pixi/task-cache-v0
 
   lint:
     runs-on: ubuntu-latest
@@ -65,7 +67,8 @@ jobs:
       - name: cache (node)
         uses: actions/cache@v4
         with:
-          path: node_modules
+          path: |
+            node_modules
           key: ${{ env.CACHE_EPOCH }}-${{ hashFiles('yarn.lock') }}-node-modules
       - uses: actions/download-artifact@v4
         with:
@@ -90,7 +93,8 @@ jobs:
       - name: cache (node)
         uses: actions/cache@v4
         with:
-          path: node_modules
+          path: |
+            node_modules
           key: ${{ env.CACHE_EPOCH }}-${{ hashFiles('yarn.lock') }}-node-modules
       - uses: actions/download-artifact@v4
         with:
@@ -105,8 +109,8 @@ jobs:
         with:
           name: ipyelk-${{ github.run_number }}-docs
           path: |
-            ./build/docs
-            ./build/reports
+            build/docs
+            build/reports
 
   test:
     needs: [build]
@@ -118,8 +122,8 @@ jobs:
         vm: [ubuntu-latest, windows-latest, macos-13, macos-latest]
         task: [test, test-oldest]
         exclude:
-          - { vm: macos-latest, task: test-oldest }
           - { vm: macos-13, task: test }
+          - { vm: macos-latest, task: test-oldest }
         include:
           - { vm: ubuntu-latest, atest-args: '', task: test-future }
           - { vm: macos-13, atest-args: '' }
@@ -139,7 +143,8 @@ jobs:
       - if: matrix.task == 'test'
         uses: actions/cache@v4
         with:
-          path: node_modules
+          path: |
+            node_modules
           key: ${{ env.CACHE_EPOCH }}-${{ hashFiles('yarn.lock') }}-node-modules
       - uses: actions/download-artifact@v4
         with:
@@ -155,4 +160,5 @@ jobs:
         if: always()
         with:
           name: ipyelk-${{ github.run_number }}-${{ matrix.task }}-${{ matrix.vm }}
-          path: ./build/reports
+          path: |
+            build/reports
