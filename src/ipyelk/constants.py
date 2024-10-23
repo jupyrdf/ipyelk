@@ -3,7 +3,7 @@
 
 try:
     from importlib.metadata import version
-except:
+except ImportError:
     from importlib_metadata import version
 
 NAME = "ipyelk"
