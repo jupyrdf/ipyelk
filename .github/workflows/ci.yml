@@ -38,12 +38,13 @@ jobs:
       - run: pixi run setup-js
       - run: touch node_modules/.cached-in-ci
       - run: pixi run dist
+      - run: pixi run build-js-ext-cov
       - uses: actions/upload-artifact@v4
         with:
           name: ipyelk-${{ github.run_number }}-dist
           path: |
             dist
-      - run: pixi run build-js-ext-cov
+            .pixi/task-cache-v0
       - uses: actions/upload-artifact@v4
         with:
           name: ipyelk-${{ github.run_number }}-build
