@@ -11,6 +11,7 @@ fix = {depends-on = [
   "fix-ruff-check",
   "fix-js-dupes",
   "fix-robot-tidy",
+  "fix-nbstripout",
   "fix-nblint",
 ]}
 lint = {depends-on = [
@@ -25,7 +26,12 @@ test-oldest = {depends-on = [
   "itest-oldest-nbconvert",
   "atest-oldest-robot",
 ]}
-test-all = {depends-on = ["test", "test-oldest"]}
+test-future = {depends-on = [
+  "utest-future-pytest",
+  "itest-future-nbconvert",
+  "atest-future-robot",
+]}
+test-all = {depends-on = ["test", "test-oldest", "test-future"]}
 docs = {depends-on = ["docs-lite", "docs-sphinx"]}
 check = {depends-on = ["check-links", "check-spelling"]}
 report = {depends-on = ["report-cov"]}
@@ -226,7 +232,29 @@ inputs = [
   "{tests,src}/**/*.{py,json}",
   "!**/.ipynb_checkpoints",
 ]
-outputs = ["build/reports/utest/{pytest.html,pytest.xunit.xml}"]
+outputs = ["build/reports/utest-oldest/{pytest.html,pytest.xunit.xml}"]
+
+[feature.tasks-utest-future.tasks.pip-utest-future]
+cmd = """pixi r -e utest-future pip-dist--"""
+inputs = ["dist/*.whl"]
+outputs = ["build/reports/pip-freeze/utest-future.txt"]
+
+[feature.tasks-utest-future.tasks.utest-future-pytest]
+cmd = """
+export JUPYTER_PLATFORM_DIRS=1
+&& pytest
+  --html build/reports/utest-future/pytest.html
+  --junitxml build/reports/utest-future/pytest.xunit.xml
+  --self-contained-html
+"""
+depends-on = ["pip-utest-future"]
+inputs = [
+  "build/reports/pip-freeze/utest-future.txt",
+  "pyproject.toml",
+  "{tests,src}/**/*.{py,json}",
+  "!**/.ipynb_checkpoints",
+]
+outputs = ["build/reports/utest-future/{pytest.html,pytest.xunit.xml}"]
 
 # integration test #####################################################################
 [feature.tasks-itest.tasks.pip-itest]
@@ -250,6 +278,17 @@ cmd = """pixi r -e itest-oldest nbconvert--"""
 depends-on = ["pip-itest-oldest"]
 inputs = ["examples/", "!**/{.ipynb_checkpoints,__pycache__}"]
 outputs = ["build/reports/itest-oldest/nbconvert/**/*.html"]
+
+[feature.tasks-itest-future.tasks.pip-itest-future]
+cmd = """pixi r -e itest-future pip-editable--"""
+inputs = ["pyproject.toml"]
+outputs = ["build/reports/pip-freeze/itest-future.txt"]
+
+[feature.tasks-itest-future.tasks.itest-future-nbconvert]
+cmd = """pixi r -e itest-future nbconvert--"""
+depends-on = ["pip-itest-future"]
+inputs = ["examples/", "!**/{.ipynb_checkpoints,__pycache__}"]
+outputs = ["build/reports/itest-future/nbconvert/**/*.html"]
 
 # acceptance test ######################################################################
 [feature.tasks-atest.tasks.pip-atest]
@@ -310,6 +349,28 @@ inputs = [
 outputs = [
   "build/reports/atest-oldest/**/pabot_results/**/*.*",
   "build/reports/atest-oldest/robot.ok",
+]
+
+
+[feature.tasks-atest-future.tasks.pip-atest-future]
+cmd = """pixi r -e atest-future pip-dist-- && pixi r ext-check--"""
+inputs = ["dist/*.whl"]
+outputs = ["build/reports/pip-freeze/atest-future.txt"]
+
+[feature.tasks-atest-future.tasks.atest-future-robot]
+cmd = "python scripts/atest.py"
+depends-on = ["pip-atest-future"]
+inputs = [
+  "examples",
+  "atest",
+  "src",
+  "scripts/atest.py",
+  "!**/__pycache__/",
+  "!**/.ipynb_checkpoints",
+]
+outputs = [
+  "build/reports/atest-future/**/pabot_results/**/*.*",
+  "build/reports/atest-future/robot.ok",
 ]
 
 # lint #################################################################################
@@ -380,7 +441,11 @@ inputs = [
 
 [feature.tasks-lint.tasks.fix-nblint]
 cmd = "python scripts/nblint.py examples"
-depends-on = ["setup-js"]
+depends-on = ["setup-js", "fix-nbstripout"]
+inputs = ["examples/", "!**/{.ipynb_checkpoints,__pycache__}/"]
+
+[feature.tasks-lint.tasks.fix-nbstripout]
+cmd = "nbstripout --keep-id --drop-empty-cells examples/*.ipynb"
 inputs = ["examples/", "!**/{.ipynb_checkpoints,__pycache__}/"]
 
 [feature.tasks-lint.tasks.lint-actionlint]
@@ -486,6 +551,10 @@ cmd = "sphinx-autobuild docs build/watch-docs --watch src"
 depends-on = ["pip-atest-oldest"]
 cmd = "jupyter lab --no-browser --debug"
 
+[feature.tasks-atest-future.tasks.lab-future]
+depends-on = ["pip-atest-future"]
+cmd = "jupyter lab --no-browser --debug"
+
 # dependencies #########################################################################
 [feature.deps-node.dependencies]
 nodejs = "22.*"
@@ -495,6 +564,7 @@ taplo = "*"
 ruff = "*"
 nbconvert-core = "*"
 actionlint-with-all = "*"
+nbstripout = "*"
 
 [feature.deps-py.dependencies]
 python = ">=3.9"
@@ -505,6 +575,8 @@ python = ">=3.13"
 
 [feature.deps-lab.dependencies]
 jupyterlab = ">=4.2.0,<5"
+[feature.deps-lab-future.dependencies]
+jupyterlab = {version = "==4.3.0rc0", channel = "conda-forge/label/jupyterlab_rc"}
 
 [feature.deps-flit.dependencies]
 flit-core = ">=3.9.0,<4"
@@ -652,15 +724,15 @@ docs = {features = [
 dev = {features = [
   "deps-atest",
   "deps-build",
-  "deps-demo",
   "deps-cov",
+  "deps-demo",
   "deps-dev",
   "deps-docs",
   "deps-flit",
   "deps-itest",
-  "deps-node",
   "deps-lab",
   "deps-lite",
+  "deps-node",
   "deps-pip",
   "deps-py",
   "deps-run",
@@ -707,8 +779,41 @@ atest-oldest = {features = [
   "tasks-atest-oldest",
 ]}
 
+# future #####################################################################
+utest-future = {features = [
+  "deps-flit",
+  "deps-pip",
+  "deps-py",
+  "deps-run",
+  "deps-utest",
+  "tasks-utest-future",
+]}
+itest-future = {features = [
+  "deps-demo",
+  "deps-flit",
+  "deps-itest",
+  "deps-pip",
+  "deps-py",
+  "deps-run",
+  "tasks-itest-future",
+]}
+atest-future = {features = [
+  "deps-atest",
+  "deps-demo",
+  "deps-firefox",
+  "deps-flit",
+  "deps-itest",
+  "deps-lab",
+  "deps-lab-future",
+  "deps-pip",
+  "deps-py",
+  "deps-run",
+  "tasks-atest-future",
+]}
+
+
 # meta #################################################################################
 [project]
 name = "ipyelk"
-channels = ["conda-forge"]
+channels = ["conda-forge", "conda-forge/label/jupyterlab_rc"]
 platforms = ["linux-64", "osx-64", "osx-arm64", "win-64"]
