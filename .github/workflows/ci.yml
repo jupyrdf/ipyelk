@@ -15,7 +15,7 @@ env:
   PYTHONIOENCODING: utf-8
   PYTHONUNBUFFERED: '1'
   PIP_DISABLE_PIP_VERSION_CHECK: '1'
-  CACHE_EPOCH: 7
+  CACHE_EPOCH: 8
   ATEST_RETRIES: 2
   ALL_PY_COV_FAIL_UNDER: 69
 
@@ -41,16 +41,15 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: ipyelk-${{ github.run_number }}-dist
-          path: |
-            ./dist/
+          path: ./dist/
       - uses: actions/upload-artifact@v4
         with:
           name: ipyelk-${{ github.run_number }}-build
           path: |
-            ./build/labextensions-cov
-            ./.*.tsbuildinfo
-            ./src/_d
-            ./.pixi/task-cache-v0
+            ./build/labextensions-cov/**
+            ./build/.*.tsbuildinfo
+            ./src/_d/**
+            ./.pixi/task-cache-v0/**
 
   lint:
     runs-on: ubuntu-latest
