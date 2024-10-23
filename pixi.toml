@@ -571,8 +571,10 @@ ansi2html = "*"
 docutils = ">=0.19"
 myst-nb = "*"
 pydata-sphinx-theme = "*"
+pypandoc = "*"
 sphinx = "*"
 sphinx-autodoc-typehints = "*"
+sphinx-jsonschema = "*"
 
 [feature.deps-dev.dependencies]
 sphinx-autobuild = "*"
@@ -650,6 +652,7 @@ docs = {features = [
 dev = {features = [
   "deps-atest",
   "deps-build",
+  "deps-demo",
   "deps-cov",
   "deps-dev",
   "deps-docs",
