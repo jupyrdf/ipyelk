@@ -35,13 +35,12 @@ Setup Server and Browser
     ${token} =    Generate Random String
     Set Global Variable    ${TOKEN}    ${token}
     ${home} =    Set Variable    ${OUTPUT DIR}${/}home
-    ${root} =    Normalize Path    ${OUTPUT DIR}${/}..${/}..${/}..
     Create Directory    ${home}
     Create Directory    ${OUTPUT DIR}${/}logs
     Create Notebok Server Config    ${home}
     Initialize User Settings
     IF    "${TOTAL_COVERAGE}" == "1"    Initialize Coverage Kernel    ${home}
-    ${cmd} =    Create Lab Launch Command    ${root}
+    ${cmd} =    Create Lab Launch Command
     Set Screenshot Directory    ${SCREENS ROOT}
     Set Global Variable    ${NEXT LAB}    ${NEXT LAB.__add__(1)}
     Set Global Variable    ${LAB LOG}    ${OUTPUT DIR}${/}logs${/}lab-${NEXT LAB}.log
@@ -78,7 +77,8 @@ Initialize Coverage Kernel
     ${argv} =    Create List
     ...    ${spec_json["argv"][0]}
     ...    -m
-    ...    coverage    run
+    ...    coverage
+    ...    run
     ...    --parallel-mode
     ...    --branch
     ...    --source    ipyelk
@@ -94,12 +94,23 @@ Initialize Coverage Kernel
 
 Create Lab Launch Command
     [Documentation]    Create a JupyterLab CLI shell string, escaping for traitlets
-    [Arguments]    ${root}
     ${WORKSPACES DIR} =    Set Variable    ${OUTPUT DIR}${/}workspaces
-    ${app args} =    Set Variable
-    ...    --no-browser --debug --LabApp.base_url\='${URL PREFIX}' --port\=${PORT} --LabApp.token\='${TOKEN}' --ExtensionApp.open_browser\=False --ServerApp.open_browser\=False
-    ${path args} =    Set Variable
-    ...    --LabApp.user_settings_dir\='${SETTINGS DIR.replace('\\', '\\\\')}' --LabApp.workspaces_dir\='${WORKSPACES DIR.replace('\\', '\\\\')}'
+    ${app args} =    Catenate
+    ...    --no-browser
+    ...    --debug
+    ...    --port\=${PORT}
+    ...    --ServerApp.base_url\='${URL PREFIX}'
+    ...    --ServerApp.token\='${TOKEN}'
+    ...    --ExtensionApp.open_browser\=False
+    ...    --ServerApp.open_browser\=False
+    ${path args} =    Catenate
+    ...    --LabApp.user_settings_dir\='${SETTINGS DIR.replace('\\', '\\\\')}'
+    ...    --LabApp.workspaces_dir\='${WORKSPACES DIR.replace('\\', '\\\\')}'
+    IF    ${TOTAL_COVERAGE}
+        ${path args} =    Catenate
+        ...    ${path args}
+        ...    --LabApp.extra_labextensions_path\='${ROOT.replace('\\', '\\\\')}${/}build${/}labextensions-cov'
+    END
     ${cmd} =    Set Variable
     ...    jupyter-lab ${app args} ${path args}
     RETURN    ${cmd}

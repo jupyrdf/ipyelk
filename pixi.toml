@@ -2,7 +2,12 @@
 
 # tasks ################################################################################
 [tasks]
-build = {depends-on = ["build-py-schema", "build-js-lib", "build-js-ext"]}
+build = {depends-on = [
+  "build-py-schema",
+  "build-js-lib",
+  "build-js-ext",
+  "build-js-ext-cov",
+]}
 dist = {depends-on = ["dist-npm", "dist-pypi", "dist-hash"]}
 fix = {depends-on = [
   "fix-taplo",
@@ -109,7 +114,7 @@ inputs = ["js/sprotty/json/elkschema.ts", "node_modules/.yarn-state.yml"]
 outputs = ["src/ipyelk/schema/elkschema.json"]
 
 [feature.tasks-build.tasks.build-js-lib]
-cmd = "jlpm build:ts"
+cmd = "rm -rf build/.src.tsbuildinfo && jlpm build:ts"
 depends-on = ["build-py-schema", "setup-js"]
 inputs = [
   "{tsconfigbase,package}.json",
@@ -117,46 +122,33 @@ inputs = [
   "node_modules/.yarn-state.yml",
   "src/ipyelk/schema/elkschema.json",
 ]
-outputs = ["lib", "build/.src.tsbuildinfo"]
+outputs = ["lib/"]
 
 [feature.tasks-build.tasks.build-js-ext]
 cmd = "jlpm build:ext"
 depends-on = ["setup-js", "build-js-lib"]
 inputs = [
+  "js/",
+  "lib/",
   "node_modules/.yarn-state.yml",
-  "style/",
   "package.json",
-  "build/.src.tsbuildinfo",
+  "style/",
   "webpack.config.js",
 ]
 outputs = ["src/_d/share/jupyter/labextensions/@jupyrdf/jupyter-elk/package.json"]
 
 # js coverage ##########################################################################
-[feature.tasks-build.tasks.build-js-lib-cov]
-cmd = "jlpm build:ts:cov"
-depends-on = ["build-py-schema", "setup-js"]
-inputs = [
-  "{tsconfigbase,package}.json",
-  "js/",
-  "node_modules/.yarn-state.yml",
-  "src/ipyelk/schema/elkschema.json",
-]
-outputs = ["lib", "build/.src.cov.tsbuildinfo"]
-
 [feature.tasks-build.tasks.build-js-ext-cov]
-cmd = """
-export WITH_TOTAL_COVERAGE=1
-&& jlpm build:ext
-"""
-depends-on = ["setup-js", "build-js-lib-cov"]
+cmd = """python scripts/build-ext-cov.py"""
+depends-on = ["setup-js"]
 inputs = [
   "node_modules/.yarn-state.yml",
+  "{tsconfigbase,package,webpack.config.js}.json",
+  "js/",
   "style/",
-  "package.json",
-  "build/.src.cov.tsbuildinfo",
-  "webpack.config.js",
+  "scripts/build-ext-cov.py",
 ]
-outputs = ["src/_d/share/jupyter/labextensions/@jupyrdf/jupyter-elk/package.json"]
+outputs = ["build/labextensions-cov/@jupyrdf/jupyter-elk/package.json"]
 
 # ship #################################################################################
 [feature.tasks-build.tasks.dist-npm]
@@ -311,6 +303,7 @@ inputs = [
   "atest",
   "src",
   "scripts/atest.py",
+  "build/labextensions-cov",
   "!**/__pycache__/",
   "!**/.ipynb_checkpoints",
 ]

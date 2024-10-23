@@ -15,7 +15,7 @@ env:
   PYTHONIOENCODING: utf-8
   PYTHONUNBUFFERED: '1'
   PIP_DISABLE_PIP_VERSION_CHECK: '1'
-  CACHE_EPOCH: 6
+  CACHE_EPOCH: 7
   ATEST_RETRIES: 2
   ALL_PY_COV_FAIL_UNDER: 69
 
@@ -36,14 +36,21 @@ jobs:
           key: ${{ env.CACHE_EPOCH }}-${{ hashFiles('yarn.lock') }}-node-modules
       - run: pixi run setup-js
       - run: touch node_modules/.cached-in-ci
+      - run: pixi run build
       - run: pixi run dist
       - uses: actions/upload-artifact@v4
         with:
           name: ipyelk-${{ github.run_number }}-dist
           path: |
-            ./dist
-            src/_d
-            .pixi/task-cache-v0
+            ./dist/
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ipyelk-${{ github.run_number }}-build
+          path: |
+            ./build/labextensions-cov
+            ./.*.tsbuildinfo
+            ./src/_d
+            ./.pixi/task-cache-v0
 
   lint:
     runs-on: ubuntu-latest
@@ -64,6 +71,9 @@ jobs:
       - uses: actions/download-artifact@v4
         with:
           name: ipyelk-${{ github.run_number }}-dist
+      - uses: actions/download-artifact@v4
+        with:
+          name: ipyelk-${{ github.run_number }}-build
       - run: pixi run fix && pixi run fix
       - run: pixi run lint
 
@@ -86,6 +96,9 @@ jobs:
       - uses: actions/download-artifact@v4
         with:
           name: ipyelk-${{ github.run_number }}-dist
+      - uses: actions/download-artifact@v4
+        with:
+          name: ipyelk-${{ github.run_number }}-build
       - run: pixi run docs-lite
       - run: pixi run docs
       - run: pixi run check
@@ -132,6 +145,9 @@ jobs:
       - uses: actions/download-artifact@v4
         with:
           name: ipyelk-${{ github.run_number }}-dist
+      - uses: actions/download-artifact@v4
+        with:
+          name: ipyelk-${{ github.run_number }}-build
       - run: pixi run u${{ matrix.task }}-pytest
       - run: pixi run i${{ matrix.task }}-nbconvert
       - run: pixi run a${{ matrix.task }}-robot
