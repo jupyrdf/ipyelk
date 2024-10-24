@@ -16,17 +16,19 @@ LIB = ROOT / "lib"
 
 BUILD = ROOT / "build"
 
-COV_BUILDINFO = BUILD / ".src.cov.tsbuildinfo"
 LIB_TMP = BUILD / "lib-tmp"
+TSBUILDINFO = BUILD / "tsc"
 COV_EXT = BUILD / "labextensions-cov"
 EXT_PKG_JSON = COV_EXT / PKG_DATA["name"] / PKG_JSON.name
 
 
 def main() -> int:
     """Work around webpack limitations to get an out-of-tree build with coverage."""
-    COV_BUILDINFO.unlink(missing_ok=True)
-
     BUILD.mkdir(exist_ok=True, parents=True)
+
+    if not EXT_PKG_JSON.exists():
+        print("... cleaning", TSBUILDINFO)
+        [p.unlink() for p in TSBUILDINFO.glob("*.cov")]
 
     if LIB.exists():
         print("... copying", LIB, "to", LIB_TMP)

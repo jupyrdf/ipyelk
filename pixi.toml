@@ -25,7 +25,7 @@ lint = {depends-on = [
   "lint-robot-dryrun",
   "lint-actionlint",
 ]}
-test = {depends-on = ["utest-pytest", "itest-nbconvert", "atest-robot", "report-cov"]}
+test = {depends-on = ["utest-pytest", "itest-nbconvert", "atest-robot"]}
 test-oldest = {depends-on = [
   "utest-oldest-pytest",
   "itest-oldest-nbconvert",
@@ -114,26 +114,25 @@ inputs = ["js/sprotty/json/elkschema.ts", "node_modules/.yarn-state.yml"]
 outputs = ["src/ipyelk/schema/elkschema.json"]
 
 [feature.tasks-build.tasks.build-js-lib]
-cmd = "rm -rf build/.src.tsbuildinfo && jlpm build:ts"
+cmd = "jlpm build:ts"
 depends-on = ["build-py-schema", "setup-js"]
 inputs = [
-  "{tsconfigbase,package}.json",
+  "{tsconfig*,package}.json",
   "js/",
   "node_modules/.yarn-state.yml",
   "src/ipyelk/schema/elkschema.json",
 ]
-outputs = ["lib/"]
+outputs = ["lib/", "build/tsc/.*.tsbuildinfo"]
 
 [feature.tasks-build.tasks.build-js-ext]
-cmd = "jlpm build:ext"
+cmd = """jlpm build:ext"""
 depends-on = ["setup-js", "build-js-lib"]
 inputs = [
   "js/",
   "lib/",
-  "node_modules/.yarn-state.yml",
-  "package.json",
   "style/",
-  "webpack.config.js",
+  "node_modules/.yarn-state.yml",
+  "{package.json,webpack.config.js}",
 ]
 outputs = ["src/_d/share/jupyter/labextensions/@jupyrdf/jupyter-elk/package.json"]
 
@@ -142,19 +141,22 @@ outputs = ["src/_d/share/jupyter/labextensions/@jupyrdf/jupyter-elk/package.json
 cmd = """python scripts/build-ext-cov.py"""
 depends-on = ["setup-js"]
 inputs = [
-  "node_modules/.yarn-state.yml",
-  "{tsconfigbase,package,webpack.config.js}.json",
   "js/",
   "style/",
+  "{tsconfig*.json,package.json,webpack.config.js}",
+  "node_modules/.yarn-state.yml",
   "scripts/build-ext-cov.py",
 ]
-outputs = ["build/labextensions-cov/@jupyrdf/jupyter-elk/package.json"]
+outputs = [
+  "build/labextensions-cov/@jupyrdf/jupyter-elk/package.json",
+  "build/tsc/.*.tsbuildinfo.cov",
+]
 
 # ship #################################################################################
 [feature.tasks-build.tasks.dist-npm]
 cmd = "mkdir -p dist && cd dist && npm pack .."
 depends-on = ["build-js-lib"]
-inputs = ["build/.src.tsbuildinfo", "{package.json,README.md,LICENSE}"]
+inputs = ["build/tsc/.*.tsbuildinfo", "{package.json,README.md,LICENSE}"]
 outputs = ["dist/*.tgz"]
 
 [feature.tasks-build.tasks.dist-pypi]
@@ -175,8 +177,8 @@ outputs = ["dist/SHA256SUMS"]
 
 # unit test ############################################################################
 [feature.tasks-utest.tasks.pip-utest]
-cmd = """pixi r -e utest pip-editable--"""
-inputs = ["pyproject.toml"]
+cmd = """pixi r -e utest pip-dist--"""
+inputs = ["dist/*.whl"]
 outputs = ["build/reports/pip-freeze/utest.txt"]
 
 [feature.tasks-utest.tasks.utest-pytest]
@@ -250,8 +252,8 @@ outputs = ["build/reports/utest-future/{pytest.html,pytest.xunit.xml}"]
 
 # integration test #####################################################################
 [feature.tasks-itest.tasks.pip-itest]
-cmd = """pixi r -e itest pip-editable--"""
-inputs = ["pyproject.toml"]
+cmd = """pixi r -e itest pip-dist--"""
+inputs = ["dist/*.whl"]
 outputs = ["build/reports/pip-freeze/itest.txt"]
 
 [feature.tasks-itest.tasks.itest-nbconvert]
@@ -261,8 +263,8 @@ inputs = ["examples/", "!**/{.ipynb_checkpoints,__pycache__}"]
 outputs = ["build/reports/itest/nbconvert/**/*.html"]
 
 [feature.tasks-itest-oldest.tasks.pip-itest-oldest]
-cmd = """pixi r -e itest-oldest pip-editable--"""
-inputs = ["pyproject.toml"]
+cmd = """pixi r -e itest-oldest pip-dist--"""
+inputs = ["dist/*.whl"]
 outputs = ["build/reports/pip-freeze/itest-oldest.txt"]
 
 [feature.tasks-itest-oldest.tasks.itest-oldest-nbconvert]
@@ -272,8 +274,8 @@ inputs = ["examples/", "!**/{.ipynb_checkpoints,__pycache__}"]
 outputs = ["build/reports/itest-oldest/nbconvert/**/*.html"]
 
 [feature.tasks-itest-future.tasks.pip-itest-future]
-cmd = """pixi r -e itest-future pip-editable--"""
-inputs = ["pyproject.toml"]
+cmd = """pixi r -e itest-future pip-dist--"""
+inputs = ["dist/*.whl"]
 outputs = ["build/reports/pip-freeze/itest-future.txt"]
 
 [feature.tasks-itest-future.tasks.itest-future-nbconvert]
@@ -284,20 +286,17 @@ outputs = ["build/reports/itest-future/nbconvert/**/*.html"]
 
 # acceptance test ######################################################################
 [feature.tasks-atest.tasks.pip-atest]
-cmd = """pixi r -e atest pip-editable--"""
-inputs = ["pyproject.toml"]
+cmd = """pixi r -e atest pip-dist--"""
+inputs = ["dist/*.whl"]
 outputs = ["build/reports/pip-freeze/atest.txt"]
-
-[feature.tasks-atest.tasks.atest-ext]
-cmd = """pixi r -e atest labext-develop--"""
-depends-on = ["build-js-ext-cov", "pip-atest"]
 
 [feature.tasks-atest.tasks.atest-robot]
 cmd = """
-export WITH_TOTAL_COVERAGE=1
+(cat build/labextensions-cov/@jupyrdf/jupyter-elk/package.json || pixi r build-js-ext-cov)
+&& export WITH_TOTAL_COVERAGE=1
 && python scripts/atest.py
 """
-depends-on = ["atest-ext"]
+depends-on = ["pip-atest"]
 inputs = [
   "examples",
   "atest",
@@ -314,14 +313,13 @@ outputs = [
 
 [feature.tasks-atest.tasks.report-cov]
 cmd = """python scripts/report-cov.py"""
-depends-on = ["utest-pytest", "atest-robot"]
 inputs = [
   ".github/workflows/ci.yml",
   "scripts/report-cov.py",
   "build/reports/utest/.coverage",
   "build/reports/atest/*/pabot_results/*/pycov/.coverage*",
 ]
-outputs = ["build/reports/htmlcov"]
+outputs = ["build/reports/htmlcov/index.html", "build/reports/nyc/index.html"]
 
 [feature.tasks-atest-oldest.tasks.pip-atest-oldest]
 cmd = """pixi r -e atest-oldest pip-dist-- && pixi r ext-check--"""

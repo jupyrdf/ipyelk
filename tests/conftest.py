@@ -26,7 +26,7 @@ PYPROJECT_TOML = ROOT / "pyproject.toml"
 README_MD = ROOT / "README.md"
 
 PIXI_PATTERNS = {
-    CI_YML: (4, r"pixi-version: v(.*)"),
+    CI_YML: (5, r"pixi-version: v(.*)"),
     RTD_YML: (1, r"- pixi ==(.*)"),
     CONTRIB_MD: (1, r'"pixi==(.*)"'),
 }

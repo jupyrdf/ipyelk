@@ -15,7 +15,7 @@ env:
   PYTHONIOENCODING: utf-8
   PYTHONUNBUFFERED: '1'
   PIP_DISABLE_PIP_VERSION_CHECK: '1'
-  CACHE_EPOCH: 8
+  CACHE_EPOCH: 9
   ATEST_RETRIES: 2
   ALL_PY_COV_FAIL_UNDER: 69
 
@@ -50,8 +50,33 @@ jobs:
           name: ipyelk-${{ github.run_number }}-build
           path: |
             build/labextensions-cov
-            build/.*.tsbuildinfo
+            build/tsc/.*.tsbuildinfo
             src/_d
+            .pixi/task-cache-v0
+
+  build-cov:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: prefix-dev/setup-pixi@v0.8.1
+        with:
+          pixi-version: v0.34.0
+          cache: true
+          environments: build
+          cache-key: job-build
+      - uses: actions/cache@v4
+        with:
+          path: |
+            node_modules
+          key: ${{ env.CACHE_EPOCH }}-${{ hashFiles('yarn.lock') }}-node-modules
+      - run: pixi run setup-js
+      - run: touch node_modules/.cached-in-ci
+      - run: pixi run build-js-ext-cov
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ipyelk-${{ github.run_number }}-build-cov
+          path: |
+            build/labextensions-cov
             .pixi/task-cache-v0
 
   lint:
@@ -114,9 +139,9 @@ jobs:
             build/reports
 
   test:
-    needs: [build]
     name: ${{ matrix.task }} (${{ matrix.vm }})
     runs-on: ${{ matrix.vm }}
+    needs: [build, build-cov]
     strategy:
       fail-fast: false
       matrix:
@@ -139,24 +164,26 @@ jobs:
           cache: true
           environments: a${{ matrix.task }} i${{ matrix.task }} u${{ matrix.task }}
           cache-key: job-${{ matrix.task }}
+      - uses: actions/download-artifact@v4
+        with:
+          name: ipyelk-${{ github.run_number }}-dist
       - if: matrix.task == 'test'
+        uses: actions/download-artifact@v4
+        with:
+          name: ipyelk-${{ github.run_number }}-build-cov
+      - run: pixi run u${{ matrix.task }}-pytest
+      - run: pixi run i${{ matrix.task }}-nbconvert
+      - if: matrix.task == 'test' && matrix.vm == 'ubuntu-latest'
         uses: actions/cache@v4
         with:
           path: |
             node_modules
           key: ${{ env.CACHE_EPOCH }}-${{ hashFiles('yarn.lock') }}-node-modules
-      - uses: actions/download-artifact@v4
-        with:
-          name: ipyelk-${{ github.run_number }}-dist
-      - uses: actions/download-artifact@v4
-        with:
-          name: ipyelk-${{ github.run_number }}-build
-      - run: pixi run u${{ matrix.task }}-pytest
-      - run: pixi run i${{ matrix.task }}-nbconvert
-      - run: pixi run a${{ matrix.task }}-robot
-        env:
+      - env:
           ATEST_ARGS: ${{ matrix.atest-args }}
-      - run: pixi run ${{ matrix.task }}
+        run: pixi run a${{ matrix.task }}-robot
+      - if: matrix.task == 'test' && matrix.vm == 'ubuntu-latest'
+        run: pixi run report
       - uses: actions/upload-artifact@v4
         if: always()
         with:
