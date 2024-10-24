@@ -81,7 +81,7 @@ Initialize Coverage Kernel
     ...    run
     ...    --parallel-mode
     ...    --branch
-    ...    --source    ipyelk
+    ...    --source    ${ROOT}/src/ipyelk
     ...    --context    atest-${PABOTQUEUEINDEX}-${PABOTEXECUTIONPOOLID}-${CALLER_ID}
     ...    --concurrency    thread
     ...    --data-file    ${cov_path}${/}.coverage

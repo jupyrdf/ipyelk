@@ -177,7 +177,7 @@ outputs = ["dist/SHA256SUMS"]
 
 # unit test ############################################################################
 [feature.tasks-utest.tasks.pip-utest]
-cmd = """pixi r -e utest pip-dist--"""
+cmd = """pixi r -e utest pip-editable--"""
 inputs = ["dist/*.whl"]
 outputs = ["build/reports/pip-freeze/utest.txt"]
 
@@ -186,7 +186,7 @@ cmd = """
 export
   COVERAGE_FILE=$PIXI_PROJECT_ROOT/build/reports/utest/.coverage
 && pytest
-  --cov ipyelk
+  --cov $PIXI_PROJECT_ROOT/src/ipyelk
   --cov-report html:build/reports/utest/htmlcov
   --cov-report term-missing:skip-covered
   --cov-context test
@@ -252,7 +252,7 @@ outputs = ["build/reports/utest-future/{pytest.html,pytest.xunit.xml}"]
 
 # integration test #####################################################################
 [feature.tasks-itest.tasks.pip-itest]
-cmd = """pixi r -e itest pip-dist--"""
+cmd = """pixi r -e itest pip-editable--"""
 inputs = ["dist/*.whl"]
 outputs = ["build/reports/pip-freeze/itest.txt"]
 
@@ -286,7 +286,7 @@ outputs = ["build/reports/itest-future/nbconvert/**/*.html"]
 
 # acceptance test ######################################################################
 [feature.tasks-atest.tasks.pip-atest]
-cmd = """pixi r -e atest pip-dist--"""
+cmd = """pixi r -e atest pip-editable--"""
 inputs = ["dist/*.whl"]
 outputs = ["build/reports/pip-freeze/atest.txt"]
 
@@ -314,6 +314,7 @@ outputs = [
 [feature.tasks-atest.tasks.report-cov]
 cmd = """python scripts/report-cov.py"""
 inputs = [
+  "pyproject.toml",
   ".github/workflows/ci.yml",
   "scripts/report-cov.py",
   "build/reports/utest/.coverage",
