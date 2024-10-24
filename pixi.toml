@@ -569,7 +569,7 @@ python = ">=3.13"
 [feature.deps-lab.dependencies]
 jupyterlab = ">=4.2.0,<5"
 [feature.deps-lab-future.dependencies]
-jupyterlab = {version = "==4.3.0rc0", channel = "conda-forge/label/jupyterlab_rc"}
+jupyterlab = {version = "==4.3.0rc1", channel = "conda-forge/label/jupyterlab_rc"}
 
 [feature.deps-flit.dependencies]
 flit-core = ">=3.9.0,<4"
