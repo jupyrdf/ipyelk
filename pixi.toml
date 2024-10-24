@@ -553,11 +553,11 @@ cmd = "jupyter lab --no-browser --debug"
 nodejs = "22.*"
 
 [feature.deps-lint.dependencies]
-taplo = "*"
-ruff = "*"
-nbconvert-core = "*"
 actionlint-with-all = "*"
+nbconvert-core = "*"
 nbstripout = "*"
+ruff = "*"
+taplo = "*"
 
 [feature.deps-py.dependencies]
 python = ">=3.9"
@@ -599,12 +599,12 @@ pytest-html = "*"
 pytest-asyncio = "*"
 
 [feature.deps-demo.dependencies]
-importnb = "*"
 bqplot = "*"
+importnb = "*"
 
 [feature.deps-itest.dependencies]
-nbconvert = "*"
 ipykernel = "*"
+nbconvert = "*"
 
 [feature.deps-utest-cov.dependencies]
 pytest-cov = "*"
@@ -626,10 +626,10 @@ firefox = "128.*"
 geckodriver = "*"
 
 [feature.deps-lite.dependencies]
-jupyterlite-core = "0.4.3"
 jupyterlab_server = "*"
-python-libarchive-c = "*"
+jupyterlite-core = "0.4.3"
 jupyterlite-pyodide-kernel = "0.4.3"
+python-libarchive-c = "*"
 
 [feature.deps-docs.dependencies]
 ansi2html = "*"
@@ -645,12 +645,12 @@ sphinx-jsonschema = "*"
 sphinx-autobuild = "*"
 
 [feature.deps-check.dependencies]
+coverage = "*"
 pytest-check-links = "*"
 pytest-html = "*"
 vale = "*"
 vale-spelling-aoo-mozilla-en-dict-gb = "*"
 vale-spelling-aoo-mozilla-en-dict-us = "*"
-coverage = "*"
 
 # environments #########################################################################
 [environments]
@@ -671,12 +671,12 @@ build = {features = [
   "tasks-build",
 ]}
 utest = {features = [
-  "deps-utest-cov",
   "deps-flit",
   "deps-pip",
-  "deps-py",
   "deps-py-latest",
+  "deps-py",
   "deps-run",
+  "deps-utest-cov",
   "deps-utest",
   "tasks-utest",
 ]}
@@ -685,8 +685,8 @@ itest = {features = [
   "deps-flit",
   "deps-itest",
   "deps-pip",
-  "deps-py",
   "deps-py-latest",
+  "deps-py",
   "deps-run",
   "tasks-itest",
 ]}
@@ -707,11 +707,11 @@ atest = {features = [
 ]}
 lite = {features = ["deps-lite", "deps-pip", "deps-flit", "deps-demo", "tasks-lite"]}
 docs = {features = [
-  "deps-py",
+  "deps-docs",
   "deps-flit",
   "deps-pip",
+  "deps-py",
   "deps-run",
-  "deps-docs",
   "tasks-docs",
 ]}
 dev = {features = [
@@ -759,8 +759,8 @@ itest-oldest = {features = [
 atest-oldest = {features = [
   "deps-atest",
   "deps-demo",
-  "deps-firefox",
   "deps-firefox-oldest",
+  "deps-firefox",
   "deps-flit",
   "deps-itest",
   "deps-lab",
@@ -796,8 +796,8 @@ atest-future = {features = [
   "deps-firefox",
   "deps-flit",
   "deps-itest",
-  "deps-lab",
   "deps-lab-future",
+  "deps-lab",
   "deps-pip",
   "deps-py",
   "deps-run",
