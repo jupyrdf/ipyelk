@@ -2,9 +2,9 @@
   "compilerOptions": {
     "rootDir": ".",
     "outDir": "../lib",
-    "tsBuildInfoFile": "../build/.src.tsbuildinfo"
+    "tsBuildInfoFile": "../build/tsc/.src.tsbuildinfo"
   },
   "extends": "../tsconfigbase.json",
   "include": ["./**/*"],
-  "references": [{ "path": "../" }]
+  "references": [{ "path": "../tsconfig.json" }]
 }

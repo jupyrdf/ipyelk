@@ -6,7 +6,6 @@ import os
 import platform
 import re
 import shutil
-import site
 import sys
 import tempfile
 from pathlib import Path
@@ -39,12 +38,6 @@ if WIN:
     FAIL_UNDER = "0"
 
 PYPROJECT = f"""
-[tool.coverage.paths]
-source = [
-    '{SRC}',
-    '{site.getsitepackages()[0]}',
-]
-
 [tool.coverage.html]
 skip_empty = true
 title = "ALL"
@@ -98,7 +91,9 @@ def py_cov() -> int:
         kwargs: Any = {"cwd": td}
         tdp = Path(td)
         (tdp / "pyproject.toml").write_text(PYPROJECT, **UTF8)
-        call(["coverage", "combine", "--keep", *all_py_cov], **kwargs)
+        call(
+            ["coverage", "combine", "--debug=pathmap", "--keep", *all_py_cov], **kwargs
+        )
         rc = call(
             [
                 "coverage",
