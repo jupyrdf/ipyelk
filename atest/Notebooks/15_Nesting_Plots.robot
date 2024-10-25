@@ -15,10 +15,13 @@ ${SCREENS}      ${SCREENS ROOT}${/}examples${/}${NESTING PLOTS}
 15_Nesting_Plots
     Example Should Restart-and-Run-All    ${NESTING PLOTS}
     Scroll To Notebook Bottom
+    BQPlot Figure Count Should Be    ${0}
     ${sel} =    Set Variable    css:[title="expand and center"]
     Click Element    ${sel}
     Sleep    2s
     Capture Page Screenshot    11-expanded.png
+    BQPlot Figure Count Should Be    ${4}
     Click Element    ${sel}
     Sleep    2s
     Capture Page Screenshot    12-collapsed.png
+    BQPlot Figure Count Should Be    ${0}

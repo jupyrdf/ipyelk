@@ -179,3 +179,8 @@ Click Elk Tool
     Sleep    0.3s
     Click Element    ${JLAB CSS NOTEBOOK}
     Sleep    0.3s
+
+BQPlot Figure Count Should Be
+    [Arguments]    ${expected}=${0}
+    ${bq} =    Get WebElements    css:.bqplot
+    Should Be Equal As Integers    ${bq.__len__()}    ${expected}
