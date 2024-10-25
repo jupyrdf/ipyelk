@@ -24,6 +24,7 @@ ${JLAB XP KERNEL IDLE}          xpath://div[contains(@id, 'jp-main-statusbar')]/
 ${JLAB CSS VERSION}             css:.jp-About-version
 ${JLAB CSS CREATE OUTPUT}       .lm-Menu-item[data-command="notebook:create-output-view"]
 ${JLAB CSS LINKED OUTPUT}       .jp-LinkedOutputView
+${JLAB CSS OUTPUT AREA}         .jp-OutputArea-output
 ${CSS DIALOG OK}                css:.jp-Dialog .jp-mod-accept
 ${MENU OPEN WITH}               xpath://div[contains(@class, 'lm-Menu-itemLabel')][contains(text(), "Open With")]
 # R is missing on purpose (may need to use .)
