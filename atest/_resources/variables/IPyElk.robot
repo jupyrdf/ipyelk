@@ -14,7 +14,6 @@ ${SIM APP}                  08_Simulation_App
 ${LOGIC GATES}              11_Logic_Gates
 ${TEXT STYLE}               14_Text_Styling
 ${NESTING PLOTS}            15_Nesting_Plots
-
 #
 # some widget-specific CSS
 #

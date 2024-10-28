@@ -122,6 +122,11 @@
   "nyc": {
     "extends": "@istanbuljs/nyc-config-typescript",
     "all": true,
+    "parser-plugins": [
+      "typescript",
+      "decorators-legacy",
+      "decorators"
+    ],
     "require": [
       "ts-node/register",
       "source-map-support/register"
