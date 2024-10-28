@@ -147,10 +147,10 @@
       ".ts",
       ".tsx"
     ],
-    "lines": 83,
-    "statements": 83,
-    "branches": 63,
-    "functions": 79
+    "lines": 87,
+    "statements": 87,
+    "branches": 74,
+    "functions": 81
   },
   "prettier": {
     "singleQuote": true,

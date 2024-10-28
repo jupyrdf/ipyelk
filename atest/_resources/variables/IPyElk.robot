@@ -11,7 +11,10 @@ ${EXPORTER}                 05_SVG_Exporter
 ${APP EXPORTER}             06_SVG_App_Exporter
 ${SIM PLUMBING}             07_Simulation
 ${SIM APP}                  08_Simulation_App
+${DIAGRAM DEFS}             10_Diagram_Defs
 ${LOGIC GATES}              11_Logic_Gates
+${NODE MENAGERIE}           12_Node_Menagerie
+${COMPOUNDS}                13_Compounds
 ${TEXT STYLE}               14_Text_Styling
 ${NESTING PLOTS}            15_Nesting_Plots
 #
