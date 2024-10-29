@@ -557,6 +557,7 @@ nbconvert-core = "*"
 nbstripout = "*"
 ruff = "*"
 taplo = "*"
+types-jsonschema = "*"
 
 [feature.deps-py.dependencies]
 python = ">=3.9"
@@ -622,13 +623,12 @@ geckodriver = "*"
 
 [feature.deps-firefox-oldest.dependencies]
 firefox = "128.*"
-geckodriver = "*"
 
 [feature.deps-lite.dependencies]
-jupyterlab_server = "*"
 jupyterlite-core = "0.4.3"
+jupyterlite-core-with-libarchive = "*"
+jupyterlite-core-with-translation = "*"
 jupyterlite-pyodide-kernel = "0.4.3"
-python-libarchive-c = "*"
 
 [feature.deps-docs.dependencies]
 ansi2html = "*"

@@ -13,10 +13,6 @@ from ..elements import SymbolSpec, symbol_serialization
 from ..tools import CenterTool, FitTool
 from .viewer import Viewer
 
-# TODO reconnect schema check after adding edge type
-# from ..schema import ElkSchemaValidator
-# from ..trait_types import Schema
-
 
 class SprottyViewer(DOMWidget, Viewer):
     """Jupyterlab widget for displaying and interacting with views generated
