@@ -211,9 +211,9 @@ class HierarchicalElement(ShapeElement, abc.ABC):
 
     def set_parent(self, parent: Optional["Node"] = None):
         if parent is not None:
-            assert (
-                self._parent is None or self._parent is parent
-            ), f"{self.__class__.__name__} owned by different node"
+            assert self._parent is None or self._parent is parent, (
+                f"{self.__class__.__name__} owned by different node"
+            )
         self._parent = parent
         return self
 
@@ -221,9 +221,9 @@ class HierarchicalElement(ShapeElement, abc.ABC):
         return self._parent
 
     def set_key(self, key: Optional[str]):
-        assert (
-            self.properties.key is None or self.properties.key == key
-        ), "Key has already been set"
+        assert self.properties.key is None or self.properties.key == key, (
+            "Key has already been set"
+        )
         self.properties.key = key
         return self
 
