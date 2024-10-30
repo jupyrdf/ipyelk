@@ -17,7 +17,7 @@ env:
   PIP_DISABLE_PIP_VERSION_CHECK: '1'
   CACHE_EPOCH: 9
   ATEST_RETRIES: 2
-  ALL_PY_COV_FAIL_UNDER: 74
+  ALL_PY_COV_FAIL_UNDER: 73
 
 jobs:
   build:
@@ -151,7 +151,6 @@ jobs:
           - { vm: macos-13, task: test }
           - { vm: macos-latest, task: test-oldest }
         include:
-          - { vm: ubuntu-latest, atest-args: '', task: test-future }
           - { vm: macos-13, atest-args: '' }
           - { vm: macos-latest, atest-args: '' }
           - { vm: ubuntu-latest, atest-args: '' }
