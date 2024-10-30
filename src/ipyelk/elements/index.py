@@ -180,12 +180,12 @@ class ElementIndex(BaseModel):
         assert len(roots) >= 1, "Multiple roots"
         root = roots[0]
         assert isinstance(root, Node), f"Root is not of type Node. Not {type(root)}."
-        assert len(root.ports) == 0, (
-            f"Root should not have any ports. Current root has `{len(root.ports)}`."
-        )
-        assert len(root.labels) == 0, (
-            f"Root should not have any labels. Current root has `{len(root.labels)}`."
-        )
+        assert (
+            len(root.ports) == 0
+        ), f"Root should not have any ports. Current root has `{len(root.ports)}`."
+        assert (
+            len(root.labels) == 0
+        ), f"Root should not have any labels. Current root has `{len(root.labels)}`."
         return root
 
     def update(self, other: "ElementIndex"):

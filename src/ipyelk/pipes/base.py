@@ -110,7 +110,9 @@ class PipeStatusView(W.VBox):
         r = 10
         margin = 2
         return (
-            '<svg viewBox="{box}"><circle cx="{r}" cy="{r}" r="{r}"></circle></svg>'
+            '<svg viewBox="{box}">'
+            '<circle cx="{r}" cy="{r}" r="{r}"></circle>'
+            "</svg>"
         ).format(
             box=f"{-margin} {-margin} {2 * r + 2 * margin} {2 * r + 2 * margin}",
             r=r,

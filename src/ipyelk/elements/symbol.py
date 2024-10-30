@@ -45,9 +45,9 @@ class SymbolSpec(BaseModel):
         :return: current SymbolSpec
         """
         for symbol in symbols:
-            assert symbol.identifier not in self.library, (
-                f"Identifier should be unique. {symbol.identifier} is duplicated"
-            )
+            assert (
+                symbol.identifier not in self.library
+            ), f"Identifier should be unique. {symbol.identifier} is duplicated"
             self.library[symbol.identifier] = symbol
         return self
 
