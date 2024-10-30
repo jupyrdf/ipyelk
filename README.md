@@ -28,7 +28,7 @@
 | `==1.*`      | `>1`       | needs `nodejs >10`<br/>`jupyter labextension install @jupyrdf/jupyter-elk`<br/>backports, etc. land on the `0.3.x` branch |
 | `==2.*`      | `>1`       | _untested_                                                                                                                |
 | `==3.*`      | `>=1,<2.1` |
-| `==4.*`      | `>=2.1`    |
+| `>=4.1,<5`   | `>=2.1`    |
 
 ## Install
 

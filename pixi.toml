@@ -31,12 +31,7 @@ test-oldest = {depends-on = [
   "itest-oldest-nbconvert",
   "atest-oldest-robot",
 ]}
-test-future = {depends-on = [
-  "utest-future-pytest",
-  "itest-future-nbconvert",
-  "atest-future-robot",
-]}
-test-all = {depends-on = ["test", "test-oldest", "test-future"]}
+test-all = {depends-on = ["test", "test-oldest"]}
 docs = {depends-on = ["docs-lite", "docs-sphinx"]}
 check = {depends-on = ["check-links", "check-spelling"]}
 report = {depends-on = ["report-cov"]}
@@ -228,28 +223,6 @@ inputs = [
 ]
 outputs = ["build/reports/utest-oldest/{pytest.html,pytest.xunit.xml}"]
 
-[feature.tasks-utest-future.tasks.pip-utest-future]
-cmd = """pixi r -e utest-future pip-dist--"""
-inputs = ["dist/*.whl"]
-outputs = ["build/reports/pip-freeze/utest-future.txt"]
-
-[feature.tasks-utest-future.tasks.utest-future-pytest]
-cmd = """
-export JUPYTER_PLATFORM_DIRS=1
-&& pytest
-  --html build/reports/utest-future/pytest.html
-  --junitxml build/reports/utest-future/pytest.xunit.xml
-  --self-contained-html
-"""
-depends-on = ["pip-utest-future"]
-inputs = [
-  "build/reports/pip-freeze/utest-future.txt",
-  "pyproject.toml",
-  "{tests,src}/**/*.{py,json}",
-  "!**/.ipynb_checkpoints",
-]
-outputs = ["build/reports/utest-future/{pytest.html,pytest.xunit.xml}"]
-
 # integration test #####################################################################
 [feature.tasks-itest.tasks.pip-itest]
 cmd = """pixi r -e itest pip-editable--"""
@@ -272,17 +245,6 @@ cmd = """pixi r -e itest-oldest nbconvert--"""
 depends-on = ["pip-itest-oldest"]
 inputs = ["examples/", "!**/{.ipynb_checkpoints,__pycache__}"]
 outputs = ["build/reports/itest-oldest/nbconvert/**/*.html"]
-
-[feature.tasks-itest-future.tasks.pip-itest-future]
-cmd = """pixi r -e itest-future pip-dist--"""
-inputs = ["dist/*.whl"]
-outputs = ["build/reports/pip-freeze/itest-future.txt"]
-
-[feature.tasks-itest-future.tasks.itest-future-nbconvert]
-cmd = """pixi r -e itest-future nbconvert--"""
-depends-on = ["pip-itest-future"]
-inputs = ["examples/", "!**/{.ipynb_checkpoints,__pycache__}"]
-outputs = ["build/reports/itest-future/nbconvert/**/*.html"]
 
 # acceptance test ######################################################################
 [feature.tasks-atest.tasks.pip-atest]
@@ -341,28 +303,6 @@ inputs = [
 outputs = [
   "build/reports/atest-oldest/**/pabot_results/**/*.*",
   "build/reports/atest-oldest/robot.ok",
-]
-
-
-[feature.tasks-atest-future.tasks.pip-atest-future]
-cmd = """pixi r -e atest-future pip-dist-- && pixi r ext-check--"""
-inputs = ["dist/*.whl"]
-outputs = ["build/reports/pip-freeze/atest-future.txt"]
-
-[feature.tasks-atest-future.tasks.atest-future-robot]
-cmd = "python scripts/atest.py"
-depends-on = ["pip-atest-future"]
-inputs = [
-  "examples",
-  "atest",
-  "src",
-  "scripts/atest.py",
-  "!**/__pycache__/",
-  "!**/.ipynb_checkpoints",
-]
-outputs = [
-  "build/reports/atest-future/**/pabot_results/**/*.*",
-  "build/reports/atest-future/robot.ok",
 ]
 
 # lint #################################################################################
@@ -543,10 +483,6 @@ cmd = "sphinx-autobuild docs build/watch-docs --watch src"
 depends-on = ["pip-atest-oldest"]
 cmd = "jupyter lab --no-browser --debug"
 
-[feature.tasks-atest-future.tasks.lab-future]
-depends-on = ["pip-atest-future"]
-cmd = "jupyter lab --no-browser --debug"
-
 # dependencies #########################################################################
 [feature.deps-node.dependencies]
 nodejs = "22.*"
@@ -567,9 +503,11 @@ python = "<3.10"
 python = ">=3.13"
 
 [feature.deps-lab.dependencies]
-jupyterlab = ">=4.2.0,<5"
-[feature.deps-lab-future.dependencies]
-jupyterlab = {version = "==4.3.0rc1", channel = "conda-forge/label/jupyterlab_rc"}
+jupyterlab = ">=4.1.0,<5"
+[feature.deps-lab-oldest.dependencies]
+jupyterlab = "4.1.*"
+[feature.deps-lab-latest.dependencies]
+jupyterlab = ">=4.3.0"
 
 [feature.deps-flit.dependencies]
 flit-core = ">=3.9.0,<4"
@@ -697,6 +635,7 @@ atest = {features = [
   "deps-flit",
   "deps-itest",
   "deps-lab",
+  "deps-lab-latest",
   "deps-node",
   "deps-pip",
   "deps-py-latest",
@@ -763,44 +702,13 @@ atest-oldest = {features = [
   "deps-flit",
   "deps-itest",
   "deps-lab",
+  "deps-lab-oldest",
   "deps-pip",
   "deps-py-oldest",
   "deps-py",
   "deps-run-oldest",
   "deps-run",
   "tasks-atest-oldest",
-]}
-
-# future #####################################################################
-utest-future = {features = [
-  "deps-flit",
-  "deps-pip",
-  "deps-py",
-  "deps-run",
-  "deps-utest",
-  "tasks-utest-future",
-]}
-itest-future = {features = [
-  "deps-demo",
-  "deps-flit",
-  "deps-itest",
-  "deps-pip",
-  "deps-py",
-  "deps-run",
-  "tasks-itest-future",
-]}
-atest-future = {features = [
-  "deps-atest",
-  "deps-demo",
-  "deps-firefox",
-  "deps-flit",
-  "deps-itest",
-  "deps-lab-future",
-  "deps-lab",
-  "deps-pip",
-  "deps-py",
-  "deps-run",
-  "tasks-atest-future",
 ]}
 
 

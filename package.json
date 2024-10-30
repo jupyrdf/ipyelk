@@ -46,11 +46,6 @@
     "source-map-loader": "^5.0.0"
   },
   "dependencies": {
-    "@jupyter-widgets/base": "^6.0.10",
-    "@jupyter-widgets/controls": "^5.0.11",
-    "@jupyter-widgets/jupyterlab-manager": "^5.0.13",
-    "@jupyterlab/application": "^4.2.5",
-    "@jupyterlab/apputils": "^4.3.5",
     "elkjs": "0.9.3",
     "inversify": "~6.0.2",
     "reflect-metadata": "^0.1.13",
@@ -61,6 +56,11 @@
   "devDependencies": {
     "@ephesoft/webpack.istanbul.loader": "^2.2.0",
     "@istanbuljs/nyc-config-typescript": "^1.0.2",
+    "@jupyter-widgets/base": "^6.0.10",
+    "@jupyter-widgets/controls": "^5.0.11",
+    "@jupyter-widgets/jupyterlab-manager": "^5.0.13",
+    "@jupyterlab/application": "^4.1.0",
+    "@jupyterlab/apputils": "^4.1.0",
     "@jupyterlab/builder": "^4.2.5",
     "@jupyterlab/theme-dark-extension": "4",
     "@jupyterlab/theme-light-extension": "4",
