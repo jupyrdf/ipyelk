@@ -481,7 +481,7 @@ cmd = "sphinx-autobuild docs build/watch-docs --watch src"
 
 [feature.tasks-atest-oldest.tasks.lab-oldest]
 depends-on = ["pip-atest-oldest"]
-cmd = "jupyter lab --no-browser --debug"
+cmd = "jupyter lab --no-browser --debug --port=7777"
 
 # dependencies #########################################################################
 [feature.deps-node.dependencies]

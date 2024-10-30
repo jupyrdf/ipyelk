@@ -53,18 +53,17 @@ Example Should Restart-and-Run-All
 
 Capture Each Cell Output
     [Arguments]    ${prefix}=${EMPTY}
-    Scroll To Notebook Top
-    ${els} =    Get WebElements    ${JLAB CSS WINDOW SCROLL} li
-    FOR    ${i}    IN RANGE    ${els.__len__()}
+    ${cell_count_} =    Get Cell Count
+    FOR    ${i}    IN RANGE    ${cell_count}
         ${n} =    Set Variable    ${i.__add__(1)}
-        Scroll To Notebook Cell    ${n}
+        Scroll To Cell    ${n}
         ${outputs} =    Get WebElements    ${JLAB CSS CELL}:nth-child(${n}) ${JLAB CSS OUTPUT AREA}
         IF    ${outputs.__len__()}
             Run Keyword And Ignore Error
             ...    Capture Element Screenshot    ${outputs[0]}    ${prefix}${n}-output.png
         END
     END
-    Scroll To Notebook Top
+    Scroll To First Cell
 
 Clean up after IPyElk Example
     ${files} =    Get All IPyElk Example File Names
