@@ -190,7 +190,13 @@ import pathlib, hashlib; d = pathlib.Path("dist");
 for p in sorted(d.glob("*.*"))]
 ' > dist/SHA256SUMS"""
 inputs = ["dist/", "!SHA256SUMS"]
-depends-on = ["dist-pypi", "dist-npm", "dist-check-twine", "dist-check-wheel", "dist-check-dist"]
+depends-on = [
+  "dist-pypi",
+  "dist-npm",
+  "dist-check-twine",
+  "dist-check-wheel",
+  "dist-check-dist",
+]
 outputs = ["dist/SHA256SUMS"]
 
 
