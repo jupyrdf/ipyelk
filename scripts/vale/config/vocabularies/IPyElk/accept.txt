@@ -80,6 +80,7 @@ Pan/Zoom
 PipeStatus
 PipeStatusView
 pixi
+predator/prey
 PRs
 PyData
 pypi
@@ -87,6 +88,7 @@ PyPI
 re-build
 ReadTheDocs
 REPLite
+screencast
 selectable
 self.status.exception
 SPDX-License-Identifier
