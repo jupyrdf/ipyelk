@@ -1,14 +1,14 @@
 # Changelog
 
-## `2.1.0a1`
+## `2.1.0`
 
-### `@jupyrdf/jupyter-elk 2.1.0-alpha1`
+### `@jupyrdf/jupyter-elk 2.1.0`
 
-> TBD
+- support JupyterLab 4.1-4.3
 
-### `ipyelk 2.1.0a1`
+### `ipyelk 2.1.0`
 
-> TBD
+- improve typings
 
 ## `2.1.0a0`
 
