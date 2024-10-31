@@ -1,6 +1,6 @@
 {
   "name": "@jupyrdf/jupyter-elk",
-  "version": "2.1.1",
+  "version": "2.1.2",
   "description": "ElkJS widget for Jupyter",
   "license": "BSD-3-Clause",
   "author": "Dane Freeman",
