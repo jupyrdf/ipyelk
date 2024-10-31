@@ -1,6 +1,16 @@
 # Changelog
 
-## `2.1.0`
+## `2.1.1`
+
+### `@jupyrdf/jupyter-elk 2.1.1`
+
+- restore license files
+
+### `ipyelk 2.1.1`
+
+- restore license files
+
+## `2.1.0` (broken)
 
 ### `@jupyrdf/jupyter-elk 2.1.0`
 

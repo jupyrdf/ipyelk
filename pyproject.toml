@@ -7,7 +7,7 @@ build-backend = "flit_core.buildapi"
 
 [project]
 name = "ipyelk"
-version = "2.1.0"
+version = "2.1.1"
 description = "ELK widget for Jupyter"
 authors = [{name = "Dane Freeman", email = "dane.freeman@gtri.gatech.edu"}]
 readme = "README.md"
@@ -28,6 +28,7 @@ classifiers = [
   "Programming Language :: Python :: 3.9",
   "Programming Language :: Python :: 3",
 ]
+license.text = "BSD-3-Clause"
 requires-python = ">=3.9"
 dependencies = [
   "ipywidgets >=8.0.1,<9",
@@ -43,7 +44,7 @@ dependencies = [
 "Source" = "https://github.com/jupyrdf/ipyelk"
 
 [tool.flit.sdist]
-include = ["src/_d", "tests"]
+include = ["COPYRIGHT.md", "LICENSE.txt", "src/_d", "tests", "third-party"]
 
 [tool.flit.external-data]
 directory = "src/_d"
