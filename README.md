@@ -9,13 +9,14 @@
 
 ## Screenshots
 
-| what can you do...                                     | ... with `ipyelk`              |
-| ------------------------------------------------------ | ------------------------------ |
-| automatically lay out complex, nested data as diagrams | ![][screenshot]                |
-| interactive activity/flow-chart diagrams               | ![][screenshot-activities]     |
-| collapsible blocks                                     | ![][screenshot-activity-block] |
-| visual simulations                                     | ![][screenshot-1-bit]          |
-| embed other widgets in diagrams                        | ![][screenshot-overlay]        |
+| what can you do...                                     | ... with `ipyelk`                                                                      |
+| ------------------------------------------------------ | -------------------------------------------------------------------------------------- |
+| automatically lay out complex, nested data as diagrams | ![a screenshot of a complex graph][screenshot]                                         |
+| interactive activity/flow-chart diagrams               | ![a screencast of a flowchart with collapsible regions][screenshot-activities]         |
+| collapsible blocks                                     | ![a screencast of a class diagram with collapsible regions][screenshot-activity-block] |
+| visual simulations                                     | ![a screencast of an interactive logic gate simulation][screenshot-1-bit]              |
+| embed other widgets in diagrams                        | ![a screencast of displaying bar and scatter plots in a flowchart][screenshot-overlay] |
+| interact with dynamic systems                          | ![a screencast of a predator/prey system with plots over time][screenshot-deer-wolves] |
 
 ## Prerequisites
 
@@ -107,6 +108,8 @@ derived from [other works][copyright].
   https://user-images.githubusercontent.com/7581399/105381389-f4a02200-5bdc-11eb-975d-e4a09c4f0c96.gif
 [screenshot-overlay]:
   https://github.com/user-attachments/assets/7cb454ab-d25b-4184-9632-018fa859cc25
+[screenshot-deer-wolves]:
+  https://github.com/user-attachments/assets/db2dd114-3104-4b8d-9f99-f7a9127214d8
 [npm-badge]: https://img.shields.io/npm/v/@jupyrdf/jupyter-elk
 [npm]: https://www.npmjs.com/package/@jupyrdf/jupyter-elk
 [pypi]: https://pypi.org/project/ipyelk

@@ -8,7 +8,7 @@
 
 ### `ipyelk 2.1.0`
 
-- improve typings
+- improve type hints
 
 ## `2.1.0a0`
 
