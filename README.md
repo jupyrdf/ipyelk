@@ -3,9 +3,9 @@
 [Jupyter Widgets][widgets] for interactive graphs powered by the [Eclipse Layout Kernel
 (ELK)][elk].
 
-|                                        Install                                        |            Demo             |        Build        |                                         Docs                                         |
-| :-----------------------------------------------------------------------------------: | :-------------------------: | :-----------------: | :----------------------------------------------------------------------------------: |
-| [![npm-badge]][npm] <br/> [![pypi-badge][]][pypi] <br/> [![conda-badge]][conda-forge] | [![binder-badge][]][binder] | [![ci-badge][]][ci] | [![][docs-badge]][docs] <br/> [Examples][] <br/>[CHANGELOG][] <br/> [CONTRIBUTING][] |
+|                                        Install                                        |        Build        |                                         Docs                                         |
+| :-----------------------------------------------------------------------------------: | :-----------------: | :----------------------------------------------------------------------------------: |
+| [![npm-badge]][npm] <br/> [![pypi-badge][]][pypi] <br/> [![conda-badge]][conda-forge] | [![ci-badge][]][ci] | [![][docs-badge]][docs] <br/> [Examples][] <br/>[CHANGELOG][] <br/> [CONTRIBUTING][] |
 
 ## Screenshots
 
@@ -15,6 +15,7 @@
 | interactive activity/flow-chart diagrams               | ![][screenshot-activities]     |
 | collapsible blocks                                     | ![][screenshot-activity-block] |
 | visual simulations                                     | ![][screenshot-1-bit]          |
+| embed other widgets in diagrams                        | ![][screenshot-overlay]        |
 
 ## Prerequisites
 
@@ -27,7 +28,7 @@
 | `==1.*`      | `>1`       | needs `nodejs >10`<br/>`jupyter labextension install @jupyrdf/jupyter-elk`<br/>backports, etc. land on the `0.3.x` branch |
 | `==2.*`      | `>1`       | _untested_                                                                                                                |
 | `==3.*`      | `>=1,<2.1` |
-| `==4.*`      | `>=2.1`    |
+| `>=4.1,<5`   | `>=2.1`    |
 
 ## Install
 
@@ -89,9 +90,6 @@ derived from [other works][copyright].
 [changelog]: https://github.com/jupyrdf/ipyelk/tree/master/CHANGELOG.md
 [ci-badge]: https://github.com/jupyrdf/ipyelk/workflows/CI/badge.svg
 [ci]: https://github.com/jupyrdf/ipyelk/actions?query=workflow%3ACI+branch%3Amaster
-[binder-badge]: https://mybinder.org/badge_logo.svg
-[binder]:
-  https://mybinder.org/v2/gh/jupyrdf/ipyelk/master?urlpath=lab%2Ftree%2Fexamples%2F_index.ipynb
 [elk-json]:
   https://www.eclipse.org/elk/documentation/tooldevelopers/graphdatastructure/jsonformat.html
 [elk]: https://github.com/kieler/elkjs
@@ -107,6 +105,8 @@ derived from [other works][copyright].
   https://user-images.githubusercontent.com/7581399/105381390-f4a02200-5bdc-11eb-808e-844ee17cad8f.gif
 [screenshot-1-bit]:
   https://user-images.githubusercontent.com/7581399/105381389-f4a02200-5bdc-11eb-975d-e4a09c4f0c96.gif
+[screenshot-overlay]:
+  https://github.com/user-attachments/assets/7cb454ab-d25b-4184-9632-018fa859cc25
 [npm-badge]: https://img.shields.io/npm/v/@jupyrdf/jupyter-elk
 [npm]: https://www.npmjs.com/package/@jupyrdf/jupyter-elk
 [pypi]: https://pypi.org/project/ipyelk

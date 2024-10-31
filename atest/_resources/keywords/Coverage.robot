@@ -24,5 +24,5 @@ Capture Page Coverage
         Create File    ${OUTPUT DIR}${/}jscov${/}${name}.json    ${cov_json}
         Execute Javascript    window.__coverage__ = {}
     ELSE
-        Log    No browser coverage captured    ERROR
+        Log    No browser coverage captured    CONSOLE
     END

@@ -81,6 +81,7 @@ def atest(attempt, extra_args):
         *["--variable", f"FIREFOX:{firefox}"],
         *["--variable", f"GECKODRIVER:{geckodriver}"],
         *["--variable", f"TOTAL_COVERAGE:{TOTAL_COVERAGE}"],
+        *["--variable", f"ROOT:{ROOT}"],
         *["--randomize", "all"],
         *["--consolecolors=on"],
         *(extra_args or []),

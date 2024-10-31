@@ -5,6 +5,7 @@ Resource    Browser.robot
 Resource    Coverage.robot
 Resource    ../variables/Lab.robot
 Resource    ../variables/Browser.robot
+Resource    LabCompat.robot
 
 
 *** Keywords ***
@@ -18,7 +19,7 @@ Open JupyterLab
     Call Method    ${options}    set_preference    devtools.console.stdout.content    ${True}
 
     ${service args} =    Create List    --log    info
-    Set Global Variable    ${NEXT BROWSER}    ${NEXT BROWSER.__add__(1)}
+    Set Suite Variable    ${NEXT BROWSER}    ${NEXT BROWSER.__add__(1)}    children=${TRUE}
     ${geckolog} =    Set Variable    ${OUTPUT DIR}${/}logs${/}geckodriver-${NEXT BROWSER}.log
     # normalize windows slashes
     ${geckolog} =    Set Variable    ${geckolog.replace('\\', '/')}
@@ -47,26 +48,10 @@ Close All Tabs
 
 Wait For All Cells To Run
     [Arguments]    ${timeout}=10s
-    Scroll To Notebook Bottom
+    Scroll To Last Cell
     Wait Until Element Does Not Contain    ${JLAB XP LAST CODE PROMPT}    [*]:    timeout=${timeout}
     Wait Until Element is Visible    ${JLAB XP KERNEL IDLE}    timeout=${timeout}
-    Scroll To Notebook Top
-
-Scroll To Notebook Bottom
-    Ensure Notebook Window Scrollbar is Open
-    Wait Until Keyword Succeeds    5x    0.1s
-    ...    Click Element    ${JLAB CSS WINDOW SCROLL} li:last-child
-
-Scroll To Notebook Cell
-    [Arguments]    ${index}=${0}
-    Ensure Notebook Window Scrollbar is Open
-    Wait Until Keyword Succeeds    5x    0.1s
-    ...    Click Element    ${JLAB CSS WINDOW SCROLL} li:nth-child(${index})
-
-Scroll To Notebook Top
-    Ensure Notebook Window Scrollbar is Open
-    Wait Until Keyword Succeeds    5x    0.1s
-    ...    Click Element    ${JLAB CSS WINDOW SCROLL} li:first-child
+    Scroll To First Cell
 
 Click JupyterLab Menu
     [Documentation]    Click a top-level JupyterLab menu bar item with by ``label``,
@@ -92,10 +77,6 @@ Open With JupyterLab Menu
     FOR    ${submenu}    IN    @{submenus}
         Click JupyterLab Menu Item    ${submenu}
     END
-
-Ensure Notebook Window Scrollbar is Open
-    ${els} =    Get WebElements    ${JLAB CSS WINDOW SCROLL}
-    IF    not ${els.__len__()}    Click Element    ${JLAB CSS WINDOW TOGGLE}
 
 Ensure File Browser is Open
     ${sel} =    Set Variable    css:.lm-TabBar-tab[data-id="filebrowser"]:not(.lm-mod-current)

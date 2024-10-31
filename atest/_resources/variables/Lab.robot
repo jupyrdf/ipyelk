@@ -15,7 +15,7 @@ ${JLAB CSS NOTEBOOK}            css:.jp-NotebookPanel-notebook
 ${JLAB CSS NOTEBOOK SCROLL}     ${JLAB CSS NOTEBOOK} .jp-WindowedPanel-outer
 ${JLAB CSS WINDOW SCROLL}       css:.jp-mod-virtual-scrollbar .jp-WindowedPanel-scrollbar
 
-${JLAB CSS WINDOW TOGGLE}       css:[data-command='notebook:toggle-virtual-scrollbar']
+${JLAB CSS WINDOW TOGGLE}       css:.jp-NotebookPanel-toolbar [data-command='notebook:toggle-virtual-scrollbar']
 ${JLAB XP LAST CODE CELL}       ${JLAB XP CODE CELLS}\[last()]
 ${JLAB CSS NB FOOTER}           css:.jp-Notebook-footer
 ${JLAB XP LAST CODE PROMPT}     ${JLAB XP LAST CODE CELL}//*[contains(@class, 'jp-InputArea-prompt')]
@@ -24,6 +24,7 @@ ${JLAB XP KERNEL IDLE}          xpath://div[contains(@id, 'jp-main-statusbar')]/
 ${JLAB CSS VERSION}             css:.jp-About-version
 ${JLAB CSS CREATE OUTPUT}       .lm-Menu-item[data-command="notebook:create-output-view"]
 ${JLAB CSS LINKED OUTPUT}       .jp-LinkedOutputView
+${JLAB CSS OUTPUT AREA}         .jp-OutputArea-output
 ${CSS DIALOG OK}                css:.jp-Dialog .jp-mod-accept
 ${MENU OPEN WITH}               xpath://div[contains(@class, 'lm-Menu-itemLabel')][contains(text(), "Open With")]
 # R is missing on purpose (may need to use .)

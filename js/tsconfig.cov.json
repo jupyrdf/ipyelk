@@ -4,9 +4,9 @@
     "outDir": "../lib",
     "inlineSourceMap": true,
     "sourceMap": false,
-    "tsBuildInfoFile": "../build/.src.cov.tsbuildinfo"
+    "tsBuildInfoFile": "../build/tsc/.src.tsbuildinfo.cov"
   },
-  "extends": "../tsconfig",
+  "extends": "../tsconfigbase.json",
   "include": ["./**/*"],
-  "references": [{ "path": "../" }]
+  "references": [{ "path": "../tsconfig.cov.json" }]
 }

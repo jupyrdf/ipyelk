@@ -15,9 +15,9 @@ env:
   PYTHONIOENCODING: utf-8
   PYTHONUNBUFFERED: '1'
   PIP_DISABLE_PIP_VERSION_CHECK: '1'
-  CACHE_EPOCH: 6
+  CACHE_EPOCH: 9
   ATEST_RETRIES: 2
-  ALL_PY_COV_FAIL_UNDER: 69
+  ALL_PY_COV_FAIL_UNDER: 73
 
 jobs:
   build:
@@ -32,7 +32,8 @@ jobs:
           cache-key: job-build
       - uses: actions/cache@v4
         with:
-          path: node_modules
+          path: |
+            node_modules
           key: ${{ env.CACHE_EPOCH }}-${{ hashFiles('yarn.lock') }}-node-modules
       - run: pixi run setup-js
       - run: touch node_modules/.cached-in-ci
@@ -41,8 +42,41 @@ jobs:
         with:
           name: ipyelk-${{ github.run_number }}-dist
           path: |
-            ./dist
+            dist
+            .pixi/task-cache-v0
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ipyelk-${{ github.run_number }}-build
+          path: |
+            build/tsc/.*.tsbuildinfo
+            lib
             src/_d
+            .pixi/task-cache-v0
+
+  build-cov:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: prefix-dev/setup-pixi@v0.8.1
+        with:
+          pixi-version: v0.34.0
+          cache: true
+          environments: build
+          cache-key: job-build
+      - uses: actions/cache@v4
+        with:
+          path: |
+            node_modules
+          key: ${{ env.CACHE_EPOCH }}-${{ hashFiles('yarn.lock') }}-node-modules
+      - run: pixi run setup-js
+      - run: touch node_modules/.cached-in-ci
+      - run: pixi run build-js-ext-cov
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ipyelk-${{ github.run_number }}-build-cov
+          path: |
+            build/tsc/.*.tsbuildinfo.cov
+            build/labextensions-cov
             .pixi/task-cache-v0
 
   lint:
@@ -59,11 +93,15 @@ jobs:
       - name: cache (node)
         uses: actions/cache@v4
         with:
-          path: node_modules
+          path: |
+            node_modules
           key: ${{ env.CACHE_EPOCH }}-${{ hashFiles('yarn.lock') }}-node-modules
       - uses: actions/download-artifact@v4
         with:
           name: ipyelk-${{ github.run_number }}-dist
+      - uses: actions/download-artifact@v4
+        with:
+          name: ipyelk-${{ github.run_number }}-build
       - run: pixi run fix && pixi run fix
       - run: pixi run lint
 
@@ -81,11 +119,15 @@ jobs:
       - name: cache (node)
         uses: actions/cache@v4
         with:
-          path: node_modules
+          path: |
+            node_modules
           key: ${{ env.CACHE_EPOCH }}-${{ hashFiles('yarn.lock') }}-node-modules
       - uses: actions/download-artifact@v4
         with:
           name: ipyelk-${{ github.run_number }}-dist
+      - uses: actions/download-artifact@v4
+        with:
+          name: ipyelk-${{ github.run_number }}-build
       - run: pixi run docs-lite
       - run: pixi run docs
       - run: pixi run check
@@ -93,13 +135,13 @@ jobs:
         with:
           name: ipyelk-${{ github.run_number }}-docs
           path: |
-            ./build/docs
-            ./build/reports
+            build/docs
+            build/reports
 
   test:
-    needs: [build]
     name: ${{ matrix.task }} (${{ matrix.vm }})
     runs-on: ${{ matrix.vm }}
+    needs: [build, build-cov]
     strategy:
       fail-fast: false
       matrix:
@@ -113,8 +155,6 @@ jobs:
           - { vm: macos-latest, atest-args: '' }
           - { vm: ubuntu-latest, atest-args: '' }
           - { vm: windows-latest, atest-args: '--exclude ci:skip-win' }
-    env:
-      ATEST_ARGS: ${{ matrix.atest-args }}
     steps:
       - uses: actions/checkout@v4
       - uses: prefix-dev/setup-pixi@v0.8.1
@@ -123,20 +163,32 @@ jobs:
           cache: true
           environments: a${{ matrix.task }} i${{ matrix.task }} u${{ matrix.task }}
           cache-key: job-${{ matrix.task }}
-      - if: matrix.task == 'test'
-        uses: actions/cache@v4
-        with:
-          path: node_modules
-          key: ${{ env.CACHE_EPOCH }}-${{ hashFiles('yarn.lock') }}-node-modules
       - uses: actions/download-artifact@v4
         with:
           name: ipyelk-${{ github.run_number }}-dist
+      - uses: actions/download-artifact@v4
+        with:
+          name: ipyelk-${{ github.run_number }}-build
+      - if: matrix.task == 'test'
+        uses: actions/download-artifact@v4
+        with:
+          name: ipyelk-${{ github.run_number }}-build-cov
       - run: pixi run u${{ matrix.task }}-pytest
       - run: pixi run i${{ matrix.task }}-nbconvert
-      - run: pixi run a${{ matrix.task }}-robot
-      - run: pixi run ${{ matrix.task }}
+      - if: matrix.task == 'test' && matrix.vm == 'ubuntu-latest'
+        uses: actions/cache@v4
+        with:
+          path: |
+            node_modules
+          key: ${{ env.CACHE_EPOCH }}-${{ hashFiles('yarn.lock') }}-node-modules
+      - env:
+          ATEST_ARGS: ${{ matrix.atest-args }}
+        run: pixi run a${{ matrix.task }}-robot
+      - if: matrix.task == 'test' && matrix.vm == 'ubuntu-latest'
+        run: pixi run report
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: ipyelk-${{ github.run_number }}-${{ matrix.task }}-${{ matrix.vm }}
-          path: ./build/reports
+          path: |
+            build/reports

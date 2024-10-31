@@ -47,8 +47,23 @@ Example Should Restart-and-Run-All
     Elk Counts Should Be    # all 0
     Restart and Run All
     Wait For All Cells To Run    60s
+    Capture Each Cell Output    09-
     Page Should Not Contain Contain Standard Errors
     Capture Page Screenshot    10-ran-all-without-stderr.png
+
+Capture Each Cell Output
+    [Arguments]    ${prefix}=${EMPTY}
+    ${cell_count_} =    Get Cell Count
+    FOR    ${i}    IN RANGE    ${cell_count}
+        ${n} =    Set Variable    ${i.__add__(1)}
+        Scroll To Cell    ${n}
+        ${outputs} =    Get WebElements    ${JLAB CSS CELL}:nth-child(${n}) ${JLAB CSS OUTPUT AREA}
+        IF    ${outputs.__len__()}
+            Run Keyword And Ignore Error
+            ...    Capture Element Screenshot    ${outputs[0]}    ${prefix}${n}-output.png
+        END
+    END
+    Scroll To First Cell
 
 Clean up after IPyElk Example
     ${files} =    Get All IPyElk Example File Names
@@ -163,3 +178,8 @@ Click Elk Tool
     Sleep    0.3s
     Click Element    ${JLAB CSS NOTEBOOK}
     Sleep    0.3s
+
+BQPlot Figure Count Should Be
+    [Arguments]    ${expected}=${0}
+    ${bq} =    Get WebElements    css:.bqplot
+    Should Be Equal As Integers    ${bq.__len__()}    ${expected}

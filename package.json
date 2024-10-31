@@ -22,8 +22,8 @@
     "bootstrap": "jlpm --prefer-offline --ignore-optional --ignore-scripts && jlpm clean && jlpm schema && jlpm lint && jlpm build",
     "build": "jlpm build:ts && jlpm build:ext",
     "build:ext": "jupyter labextension build . --debug",
-    "build:ts": "tsc -b js/tsconfig.json",
-    "build:ts:cov": "tsc -b js/tsconfig.cov.json",
+    "build:ts": "tsc -b js/tsconfig.json --verbose",
+    "build:ts:cov": "tsc -b js/tsconfig.cov.json --verbose",
     "clean": "rimraf ./lib ./src/ipyelk/schema/elkschema.json ./src/ipyelk/_d",
     "lint": "jlpm lint:prettier",
     "lint:prettier": "prettier-package-json --write package.json && prettier --cache --cache-location build/.prettiercache --write --list-different \"*.{json,yml,md,js}\" \"{js,style,lite,src,.github,examples,docs}/**/*.{ts,tsx,js,jsx,css,json,md,yml,yaml}\"",
@@ -46,11 +46,6 @@
     "source-map-loader": "^5.0.0"
   },
   "dependencies": {
-    "@jupyter-widgets/base": "^6.0.10",
-    "@jupyter-widgets/controls": "^5.0.11",
-    "@jupyter-widgets/jupyterlab-manager": "^5.0.13",
-    "@jupyterlab/application": "^4.2.5",
-    "@jupyterlab/apputils": "^4.3.5",
     "elkjs": "0.9.3",
     "inversify": "~6.0.2",
     "reflect-metadata": "^0.1.13",
@@ -61,6 +56,11 @@
   "devDependencies": {
     "@ephesoft/webpack.istanbul.loader": "^2.2.0",
     "@istanbuljs/nyc-config-typescript": "^1.0.2",
+    "@jupyter-widgets/base": "^6.0.10",
+    "@jupyter-widgets/controls": "^5.0.11",
+    "@jupyter-widgets/jupyterlab-manager": "^5.0.13",
+    "@jupyterlab/application": "^4.1.0",
+    "@jupyterlab/apputils": "^4.1.0",
     "@jupyterlab/builder": "^4.2.5",
     "@jupyterlab/theme-dark-extension": "4",
     "@jupyterlab/theme-light-extension": "4",
@@ -122,6 +122,11 @@
   "nyc": {
     "extends": "@istanbuljs/nyc-config-typescript",
     "all": true,
+    "parser-plugins": [
+      "typescript",
+      "decorators-legacy",
+      "decorators"
+    ],
     "require": [
       "ts-node/register",
       "source-map-support/register"
@@ -142,10 +147,10 @@
       ".ts",
       ".tsx"
     ],
-    "lines": 77,
-    "statements": 77,
-    "branches": 56,
-    "functions": 72
+    "lines": 87,
+    "statements": 87,
+    "branches": 74,
+    "functions": 81
   },
   "prettier": {
     "singleQuote": true,
