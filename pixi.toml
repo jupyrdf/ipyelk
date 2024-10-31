@@ -24,6 +24,7 @@ lint = {depends-on = [
   "lint-ruff-check",
   "lint-robot-dryrun",
   "lint-actionlint",
+  "lint-audit",
 ]}
 test = {depends-on = ["utest-pytest", "itest-nbconvert", "atest-robot"]}
 test-oldest = {depends-on = [
@@ -383,6 +384,11 @@ inputs = ["examples/", "!**/{.ipynb_checkpoints,__pycache__}/"]
 [feature.tasks-lint.tasks.lint-actionlint]
 cmd = "actionlint -shellcheck=shellcheck -pyflakes=pyflakes"
 inputs = [".github/workflows"]
+
+[feature.tasks-lint.tasks.lint-audit]
+cmd = "jlpm npm audit"
+inputs = ["yarn.lock"]
+depends-on = ["setup-js"]
 
 # lite #################################################################################
 [feature.tasks-lite.tasks.clean-docs-lite]
