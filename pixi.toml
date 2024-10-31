@@ -8,7 +8,14 @@ build = {depends-on = [
   "build-js-ext",
   "build-js-ext-cov",
 ]}
-dist = {depends-on = ["dist-npm", "dist-pypi", "dist-hash"]}
+dist = {depends-on = [
+  "dist-npm",
+  "dist-pypi",
+  "dist-check-twine",
+  "dist-check-wheel",
+  "dist-check-dist",
+  "dist-hash",
+]}
 fix = {depends-on = [
   "fix-taplo",
   "fix-prettier",
@@ -156,10 +163,25 @@ inputs = ["build/tsc/.*.tsbuildinfo", "{package.json,README.md,LICENSE}"]
 outputs = ["dist/*.tgz"]
 
 [feature.tasks-build.tasks.dist-pypi]
-cmd = "pyproject-build . --no-isolation"
+cmd = "pyproject-build . --no-isolation --verbose"
 inputs = ["{README.md,LICENSE,pyproject.toml}", "src/", "tests/", "!**/__pycache__"]
 outputs = ["dist/*.{whl,tar.gz}"]
 depends-on = ["build-py-schema", "build-js-ext"]
+
+[feature.tasks-build.tasks.dist-check-twine]
+cmd = """twine check --strict ./dist/ipyelk-*"""
+depends-on = ["dist-pypi"]
+inputs = ["dist/*.{whl,tar.gz}"]
+
+[feature.tasks-build.tasks.dist-check-wheel]
+cmd = """check-wheel-contents dist"""
+depends-on = ["dist-pypi"]
+inputs = ["dist/*.{whl,tar.gz}"]
+
+[feature.tasks-build.tasks.dist-check-dist]
+cmd = """python scripts/check-dist.py"""
+depends-on = ["dist-pypi"]
+inputs = ["dist/*.{whl,tar.gz}", "scripts/check-dist.py"]
 
 [feature.tasks-build.tasks.dist-hash]
 cmd = """python -c '
@@ -168,8 +190,9 @@ import pathlib, hashlib; d = pathlib.Path("dist");
 for p in sorted(d.glob("*.*"))]
 ' > dist/SHA256SUMS"""
 inputs = ["dist/", "!SHA256SUMS"]
-depends-on = ["dist-pypi", "dist-npm"]
+depends-on = ["dist-pypi", "dist-npm", "dist-check-twine", "dist-check-wheel", "dist-check-dist"]
 outputs = ["dist/SHA256SUMS"]
+
 
 # unit test ############################################################################
 [feature.tasks-utest.tasks.pip-utest]
@@ -521,6 +544,7 @@ flit-core = ">=3.9.0,<4"
 [feature.deps-build.dependencies]
 python-build = "*"
 twine = "*"
+check-wheel-contents = "*"
 
 [feature.deps-run.dependencies]
 jsonschema = ">=4.18"
