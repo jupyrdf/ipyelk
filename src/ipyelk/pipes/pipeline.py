@@ -140,6 +140,7 @@ class Pipeline(SyncedOutletPipe):
         """
         broken = []
         prev = self.inlet
+        i = -1
         for i, pipe in enumerate(self.pipes):
             if prev is not pipe.inlet:
                 broken.append((i - 1, i))
@@ -154,4 +155,6 @@ class Pipeline(SyncedOutletPipe):
         return True
 
     def get_progress_value(self) -> float:
+        if not self.pipes:
+            return 1.0
         return sum(pipe.get_progress_value() for pipe in self.pipes) / len(self.pipes)

@@ -75,19 +75,18 @@ class BrowserTextSizer(SyncedPipe, StyledWidget, TextSizer):
     _view_module = T.Unicode(EXTENSION_NAME).tag(sync=True)
     _view_module_version = T.Unicode(EXTENSION_SPEC_VERSION).tag(sync=True)
 
+    #: seconds to wait for the browser to return measured sizes
+    timeout = T.Float(default_value=30.0)
+
     async def run(self):
         """Go measure some DOM"""
         # watch once
         if self.outlet is None:
             return
 
-        # signal to browser and wait for done
-        future_value = wait_for_change(self.outlet, "value")
-
+        # signal to browser and wait for done (or timeout)
+        future_value = wait_for_change(self.outlet, "value", timeout=self.timeout)
         self.send({"action": "run"})
 
-        # wait to return until
-        # TODO if there is no change to the input text the
-        # outlet value doesn't trigger
         await future_value
         self.outlet.persist()

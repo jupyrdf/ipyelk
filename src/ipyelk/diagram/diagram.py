@@ -168,11 +168,13 @@ class Diagram(StyledWidget):
 
         def update_view(future: asyncio.Task):
             try:
-                future.exception()
+                exception = future.exception()
             except asyncio.CancelledError:
-                pass
-            except Exception as E:
-                raise E
+                return
+            if exception is not None:
+                # error already surfaced via pipe.on_error / status; do not
+                # propagate a stale/empty layout to the view.
+                return
             layout = self.pipe.outlet.value
             self.view.source.value = layout
             self.pipe.inlet.value = layout

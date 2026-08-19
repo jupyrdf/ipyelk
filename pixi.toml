@@ -1,4 +1,4 @@
-"$schema" = "https://pixi.sh/v0.34.0/schema/manifest/schema.json"
+"$schema" = "https://pixi.sh/v0.67.0/schema/manifest/schema.json"
 
 # tasks ################################################################################
 [tasks]
@@ -230,6 +230,11 @@ inputs = [
 outputs = [
   "build/reports/utest/{.coverage,pytest.html,pytest.xunit.xml,htmlcov/status.json}",
 ]
+
+[feature.tasks-utest.tasks.test-js]
+cmd = "pixi run -e dev jlpm test:unit"
+depends-on = ["setup-js"]
+inputs = ["js/**/*.ts", "js/vitest.config.ts", "package.json"]
 
 [feature.tasks-utest-oldest.tasks.pip-utest-oldest]
 cmd = """pixi r -e utest-oldest pip-dist--"""

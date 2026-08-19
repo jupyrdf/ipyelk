@@ -30,10 +30,10 @@ class IDReport(BaseModel):
         msg = []
         if self.duplicated:
             msg.append("duplicated ids:")
-            [msg.append("\t{eid}") for eid in self.duplicated.keys()]
+            msg.extend(f"\t{eid}" for eid in self.duplicated.keys())
         if self.null_ids:
             msg.append("elements missing an id:")
-            [msg.append("\t{el}") for el in self.null_ids]
+            msg.extend(f"\t{el}" for el in self.null_ids)
         return "\n".join(msg)
 
 

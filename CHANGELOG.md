@@ -1,5 +1,42 @@
 # Changelog
 
+## Unreleased
+
+### `ipyelk`
+
+- Fix `IDReport.message()` printing literal `{eid}`/`{el}` placeholders (F1)
+- Fix `Pipeline.check()` / `get_progress_value()` crashing on an empty pipeline (F2)
+- Give each `Tool` its own `on_run` callback dispatcher (was shared across all tools)
+  (F3)
+- Surface pipe/diagram exceptions via an `on_error` callback instead of silently
+  dropping them in the asyncio done-callback (F4)
+- Add a configurable `timeout` and a browser→kernel error channel to
+  `ElkJS`/`BrowserTextSizer` so a failed or silent browser layout no longer hangs the
+  diagram (F6)
+
+### `@jupyrdf/jupyter-elk`
+
+- Fix the SVG exporter `enabled` flag, which was always `true` (F5)
+- Report browser-side layout failures to the kernel instead of silently emitting an
+  empty layout (F6)
+- Make `ELKLayoutModel.layout()` re-entrant: it stripped element `properties` (incl.
+  `cssClasses`) off the shared inlet value in place, so a duplicate `run` message or an
+  overlapping refresh re-laid-out the stripped graph and pushed a style-less
+  (black-and-white) diagram (F7)
+- Render edge labels where ELK placed them: `ElkLabel` carried sprotty's
+  `edgeLayoutFeature`, whose EdgeLayoutPostprocessor re-anchors edge labels along the
+  route and treats ELK's absolute coordinates as a relative offset, shifting every edge
+  label by roughly its edge's origin (F8)
+- Add a `vitest` unit-test harness (F5)
+
+### Development
+
+- Upgrade the pinned `pixi` from `0.34.0` to `0.67.0` (and `setup-pixi` to `v0.10.0`);
+  relocking updates `libgfortran5` `13.2.0`→`14.2.0`, fixing a macOS arm64 dyld failure
+  that broke `numpy`/`bqplot` in the example notebooks
+- Only reinstall requirements in the `07_Simulation` example when `ipyelk` is missing,
+  and add `tooltip`s to its control widgets
+
 ## `2.1.1`
 
 ### `@jupyrdf/jupyter-elk 2.1.1`

@@ -30,6 +30,8 @@
     "schema": "jlpm schema:build && jlpm schema:prettier",
     "schema:build": "cd js && ts-json-schema-generator --tsconfig ./tsconfig.json --type AnyElkNode --no-type-check --expose all --path ./elkschema.ts -o ../src/ipyelk/schema/elkschema.json",
     "schema:prettier": "prettier --write src/ipyelk/schema/elkschema.json",
+    "test:unit": "vitest run",
+    "test:unit:watch": "vitest",
     "watch:ext": "jupyter labextension watch .",
     "watch:lib": "jlpm build:ts --watch --preserveWatchOutput"
   },
@@ -76,6 +78,7 @@
     "ts-json-schema-generator": "^2.3.0",
     "ts-node": "^10.9.1",
     "typescript": "5.2.2",
+    "vitest": "^3.2.6",
     "yarn-berry-deduplicate": "^6.1.1"
   },
   "keywords": [

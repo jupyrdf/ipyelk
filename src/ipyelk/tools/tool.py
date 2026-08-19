@@ -21,7 +21,11 @@ class Tool(W.Widget):
     _task: asyncio.Future = None
     ui = T.Instance(W.DOMWidget, allow_none=True)
     priority = T.Int(default_value=10)
-    _on_run_handlers = W.CallbackDispatcher()
+    _on_run_handlers = T.Instance(W.CallbackDispatcher)
+
+    @T.default("_on_run_handlers")
+    def _default_on_run_handlers(self):
+        return W.CallbackDispatcher()
 
     def handler(self, *args):
         """Handler callback for running the tool"""

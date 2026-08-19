@@ -183,6 +183,7 @@ class Pipe(W.Widget):
     observes: Tuple[str] = TypedTuple(T.Unicode(), kw={})
     reports: Tuple[str] = TypedTuple(T.Unicode(), kw={})
     on_progress: Optional[Callable] = T.Any(allow_none=True)
+    on_error: Optional[Callable] = T.Any(allow_none=True)
     _task: asyncio.Future = None
     status: PipeStatus = T.Instance(PipeStatus, kw={})
     status_widget: W.DOMWidget = T.Instance(W.DOMWidget, allow_none=True)
@@ -218,11 +219,20 @@ class Pipe(W.Widget):
 
     def _post_run(self, future: asyncio.Future):
         try:
-            future.exception()
+            exception = future.exception()
         except asyncio.CancelledError:
-            pass
-        except Exception as E:
-            raise E
+            return
+        if exception is None:
+            return
+        if (
+            not isinstance(self.status, PipeStatus)
+            or self.status.exception is not exception
+        ):
+            self.status = PipeStatus.error(
+                start_time=datetime.now(), exception=exception
+            )
+        if callable(self.on_error):
+            self.on_error(self, exception)
 
     async def run(self):
         """Run method that takes the input performs checks/changes, and sets the
