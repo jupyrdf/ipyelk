@@ -13,6 +13,14 @@
 - Add a configurable `timeout` and a browser→kernel error channel to
   `ElkJS`/`BrowserTextSizer` so a failed or silent browser layout no longer hangs the
   diagram (F6)
+- Re-send the browser `run` request with backoff until a frontend answers, so a pipe run
+  before its diagram is displayed no longer waits on a message nobody received; a
+  browser-reported layout error stops the retries immediately (F10)
+- Treat an errored run as terminal for progress reporting: `PipeStatus.step()` returned
+  `None` for errored pipes, so `Pipeline.get_progress_value()` raised `TypeError` inside
+  the error path — `on_error` saw the `TypeError` instead of the layout error, and the
+  `PipelineProgressBar` sat "in progress" forever; the bar now fills as a visible
+  warning (F10)
 
 ### `@jupyrdf/jupyter-elk`
 
@@ -27,6 +35,11 @@
   `edgeLayoutFeature`, whose EdgeLayoutPostprocessor re-anchors edge labels along the
   route and treats ELK's absolute coordinates as a relative offset, shifting every edge
   label by roughly its edge's origin (F8)
+- Orient edge end symbols along the visible route: the adjacent-segment tangent
+  collapsed to `atan2(0, 0)` on the duplicated control points of elkjs `SPLINES`
+  sections (arrowheads drawn 180° wrong, inside the target node) and followed the short
+  exit stub of `POLYLINE` routes instead of the visible diagonal; interior bends under a
+  symbol's footprint no longer make the trimmed shaft double back (F9)
 - Add a `vitest` unit-test harness (F5)
 
 ### Development

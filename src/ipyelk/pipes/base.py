@@ -30,6 +30,10 @@ class PipeStatus(W.Widget):
         PipeDisposition.waiting: 0,
         PipeDisposition.running: 0.5,
         PipeDisposition.done: 1,
+        # an errored run is over: progress must reach a terminal value, not
+        # strand progress reporting mid-run (or `None`-poison the sums in
+        # `Pipeline.get_progress_value`)
+        PipeDisposition.error: 1,
     }
 
     STATES = {
@@ -271,7 +275,12 @@ class Pipe(W.Widget):
         self.status = status
 
         if callable(self.on_progress):
-            self.on_progress(self)
+            try:
+                self.on_progress(self)
+            except Exception:
+                # a faulty progress callback must not clobber the pipe's own
+                # status / error reporting
+                self.log.exception("Error in on_progress callback")
 
     def get_progress_value(self) -> float:
         return self.status.step()
@@ -300,3 +309,22 @@ class SyncedOutletPipe(Pipe):
 
 class SyncedPipe(SyncedOutletPipe, SyncedInletPipe):
     """Both inlet and value are synced with the browser"""
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.on_msg(self._handle_browser_msg)
+
+    def _handle_browser_msg(self, widget, content, buffers):
+        """Reject the pending roundtrip future if the browser reports an error.
+
+        This is the browser -> kernel error channel: a frontend that fails to
+        produce an outlet value answers with an ``action: error`` message so
+        the kernel stops waiting (and stops re-sending) instead of retrying
+        or timing out.
+        """
+        if isinstance(content, dict) and content.get("action") == "error":
+            future = getattr(self, "_roundtrip_future", None)
+            if future is not None and not future.done():
+                future.set_exception(
+                    RuntimeError(content.get("error", "browser pipe failed"))
+                )

@@ -9,7 +9,7 @@ from ..elements import Label, index
 from ..styled_widget import StyledWidget
 from . import flows as F
 from .base import Pipe, SyncedPipe
-from .util import wait_for_change
+from .util import browser_roundtrip
 
 
 class TextSizer(Pipe):
@@ -75,7 +75,9 @@ class BrowserTextSizer(SyncedPipe, StyledWidget, TextSizer):
     _view_module = T.Unicode(EXTENSION_NAME).tag(sync=True)
     _view_module_version = T.Unicode(EXTENSION_SPEC_VERSION).tag(sync=True)
 
-    #: seconds to wait for the browser to return measured sizes
+    #: seconds to wait for the browser to return measured sizes before
+    #: giving up; 0 waits forever (the request is re-sent with backoff until
+    #: a frontend answers)
     timeout = T.Float(default_value=30.0)
 
     async def run(self):
@@ -84,9 +86,7 @@ class BrowserTextSizer(SyncedPipe, StyledWidget, TextSizer):
         if self.outlet is None:
             return
 
-        # signal to browser and wait for done (or timeout)
-        future_value = wait_for_change(self.outlet, "value", timeout=self.timeout)
-        self.send({"action": "run"})
-
-        await future_value
+        # signal to browser (re-sending until a frontend answers) and wait
+        # for done, browser error, or deadline
+        await browser_roundtrip(self, timeout=self.timeout or None)
         self.outlet.persist()
