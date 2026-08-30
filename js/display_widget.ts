@@ -246,10 +246,24 @@ export class ELKViewerView extends DOMWidgetView {
     }
   }
 
+  // The selection write-back below is ASYNC (getSelection resolves one
+  // action-queue slot later), so two SelectActions dispatched close
+  // together each read the OTHER action's resulting state and write it
+  // back, flipping the selection tool's `ids` forever: a self-sustaining
+  // microtask oscillation that pegs the renderer main thread.  The
+  // generation stamp drops every superseded gather; only the LATEST
+  // SelectAction's write-back lands, which by construction matches the
+  // final sprotty state.
+  private selectionWriteBackGen = 0;
+
   handle(action: Action) {
     switch (action.kind) {
       case SelectAction.KIND:
+        const writeBackGen = ++this.selectionWriteBackGen;
         this.source.getSelection().then((selection) => {
+          if (writeBackGen !== this.selectionWriteBackGen) {
+            return; // a newer SelectAction superseded this gather
+          }
           let ids = [];
           let nodes = [];
           selection.forEach((node, i) => {
