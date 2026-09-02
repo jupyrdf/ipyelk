@@ -16,7 +16,9 @@ class Tool(W.Widget):
     tee: Pipe = T.Instance(Pipe, allow_none=True).tag(
         sync=True, **W.widget_serialization
     )
-    on_done: Callable | None = T.Callable(allow_none=True)  # callback when done
+    on_done: Callable | None = T.Callable(
+        default_value=None, allow_none=True
+    )  # callback when done
     disable = T.Bool(default_value=False).tag(sync=True, **W.widget_serialization)
     reports = TypedTuple(T.Unicode(), kw={})
     _task: asyncio.Future = None
@@ -74,7 +76,7 @@ class ToolButton(Tool):
     :param handler: Called when button is pressed.
     """
 
-    handler: Callable | None = T.Callable(allow_none=True)
+    handler: Callable | None = T.Callable(default_value=None, allow_none=True)
     description: str = T.Unicode(default_value="")
 
     @T.default("ui")

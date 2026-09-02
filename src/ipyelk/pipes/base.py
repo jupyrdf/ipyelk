@@ -185,8 +185,8 @@ class Pipe(W.Widget):
     outlet: MarkElementWidget = T.Instance(MarkElementWidget, kw={})
     observes: tuple[str, ...] = TypedTuple(T.Unicode(), kw={})
     reports: tuple[str, ...] = TypedTuple(T.Unicode(), kw={})
-    on_progress: Callable | None = T.Callable(allow_none=True)
-    on_error: Callable | None = T.Callable(allow_none=True)
+    on_progress: Callable | None = T.Callable(default_value=None, allow_none=True)
+    on_error: Callable | None = T.Callable(default_value=None, allow_none=True)
     _task: asyncio.Future = None
     status: PipeStatus = T.Instance(PipeStatus, kw={})
     status_widget: W.DOMWidget = T.Instance(W.DOMWidget, allow_none=True)
