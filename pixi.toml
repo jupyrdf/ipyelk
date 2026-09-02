@@ -538,7 +538,7 @@ types-jsonschema = "*"
 [feature.deps-py.dependencies]
 python = ">=3.10"
 [feature.deps-py-oldest.dependencies]
-python = "<3.10"
+python = "<3.11"
 [feature.deps-py-latest.dependencies]
 python = ">=3.13"
 
