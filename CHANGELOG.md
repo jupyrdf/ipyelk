@@ -1,28 +1,16 @@
 # Changelog
 
-## Unreleased
+## `2.1.2`
 
-### `ipyelk`
+### Development
 
-- Fix `IDReport.message()` printing literal `{eid}`/`{el}` placeholders (F1)
-- Fix `Pipeline.check()` / `get_progress_value()` crashing on an empty pipeline (F2)
-- Give each `Tool` its own `on_run` callback dispatcher (was shared across all tools)
-  (F3)
-- Surface pipe/diagram exceptions via an `on_error` callback instead of silently
-  dropping them in the asyncio done-callback (F4)
-- Add a configurable `timeout` and a browser→kernel error channel to
-  `ElkJS`/`BrowserTextSizer` so a failed or silent browser layout no longer hangs the
-  diagram (F6)
-- Re-send the browser `run` request with backoff until a frontend answers, so a pipe run
-  before its diagram is displayed no longer waits on a message nobody received; a
-  browser-reported layout error stops the retries immediately (F10)
-- Treat an errored run as terminal for progress reporting: `PipeStatus.step()` returned
-  `None` for errored pipes, so `Pipeline.get_progress_value()` raised `TypeError` inside
-  the error path — `on_error` saw the `TypeError` instead of the layout error, and the
-  `PipelineProgressBar` sat "in progress" forever; the bar now fills as a visible
-  warning (F10)
+- Upgrade the pinned `pixi` from `0.34.0` to `0.67.0` (and `setup-pixi` to `v0.10.0`);
+  relocking updates `libgfortran5` `13.2.0`→`14.2.0`, fixing a macOS arm64 dyld failure
+  that broke `numpy`/`bqplot` in the example notebooks
+- Only reinstall requirements in the `07_Simulation` example when `ipyelk` is missing,
+  and add `tooltip`s to its control widgets
 
-### `@jupyrdf/jupyter-elk`
+### `@jupyrdf/jupyter-elk 2.1.2`
 
 - Fix the SVG exporter `enabled` flag, which was always `true` (F5)
 - Report browser-side layout failures to the kernel instead of silently emitting an
@@ -42,13 +30,25 @@
   symbol's footprint no longer make the trimmed shaft double back (F9)
 - Add a `vitest` unit-test harness (F5)
 
-### Development
+### `ipyelk 2.1.2`
 
-- Upgrade the pinned `pixi` from `0.34.0` to `0.67.0` (and `setup-pixi` to `v0.10.0`);
-  relocking updates `libgfortran5` `13.2.0`→`14.2.0`, fixing a macOS arm64 dyld failure
-  that broke `numpy`/`bqplot` in the example notebooks
-- Only reinstall requirements in the `07_Simulation` example when `ipyelk` is missing,
-  and add `tooltip`s to its control widgets
+- Fix `IDReport.message()` printing literal `{eid}`/`{el}` placeholders (F1)
+- Fix `Pipeline.check()` / `get_progress_value()` crashing on an empty pipeline (F2)
+- Give each `Tool` its own `on_run` callback dispatcher (was shared across all tools)
+  (F3)
+- Surface pipe/diagram exceptions via an `on_error` callback instead of silently
+  dropping them in the asyncio done-callback (F4)
+- Add a configurable `timeout` and a browser→kernel error channel to
+  `ElkJS`/`BrowserTextSizer` so a failed or silent browser layout no longer hangs the
+  diagram (F6)
+- Re-send the browser `run` request with backoff until a frontend answers, so a pipe run
+  before its diagram is displayed no longer waits on a message nobody received; a
+  browser-reported layout error stops the retries immediately (F10)
+- Treat an errored run as terminal for progress reporting: `PipeStatus.step()` returned
+  `None` for errored pipes, so `Pipeline.get_progress_value()` raised `TypeError` inside
+  the error path — `on_error` saw the `TypeError` instead of the layout error, and the
+  `PipelineProgressBar` sat "in progress" forever; the bar now fills as a visible
+  warning (F10)
 
 ## `2.1.1`
 
