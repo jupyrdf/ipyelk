@@ -70,7 +70,7 @@ class Diagram(StyledWidget):
         T.link((self, "symbols"), (view, "symbols"))
         return view
 
-    @T.default(pipe)
+    @T.default("pipe")
     def _default_Pipe(self):
         from .flow import BrowserTextSizer, DefaultFlow
 
@@ -97,7 +97,7 @@ class Diagram(StyledWidget):
         self.pipe.inlet = self.source
         self.view.source = self.pipe.outlet
 
-    @T.observe(pipe, "source", "style")
+    @T.observe("pipe", "source", "style")
     def _change_pipe(self, change):
         self._update_view_sources()
         self.refresh()

@@ -58,7 +58,7 @@ warn_untyped_fields = true
 [tool.coverage.run]
 parallel = true
 branch = true
-disable_warnings = ["module-not-imported", "no-data-collected"]
+disable_warnings = ["module-not-imported", "no-data-collected", "no-sysmon-context"]
 
 [tool.coverage.html]
 show_contexts = true

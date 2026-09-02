@@ -29,11 +29,11 @@ EDGE_OPTS: dict[str, str] = {}
 
 
 class Loader(Tool):
-    default_node_opts: dict[str, str] | None = T.dict(NODE_OPTS, allow_none=True)
-    default_root_opts: dict[str, str] | None = T.dict(ROOT_OPTS, allow_none=True)
-    default_label_opts: dict[str, str] | None = T.dict(LABEL_OPTS, allow_none=True)
-    default_port_opts: dict[str, str] | None = T.dict(PORT_OPTS, allow_none=True)
-    default_edge_opts: dict[str, str] | None = T.dict(EDGE_OPTS, allow_none=True)
+    default_node_opts: dict[str, str] | None = T.Dict(NODE_OPTS, allow_none=True)
+    default_root_opts: dict[str, str] | None = T.Dict(ROOT_OPTS, allow_none=True)
+    default_label_opts: dict[str, str] | None = T.Dict(LABEL_OPTS, allow_none=True)
+    default_port_opts: dict[str, str] | None = T.Dict(PORT_OPTS, allow_none=True)
+    default_edge_opts: dict[str, str] | None = T.Dict(EDGE_OPTS, allow_none=True)
 
     def load(self) -> MarkElementWidget:
         raise NotImplementedError("Subclasses should implement their behavior")
