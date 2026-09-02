@@ -139,7 +139,6 @@ class Pipeline(SyncedOutletPipe):
         """
         broken = []
         prev = self.inlet
-        i = -1
         for i, pipe in enumerate(self.pipes):
             if prev is not pipe.inlet:
                 broken.append((i - 1, i))
@@ -147,7 +146,8 @@ class Pipeline(SyncedOutletPipe):
             prev = pipe.outlet
 
         if prev is not self.outlet:
-            broken.append((i, i + 1))
+            last_pipe_index = len(self.pipes) - 1
+            broken.append((last_pipe_index, last_pipe_index + 1))
 
         if broken:
             raise BrokenPipe(broken)

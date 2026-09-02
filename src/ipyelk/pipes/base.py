@@ -32,9 +32,6 @@ class PipeStatus(W.Widget):
         PipeDisposition.waiting: 0,
         PipeDisposition.running: 0.5,
         PipeDisposition.done: 1,
-        # an errored run is over: progress must reach a terminal value, not
-        # strand progress reporting mid-run (or `None`-poison the sums in
-        # `Pipeline.get_progress_value`)
         PipeDisposition.error: 1,
     }
 
@@ -280,9 +277,9 @@ class Pipe(W.Widget):
             try:
                 self.on_progress(self)
             except Exception:
-                # a faulty progress callback must not clobber the pipe's own
-                # status / error reporting
-                self.log.exception("Error in on_progress callback")
+                self.log.exception(
+                    "Error in on_progress callback for %s", type(self).__name__
+                )
 
     def get_progress_value(self) -> float:
         return self.status.step()
@@ -316,7 +313,9 @@ class SyncedPipe(SyncedOutletPipe, SyncedInletPipe):
         super().__init__(*args, **kwargs)
         self.on_msg(self._handle_browser_msg)
 
-    def _handle_browser_msg(self, widget, content, buffers):
+    def _handle_browser_msg(
+        self, widget: W.Widget, content: dict[str, object], buffers: list[bytes] | None
+    ):
         """Reject the pending roundtrip future if the browser reports an error.
 
         This is the browser -> kernel error channel: a frontend that fails to
@@ -328,5 +327,5 @@ class SyncedPipe(SyncedOutletPipe, SyncedInletPipe):
             future = getattr(self, "_roundtrip_future", None)
             if future is not None and not future.done():
                 future.set_exception(
-                    RuntimeError(content.get("error", "browser pipe failed"))
+                    RuntimeError(str(content.get("error", "browser pipe failed")))
                 )

@@ -14,6 +14,7 @@ class _BoomPipe(Pipe):
 
 @pytest.mark.asyncio
 async def test_pipe_error_is_surfaced_to_callback():
+    """Errors raised by async pipe tasks are passed to the error callback."""
     pipe = _BoomPipe()
     seen = []
     pipe.on_error = lambda p, exc: seen.append((p, exc))

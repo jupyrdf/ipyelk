@@ -6,7 +6,6 @@ import { WidgetModel, WidgetView } from '@jupyter-widgets/base';
 import { unpack_models as deserialize } from '@jupyter-widgets/base';
 
 import { ELKViewerModel } from './display_widget';
-import { isEnabled } from './exporter_util';
 import { ELK_DEBUG, NAME, VERSION } from './tokens';
 
 import elkRawCSS from '!!raw-loader!../style/diagram.css';
@@ -28,7 +27,7 @@ const XML_HEADER = '<?xml version="1.0" standalone="no"?>';
 
 export class ELKExporterModel extends WidgetModel {
   static model_name = 'ELKExporterModel';
-  private _update_timeout: ReturnType<typeof setTimeout> | null;
+  private _update_timeout: number | null;
 
   static serializers = {
     ...WidgetModel.serializers,
@@ -58,7 +57,7 @@ export class ELKExporterModel extends WidgetModel {
   }
 
   get enabled(): boolean {
-    return isEnabled(this.get('enabled'));
+    return this.get('enabled') !== false;
   }
 
   get viewer(): ELKViewerModel {
@@ -140,11 +139,10 @@ export class ELKExporterModel extends WidgetModel {
       return;
     }
     if (this._update_timeout != null) {
-      window.clearInterval(this._update_timeout);
+      window.clearTimeout(this._update_timeout);
       this._update_timeout = null;
     }
-    // does weird stuff with `this` apparently
-    this._update_timeout = setTimeout(() => this._on_layout_updated(), 1000);
+    this._update_timeout = window.setTimeout(() => this._on_layout_updated(), 1000);
   }
 
   async _on_layout_updated() {
