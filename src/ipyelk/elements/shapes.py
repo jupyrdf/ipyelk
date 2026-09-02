@@ -2,14 +2,10 @@
 # Distributed under the terms of the Modified BSD License.
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
-
+from ipywidgets import DOMWidget
 from pydantic.v1 import BaseModel, Field, validator
 
 from .common import add_excluded_fields
-
-if TYPE_CHECKING:
-    from ipywidgets import DOMWidget
 
 
 class Point(BaseModel):
@@ -186,3 +182,6 @@ class Widget(NodeShape):
 class HTML(NodeShape):
     type: str = "node:html"
     use: str = Field(..., description="HTML code")
+
+
+Widget.update_forward_refs(DOMWidget=DOMWidget)

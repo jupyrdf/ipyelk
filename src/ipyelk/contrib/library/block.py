@@ -80,7 +80,7 @@ class BlockDiagram(Partition):
         connectors.StraightArrow(identifier="generalization", r=4, closed=True),
     )
 
-    style: dict[str] = {
+    style: dict[str, dict[str, str]] = {
         " .elklabel.compartment_title_1": {
             "font-weight": "bold",
         },

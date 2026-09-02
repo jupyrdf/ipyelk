@@ -157,7 +157,7 @@ class ActivityDiagram(Partition):
         exclude=True,
     )
 
-    style: dict[str] = Field(
+    style: dict[str, dict[str, str]] = Field(
         {
             " .final-state .inner-circle": {
                 "fill": "var(--jp-elk-node-stroke)",
