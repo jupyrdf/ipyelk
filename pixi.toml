@@ -604,10 +604,10 @@ geckodriver = "*"
 firefox = "128.*"
 
 [feature.deps-lite.dependencies]
-jupyterlite-core = "0.4.3"
+jupyterlite-core = "==0.4.3"
 jupyterlite-core-with-libarchive = "*"
 jupyterlite-core-with-translation = "*"
-jupyterlite-pyodide-kernel = "0.4.3"
+jupyterlite-pyodide-kernel = "==0.4.3"
 
 [feature.deps-docs.dependencies]
 ansi2html = "*"
@@ -754,7 +754,7 @@ atest-oldest = {features = [
 
 
 # meta #################################################################################
-[project]
+[workspace]
 name = "ipyelk"
 channels = ["conda-forge", "conda-forge/label/jupyterlab_rc"]
 platforms = ["linux-64", "osx-64", "osx-arm64", "win-64"]
