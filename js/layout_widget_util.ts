@@ -2,11 +2,8 @@
  * Copyright (c) 2024 ipyelk contributors.
  * Distributed under the terms of the Modified BSD License.
  */
-import {
-  ElkGraphElement,
-  ElkNode,
-  ElkProperties,
-} from './sprotty/json/elkgraph-json';
+import { ElkGraphElement, ElkNode, ElkProperties } from './sprotty/json/elkgraph-json';
+
 export function layoutErrorMessage(error: unknown): { action: 'error'; error: string } {
   return { action: 'error', error: `${error}` };
 }

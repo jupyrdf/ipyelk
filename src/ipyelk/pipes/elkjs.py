@@ -19,13 +19,16 @@ class ElkJS(SyncedPipe):
     _model_module_version = T.Unicode(EXTENSION_SPEC_VERSION).tag(sync=True)
     _view_module = T.Unicode(EXTENSION_NAME).tag(sync=True)
 
-    observes: tuple[str, ...] = TypedTuple(T.Unicode(), default_value=(F.Anythinglayout,))
+    observes: tuple[str, ...] = TypedTuple(
+        T.Unicode(),
+        default_value=(F.Anythinglayout,),
+    )
     reports: tuple[str, ...] = TypedTuple(T.Unicode(), default_value=(F.Layout,))
     timeout: float = T.Float(
         default_value=30.0,
         description=(
             "Seconds to wait for the browser to return a layout before giving up; "
-            "0 waits forever (the request is re-sent with backoff until a frontend answers"
+            "0 waits forever (the request is re-sent with backoff until a frontend answers)"
         ),
     )
 

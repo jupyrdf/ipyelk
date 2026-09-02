@@ -4,6 +4,7 @@ https://app.quicktype.io/?share=v69WIlc7rT81xJjmW3XY
 """
 # Copyright (c) 2024 ipyelk contributors.
 # Distributed under the terms of the Modified BSD License.
+from __future__ import annotations
 
 from collections import namedtuple
 from dataclasses import dataclass
