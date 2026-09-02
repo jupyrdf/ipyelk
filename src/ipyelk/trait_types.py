@@ -2,7 +2,6 @@
 # Distributed under the terms of the Modified BSD License.
 
 import json
-from typing import List
 
 import jsonschema
 import traitlets
@@ -18,7 +17,7 @@ class Schema(traitlets.Any):
         self._validator = validator
 
     def validate(self, obj, value):
-        errors: List[jsonschema.ValidationError] = list(
+        errors: list[jsonschema.ValidationError] = list(
             self._validator.iter_errors(value)
         )
         if errors:

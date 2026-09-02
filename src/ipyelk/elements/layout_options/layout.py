@@ -1,7 +1,6 @@
 # Copyright (c) 2024 ipyelk contributors.
 # Distributed under the terms of the Modified BSD License.
 from dataclasses import dataclass
-from typing import List
 
 import ipywidgets as W
 import traitlets as T
@@ -56,7 +55,7 @@ class ELKRectanglePacking(Algorithm):
     title = "Elk Rectangle Packing"
 
 
-ALGORITHM_OPTIONS = {_cls.identifier: _cls for _cls in Algorithm.__subclasses__()}
+ALGORITHM_OPTIONS = {cls.identifier: cls for cls in Algorithm.__subclasses__()}
 
 
 class LayoutAlgorithm(LayoutOptionWidget):
@@ -73,9 +72,9 @@ class LayoutAlgorithm(LayoutOptionWidget):
     metadata_provider = T.Unicode()
     applies_to = ["parents"]
 
-    def _ui(self) -> List[W.Widget]:
+    def _ui(self) -> list[W.Widget]:
         options = [
-            (_cls.title, identifier) for (identifier, _cls) in ALGORITHM_OPTIONS.items()
+            (cls.title, identifier) for (identifier, cls) in ALGORITHM_OPTIONS.items()
         ]
         dropdown = W.Dropdown(description="Layout Algorithm", options=options)
 

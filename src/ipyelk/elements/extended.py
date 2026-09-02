@@ -1,6 +1,8 @@
 # Copyright (c) 2024 ipyelk contributors.
 # Distributed under the terms of the Modified BSD License.
-from typing import Dict, List, Optional, Type
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Type
 
 from pydantic.v1 import Field
 from pydantic.v1.fields import FieldInfo
@@ -8,7 +10,9 @@ from pydantic.v1.fields import FieldInfo
 from ..util import merge
 from . import layout_options as opt
 from .elements import Edge, Label, LabelProperties, Node, merge_excluded
-from .shapes import Icon
+
+if TYPE_CHECKING:
+    from .shapes import Icon
 
 record_opts = opt.OptionsWidget(
     options=[
@@ -98,7 +102,7 @@ class Partition(Node):
 
 
 class Record(Node):
-    layoutOptions: Dict = Field(default_factory=lambda: {**record_opts})
+    layoutOptions: dict = Field(default_factory=lambda: {**record_opts})
     width: float = Field(
         default=80, description="Width needs to be shared by all children "
     )
@@ -128,7 +132,7 @@ class Record(Node):
 
 
 class Compartment(Node):
-    bullet_shape: Optional[Icon] = None
+    bullet_shape: Icon | None = None
 
     class Config:
         copy_on_model_validation = "none"
@@ -137,8 +141,8 @@ class Compartment(Node):
         excluded = merge_excluded(Node, "headings", "content", "bullet_shape")
 
     def make_labels(
-        self, headings: List[str] = None, content: List[str] = None
-    ) -> "Compartment":
+        self, headings: list[str] = None, content: list[str] = None
+    ) -> Compartment:
         if headings is None:
             headings = []
         if content is None:

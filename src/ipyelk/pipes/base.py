@@ -1,10 +1,12 @@
 # Copyright (c) 2024 ipyelk contributors.
 # Distributed under the terms of the Modified BSD License.
+from __future__ import annotations
+
 import asyncio
 import re
 from datetime import datetime, timedelta
 from enum import Enum
-from typing import Callable, Optional, Tuple
+from typing import Callable
 
 import ipywidgets as W
 import traitlets as T
@@ -22,7 +24,7 @@ class PipeDisposition(Enum):
 
 class PipeStatus(W.Widget):
     disposition = T.Instance(PipeDisposition, default_value=PipeDisposition.done)
-    elapsed: Optional[timedelta] = T.Instance(timedelta, allow_none=True)
+    elapsed: timedelta | None = T.Instance(timedelta, allow_none=True)
     exception = T.Instance(Exception, allow_none=True)
     _task: asyncio.Future = None
 
@@ -52,7 +54,7 @@ class PipeStatus(W.Widget):
         return PipeStatus(disposition=PipeDisposition.running)
 
     @classmethod
-    def finished(cls, start_time: Optional[datetime] = None):
+    def finished(cls, start_time: datetime | None = None):
         return PipeStatus(
             disposition=PipeDisposition.done,
             elapsed=datetime.now() - start_time if start_time else None,
@@ -76,7 +78,7 @@ class PipeStatus(W.Widget):
         return self.disposition == PipeDisposition.waiting
 
 
-def rep_elapsed(delta: Optional[timedelta]):
+def rep_elapsed(delta: timedelta | None):
     if not delta:
         return ""
     seconds = delta.total_seconds()
@@ -120,10 +122,10 @@ class PipeStatusView(W.VBox):
             r=r,
         )
 
-    def update_children(self, pipe: "Pipe"):
+    def update_children(self, pipe: Pipe):
         self.children = [self.html]
 
-    def update(self, pipe: "Pipe"):
+    def update(self, pipe: Pipe):
         """Method to update the status given changes in the pipe."""
         error = ""
         status = pipe.status
@@ -184,10 +186,10 @@ class Pipe(W.Widget):
     enabled: bool = T.Bool(default_value=True)
     inlet: MarkElementWidget = T.Instance(MarkElementWidget, kw={})
     outlet: MarkElementWidget = T.Instance(MarkElementWidget, kw={})
-    observes: Tuple[str] = TypedTuple(T.Unicode(), kw={})
-    reports: Tuple[str] = TypedTuple(T.Unicode(), kw={})
-    on_progress: Optional[Callable] = T.Any(allow_none=True)
-    on_error: Optional[Callable] = T.Any(allow_none=True)
+    observes: tuple[str, ...] = TypedTuple(T.Unicode(), kw={})
+    reports: tuple[str, ...] = TypedTuple(T.Unicode(), kw={})
+    on_progress: Callable | None = T.Callable(allow_none=True)
+    on_error: Callable | None = T.Callable(allow_none=True)
     _task: asyncio.Future = None
     status: PipeStatus = T.Instance(PipeStatus, kw={})
     status_widget: W.DOMWidget = T.Instance(W.DOMWidget, allow_none=True)
@@ -268,7 +270,7 @@ class Pipe(W.Widget):
     def status_update(
         self,
         status: PipeStatus,
-        pipe: Optional["Pipe"] = None,
+        pipe: Pipe | None = None,
     ):
         if isinstance(pipe, Pipe):
             pipe.status_update(status=status)

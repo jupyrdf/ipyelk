@@ -2,13 +2,14 @@
 
 https://app.quicktype.io/?share=v69WIlc7rT81xJjmW3XY
 """
+
 # Copyright (c) 2024 ipyelk contributors.
 # Distributed under the terms of the Modified BSD License.
 from __future__ import annotations
 
 from collections import namedtuple
 from dataclasses import dataclass
-from typing import Any, Callable, Dict, List, Optional, Type, TypeVar, Union, cast
+from typing import Any, Callable, Type, TypeVar, cast
 
 # Sentinel Value for tracking the root node in the Elk JSON
 ElkRoot = namedtuple("ElkRootNode", [])()
@@ -19,14 +20,14 @@ ElkNullElement = namedtuple("ElkNullElement", [])()
 T = TypeVar("T")
 
 
-def strip_none(data: Dict) -> Dict:
+def strip_none(data: dict) -> dict:
     if not isinstance(data, dict):
         return data
-    result: Dict = {}
+    result: dict = {}
     for key, value in data.items():
         if isinstance(value, dict):
             value = strip_none(value)
-        if isinstance(value, (dict, list)) and len(value) == 0:
+        if isinstance(value, (list)) and len(value) == 0:
             value = None  # empty
         if value is None:
             continue
@@ -35,7 +36,7 @@ def strip_none(data: Dict) -> Dict:
     return result
 
 
-def from_list(f: Callable[[Any], T], x: Any) -> List[T]:
+def from_list(f: Callable[[Any], T], x: Any) -> list[T]:
     assert isinstance(x, list)
     return [f(y) for y in x]
 
@@ -61,7 +62,7 @@ def from_union(fs, x):
     assert False
 
 
-def from_dict(f: Callable[[Any], T], x: Any) -> Dict[str, T]:
+def from_dict(f: Callable[[Any], T], x: Any) -> dict[str, T]:
     assert isinstance(x, dict)
     return {k: f(v) for (k, v) in x.items()}
 
@@ -83,7 +84,7 @@ def to_class(c: Type[T], x: Any) -> dict:
         # can we make it?
         x = c.from_dict(x)
     assert isinstance(x, c), f"Expected to be type of {c} received {type(c)}"
-    return cast(Any, x).to_dict()
+    return cast("Any", x).to_dict()
 
 
 def from_int(x: Any) -> int:
@@ -99,7 +100,7 @@ def from_bool(x: Any) -> bool:
 @dataclass
 class Elk:
     @staticmethod
-    def from_dict(obj: Any) -> "Elk":
+    def from_dict(obj: Any) -> Elk:
         assert isinstance(obj, dict)
         return Elk()
 
@@ -110,12 +111,12 @@ class Elk:
 
 @dataclass
 class ElkProperties:
-    cssClasses: Optional[str] = None
-    shape: Optional[Dict[str, Union[str, float]]] = None
-    selectable: Optional[bool] = None
+    cssClasses: str | None = None
+    shape: dict[str, str | float] | None = None
+    selectable: bool | None = None
 
     @staticmethod
-    def from_dict(obj: Any) -> "ElkProperties":
+    def from_dict(obj: Any) -> ElkProperties:
         assert isinstance(obj, dict)
         cssClasses = from_union([from_str, from_none], obj.get("cssClasses"))
         shape = from_union(
@@ -152,12 +153,12 @@ class ElkProperties:
 
 @dataclass
 class ELKConstructorArguments:
-    algorithms: Optional[List[str]] = None
-    defaultLayoutOptions: Optional[Dict[str, str]] = None
-    workerUrl: Optional[str] = None
+    algorithms: list[str] | None = None
+    defaultLayoutOptions: dict[str, str] | None = None
+    workerUrl: str | None = None
 
     @staticmethod
-    def from_dict(obj: Any) -> "ELKConstructorArguments":
+    def from_dict(obj: Any) -> ELKConstructorArguments:
         assert isinstance(obj, dict)
         algorithms = from_union(
             [lambda x: from_list(from_str, x), from_none], obj.get("algorithms")
@@ -187,10 +188,10 @@ class ELKConstructorArguments:
 
 @dataclass
 class ELKLayoutArguments:
-    layoutOptions: Optional[Dict[str, str]] = None
+    layoutOptions: dict[str, str] | None = None
 
     @staticmethod
-    def from_dict(obj: Any) -> "ELKLayoutArguments":
+    def from_dict(obj: Any) -> ELKLayoutArguments:
         assert isinstance(obj, dict)
         layoutOptions = from_union(
             [lambda x: from_dict(from_str, x), from_none], obj.get("layoutOptions")
@@ -211,7 +212,7 @@ class ElkPoint:
     y: float
 
     @staticmethod
-    def from_dict(obj: Any) -> "ElkPoint":
+    def from_dict(obj: Any) -> ElkPoint:
         assert isinstance(obj, dict)
         x = from_float(obj.get("x"))
         y = from_float(obj.get("y"))
@@ -227,11 +228,11 @@ class ElkPoint:
 @dataclass
 class ElkGraphElement:
     id: str = None
-    labels: Optional[List] = None
-    layoutOptions: Optional[Dict[str, str]] = None
+    labels: list | None = None
+    layoutOptions: dict[str, str] | None = None
 
     @staticmethod
-    def from_dict(obj: Any) -> "ElkGraphElement":
+    def from_dict(obj: Any) -> ElkGraphElement:
         assert isinstance(obj, dict)
         id = from_str(obj.get("id"))
         labels = from_union(
@@ -258,15 +259,15 @@ class ElkGraphElement:
 @dataclass
 class ElkShape(ElkGraphElement):
     id: str = None
-    height: Optional[float] = None
-    labels: Optional[List] = None
-    layoutOptions: Optional[Dict[str, str]] = None
-    width: Optional[float] = None
-    x: Optional[float] = None
-    y: Optional[float] = None
+    height: float | None = None
+    labels: list | None = None
+    layoutOptions: dict[str, str] | None = None
+    width: float | None = None
+    x: float | None = None
+    y: float | None = None
 
     @staticmethod
-    def from_dict(obj: Any) -> "ElkShape":
+    def from_dict(obj: Any) -> ElkShape:
         assert isinstance(obj, dict)
         id = from_str(obj.get("id"))
         height = from_union([from_float, from_none], obj.get("height"))
@@ -310,16 +311,16 @@ class ElkShape(ElkGraphElement):
 class ElkLabel(ElkShape):
     id: str = None
     text: str = ""
-    height: Optional[float] = None
-    labels: Optional[List["ElkLabel"]] = None
-    layoutOptions: Optional[Dict[str, str]] = None
-    width: Optional[float] = None
-    x: Optional[float] = None
-    y: Optional[float] = None
-    properties: Optional[ElkProperties] = None
+    height: float | None = None
+    labels: list[ElkLabel] | None = None
+    layoutOptions: dict[str, str] | None = None
+    width: float | None = None
+    x: float | None = None
+    y: float | None = None
+    properties: ElkProperties | None = None
 
     @staticmethod
-    def from_dict(obj: Any) -> "ElkLabel":
+    def from_dict(obj: Any) -> ElkLabel:
         assert isinstance(obj, dict)
         id = from_str(obj.get("id"))
         text = from_str(obj.get("text"))
@@ -333,9 +334,7 @@ class ElkLabel(ElkShape):
         width = from_union([from_float, from_none], obj.get("width"))
         x = from_union([from_float, from_none], obj.get("x"))
         y = from_union([from_float, from_none], obj.get("y"))
-        properties = from_union(
-            [ElkProperties.from_dict, from_none], obj.get("properties")
-        )
+        properties = from_union([ElkProperties.from_from_none], obj.get("properties"))
         return ElkLabel(
             id=id,
             text=text,
@@ -388,12 +387,12 @@ class ElkLabel(ElkShape):
 @dataclass
 class ElkEdge(ElkGraphElement):
     id: str = None
-    junctionPoints: Optional[List[ElkPoint]] = None
-    labels: Optional[List[ElkLabel]] = None
-    layoutOptions: Optional[Dict[str, str]] = None
+    junctionPoints: list[ElkPoint] | None = None
+    labels: list[ElkLabel] | None = None
+    layoutOptions: dict[str, str] | None = None
 
     @staticmethod
-    def from_dict(obj: Any) -> "ElkEdge":
+    def from_dict(obj: Any) -> ElkEdge:
         assert isinstance(obj, dict)
         id = from_str(obj.get("id"))
         junctionPoints = from_union(
@@ -430,16 +429,16 @@ class ElkEdgeSection(ElkGraphElement):
     id: str = None
     endPoint: ElkPoint = None
     startPoint: ElkPoint = None
-    bendPoints: Optional[List[ElkPoint]] = None
-    incomingSections: Optional[List[str]] = None
-    incomingShape: Optional[str] = None
-    labels: Optional[List[ElkLabel]] = None
-    layoutOptions: Optional[Dict[str, str]] = None
-    outgoingSections: Optional[List[str]] = None
-    outgoingShape: Optional[str] = None
+    bendPoints: list[ElkPoint] | None = None
+    incomingSections: list[str] | None = None
+    incomingShape: str | None = None
+    labels: list[ElkLabel] | None = None
+    layoutOptions: dict[str, str] | None = None
+    outgoingSections: list[str] | None = None
+    outgoingShape: str | None = None
 
     @staticmethod
-    def from_dict(obj: Any) -> "ElkEdgeSection":
+    def from_dict(obj: Any) -> ElkEdgeSection:
         assert isinstance(obj, dict)
         endPoint = ElkPoint.from_dict(obj.get("endPoint"))
         id = from_str(obj.get("id"))
@@ -505,19 +504,19 @@ class ElkEdgeSection(ElkGraphElement):
 @dataclass
 class ElkExtendedEdge(ElkEdge):
     id: str = None
-    sections: Optional[List[ElkEdgeSection]] = None
-    sources: Optional[List[str]] = None
-    targets: Optional[List[str]] = None
-    junctionPoints: Optional[List[ElkPoint]] = None
-    labels: Optional[List[ElkLabel]] = None
-    layoutOptions: Optional[Dict[str, str]] = None
-    properties: Optional[ElkProperties] = None
+    sections: list[ElkEdgeSection] | None = None
+    sources: list[str] | None = None
+    targets: list[str] | None = None
+    junctionPoints: list[ElkPoint] | None = None
+    labels: list[ElkLabel] | None = None
+    layoutOptions: dict[str, str] | None = None
+    properties: ElkProperties | None = None
 
     @staticmethod
-    def from_dict(obj: Any) -> "ElkExtendedEdge":
+    def from_dict(obj: Any) -> ElkExtendedEdge:
         assert isinstance(obj, dict)
         id = from_str(obj.get("id"))
-        sections = from_list(ElkEdgeSection.from_dict, obj.get("sections"))
+        sections = from_list(ElkEdgeSection.from_obj.get("sections"))
         sources = from_list(from_str, obj.get("sources"))
         targets = from_list(from_str, obj.get("targets"))
         junctionPoints = from_union(
@@ -573,16 +572,16 @@ class ElkExtendedEdge(ElkEdge):
 @dataclass
 class ElkPort(ElkShape):
     id: str = None
-    height: Optional[float] = None
-    labels: Optional[List[ElkLabel]] = None
-    layoutOptions: Optional[Dict[str, str]] = None
-    width: Optional[float] = None
-    x: Optional[float] = None
-    y: Optional[float] = None
-    properties: Optional[ElkProperties] = None
+    height: float | None = None
+    labels: list[ElkLabel] | None = None
+    layoutOptions: dict[str, str] | None = None
+    width: float | None = None
+    x: float | None = None
+    y: float | None = None
+    properties: ElkProperties | None = None
 
     @staticmethod
-    def from_dict(obj: Any) -> "ElkPort":
+    def from_dict(obj: Any) -> ElkPort:
         assert isinstance(obj, dict)
         id = from_str(obj.get("id"))
         height = from_union([from_float, from_none], obj.get("height"))
@@ -632,19 +631,19 @@ class ElkPort(ElkShape):
 @dataclass
 class ElkNode(ElkShape):
     id: str = None
-    children: Optional[List["ElkNode"]] = None
-    edges: Optional[List[ElkEdge]] = None
-    height: Optional[float] = None
-    labels: Optional[List[ElkLabel]] = None
-    layoutOptions: Optional[Dict[str, str]] = None
-    ports: Optional[List[ElkPort]] = None
-    width: Optional[float] = None
-    x: Optional[float] = None
-    y: Optional[float] = None
-    properties: Optional[ElkProperties] = None
+    children: list[ElkNode] | None = None
+    edges: list[ElkEdge] | None = None
+    height: float | None = None
+    labels: list[ElkLabel] | None = None
+    layoutOptions: dict[str, str] | None = None
+    ports: list[ElkPort] | None = None
+    width: float | None = None
+    x: float | None = None
+    y: float | None = None
+    properties: ElkProperties | None = None
 
     @staticmethod
-    def from_dict(obj: Any) -> "ElkNode":
+    def from_dict(obj: Any) -> ElkNode:
         assert isinstance(obj, dict)
         id = from_str(obj.get("id"))
         children = from_union(
@@ -720,18 +719,18 @@ class ElkPrimitiveEdge(ElkEdge):
     id: str = None
     source: str = ""
     target: str = ""
-    bendPoints: Optional[List[ElkPoint]] = None
-    junctionPoints: Optional[List[ElkPoint]] = None
-    labels: Optional[List[ElkLabel]] = None
-    layoutOptions: Optional[Dict[str, str]] = None
-    sourcePoint: Optional[ElkPoint] = None
-    sourcePort: Optional[str] = None
-    targetPoint: Optional[ElkPoint] = None
-    targetPort: Optional[str] = None
-    properties: Optional[ElkProperties] = None
+    bendPoints: list[ElkPoint] | None = None
+    junctionPoints: list[ElkPoint] | None = None
+    labels: list[ElkLabel] | None = None
+    layoutOptions: dict[str, str] | None = None
+    sourcePoint: ElkPoint | None = None
+    sourcePort: str | None = None
+    targetPoint: ElkPoint | None = None
+    targetPort: str | None = None
+    properties: ElkProperties | None = None
 
     @staticmethod
-    def from_dict(obj: Any) -> "ElkPrimitiveEdge":
+    def from_dict(obj: Any) -> ElkPrimitiveEdge:
         assert isinstance(obj, dict)
         id = from_str(obj.get("id"))
         source = from_str(obj.get("source"))

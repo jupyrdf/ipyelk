@@ -1,35 +1,39 @@
 # Copyright (c) 2024 ipyelk contributors.
 # Distributed under the terms of the Modified BSD License.
-from typing import Dict, Optional
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
 
 import traitlets as T
 
-from ipyelk.elements.elements import BaseElement
-
 from ..elements import Edge, Label, Node, Port, index
 from ..elements import layout_options as opt
-from ..pipes import MarkElementWidget
 from ..tools import Tool
 
-ROOT_OPTS: Dict[str, str] = {
+if TYPE_CHECKING:
+    from ipyelk.elements.elements import BaseElement
+
+    from ..pipes import MarkElementWidget
+
+ROOT_OPTS: dict[str, str] = {
     opt.HierarchyHandling.identifier: opt.HierarchyHandling().value
 }
-NODE_OPTS: Dict[str, str] = {
+NODE_OPTS: dict[str, str] = {
     opt.NodeSizeConstraints.identifier: opt.NodeSizeConstraints().value,
 }
-PORT_OPTS: Dict[str, str] = {}
-LABEL_OPTS: Dict[str, str] = {
+PORT_OPTS: dict[str, str] = {}
+LABEL_OPTS: dict[str, str] = {
     opt.NodeLabelPlacement.identifier: opt.NodeLabelPlacement(horizontal="center").value
 }
-EDGE_OPTS: Dict[str, str] = {}
+EDGE_OPTS: dict[str, str] = {}
 
 
 class Loader(Tool):
-    default_node_opts: Optional[Dict[str, str]] = T.Dict(NODE_OPTS, allow_none=True)
-    default_root_opts: Optional[Dict[str, str]] = T.Dict(ROOT_OPTS, allow_none=True)
-    default_label_opts: Optional[Dict[str, str]] = T.Dict(LABEL_OPTS, allow_none=True)
-    default_port_opts: Optional[Dict[str, str]] = T.Dict(PORT_OPTS, allow_none=True)
-    default_edge_opts: Optional[Dict[str, str]] = T.Dict(EDGE_OPTS, allow_none=True)
+    default_node_opts: dict[str, str] | None = T.dict(NODE_OPTS, allow_none=True)
+    default_root_opts: dict[str, str] | None = T.dict(ROOT_OPTS, allow_none=True)
+    default_label_opts: dict[str, str] | None = T.dict(LABEL_OPTS, allow_none=True)
+    default_port_opts: dict[str, str] | None = T.dict(PORT_OPTS, allow_none=True)
+    default_edge_opts: dict[str, str] | None = T.dict(EDGE_OPTS, allow_none=True)
 
     def load(self) -> MarkElementWidget:
         raise NotImplementedError("Subclasses should implement their behavior")
@@ -40,7 +44,7 @@ class Loader(Tool):
                 el.layoutOptions = self.get_default_opts(el)
         return root
 
-    def get_default_opts(self, element: BaseElement) -> Dict:
+    def get_default_opts(self, element: BaseElement) -> dict:
         if isinstance(element, Node):
             if element.get_parent() is None:
                 opts = self.default_root_opts
@@ -56,7 +60,7 @@ class Loader(Tool):
             return dict()
         return dict(**opts)
 
-    def clear_defaults(self) -> "Loader":
+    def clear_defaults(self) -> Loader:
         """Removes the current default layout options for the loader"""
         self.default_node_opts = None
         self.default_root_opts = None

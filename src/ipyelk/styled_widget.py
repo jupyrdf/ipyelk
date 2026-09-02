@@ -31,18 +31,18 @@ class StyledWidget(W.Box):
         """Build the custom css to attach to the dom"""
         style = []
         raw_css = []
-        for _cls, attrs in self.style.items():
-            if "@keyframes" not in _cls:
+        for cls, attrs in self.style.items():
+            if "@keyframes" not in cls:
                 # if the `_cls` begins with a whitespace prefix the selector
                 # with the style widget's unique class
-                selector = f".{self._css_class}{_cls}" if _cls.startswith(" ") else _cls
+                selector = f".{self._css_class}{cls}" if cls.startswith(" ") else cls
                 css_attributes = "\n".join([
                     f"{key}: {value};" for key, value in attrs.items()
                 ])
-                raw_css += [f"{_cls}{{ {css_attributes} }}"]
+                raw_css += [f"{cls}{{ {css_attributes} }}"]
             else:
                 # process keyframe css
-                selector = _cls
+                selector = cls
                 attributes = []
                 for key, value in attrs.items():
                     steps = []

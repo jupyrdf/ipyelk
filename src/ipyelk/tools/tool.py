@@ -1,5 +1,6 @@
 # Copyright (c) 2024 ipyelk contributors.
 # Distributed under the terms of the Modified BSD License.
+from __future__ import annotations
 
 import asyncio
 from typing import Callable
@@ -15,7 +16,7 @@ class Tool(W.Widget):
     tee: Pipe = T.Instance(Pipe, allow_none=True).tag(
         sync=True, **W.widget_serialization
     )
-    on_done = T.Any(allow_none=True)  # callback when done
+    on_done: Callable | None = T.Callable(allow_none=True)  # callback when done
     disable = T.Bool(default_value=False).tag(sync=True, **W.widget_serialization)
     reports = TypedTuple(T.Unicode(), kw={})
     _task: asyncio.Future = None
@@ -50,7 +51,7 @@ class Tool(W.Widget):
         Parameters
         ----------
         remove: bool (optional)
-            Set to true to remove the callback from the list of callbacks.
+            set to true to remove the callback from the list of callbacks.
 
         """
         self._on_run_handlers.register_callback(callback, remove=remove)
@@ -73,7 +74,7 @@ class ToolButton(Tool):
     :param handler: Called when button is pressed.
     """
 
-    handler: Callable = T.Any(allow_none=True)
+    handler: Callable | None = T.Callable(allow_none=True)
     description: str = T.Unicode(default_value="")
 
     @T.default("ui")

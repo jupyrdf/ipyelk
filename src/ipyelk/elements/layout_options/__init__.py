@@ -1,4 +1,4 @@
-"""Set of Widgets to help configure Elk Layout Options
+"""set of Widgets to help configure Elk Layout Options
 https://www.eclipse.org/elk/reference/options.html
 """
 

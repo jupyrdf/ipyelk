@@ -1,7 +1,6 @@
 # Copyright (c) 2024 ipyelk contributors.
 # Distributed under the terms of the Modified BSD License.
 from datetime import datetime
-from typing import Tuple
 
 import ipywidgets as W
 import traitlets as T
@@ -59,7 +58,7 @@ class PipelineStatusView(PipeStatusView):
 
 
 class Pipeline(SyncedOutletPipe):
-    pipes: Tuple[Pipe] = T.List(T.Instance(Pipe), kw={}).tag(
+    pipes: tuple[Pipe, ...] = T.List(T.Instance(Pipe), kw={}).tag(
         sync=True, **W.widget_serialization
     )
 

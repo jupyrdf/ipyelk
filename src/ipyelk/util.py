@@ -1,6 +1,6 @@
 # Copyright (c) 2024 ipyelk contributors.
 # Distributed under the terms of the Modified BSD License.
-from typing import Dict, List, Optional
+from __future__ import annotations
 
 from .elements.layout_options.model import strip_none
 
@@ -25,17 +25,17 @@ def to_dict(obj):
     return data
 
 
-def merge(d1: Optional[Dict], d2: Optional[Dict]) -> Dict:
+def merge(d1: dict | None, d2: dict | None) -> dict:
     """Merge two dictionaries while first testing if either are `None`.
     The first dictionary's keys take precedence over the second dictionary.
     If the final merged dictionary is empty `None` is returned.
 
     :param d1: primary dictionary
-    :type d1: Optional[Dict]
+    :type d1: dict | None
     :param d2: secondary dictionary
-    :type d2: Optional[Dict]
+    :type d2: dict | None
     :return: merged dictionary
-    :rtype: Dict
+    :rtype: dict
     """
     d1 = to_dict(d1)
     d2 = to_dict(d2)
@@ -53,14 +53,14 @@ def merge(d1: Optional[Dict], d2: Optional[Dict]) -> Dict:
     return value
 
 
-def listed(values: Optional[List]) -> List:
+def listed(values: list | None) -> list:
     """Checks if incoming `values` is None then either returns a new list or
     original value.
 
-    :param values: List of values
-    :type values: Optional[List]
-    :return: List of values or empty list
-    :rtype: List
+    :param values: list of values
+    :type values: list | None
+    :return: list of values or empty list
+    :rtype: list
     """
     if values is None:
         return []

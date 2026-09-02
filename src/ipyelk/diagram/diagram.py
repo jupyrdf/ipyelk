@@ -2,7 +2,7 @@
 # Distributed under the terms of the Modified BSD License.
 
 import asyncio
-from typing import List, Tuple, Type
+from typing import Type
 
 import ipywidgets as W
 import traitlets as T
@@ -46,7 +46,7 @@ class Diagram(StyledWidget):
 
     pipe: Pipe = T.Instance(Pipe).tag(sync=True, **W.widget_serialization)
     view: Viewer = T.Instance(Viewer).tag(sync=True, **W.widget_serialization)
-    tools: Tuple[Tool] = W.trait_types.TypedTuple(T.Instance(Tool)).tag(
+    tools: tuple[Tool, ...] = W.trait_types.TypedTuple(T.Instance(Tool)).tag(
         sync=True, **W.widget_serialization
     )
     toolbar: Toolbar = T.Instance(Toolbar, kw={})
@@ -70,7 +70,7 @@ class Diagram(StyledWidget):
         T.link((self, "symbols"), (view, "symbols"))
         return view
 
-    @T.default("pipe")
+    @T.default(pipe)
     def _default_Pipe(self):
         from .flow import BrowserTextSizer, DefaultFlow
 
@@ -97,13 +97,13 @@ class Diagram(StyledWidget):
         self.pipe.inlet = self.source
         self.view.source = self.pipe.outlet
 
-    @T.observe("pipe", "source", "style")
+    @T.observe(pipe, "source", "style")
     def _change_pipe(self, change):
         self._update_view_sources()
         self.refresh()
 
     @T.default("tools")
-    def _default_tools(self) -> List[Tool]:
+    def _default_tools(self) -> list[Tool]:
         return [
             self.view.selection,
             self.view.fit_tool,

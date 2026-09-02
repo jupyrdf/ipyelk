@@ -1,7 +1,5 @@
 # Copyright (c) 2024 ipyelk contributors.
 # Distributed under the terms of the Modified BSD License.
-from typing import Dict
-
 from ..diagram import Diagram
 
 # from ..schema.validator import validate_elk_json
@@ -11,7 +9,7 @@ from .loader import Loader
 
 
 class ElkJSONLoader(Loader):
-    def load(self, data: Dict) -> MarkElementWidget:
+    def load(self, data: dict) -> MarkElementWidget:
         return MarkElementWidget(
             value=self.apply_layout_defaults(convert_elkjson(data)),
         )

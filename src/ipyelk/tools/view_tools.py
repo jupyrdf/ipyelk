@@ -1,7 +1,6 @@
 # Copyright (c) 2024 ipyelk contributors.
 # Distributed under the terms of the Modified BSD License.
 from collections.abc import Iterator
-from typing import Set, Tuple
 
 import ipywidgets as W
 import traitlets as T
@@ -19,7 +18,7 @@ class Selection(Tool):
     Attributes
     ----------
     ids: tuple
-    Tuple of string ids.
+    tuple of string ids.
 
     """
 
@@ -48,7 +47,7 @@ class Hover(Tool):
     Attributes
     ----------
     ids: tuple
-    Tuple of string ids.
+    tuple of string ids.
 
     """
 
@@ -122,7 +121,7 @@ class SetTool(Tool):
         return W.HBox([add_btn, set_btn, remove_btn])
 
 
-def lifecycle(old: Set, new: Set) -> Tuple[Set, Set]:
+def lifecycle(old: set, new: set) -> tuple[set, set]:
     exiting = old.difference(new)
     entering = new.difference(old)
     return exiting, entering

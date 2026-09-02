@@ -1,18 +1,21 @@
 # Copyright (c) 2024 ipyelk contributors.
 # Distributed under the terms of the Modified BSD License.
+from __future__ import annotations
+
 import re
-from typing import Dict, List, Type, Union
+from typing import TYPE_CHECKING, Any
 
 import ipywidgets as W
 import traitlets as T
 
-from .model import ElkGraphElement
+if TYPE_CHECKING:
+    from .model import ElkGraphElement
 
 
 class LayoutOptionWidget(W.VBox):
     identifier: str = None
     metadata_provider: str = None
-    applies_to: List[ElkGraphElement] = None
+    applies_to: list[ElkGraphElement] = None
     group: str = None
     title: str = None  # optional title for UI purposes
 
@@ -27,7 +30,7 @@ class LayoutOptionWidget(W.VBox):
             self.children = self._ui()
         super()._repr_mimebundle_(**kwargs)
 
-    def _ui(self) -> List[W.Widget]:
+    def _ui(self) -> list[W.Widget]:
         raise NotImplementedError(
             "Subclasses should implement their specific UI Controls"
         )
@@ -36,7 +39,7 @@ class LayoutOptionWidget(W.VBox):
         pass  # expecting subclasses to override
 
     @classmethod
-    def matches(cls, elk_type: Type[ElkGraphElement]):
+    def matches(cls, elk_type: type[ElkGraphElement]):
         """Checks if this LayoutOption applies to given ElkGraphElement type"""
         if cls.applies_to is None:
             return False
@@ -53,7 +56,7 @@ class SpacingOptionWidget(LayoutOptionWidget):
     spacing = T.Float(default_value=10, min=0)
     _slider_description: str = ""
 
-    def _ui(self) -> List[W.Widget]:
+    def _ui(self) -> list[W.Widget]:
         slider = W.FloatSlider(description=self._slider_description, min=0)
 
         T.link((self, "spacing"), (slider, "value"))
@@ -66,9 +69,9 @@ class SpacingOptionWidget(LayoutOptionWidget):
 
 
 class OptionsWidget(W.Accordion, LayoutOptionWidget):
-    identifier = T.Any()
-    options: List["OptionsWidget"] = T.List()
-    value: Dict = T.Dict()
+    identifier: Any = T.Any()
+    options: list[OptionsWidget] = T.List()
+    value: dict = T.Dict()
 
     @T.observe("options")
     def _update_options(self, change: T.Bunch = None):
@@ -100,12 +103,12 @@ class OptionsWidget(W.Accordion, LayoutOptionWidget):
                 value[option.identifier] = option.value
         self.value = value
 
-    def get(self, key: Union[str, Type[LayoutOptionWidget]]) -> LayoutOptionWidget:
+    def get(self, key: str | type[LayoutOptionWidget]) -> LayoutOptionWidget:
         """Get the `LayoutOptionWidget` instance in for this option group for
         the given key
 
         :param key: Key to lookup option
-        :type key: Union[str, Type[LayoutOptionWidget]]
+        :type key: str | type[LayoutOptionWidget]
         :raises KeyError: [description]
         :return: Instance of the associated layout option widget
         :rtype: LayoutOptionWidget

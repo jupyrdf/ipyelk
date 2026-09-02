@@ -1,7 +1,5 @@
 # Copyright (c) 2024 ipyelk contributors.
 # Distributed under the terms of the Modified BSD License.
-from typing import Dict, Type
-
 from pydantic.v1 import Field
 
 from ...elements import (
@@ -159,7 +157,7 @@ class ActivityDiagram(Partition):
         exclude=True,
     )
 
-    style: Dict[str, Dict] = Field(
+    style: dict[str] = Field(
         {
             " .final-state .inner-circle": {
                 "fill": "var(--jp-elk-node-stroke)",
@@ -173,4 +171,4 @@ class ActivityDiagram(Partition):
         },
         exclude=True,
     )
-    default_edge: Type[Edge] = Field(default=SimpleArrow)
+    default_edge: type[Edge] = Field(default=SimpleArrow)

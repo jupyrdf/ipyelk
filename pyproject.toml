@@ -233,6 +233,7 @@ ignore = [
 ]
 "atest/**/*.py" = ["INP001"]
 "docs/**/*.py" = ["INP001", "A001", "ANN401"]
+"src/ipyelk/__init__.py" = ["RUF067"]
 "**/*.ipynb" = [
   "A001",
   "A004",
@@ -246,6 +247,7 @@ ignore = [
   "PLR0914",
   "PLR0917",
   "PLR2004",
+  "PLC2701",
   "PLR6104",
   "PLW0603",
   "RUF006",

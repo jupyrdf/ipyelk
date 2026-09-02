@@ -1,11 +1,12 @@
 # Copyright (c) 2024 ipyelk contributors.
 # Distributed under the terms of the Modified BSD License.
+from __future__ import annotations
+
 import asyncio
 from time import monotonic
-from typing import Optional
 
 
-def wait_for_change(widget, value, timeout: Optional[float] = None):
+def wait_for_change(widget, value, timeout: float | None = None):
     """Return a future that resolves when ``widget``'s ``value`` trait changes.
 
     Initial pattern from the ipywidgets async docs. If ``timeout`` is given and
