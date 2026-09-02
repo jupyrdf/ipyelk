@@ -44,7 +44,7 @@ async def browser_roundtrip(
     trait: str = "value",
     initial_delay: float = 0.5,
     max_delay: float = 10.0,
-    timeout: Optional[float] = None,
+    timeout: float | None = None,
 ):
     """Send ``{"action": "run"}`` to a synced pipe's frontend and wait for the
     pipe's outlet to change.

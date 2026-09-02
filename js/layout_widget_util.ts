@@ -2,12 +2,21 @@
  * Copyright (c) 2024 ipyelk contributors.
  * Distributed under the terms of the Modified BSD License.
  */
-
+import {
+  ElkGraphElement,
+  ElkNode,
+  ElkProperties,
+} from './sprotty/json/elkgraph-json';
 export function layoutErrorMessage(error: unknown): { action: 'error'; error: string } {
   return { action: 'error', error: `${error}` };
 }
 
-type TProperties = Map<string, any>;
+type TProperties = Record<string, ElkProperties | undefined>;
+type ElkElementWithChildren = ElkGraphElement & {
+  children?: ElkNode[];
+  ports?: ElkGraphElement[];
+  edges?: ElkGraphElement[];
+};
 
 /**
  * Collect the `properties` of every graph element into a map keyed by
@@ -16,10 +25,10 @@ type TProperties = Map<string, any>;
  * does not need them: they carry ipyelk -> sprotty data (e.g. `cssClasses`),
  * so they are stripped before layout and reapplied afterwards.
  */
-export function collectProperties(node: any): TProperties {
-  let props: TProperties = new Map();
+export function collectProperties(node: ElkNode): TProperties {
+  let props: TProperties = {};
 
-  function strip(node) {
+  function strip(node: ElkElementWithChildren) {
     props[node.id] = node.properties;
     delete node['properties'];
     // children
@@ -44,8 +53,8 @@ export function collectProperties(node: any): TProperties {
 }
 
 /** Reapply properties collected by {@link collectProperties} onto a layout result. */
-export function applyProperties(node: any, props: TProperties): any {
-  function apply(node) {
+export function applyProperties(node: ElkNode, props: TProperties): ElkNode {
+  function apply(node: ElkElementWithChildren) {
     node.properties = props[node.id];
 
     // children
@@ -80,10 +89,10 @@ export function applyProperties(node: any, props: TProperties): any {
  * copying first keeps the inlet value intact, so `layout()` may run any
  * number of times.
  */
-export function prepareGraphForElk(rootNode: any): {
-  graph: any;
+export function prepareGraphForElk(rootNode: ElkNode): {
+  graph: ElkNode;
   propmap: TProperties;
 } {
-  const graph = JSON.parse(JSON.stringify(rootNode));
+  const graph: ElkNode = JSON.parse(JSON.stringify(rootNode));
   return { graph, propmap: collectProperties(graph) };
 }
