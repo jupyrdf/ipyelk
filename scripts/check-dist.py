@@ -26,10 +26,16 @@ LICENSE_BYTES = {p: p.read_bytes() for p in [LICENSE, COPYRIGHT, EPL, TPL]}
 PY_VERSION = tomllib.loads(PPT.read_text(**UTF8))["project"]["version"]
 PFX = f"ipyelk-{PY_VERSION}"
 
-WHEEL_FILES = {
-    f"{PFX}.dist-info/LICENSE.txt": LICENSE_BYTES[LICENSE],
-    f"{PFX}.data/data/{TPL_PATH}": LICENSE_BYTES[TPL],
-}
+WHEEL_FILE_GROUPS = [
+    (
+        (
+            f"{PFX}.dist-info/LICENSE.txt",
+            f"{PFX}.dist-info/licenses/LICENSE.txt",
+        ),
+        LICENSE_BYTES[LICENSE],
+    ),
+    ((f"{PFX}.data/data/{TPL_PATH}",), LICENSE_BYTES[TPL]),
+]
 
 SDIST_FILES = {
     f"{PFX}/LICENSE.txt": LICENSE_BYTES[LICENSE],
@@ -41,9 +47,15 @@ SDIST_FILES = {
 
 def check_whl(path: Path) -> None:
     with zipfile.ZipFile(path, "r") as whl:
-        for fn, fbytes in WHEEL_FILES.items():
-            assert whl.read(fn) == fbytes, f"!!! wheel {fn} is wrong"
-            print(f"OK wheel {fn}")
+        names = set(whl.namelist())
+        for fns, fbytes in WHEEL_FILE_GROUPS:
+            for fn in fns:
+                if fn in names:
+                    assert whl.read(fn) == fbytes, f"!!! wheel {fn} is wrong"
+                    print(f"OK wheel {fn}")
+                    break
+            else:
+                raise AssertionError(f"!!! wheel missing one of {', '.join(fns)}")
 
 
 def check_sdist(path: Path) -> None:
