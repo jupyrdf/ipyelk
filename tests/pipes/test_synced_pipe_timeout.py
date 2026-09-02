@@ -4,9 +4,10 @@ import asyncio
 
 import pytest
 
-from ipyelk.elements import Node
+from ipyelk.elements import Label, Node
 from ipyelk.pipes import MarkElementWidget
 from ipyelk.pipes.elkjs import ElkJS
+from ipyelk.pipes.text_sizer import BrowserTextSizer
 
 
 @pytest.mark.asyncio
@@ -34,3 +35,16 @@ async def test_elkjs_completes_when_browser_responds():
     browser = asyncio.create_task(fake_browser())
     await pipe.run()  # must return without raising
     await browser  # surface any exception from the fake browser
+
+
+@pytest.mark.asyncio
+async def test_browser_text_sizer_falls_back_during_testing(monkeypatch):
+    monkeypatch.setenv("IPYELK_TESTING", "true")
+    label = Label(text="fallback")
+    pipe = BrowserTextSizer(timeout=0.01)
+    pipe.inlet = MarkElementWidget(value=Node(labels=[label]))
+    pipe.outlet = MarkElementWidget()
+
+    await asyncio.wait_for(pipe.run(), timeout=2.0)
+
+    assert label.properties.get_shape().width == 80

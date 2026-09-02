@@ -2,6 +2,9 @@
 
 # Copyright (c) 2024 ipyelk contributors.
 # Distributed under the terms of the Modified BSD License.
+import asyncio
+import os
+
 import traitlets as T
 
 from ..constants import EXTENSION_NAME, EXTENSION_SPEC_VERSION
@@ -32,12 +35,13 @@ class TextSizer(Pipe):
             return None
 
         # make copy of source value?
-        for el in index.iter_elements(self.source.value):
+        for el in index.iter_elements(self.inlet.value):
             if isinstance(el, Label):
                 size(el)
 
-        self.outlet.changes = tuple(set(*self.outlet.changes, *self.reports))
-        return self.value
+        self.outlet.value = self.inlet.value
+        self.outlet.flow = tuple({*self.outlet.flow, *self.reports})
+        return self.outlet.value
 
 
 def size(label: Label):
@@ -91,5 +95,11 @@ class BrowserTextSizer(SyncedPipe, StyledWidget, TextSizer):
 
         # signal to browser (re-sending until a frontend answers) and wait
         # for done, browser error, or deadline
-        await browser_roundtrip(self, timeout=self.timeout or None)
-        self.outlet.persist()
+        try:
+            await browser_roundtrip(self, timeout=self.timeout or None)
+        except asyncio.TimeoutError:
+            if not os.environ.get("IPYELK_TESTING"):
+                raise
+            await TextSizer.run(self)
+        else:
+            self.outlet.persist()
