@@ -334,7 +334,9 @@ class ElkLabel(ElkShape):
         width = from_union([from_float, from_none], obj.get("width"))
         x = from_union([from_float, from_none], obj.get("x"))
         y = from_union([from_float, from_none], obj.get("y"))
-        properties = from_union([ElkProperties.from_from_none], obj.get("properties"))
+        properties = from_union(
+            [ElkProperties.from_dict, from_none], obj.get("properties")
+        )
         return ElkLabel(
             id=id,
             text=text,
@@ -516,7 +518,7 @@ class ElkExtendedEdge(ElkEdge):
     def from_dict(obj: Any) -> ElkExtendedEdge:
         assert isinstance(obj, dict)
         id = from_str(obj.get("id"))
-        sections = from_list(ElkEdgeSection.from_obj.get("sections"))
+        sections = from_list(ElkEdgeSection.from_dict, obj.get("sections"))
         sources = from_list(from_str, obj.get("sources"))
         targets = from_list(from_str, obj.get("targets"))
         junctionPoints = from_union(
