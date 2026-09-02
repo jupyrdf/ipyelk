@@ -26,7 +26,7 @@ class ElkJS(SyncedPipe):
     reports: tuple[str, ...] = TypedTuple(T.Unicode(), default_value=(F.Layout,))
     timeout: float = T.Float(
         default_value=30.0,
-        description=(
+        help=(
             "Seconds to wait for the browser to return a layout before giving up; "
             "0 waits forever (the request is re-sent with backoff until a frontend answers)"
         ),
