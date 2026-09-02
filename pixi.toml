@@ -536,7 +536,7 @@ taplo = "*"
 types-jsonschema = "*"
 
 [feature.deps-py.dependencies]
-python = ">=3.9"
+python = ">=3.10"
 [feature.deps-py-oldest.dependencies]
 python = "<3.10"
 [feature.deps-py-latest.dependencies]
