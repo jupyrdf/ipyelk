@@ -9,7 +9,7 @@ import {
   collectProperties,
   layoutErrorMessage,
   prepareGraphForElk,
-} from './layout_widget_util';
+} from '../layout_widget_util';
 
 /** a small graph with `properties` on every element kind */
 function makeGraph(): any {

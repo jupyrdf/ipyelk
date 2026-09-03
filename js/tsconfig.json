@@ -6,6 +6,6 @@
   },
   "extends": "../tsconfigbase.json",
   "include": ["./**/*"],
-  "exclude": ["**/*.test.ts"],
+  "exclude": ["tests"],
   "references": [{ "path": "../tsconfig.json" }]
 }
