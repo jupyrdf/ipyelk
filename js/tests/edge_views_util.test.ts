@@ -6,7 +6,11 @@ import { describe, expect, it } from 'vitest';
 
 import { Point, angleOfPoint } from 'sprotty-protocol';
 
-import { coveredRoutePoints, routeEndAngle, symbolReach } from '../sprotty/views/edge_views_util';
+import {
+  coveredRoutePoints,
+  routeEndAngle,
+  symbolReach,
+} from '../sprotty/views/edge_views_util';
 
 /** the tangent the old renderer used: the chord of the adjacent segment */
 function naiveEndAngle(route: Point[], end: 'source' | 'target'): number {

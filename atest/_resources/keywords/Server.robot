@@ -49,6 +49,9 @@ Setup Server and Browser
     Set Suite Variable    ${PREVIOUS LAB LOG LENGTH}    0    children=${TRUE}
     ${server} =    Start Process    ${cmd}    shell=yes
     ...    env:HOME=${home}
+    # Windows ignores HOME (`ntpath.expanduser` uses USERPROFILE), so the kernel
+    # startup file below would silently never load there
+    ...    env:IPYTHONDIR=${home}${/}.ipython
     ...    env:IPYELK_TESTING=true
     ...    env:JUPYTER_CONFIG_DIR=${home}${/}${ETC_PATH}
     ...    env:JUPYTER_PREFER_ENV_PATH=0

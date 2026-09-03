@@ -2,7 +2,6 @@
  * Copyright (c) 2024 ipyelk contributors.
  * Distributed under the terms of the Modified BSD License.
  */
-
 import {
   Action,
   HoverFeedbackAction,
@@ -33,9 +32,9 @@ import {
   unpack_models as deserialize,
 } from '@jupyter-widgets/base';
 
+import { canonicalSelection, selectionDelta } from './selection_util';
 import createContainer from './sprotty/di-config';
 import { JLModelSource } from './sprotty/diagram-server';
-import { canonicalSelection, selectionDelta } from './selection_util';
 // import { VNode } from 'snabbdom';
 import { ELK_CSS, NAME, TAnyELKMessage, VERSION } from './tokens';
 import { NodeExpandTool, NodeSelectTool } from './tools';

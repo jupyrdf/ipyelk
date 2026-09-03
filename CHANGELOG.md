@@ -34,14 +34,14 @@
   resulting state and wrote it back, flipping the selection tool's `ids` forever — a
   self-sustaining oscillation that pegged the renderer's main thread (F11)
 - Render nested JupyterLab widgets in the pass that reveals them: the overlay was built
-  from a registry populated by the _previous_ render's `snabbdom` hooks, so a widget node
-  that had just become visible produced no container until some later, unrelated
+  from a registry populated by the _previous_ render's `snabbdom` hooks, so a widget
+  node that had just become visible produced no container until some later, unrelated
   re-render happened to run (F14)
 - Make the selection write-back set-based so linked views cannot bounce: F11's
   generation stamp is per view, but `change:ids` is observed by every view of a shared
   model, and each view gathers the same selection in a different order, so a reordering
-  kept dispatching `SelectAction`s between two views until the browser ran out of
-  memory (F16)
+  kept dispatching `SelectAction`s between two views until the browser ran out of memory
+  (F16)
 - Add a `vitest` unit-test harness (F5)
 
 ### `ipyelk 2.1.2`
@@ -63,10 +63,10 @@
   the error path — `on_error` saw the `TypeError` instead of the layout error, and the
   `PipelineProgressBar` sat "in progress" forever; the bar now fills as a visible
   warning (F10)
-- Keep hidden elements in the shared `MarkIndex` across browser round trips: `Node.dict()`
-  always drops hidden children, so rebuilding the index from a value that has been
-  through the browser erased them and `ToggleCollapsedTool` could never reveal them again
-  — nested widgets (such as the `15_Nesting_Plots` figures) never appeared.
+- Keep hidden elements in the shared `MarkIndex` across browser round trips:
+  `Node.dict()` always drops hidden children, so rebuilding the index from a value that
+  has been through the browser erased them and `ToggleCollapsedTool` could never reveal
+  them again — nested widgets (such as the `15_Nesting_Plots` figures) never appeared.
   `ElementIndex.update()` now merges instead of requiring every id to be known: existing
   ids update in place, unknown ids are added, which also fixes a `NotFoundError` when
   slack ports introduced by `VisibilityPipe` come back from a layout (F12)

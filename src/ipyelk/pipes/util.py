@@ -45,7 +45,7 @@ async def browser_roundtrip(
     pipe,
     trait: str = "value",
     initial_delay: float = 0.5,
-    max_delay: float = 10.0,
+    max_delay: float = 2.0,
     timeout: float | None = None,
 ):
     """Send ``{"action": "run"}`` to a synced pipe's frontend and wait for the
@@ -57,7 +57,10 @@ async def browser_roundtrip(
     received. The request is therefore re-sent with backoff until one of:
 
     * the outlet changes -- the browser answered; re-sending is idempotent,
-      so retrying converges as soon as a frontend attaches;
+      so retrying converges as soon as a frontend attaches. ``max_delay`` caps
+      the backoff low: the first request is usually the one that is lost (the
+      diagram is not on the page yet), and a frontend that attaches a second
+      later should not wait out a ten second gap before anything renders;
     * the browser reports a failure -- an ``action: error`` message rejects
       the pending future (see ``SyncedPipe._handle_browser_msg``): an errored
       run must stop the retries, not feed them;

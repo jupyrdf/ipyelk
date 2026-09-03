@@ -36,7 +36,9 @@ describe('selectionDelta', () => {
 
 describe('canonicalSelection', () => {
   it('does not depend on the gathering order', () => {
-    expect(canonicalSelection(['c', 'a', 'b'])).toEqual(canonicalSelection(['b', 'c', 'a']));
+    expect(canonicalSelection(['c', 'a', 'b'])).toEqual(
+      canonicalSelection(['b', 'c', 'a']),
+    );
   });
 
   it('drops duplicates and tolerates nothing', () => {
