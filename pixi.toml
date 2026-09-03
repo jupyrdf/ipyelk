@@ -88,6 +88,7 @@ cmd = """
 export
     NBCONVERT_DIR=$PIXI_PROJECT_ROOT/build/reports/$PIXI_ENVIRONMENT_NAME/nbconvert
     IPYELK_TESTING=true
+    IPYELK_NO_BROWSER=true
 && rm -rf $NBCONVERT_DIR
 && mkdir -p $NBCONVERT_DIR
 && cd examples

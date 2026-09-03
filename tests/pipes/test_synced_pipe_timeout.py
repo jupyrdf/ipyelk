@@ -80,3 +80,21 @@ def test_persist_keeps_hidden_elements_the_browser_never_sees():
 
     assert widget.index.elements.get("plot") is hidden
     assert widget.index.root is root
+
+
+@pytest.mark.asyncio
+async def test_no_browser_env_skips_the_roundtrip(monkeypatch):
+    """`nbconvert --execute` has no frontend: a pipe must not keep a task alive
+    re-sending comm messages across cell boundaries (it has wedged kernels).
+    """
+    monkeypatch.setenv("IPYELK_NO_BROWSER", "true")
+    pipe = ElkJS(timeout=30.0)
+    pipe.inlet = MarkElementWidget(value=Node())
+    pipe.outlet = MarkElementWidget()
+    sent = []
+    monkeypatch.setattr(type(pipe), "send", lambda _self, *a, **_kw: sent.append(a))
+
+    with pytest.raises(asyncio.TimeoutError):
+        await asyncio.wait_for(pipe.run(), timeout=1.0)
+
+    assert sent == [], "nothing should be sent when no frontend can answer"

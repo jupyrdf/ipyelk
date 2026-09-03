@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import os
 from time import monotonic
 
 
@@ -62,7 +63,16 @@ async def browser_roundtrip(
       run must stop the retries, not feed them;
     * the ``timeout`` deadline passes -- :class:`asyncio.TimeoutError`, so a
       permanently silent browser cannot hang the kernel forever.
+
+    When ``IPYELK_NO_BROWSER`` is set there is no frontend to wait for at all
+    (``nbconvert --execute``, doctests): waiting is pointless, and keeping a
+    task alive that re-sends comm messages across cell boundaries has wedged
+    kernels on slow CI runners. Give up immediately so each pipe takes its
+    existing "browser did not answer" path.
     """
+    if os.environ.get("IPYELK_NO_BROWSER"):
+        raise asyncio.TimeoutError
+
     future_value = wait_for_change(pipe.outlet, trait)
     pipe._roundtrip_future = future_value
     deadline = None if timeout is None else monotonic() + timeout
