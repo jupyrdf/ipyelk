@@ -37,6 +37,11 @@
   from a registry populated by the _previous_ render's `snabbdom` hooks, so a widget node
   that had just become visible produced no container until some later, unrelated
   re-render happened to run (F14)
+- Make the selection write-back set-based so linked views cannot bounce: F11's
+  generation stamp is per view, but `change:ids` is observed by every view of a shared
+  model, and each view gathers the same selection in a different order, so a reordering
+  kept dispatching `SelectAction`s between two views until the browser ran out of
+  memory (F16)
 - Add a `vitest` unit-test harness (F5)
 
 ### `ipyelk 2.1.2`
@@ -70,6 +75,10 @@
 - Fix the local `TextSizer` fallback, which read `self.source.value`, assigned
   `self.outlet.changes` and returned `self.value` — none of which exist on `Pipe` — and
   therefore raised on its first statement (F13)
+- Do not wait on a browser that cannot answer: with `IPYELK_NO_BROWSER` set (as
+  `nbconvert --execute` does) a pipe gives up its roundtrip immediately instead of
+  keeping a task alive across cell boundaries re-sending `run` requests for 30 s, which
+  wedged kernels on slower CI runners (F15)
 
 ## `2.1.1`
 
