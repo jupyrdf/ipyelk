@@ -4,6 +4,7 @@
 
 ### Development
 
+- Minimum supported Python is now `3.10`
 - Upgrade the pinned `pixi` from `0.34.0` to `0.67.0` (and `setup-pixi` to `v0.10.0`);
   relocking updates `libgfortran5` `13.2.0`→`14.2.0`, fixing a macOS arm64 dyld failure
   that broke `numpy`/`bqplot` in the example notebooks
@@ -28,6 +29,14 @@
   sections (arrowheads drawn 180° wrong, inside the target node) and followed the short
   exit stub of `POLYLINE` routes instead of the visible diagonal; interior bends under a
   symbol's footprint no longer make the trimmed shaft double back (F9)
+- Drop the selection write-back race: `getSelection()` resolves one action-queue slot
+  later, so two `SelectAction`s dispatched close together each read the _other_ action's
+  resulting state and wrote it back, flipping the selection tool's `ids` forever — a
+  self-sustaining oscillation that pegged the renderer's main thread (F11)
+- Render nested JupyterLab widgets in the pass that reveals them: the overlay was built
+  from a registry populated by the _previous_ render's `snabbdom` hooks, so a widget node
+  that had just become visible produced no container until some later, unrelated
+  re-render happened to run (F14)
 - Add a `vitest` unit-test harness (F5)
 
 ### `ipyelk 2.1.2`
@@ -49,6 +58,18 @@
   the error path — `on_error` saw the `TypeError` instead of the layout error, and the
   `PipelineProgressBar` sat "in progress" forever; the bar now fills as a visible
   warning (F10)
+- Keep hidden elements in the shared `MarkIndex` across browser round trips: `Node.dict()`
+  always drops hidden children, so rebuilding the index from a value that has been
+  through the browser erased them and `ToggleCollapsedTool` could never reveal them again
+  — nested widgets (such as the `15_Nesting_Plots` figures) never appeared.
+  `ElementIndex.update()` now merges instead of requiring every id to be known: existing
+  ids update in place, unknown ids are added, which also fixes a `NotFoundError` when
+  slack ports introduced by `VisibilityPipe` come back from a layout (F12)
+- Log a failed layout in `Diagram.refresh()` instead of returning silently: a silently
+  failed pipeline is indistinguishable from a hung diagram (F12)
+- Fix the local `TextSizer` fallback, which read `self.source.value`, assigned
+  `self.outlet.changes` and returned `self.value` — none of which exist on `Pipe` — and
+  therefore raised on its first statement (F13)
 
 ## `2.1.1`
 
