@@ -48,6 +48,14 @@ class MarkElementWidget(W.DOMWidget):
     flow: tuple[str, ...] = TypedTuple(T.Unicode(), kw={}).tag(sync=True)
 
     def persist(self, rebuild_index: bool = False):
+        """Fold ``value`` into the shared index.
+
+        The index -- not ``value`` -- is the authority for the element
+        hierarchy: hidden elements never survive serialization (see
+        ``Node.dict``), so the index must be merged into, never rebuilt from, a
+        value that has been through the browser.  ``rebuild_index`` is kept for
+        the initial build only.
+        """
         if rebuild_index or self.index.elements is None:
             self.build_index()
         else:

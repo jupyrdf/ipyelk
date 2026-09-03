@@ -191,6 +191,14 @@ class ElementIndex(BaseModel):
         return root
 
     def update(self, other: ElementIndex):
+        """Merge ``other`` into this index.
+
+        Known ids are updated in place (element identity is preserved, which is
+        what keeps `hidden` elements -- stripped from every serialized value by
+        `Node.dict` -- alive across browser roundtrips); unknown ids are added,
+        so elements that only exist in a value coming back from the browser
+        (e.g. slack ports) become addressable without discarding the index.
+        """
         fields = [
             "properties",
             "layoutOptions",
@@ -202,8 +210,10 @@ class ElementIndex(BaseModel):
             "text",
         ]
         for key, e2 in other.items():
-            e1 = self.get(key)
-            if type(e1) == type(e2):
+            e1 = self.elements.get(key)
+            if e1 is None:
+                self.elements[key] = e2
+            elif type(e1) == type(e2):
                 for field in fields:
                     if hasattr(e1, field) and hasattr(e2, field):
                         setattr(e1, field, getattr(e2, field))

@@ -168,6 +168,10 @@ Click Elk Tool
     ${buttonSelector} =    Set Variable    ${elkSelector}//button[contains(.,"${label}")]
     ${elkApp} =    Get WebElement    ${elkSelector}
     Log    ${elkApp}
+    # `Mouse Over` moves the pointer in viewport coordinates, so an app that is
+    # scrolled off-screen raises MoveTargetOutOfBoundsException; Selenium's own
+    # scrolling keywords have the same constraint, so scroll with plain JS.
+    Execute Javascript    arguments[0].scrollIntoView({block: "center"})    ARGUMENTS    ${elkApp}
     Mouse Over    ${elkApp}
     Click Element    ${elkApp}
     Sleep    0.3s

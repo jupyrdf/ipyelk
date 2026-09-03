@@ -172,8 +172,9 @@ class Diagram(StyledWidget):
             except asyncio.CancelledError:
                 return
             if exception is not None:
-                # error already surfaced via pipe.on_error / status; do not
-                # propagate a stale/empty layout to the view.
+                # do not propagate a stale/empty layout to the view, but say so:
+                # a silently failed layout looks exactly like a hung diagram
+                self.log.warning("Diagram refresh failed: %r", exception)
                 return
             layout = self.pipe.outlet.value
             self.view.source.value = layout
