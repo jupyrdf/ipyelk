@@ -101,7 +101,7 @@ export
 """
 
 [tasks.labext-develop--]
-cmd = "jupyter labextension develop --overwrite ."
+cmd = "jupyter-builder develop --overwrite ."
 
 # setup ################################################################################
 [feature.tasks-build.tasks.setup-js]
@@ -117,7 +117,7 @@ inputs = ["js/sprotty/json/elkschema.ts", "node_modules/.yarn-state.yml"]
 outputs = ["src/ipyelk/schema/elkschema.json"]
 
 [feature.tasks-build.tasks.build-js-lib]
-cmd = "jlpm build:ts"
+cmd = "jlpm build:ts --force"
 depends-on = ["build-py-schema", "setup-js"]
 inputs = [
   "{tsconfig*,package}.json",
@@ -133,18 +133,24 @@ depends-on = ["setup-js", "build-js-lib"]
 inputs = [
   "js/",
   "lib/",
+  "build/tsc/.*.tsbuildinfo",
   "style/",
   "node_modules/.yarn-state.yml",
   "{package.json,webpack.config.js}",
 ]
-outputs = ["src/_d/share/jupyter/labextensions/@jupyrdf/jupyter-elk/package.json"]
+outputs = [
+  "src/_d/share/jupyter/labextensions/@jupyrdf/jupyter-elk/package.json",
+  "src/_d/share/jupyter/labextensions/@jupyrdf/jupyter-elk/static",
+]
 
 # js coverage ##########################################################################
 [feature.tasks-build.tasks.build-js-ext-cov]
 cmd = """python scripts/build-ext-cov.py"""
-depends-on = ["setup-js"]
+depends-on = ["build-js-ext"]
 inputs = [
   "js/",
+  "lib/",
+  "build/tsc/.*.tsbuildinfo",
   "style/",
   "{tsconfig*.json,package.json,webpack.config.js}",
   "node_modules/.yarn-state.yml",
@@ -159,7 +165,7 @@ outputs = [
 [feature.tasks-build.tasks.dist-npm]
 cmd = "mkdir -p dist && cd dist && npm pack .."
 depends-on = ["build-js-lib"]
-inputs = ["build/tsc/.*.tsbuildinfo", "{package.json,README.md,LICENSE}"]
+inputs = ["lib/", "build/tsc/.*.tsbuildinfo", "{package.json,README.md,LICENSE}"]
 outputs = ["dist/*.tgz"]
 
 [feature.tasks-build.tasks.dist-pypi]
@@ -289,17 +295,18 @@ outputs = ["build/reports/pip-freeze/atest.txt"]
 
 [feature.tasks-atest.tasks.atest-robot]
 cmd = """
-(cat build/labextensions-cov/@jupyrdf/jupyter-elk/package.json || pixi r build-js-ext-cov)
+cat build/labextensions-cov/@jupyrdf/jupyter-elk/package.json
 && export WITH_TOTAL_COVERAGE=1
 && python scripts/atest.py
 """
-depends-on = ["pip-atest"]
+depends-on = ["pip-atest", "build-js-ext-cov"]
 inputs = [
   "examples",
   "atest",
   "src",
   "scripts/atest.py",
-  "build/labextensions-cov",
+  "build/labextensions-cov/@jupyrdf/jupyter-elk/package.json",
+  "build/labextensions-cov/@jupyrdf/jupyter-elk/static",
   "!**/__pycache__/",
   "!**/.ipynb_checkpoints",
 ]

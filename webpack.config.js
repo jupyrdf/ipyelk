@@ -1,6 +1,5 @@
 //@ts-check
 
-const webpack = require('webpack');
 const path = require('path');
 
 const { WEBPACK_WATCH, WITH_TOTAL_COVERAGE } = process.env;
