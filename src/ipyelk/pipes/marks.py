@@ -47,8 +47,8 @@ class MarkElementWidget(W.DOMWidget):
     )
     flow: tuple[str, ...] = TypedTuple(T.Unicode(), kw={}).tag(sync=True)
 
-    def persist(self):
-        if self.index.elements is None:
+    def persist(self, rebuild_index: bool = False):
+        if rebuild_index or self.index.elements is None:
             self.build_index()
         else:
             self.index.elements.update(ElementIndex.from_els(self.value))

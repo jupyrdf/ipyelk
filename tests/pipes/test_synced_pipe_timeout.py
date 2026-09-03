@@ -4,7 +4,7 @@ import asyncio
 
 import pytest
 
-from ipyelk.elements import Label, Node
+from ipyelk.elements import Label, Node, Port
 from ipyelk.pipes import MarkElementWidget
 from ipyelk.pipes.elkjs import ElkJS
 from ipyelk.pipes.text_sizer import BrowserTextSizer
@@ -48,3 +48,15 @@ async def test_browser_text_sizer_falls_back_during_testing(monkeypatch):
     await asyncio.wait_for(pipe.run(), timeout=2.0)
 
     assert label.properties.get_shape().width == 80
+
+
+def test_persist_can_rebuild_index_for_browser_roundtrip():
+    old_root = Node(id="root", children=[Node(id="old")])
+    new_root = Node(id="root", children=[Node(id="old", ports=[Port(id="old.new-port")])])
+    widget = MarkElementWidget(value=old_root)
+    widget.build_index()
+
+    widget.value = new_root
+    widget.persist(rebuild_index=True)
+
+    assert widget.index.elements.get("old.new-port") is new_root.children[0].ports[0]

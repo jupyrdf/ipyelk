@@ -102,4 +102,4 @@ class BrowserTextSizer(SyncedPipe, StyledWidget, TextSizer):
                 raise
             await TextSizer.run(self)
         else:
-            self.outlet.persist()
+            self.outlet.persist(rebuild_index=True)
