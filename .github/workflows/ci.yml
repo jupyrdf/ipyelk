@@ -35,6 +35,14 @@ jobs:
           path: |
             node_modules
           key: ${{ env.CACHE_EPOCH }}-${{ hashFiles('yarn.lock') }}-node-modules
+      # the labextension build resolves `@jupyterlab/core-meta` over the network
+      # (the legacy `@jupyterlab/builder` cannot read a locally installed copy):
+      # cache it, or a slow npm registry kills the build (seen: read timeout in
+      # `build-js-ext`, which took the whole atest run with it)
+      - uses: actions/cache@v4
+        with:
+          path: ~/.cache/jupyterlab_builder
+          key: ${{ env.CACHE_EPOCH }}-${{ hashFiles('package.json') }}-jlpm-core-meta
       - run: pixi run setup-js
       - run: touch node_modules/.cached-in-ci
       - run: pixi run dist
@@ -68,6 +76,14 @@ jobs:
           path: |
             node_modules
           key: ${{ env.CACHE_EPOCH }}-${{ hashFiles('yarn.lock') }}-node-modules
+      # the labextension build resolves `@jupyterlab/core-meta` over the network
+      # (the legacy `@jupyterlab/builder` cannot read a locally installed copy):
+      # cache it, or a slow npm registry kills the build (seen: read timeout in
+      # `build-js-ext`, which took the whole atest run with it)
+      - uses: actions/cache@v4
+        with:
+          path: ~/.cache/jupyterlab_builder
+          key: ${{ env.CACHE_EPOCH }}-${{ hashFiles('package.json') }}-jlpm-core-meta
       - run: pixi run setup-js
       - run: touch node_modules/.cached-in-ci
       - run: pixi run build-js-ext-cov
@@ -173,6 +189,14 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: ipyelk-${{ github.run_number }}-build-cov
+      # the labextension build resolves `@jupyterlab/core-meta` over the network
+      # (the legacy `@jupyterlab/builder` cannot read a locally installed copy):
+      # cache it, or a slow npm registry kills the build (seen: read timeout in
+      # `build-js-ext`, which took the whole atest run with it)
+      - uses: actions/cache@v4
+        with:
+          path: ~/.cache/jupyterlab_builder
+          key: ${{ env.CACHE_EPOCH }}-${{ hashFiles('package.json') }}-jlpm-core-meta
       - run: pixi run u${{ matrix.task }}-pytest
       - if: matrix.task == 'test'
         run: pixi run test-js

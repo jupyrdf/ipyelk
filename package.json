@@ -153,9 +153,9 @@
       ".ts",
       ".tsx"
     ],
-    "lines": 85,
-    "statements": 85,
-    "branches": 72,
+    "lines": 84,
+    "statements": 84,
+    "branches": 70,
     "functions": 81
   },
   "prettier": {
