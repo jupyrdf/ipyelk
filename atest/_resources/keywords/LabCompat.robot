@@ -1,6 +1,7 @@
 *** Settings ***
 Documentation       JupyterLab compatibility utilities
 
+Library             Collections
 Library             SeleniumLibrary
 Resource            ../variables/Lab.robot
 
@@ -33,18 +34,34 @@ Scroll To Cell
         Ensure Notebook Window Scrollbar is Open
         ${items} =    Get WebElements    ${JLAB CSS WINDOW SCROLL} li
         IF    ${items.__len__()} >= ${n}
+            ${index} =    Evaluate    int(${n}) - 1
+            ${item} =    Get From List    ${items}    ${index}
             Execute Javascript
-            ...    document.querySelector(".jp-mod-virtual-scrollbar .jp-WindowedPanel-scrollbar li:nth-child(${n})").scrollIntoView({block: "center"})
+            ...    arguments[0].scrollIntoView({block: "center"})
+            ...    ARGUMENTS    ${item}
             Execute Javascript
-            ...    document.querySelector(".jp-mod-virtual-scrollbar .jp-WindowedPanel-scrollbar li:nth-child(${n})").click()
+            ...    arguments[0].click()
+            ...    ARGUMENTS    ${item}
         ELSE
-            Execute Javascript
-            ...    document.querySelector(".jp-Cell:nth-child(${n})").scrollIntoView({block: "center"})
+            Scroll Rendered Cell To View    ${n}
         END
     ELSE
-        Execute Javascript
-        ...    document.querySelector(".jp-Cell:nth-child(${n})").scrollIntoView({block: "center"})
+        Scroll Rendered Cell To View    ${n}
     END
+
+Scroll Rendered Cell To View
+    [Arguments]    ${n}
+    ${cells} =    Get WebElements    ${JLAB CSS CELL}
+    ${count} =    Get Length    ${cells}
+    IF    ${count} >= ${n}
+        ${index} =    Evaluate    int(${n}) - 1
+    ELSE
+        ${index} =    Evaluate    int(${count}) - 1
+    END
+    ${cell} =    Get From List    ${cells}    ${index}
+    Execute Javascript
+    ...    arguments[0].scrollIntoView({block: "center"})
+    ...    ARGUMENTS    ${cell}
 
 Ensure Notebook Window Scrollbar is Open
     ${els} =    Get WebElements    ${JLAB CSS WINDOW SCROLL}

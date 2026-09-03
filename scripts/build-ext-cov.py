@@ -31,9 +31,9 @@ def main() -> int:
         [p.unlink() for p in TSBUILDINFO.glob("*.cov")]
 
     if LIB.exists():
-        print("... copying", LIB, "to", LIB_TMP)
+        print("... backing up", LIB, "to", LIB_TMP)
         shutil.rmtree(LIB_TMP, ignore_errors=True)
-        LIB.rename(LIB_TMP)
+        shutil.copytree(LIB, LIB_TMP)
 
     try:
         shutil.rmtree(COV_EXT, ignore_errors=True)

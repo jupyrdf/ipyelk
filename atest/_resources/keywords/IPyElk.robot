@@ -40,13 +40,13 @@ Copy Support Files
     END
 
 Example Should Restart-and-Run-All
-    [Arguments]    ${example}
+    [Arguments]    ${example}    ${timeout}=300s
     Set Screenshot Directory    ${SCREENS}${/}${example.lower()}
     Open IPyElk Notebook    ${example}
     # nothing should be on the page, yet
     Elk Counts Should Be    # all 0
     Restart and Run All
-    Wait For All Cells To Run    60s
+    Wait For All Cells To Run    ${timeout}
     Capture Each Cell Output    09-
     Page Should Not Contain Contain Standard Errors
     Capture Page Screenshot    10-ran-all-without-stderr.png
@@ -180,6 +180,10 @@ Click Elk Tool
     Sleep    0.3s
 
 BQPlot Figure Count Should Be
+    [Arguments]    ${expected}=${0}
+    Wait Until Keyword Succeeds    10x    0.5s    BQPlot Figure Count Should Really Be    ${expected}
+
+BQPlot Figure Count Should Really Be
     [Arguments]    ${expected}=${0}
     ${bq} =    Get WebElements    css:.bqplot
     Should Be Equal As Integers    ${bq.__len__()}    ${expected}

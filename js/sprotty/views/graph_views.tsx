@@ -35,7 +35,7 @@ export class SGraphView implements IView {
     };
     let overlay = (
       <div class-sprotty-overlay={true} style={css_transform}>
-        {context.renderJLNodeWidgets()}
+        {context.renderJLNodeWidgets(model)}
       </div>
     );
     let element: VNode = (

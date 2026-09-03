@@ -296,7 +296,9 @@ outputs = ["build/reports/pip-freeze/atest.txt"]
 [feature.tasks-atest.tasks.atest-robot]
 cmd = """
 cat build/labextensions-cov/@jupyrdf/jupyter-elk/package.json
-&& export WITH_TOTAL_COVERAGE=1
+&& export
+  WITH_TOTAL_COVERAGE=1
+  IPYELK_TESTING=true
 && python scripts/atest.py
 """
 depends-on = ["pip-atest", "build-js-ext-cov"]
@@ -332,7 +334,10 @@ inputs = ["dist/*.whl"]
 outputs = ["build/reports/pip-freeze/atest-oldest.txt"]
 
 [feature.tasks-atest-oldest.tasks.atest-oldest-robot]
-cmd = "python scripts/atest.py"
+cmd = """
+export IPYELK_TESTING=true
+&& python scripts/atest.py
+"""
 depends-on = ["pip-atest-oldest"]
 inputs = [
   "examples",

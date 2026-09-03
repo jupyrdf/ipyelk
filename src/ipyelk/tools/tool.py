@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import asyncio
-from typing import Callable
+from typing import Any, Callable
 
 import ipywidgets as W
 import traitlets as T
@@ -13,6 +13,8 @@ from ..pipes import Pipe
 
 
 class Tool(W.Widget):
+    """An interactive element to control a diagram."""
+
     tee: Pipe = T.Instance(Pipe, allow_none=True).tag(
         sync=True, **W.widget_serialization
     )
@@ -26,7 +28,7 @@ class Tool(W.Widget):
     priority = T.Int(default_value=10)
     _on_run_handlers = T.Instance(W.CallbackDispatcher, kw={})
 
-    def handler(self, *args):
+    def handler(self, *_: Any) -> asyncio.Future:
         """Handler callback for running the tool"""
         # canel old work if needed
         if self._task:
@@ -40,6 +42,8 @@ class Tool(W.Widget):
 
         if self.tee:
             self.tee.inlet.flow = self.reports
+
+        return self._task
 
     async def run(self):
         raise NotImplementedError
