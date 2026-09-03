@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import asyncio
-from typing import Any, Callable
+from typing import Callable
 
 import ipywidgets as W
 import traitlets as T
@@ -28,7 +28,7 @@ class Tool(W.Widget):
     priority = T.Int(default_value=10)
     _on_run_handlers = T.Instance(W.CallbackDispatcher, kw={})
 
-    def handler(self, *_: Any) -> asyncio.Future:
+    def handler(self, *_: object) -> asyncio.Future:
         """Handler callback for running the tool"""
         # canel old work if needed
         if self._task:
