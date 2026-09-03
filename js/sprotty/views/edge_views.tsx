@@ -16,7 +16,7 @@ import { VNode } from 'snabbdom';
 
 import { injectable } from 'inversify';
 
-import { Point, angleOfPoint, toDegrees } from 'sprotty-protocol';
+import { Point, toDegrees } from 'sprotty-protocol';
 
 import {
   PolylineEdgeView,
@@ -30,6 +30,7 @@ import { ElkModelRenderer } from '../renderer';
 import { ElkEdge, ElkJunction } from '../sprotty-model';
 
 import { CircularNodeView, validCanvasBounds } from './base';
+import { coveredRoutePoints, routeEndAngle, symbolReach } from './edge_views_util';
 
 @injectable()
 export class JunctionView extends CircularNodeView {
@@ -106,20 +107,24 @@ export class ElkEdgeView extends PolylineEdgeView {
     segments: Point[],
     context: ElkModelRenderer,
   ): VNode {
-    const p1_s = segments[1];
-    const p2_s = segments[0];
-    let r = angleOfPoint({ x: p1_s.x - p2_s.x, y: p1_s.y - p2_s.y });
+    const startId = edge?.properties?.shape?.start;
+    const endId = edge?.properties?.shape?.end;
+    const startReach = symbolReach(context.getConnector(startId));
+    const endReach = symbolReach(context.getConnector(endId));
+    let r = routeEndAngle(segments, 'source', startReach);
+    let r2 = routeEndAngle(segments, 'target', endReach);
 
-    const p1_e = segments[segments.length - 2];
-    const p2_e = segments[segments.length - 1];
-    let r2 = angleOfPoint({ x: p1_e.x - p2_e.x, y: p1_e.y - p2_e.y });
+    let start = this.getPathOffset(startId, context, r);
+    let end = this.getPathOffset(endId, context, r2);
 
-    let start = this.getPathOffset(edge?.properties?.shape?.start, context, r);
-    let end = this.getPathOffset(edge?.properties?.shape?.end, context, r2);
+    // interior points beneath an end symbol would make the trimmed shaft
+    // double back under it -- skip them
+    const first = 1 + coveredRoutePoints(segments, 'source', startReach);
+    const last = segments.length - 2 - coveredRoutePoints(segments, 'target', endReach);
 
     const firstPoint = segments[0];
     let path = `M ${firstPoint.x - start.x},${firstPoint.y - start.y}`;
-    for (let i = 1; i < segments.length - 1; i++) {
+    for (let i = first; i <= last; i++) {
       const p = segments[i];
       path += ` L ${p.x},${p.y}`;
     }
@@ -173,9 +178,12 @@ export class ElkEdgeView extends PolylineEdgeView {
     let start = edge?.properties?.shape?.start;
     let end = edge?.properties?.shape?.end;
     if (start) {
-      const p1 = segments[1];
       const p2 = segments[0];
-      let r = angleOfPoint({ x: p1.x - p2.x, y: p1.y - p2.y });
+      let r = routeEndAngle(
+        segments,
+        'source',
+        symbolReach(context.getConnector(start)),
+      );
 
       correction = this.getAnchorOffset(start, context, r);
 
@@ -194,9 +202,8 @@ export class ElkEdgeView extends PolylineEdgeView {
       connectors.push(vnode);
     }
     if (end) {
-      const p1 = segments[segments.length - 2];
       const p2 = segments[segments.length - 1];
-      let r = angleOfPoint({ x: p1.x - p2.x, y: p1.y - p2.y });
+      let r = routeEndAngle(segments, 'target', symbolReach(context.getConnector(end)));
       correction = this.getAnchorOffset(end, context, r);
 
       let x = p2.x - correction.x;

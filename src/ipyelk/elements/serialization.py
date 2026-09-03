@@ -1,16 +1,19 @@
 # Copyright (c) 2024 ipyelk contributors.
 # Distributed under the terms of the Modified BSD License.
 
-from typing import Dict, Optional
+from __future__ import annotations
 
-from ipywidgets import DOMWidget
-from pydantic.v1 import BaseModel
+from typing import TYPE_CHECKING
 
 from .elements import Node
 from .index import HierarchicalIndex, VisIndex
 
+if TYPE_CHECKING:
+    from ipywidgets import DOMWidget
+    from pydantic.v1 import BaseModel
 
-def pop_edges(data: Dict, edges=None):
+
+def pop_edges(data: dict, edges: dict | None = None) -> dict:
     if edges is None:
         edges = {}
 
@@ -21,7 +24,7 @@ def pop_edges(data: Dict, edges=None):
     return edges
 
 
-def apply_edges(data: Dict, edges):
+def apply_edges(data: dict, edges: dict) -> dict:
     node_id = data["id"]
     if node_id in edges:
         data["edges"] = edges.get(node_id)
@@ -30,7 +33,7 @@ def apply_edges(data: Dict, edges):
     return edges
 
 
-def convert_elkjson(data: Dict, vis_index: VisIndex = None) -> Node:
+def convert_elkjson(data: dict, vis_index: VisIndex = None) -> Node:
     # pop_edges currently mutates `data` by popping the edge dict
     edges_map = pop_edges(data)  # dict of node.id to edge list
     root = Node(**data)  # new element hierarchy without edges
@@ -44,7 +47,7 @@ def convert_elkjson(data: Dict, vis_index: VisIndex = None) -> Node:
     return root
 
 
-def to_json(model: Optional[BaseModel], widget: DOMWidget) -> Optional[Dict]:
+def to_json(model: BaseModel | None, widget: DOMWidget) -> dict | None:
     """Function to serialize a dictionary of symbols for use in a diagram
 
     :param defs: dictionary of Symbols
@@ -56,7 +59,7 @@ def to_json(model: Optional[BaseModel], widget: DOMWidget) -> Optional[Dict]:
     return model.dict(exclude_none=True)
 
 
-def from_elk_json(js: Optional[Dict], manager) -> Optional[Node]:
+def from_elk_json(js: dict | None, manager: object) -> Node | None:
     if not js:
         return None
     return convert_elkjson(js)

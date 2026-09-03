@@ -18,10 +18,11 @@ ${SCREENS}      ${SCREENS ROOT}${/}examples${/}${NESTING PLOTS}
     BQPlot Figure Count Should Be    ${0}
     ${sel} =    Set Variable    css:[title="expand and center"]
     Click Element    ${sel}
-    Sleep    2s
+    # the notebook disables the button while the (async) toggle + layout runs
+    Wait Until Element Is Enabled    ${sel}    timeout=30s
     Capture Page Screenshot    11-expanded.png
     BQPlot Figure Count Should Be    ${4}
     Click Element    ${sel}
-    Sleep    2s
+    Wait Until Element Is Enabled    ${sel}    timeout=30s
     Capture Page Screenshot    12-collapsed.png
     BQPlot Figure Count Should Be    ${0}

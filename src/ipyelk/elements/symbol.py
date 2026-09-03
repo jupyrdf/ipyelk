@@ -1,8 +1,6 @@
 # Copyright (c) 2024 ipyelk contributors.
 # Distributed under the terms of the Modified BSD License.
 
-from typing import Dict
-
 from pydantic.v1 import BaseModel, Field
 
 from .elements import Node
@@ -34,7 +32,7 @@ class EndpointSymbol(Symbol):
 class SymbolSpec(BaseModel):
     """A set of symbols with unique identifiers"""
 
-    library: Dict[str, Symbol] = Field(
+    library: dict[str, Symbol] = Field(
         default_factory=dict,
         description="Mapping of unique symbol identifiers to a symbol",
     )

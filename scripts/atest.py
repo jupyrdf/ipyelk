@@ -69,6 +69,16 @@ def atest(attempt, extra_args):
             print(f"... can't re-run failed, missing: {previous}")
 
     out_dir = ATEST_OUT / stem
+    if out_dir.exists():
+        print(f"trying to clean out {out_dir}")
+        try:
+            shutil.rmtree(out_dir)
+        except Exception as err:
+            print(f"Error deleting {out_dir}, hopefully harmless: {err}")
+            out_dir = ATEST_OUT / f"{stem}_{os.getpid()}_{int(time.time())}"
+            print(f"... using fresh output dir: {out_dir}")
+    out_dir.mkdir(parents=True)
+    os.chdir(out_dir)
 
     args = [
         *["--name", f"{PLATFORM}"],
@@ -87,15 +97,6 @@ def atest(attempt, extra_args):
         *(extra_args or []),
         *(os.environ.get("ATEST_ARGS", "").split()),
     ]
-
-    if out_dir.exists():
-        print(f"trying to clean out {out_dir}")
-        try:
-            shutil.rmtree(out_dir)
-        except Exception as err:
-            print(f"Error deleting {out_dir}, hopefully harmless: {err}")
-    out_dir.mkdir(parents=True)
-    os.chdir(out_dir)
 
     if "--dryrun" in extra_args or PROCESSES == 1:
         run_robot = robot.run_cli

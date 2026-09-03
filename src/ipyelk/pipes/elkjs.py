@@ -6,7 +6,7 @@ from ipywidgets.widgets.trait_types import TypedTuple
 from ..constants import EXTENSION_NAME, EXTENSION_SPEC_VERSION
 from . import flows as F
 from .base import SyncedPipe
-from .util import wait_for_change
+from .util import browser_roundtrip
 
 
 class ElkJS(SyncedPipe):
@@ -19,18 +19,25 @@ class ElkJS(SyncedPipe):
     _model_module_version = T.Unicode(EXTENSION_SPEC_VERSION).tag(sync=True)
     _view_module = T.Unicode(EXTENSION_NAME).tag(sync=True)
 
-    observes = TypedTuple(T.Unicode(), default_value=(F.Anythinglayout,))
-    reports = TypedTuple(T.Unicode(), default_value=(F.Layout,))
+    observes: tuple[str, ...] = TypedTuple(
+        T.Unicode(),
+        default_value=(F.Anythinglayout,),
+    )
+    reports: tuple[str, ...] = TypedTuple(T.Unicode(), default_value=(F.Layout,))
+    timeout: float = T.Float(
+        default_value=30.0,
+        help=(
+            "Seconds to wait for the browser to return a layout before giving up; "
+            "0 waits forever (the request is re-sent with backoff until a frontend answers)"
+        ),
+    )
 
     async def run(self):
         # watch once
         if self.outlet is None:
             return
 
-        # signal to browser and wait for done
-        future_value = wait_for_change(self.outlet, "value")
-        self.send({"action": "run"})
-
-        # wait to return until
-        await future_value
+        # signal to browser (re-sending until a frontend answers) and wait
+        # for done, browser error, or deadline
+        await browser_roundtrip(self, timeout=self.timeout or None)
         self.outlet.persist()

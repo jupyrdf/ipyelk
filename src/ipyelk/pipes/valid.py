@@ -1,7 +1,5 @@
 # Copyright (c) 2024 ipyelk contributors.
 # Distributed under the terms of the Modified BSD License.
-from typing import Dict
-
 import traitlets as T
 from ipywidgets.widgets.trait_types import TypedTuple
 
@@ -44,7 +42,7 @@ class ValidationPipe(Pipe):
     def get_reports(self, index: MarkIndex):
         self.edge_report, self.id_report = index.elements.get_reports()
 
-    def collect_errors(self) -> Dict:
+    def collect_errors(self) -> dict:
         errors = {}
         if self.id_report.duplicated:
             errors["Nonunique Element Ids"] = self.id_report.duplicated

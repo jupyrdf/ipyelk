@@ -1,7 +1,6 @@
 # Copyright (c) 2024 ipyelk contributors.
 # Distributed under the terms of the Modified BSD License.
 
-from typing import List
 
 import ipywidgets as W
 import traitlets as T
@@ -16,7 +15,7 @@ class SeparateConnectedComponents(LayoutOptionWidget):
 
     applies_to = ["parents"]
 
-    def _ui(self) -> List[W.Widget]:
+    def _ui(self) -> list[W.Widget]:
         cb = W.Checkbox(description="Separeate Connected Components")
 
         T.link((self, "active"), (cb, "value"))
@@ -29,7 +28,7 @@ class SeparateConnectedComponents(LayoutOptionWidget):
 
 class ComponentsSpacing(SpacingOptionWidget):
     """Spacing to be preserved between pairs of connected components. This
-    option is only relevant if ‘separateConnectedComponents’ is activated.
+    option is only relevant if 'separateConnectedComponents' is activated.
 
     https://www.eclipse.org/elk/reference/options/org-eclipse-elk-spacing-componentComponent.html
     """
@@ -94,7 +93,7 @@ class NodeSpacing(SpacingOptionWidget):
 class LabelNodeSpacing(SpacingOptionWidget):
     """Spacing to be preserved between labels and the border of node they are
     associated with. Note that the placement of a label is influenced by the
-    ‘nodelabels.placement’ option.
+    'nodelabels.placement' option.
 
     https://www.eclipse.org/elk/reference/options/org-eclipse-elk-spacing-labelNode.html
     """

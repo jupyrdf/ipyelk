@@ -1,6 +1,5 @@
 # Copyright (c) 2024 ipyelk contributors.
 # Distributed under the terms of the Modified BSD License.
-from typing import List
 
 import ipywidgets as W
 import traitlets as T
@@ -44,7 +43,7 @@ PORT_SORTING_STRATEGY_OPTIONS = {
 
 class PortSide(LayoutOptionWidget):
     """The side of a node on which a port is situated. This option must be set
-    if ‘Port Constraints’ is set to FIXED_SIDE or FIXED_ORDER and no specific
+    if 'Port Constraints' is set to FIXED_SIDE or FIXED_ORDER and no specific
     positions are given for the ports.
 
     https://www.eclipse.org/elk/reference/options/org-eclipse-elk-port-side.html
@@ -57,7 +56,7 @@ class PortSide(LayoutOptionWidget):
 
     value = T.Enum(values=list(PORT_SIDE_OPTIONS.values()), default_value="UNDEFINED")
 
-    def _ui(self) -> List[W.Widget]:
+    def _ui(self) -> list[W.Widget]:
         dropdown = W.Dropdown(options=list(PORT_SIDE_OPTIONS.items()))
         T.link((self, "value"), (dropdown, "value"))
 
@@ -80,7 +79,7 @@ class PortAnchorOffset(LayoutOptionWidget):
     value = T.Unicode(allow_none=True)
     active = T.Bool(default_value=False)
 
-    def _ui(self) -> List[W.Widget]:
+    def _ui(self) -> list[W.Widget]:
         cb = W.Checkbox(description="Active")
         x_slider = W.IntSlider(description="Width")
         y_slider = W.IntSlider(description="Height")
@@ -105,9 +104,9 @@ class PortAnchorOffset(LayoutOptionWidget):
 class PortIndex(LayoutOptionWidget):
     """The index of a port in the fixed order around a node. The order is
     assumed as clockwise, starting with the leftmost port on the top side. This
-    option must be set if ‘Port Constraints’ is set to FIXED_ORDER and no
+    option must be set if 'Port Constraints' is set to FIXED_ORDER and no
     specific positions are given for the ports. Additionally, the option
-    ‘Port Side’ must be defined in this case.
+    'Port Side' must be defined in this case.
 
     https://www.eclipse.org/elk/reference/options/org-eclipse-elk-port-index2.html
     """
@@ -119,7 +118,7 @@ class PortIndex(LayoutOptionWidget):
 
     index = T.Int(default_value=0)
 
-    def _ui(self) -> List[W.Widget]:
+    def _ui(self) -> list[W.Widget]:
         index_input = W.IntText(description="Port Index")
 
         T.link((self, "index"), (index_input, "value"))
@@ -134,11 +133,11 @@ class PortBorderOffset(LayoutOptionWidget):
     """The offset of ports on the node border. With a positive offset the port
     is moved outside of the node, while with a negative offset the port is moved
     towards the inside. An offset of 0 means that the port is placed directly on
-    the node border, i.e. if the port side is north, the port’s south border
-    touches the nodes’s north border; if the port side is east, the port’s west
-    border touches the nodes’s east border; if the port side is south, the
-    port’s north border touches the node’s south border; if the port side is
-    west, the port’s east border touches the node’s west border.
+    the node border, i.e. if the port side is north, the port's south border
+    touches the nodes's north border; if the port side is east, the port's west
+    border touches the nodes's east border; if the port side is south, the
+    port's north border touches the node's south border; if the port side is
+    west, the port's east border touches the node's west border.
 
     https://www.eclipse.org/elk/reference/options/org-eclipse-elk-port-index2.html
     """
@@ -150,7 +149,7 @@ class PortBorderOffset(LayoutOptionWidget):
 
     offset = T.Float(default_value=0)
 
-    def _ui(self) -> List[W.Widget]:
+    def _ui(self) -> list[W.Widget]:
         slider = W.FloatSlider(
             description="Port BorderOffset", min=-20, max=20, default_value=0
         )
@@ -167,11 +166,11 @@ class PortSpacing(LayoutOptionWidget):
     """The offset of ports on the node border. With a positive offset the port
     is moved outside of the node, while with a negative offset the port is moved
     towards the inside. An offset of 0 means that the port is placed directly on
-    the node border, i.e. if the port side is north, the port’s south border
-    touches the nodes’s north border; if the port side is east, the port’s west
-    border touches the nodes’s east border; if the port side is south, the
-    port’s north border touches the node’s south border; if the port side is
-    west, the port’s east border touches the node’s west border.
+    the node border, i.e. if the port side is north, the port's south border
+    touches the nodes's north border; if the port side is east, the port's west
+    border touches the nodes's east border; if the port side is south, the
+    port's north border touches the node's south border; if the port side is
+    west, the port's east border touches the node's west border.
 
     https://www.eclipse.org/elk/reference/options/org-eclipse-elk-spacing-portPort.html
     """
@@ -183,7 +182,7 @@ class PortSpacing(LayoutOptionWidget):
 
     spacing = T.Float(default_value=10)
 
-    def _ui(self) -> List[W.Widget]:
+    def _ui(self) -> list[W.Widget]:
         slider = W.FloatSlider(
             description="Port Spacing", min=0, max=20, default_value=10
         )
@@ -210,7 +209,7 @@ class PortConstraints(LayoutOptionWidget):
         values=list(PORT_CONSTRAINT_OPTIONS.values()), default_value="UNDEFINED"
     )
 
-    def _ui(self) -> List[W.Widget]:
+    def _ui(self) -> list[W.Widget]:
         dropdown = W.Dropdown(
             options=[(k, v) for k, v in PORT_CONSTRAINT_OPTIONS.items()]
         )
@@ -220,7 +219,7 @@ class PortConstraints(LayoutOptionWidget):
 
 
 class PortLabelPlacement(LayoutOptionWidget):
-    """Decides on a placement method for port labels; if empty, the node label’s
+    """Decides on a placement method for port labels; if empty, the node label's
     position is not modified.
 
     https://www.eclipse.org/elk/reference/options/org-eclipse-elk-portLabels-placement.html
@@ -238,7 +237,7 @@ class PortLabelPlacement(LayoutOptionWidget):
 
     value = T.Unicode(allow_none=True)
 
-    def _ui(self) -> List[W.Widget]:
+    def _ui(self) -> list[W.Widget]:
         cb_inside = W.Checkbox(description="Inside")
         cb_next_to_port = W.Checkbox(description="Next to Port if Possible")
         cb_always_same_side = W.Checkbox(description="Always Same Side")
@@ -292,7 +291,7 @@ class TreatPortLabelsAsGroup(LayoutOptionWidget):
 
     treat_as_group = T.Bool(default_value=True)
 
-    def _ui(self) -> List[W.Widget]:
+    def _ui(self) -> list[W.Widget]:
         cb = W.Checkbox(description="Treat Port Labels as Group")
 
         T.link((self, "treat_as_group"), (cb, "value"))
@@ -321,7 +320,7 @@ class AdditionalPortSpace(LayoutOptionWidget):
 
     space = T.Int(min=0, default_value=0)
 
-    def _ui(self) -> List[W.Widget]:
+    def _ui(self) -> list[W.Widget]:
         slider = W.IntSlider(description="Additional Port Space")
         T.link((self, "space"), (slider, "value"))
 
@@ -333,7 +332,7 @@ class AdditionalPortSpace(LayoutOptionWidget):
 
 
 class AllowNonFlowPortsToSwitchSides(LayoutOptionWidget):
-    """Specifies whether non-flow ports may switch sides if their node’s port
+    """Specifies whether non-flow ports may switch sides if their node's port
     constraints are either FIXED_SIDE or FIXED_ORDER. A non-flow port is a port
     on a side that is not part of the currently configured layout flow. For
     instance, given a left-to-right layout direction, north and south ports
@@ -351,7 +350,7 @@ class AllowNonFlowPortsToSwitchSides(LayoutOptionWidget):
 
     allow_switch = T.Bool(default_value=False)
 
-    def _ui(self) -> List[W.Widget]:
+    def _ui(self) -> list[W.Widget]:
         cb = W.Checkbox(description="Allow Non-Flow Ports To Switch Sides")
 
         T.link((self, "allow_switch"), (cb, "value"))
@@ -369,7 +368,7 @@ class AllowNonFlowPortsToSwitchSides(LayoutOptionWidget):
 class LabelPortSpacing(SpacingOptionWidget):
     """Spacing to be preserved between labels and the ports they are associated
     with. Note that the placement of a label is influenced by the
-    ‘portlabels.placement’ option.
+    'portlabels.placement' option.
 
     https://www.eclipse.org/elk/reference/options/org-eclipse-elk-spacing-labelPort.html
     """
@@ -399,7 +398,7 @@ class PortAlignment(LayoutOptionWidget):
         values=list(PORT_ALIGNMENT_OPTIONS.values()), default_value="DISTRIBUTED"
     )
 
-    def _ui(self) -> List[W.Widget]:
+    def _ui(self) -> list[W.Widget]:
         dropdown = W.Dropdown(options=list(PORT_ALIGNMENT_OPTIONS.items()))
         T.link((self, "value"), (dropdown, "value"))
 
@@ -407,7 +406,7 @@ class PortAlignment(LayoutOptionWidget):
 
 
 class PortAlignmentEast(LayoutOptionWidget):
-    """Defines how ports on the eastern side are placed, overriding the node’s
+    """Defines how ports on the eastern side are placed, overriding the node's
     general port alignment.
 
     https://www.eclipse.org/elk/reference/options/org-eclipse-elk-portAlignment-east.html
@@ -417,7 +416,7 @@ class PortAlignmentEast(LayoutOptionWidget):
 
 
 class PortAlignmentWest(LayoutOptionWidget):
-    """Defines how ports on the western side are placed, overriding the node’s
+    """Defines how ports on the western side are placed, overriding the node's
     general port alignment.
 
     https://www.eclipse.org/elk/reference/options/org-eclipse-elk-portAlignment-west.html
@@ -427,7 +426,7 @@ class PortAlignmentWest(LayoutOptionWidget):
 
 
 class PortAlignmentNorth(LayoutOptionWidget):
-    """Defines how ports on the northern side are placed, overriding the node’s
+    """Defines how ports on the northern side are placed, overriding the node's
     general port alignment.
 
     https://www.eclipse.org/elk/reference/options/org-eclipse-elk-portAlignment-north.html
@@ -437,7 +436,7 @@ class PortAlignmentNorth(LayoutOptionWidget):
 
 
 class PortAlignmentSouth(LayoutOptionWidget):
-    """Defines how ports on the southern side are placed, overriding the node’s
+    """Defines how ports on the southern side are placed, overriding the node's
     general port alignment.
 
     https://www.eclipse.org/elk/reference/options/org-eclipse-elk-portAlignment-south.html
@@ -448,7 +447,7 @@ class PortAlignmentSouth(LayoutOptionWidget):
 
 class PortSortingStrategy(LayoutOptionWidget):
     """Only relevant for nodes with FIXED_SIDE port constraints. Determines the
-    way a node’s ports are distributed on the sides of a node if their order is
+    way a node's ports are distributed on the sides of a node if their order is
     not prescribed. The option is set on parent nodes.
 
     https://www.eclipse.org/elk/reference/options/org-eclipse-elk-layered-portSortingStrategy.html
@@ -462,7 +461,7 @@ class PortSortingStrategy(LayoutOptionWidget):
         values=list(PORT_SORTING_STRATEGY_OPTIONS.values()), default_value="INPUT_ORDER"
     )
 
-    def _ui(self) -> List[W.Widget]:
+    def _ui(self) -> list[W.Widget]:
         dropdown = W.Dropdown(options=list(PORT_SORTING_STRATEGY_OPTIONS.items()))
         T.link((self, "value"), (dropdown, "value"))
 

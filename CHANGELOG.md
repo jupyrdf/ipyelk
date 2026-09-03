@@ -2,13 +2,83 @@
 
 ## `2.1.2`
 
+### Development
+
+- Minimum supported Python is now `3.10`
+- Upgrade the pinned `pixi` from `0.34.0` to `0.67.0` (and `setup-pixi` to `v0.10.0`);
+  relocking updates `libgfortran5` `13.2.0`→`14.2.0`, fixing a macOS arm64 dyld failure
+  that broke `numpy`/`bqplot` in the example notebooks
+- Only reinstall requirements in the `07_Simulation` example when `ipyelk` is missing,
+  and add `tooltip`s to its control widgets
+
 ### `@jupyrdf/jupyter-elk 2.1.2`
 
-> TBD
+- Fix the SVG exporter `enabled` flag, which was always `true` (F5)
+- Report browser-side layout failures to the kernel instead of silently emitting an
+  empty layout (F6)
+- Make `ELKLayoutModel.layout()` re-entrant: it stripped element `properties` (incl.
+  `cssClasses`) off the shared inlet value in place, so a duplicate `run` message or an
+  overlapping refresh re-laid-out the stripped graph and pushed a style-less
+  (black-and-white) diagram (F7)
+- Render edge labels where ELK placed them: `ElkLabel` carried sprotty's
+  `edgeLayoutFeature`, whose EdgeLayoutPostprocessor re-anchors edge labels along the
+  route and treats ELK's absolute coordinates as a relative offset, shifting every edge
+  label by roughly its edge's origin (F8)
+- Orient edge end symbols along the visible route: the adjacent-segment tangent
+  collapsed to `atan2(0, 0)` on the duplicated control points of elkjs `SPLINES`
+  sections (arrowheads drawn 180° wrong, inside the target node) and followed the short
+  exit stub of `POLYLINE` routes instead of the visible diagonal; interior bends under a
+  symbol's footprint no longer make the trimmed shaft double back (F9)
+- Drop the selection write-back race: `getSelection()` resolves one action-queue slot
+  later, so two `SelectAction`s dispatched close together each read the _other_ action's
+  resulting state and wrote it back, flipping the selection tool's `ids` forever — a
+  self-sustaining oscillation that pegged the renderer's main thread (F11)
+- Render nested JupyterLab widgets in the pass that reveals them: the overlay was built
+  from a registry populated by the _previous_ render's `snabbdom` hooks, so a widget
+  node that had just become visible produced no container until some later, unrelated
+  re-render happened to run (F14)
+- Make the selection write-back set-based so linked views cannot bounce: F11's
+  generation stamp is per view, but `change:ids` is observed by every view of a shared
+  model, and each view gathers the same selection in a different order, so a reordering
+  kept dispatching `SelectAction`s between two views until the browser ran out of memory
+  (F16)
+- Add a `vitest` unit-test harness (F5)
 
 ### `ipyelk 2.1.2`
 
-> TBD
+- Fix `IDReport.message()` printing literal `{eid}`/`{el}` placeholders (F1)
+- Fix `Pipeline.check()` / `get_progress_value()` crashing on an empty pipeline (F2)
+- Give each `Tool` its own `on_run` callback dispatcher (was shared across all tools)
+  (F3)
+- Surface pipe/diagram exceptions via an `on_error` callback instead of silently
+  dropping them in the asyncio done-callback (F4)
+- Add a configurable `timeout` and a browser→kernel error channel to
+  `ElkJS`/`BrowserTextSizer` so a failed or silent browser layout no longer hangs the
+  diagram (F6)
+- Re-send the browser `run` request with backoff until a frontend answers, so a pipe run
+  before its diagram is displayed no longer waits on a message nobody received; a
+  browser-reported layout error stops the retries immediately (F10)
+- Treat an errored run as terminal for progress reporting: `PipeStatus.step()` returned
+  `None` for errored pipes, so `Pipeline.get_progress_value()` raised `TypeError` inside
+  the error path — `on_error` saw the `TypeError` instead of the layout error, and the
+  `PipelineProgressBar` sat "in progress" forever; the bar now fills as a visible
+  warning (F10)
+- Keep hidden elements in the shared `MarkIndex` across browser round trips:
+  `Node.dict()` always drops hidden children, so rebuilding the index from a value that
+  has been through the browser erased them and `ToggleCollapsedTool` could never reveal
+  them again — nested widgets (such as the `15_Nesting_Plots` figures) never appeared.
+  `ElementIndex.update()` now merges instead of requiring every id to be known: existing
+  ids update in place, unknown ids are added, which also fixes a `NotFoundError` when
+  slack ports introduced by `VisibilityPipe` come back from a layout (F12)
+- Log a failed layout in `Diagram.refresh()` instead of returning silently: a silently
+  failed pipeline is indistinguishable from a hung diagram (F12)
+- Fix the local `TextSizer` fallback, which read `self.source.value`, assigned
+  `self.outlet.changes` and returned `self.value` — none of which exist on `Pipe` — and
+  therefore raised on its first statement (F13)
+- Do not wait on a browser that cannot answer: with `IPYELK_NO_BROWSER` set (as
+  `nbconvert --execute` does) a pipe gives up its roundtrip immediately instead of
+  keeping a task alive across cell boundaries re-sending `run` requests for 30 s, which
+  wedged kernels on slower CI runners (F15)
 
 ## `2.1.1`
 

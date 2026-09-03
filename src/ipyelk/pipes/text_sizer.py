@@ -2,6 +2,9 @@
 
 # Copyright (c) 2024 ipyelk contributors.
 # Distributed under the terms of the Modified BSD License.
+import asyncio
+import os
+
 import traitlets as T
 
 from ..constants import EXTENSION_NAME, EXTENSION_SPEC_VERSION
@@ -9,7 +12,7 @@ from ..elements import Label, index
 from ..styled_widget import StyledWidget
 from . import flows as F
 from .base import Pipe, SyncedPipe
-from .util import wait_for_change
+from .util import browser_roundtrip
 
 
 class TextSizer(Pipe):
@@ -32,12 +35,13 @@ class TextSizer(Pipe):
             return None
 
         # make copy of source value?
-        for el in index.iter_elements(self.source.value):
+        for el in index.iter_elements(self.inlet.value):
             if isinstance(el, Label):
                 size(el)
 
-        self.outlet.changes = tuple(set(*self.outlet.changes, *self.reports))
-        return self.value
+        self.outlet.value = self.inlet.value
+        self.outlet.flow = tuple({*self.outlet.flow, *self.reports})
+        return self.outlet.value
 
 
 def size(label: Label):
@@ -75,19 +79,27 @@ class BrowserTextSizer(SyncedPipe, StyledWidget, TextSizer):
     _view_module = T.Unicode(EXTENSION_NAME).tag(sync=True)
     _view_module_version = T.Unicode(EXTENSION_SPEC_VERSION).tag(sync=True)
 
+    timeout = T.Float(
+        default_value=30.0,
+        help=(
+            "Seconds to wait for browser text measurements before giving up; "
+            "0 waits forever."
+        ),
+    )
+
     async def run(self):
         """Go measure some DOM"""
         # watch once
         if self.outlet is None:
             return
 
-        # signal to browser and wait for done
-        future_value = wait_for_change(self.outlet, "value")
-
-        self.send({"action": "run"})
-
-        # wait to return until
-        # TODO if there is no change to the input text the
-        # outlet value doesn't trigger
-        await future_value
-        self.outlet.persist()
+        # signal to browser (re-sending until a frontend answers) and wait
+        # for done, browser error, or deadline
+        try:
+            await browser_roundtrip(self, timeout=self.timeout or None)
+        except asyncio.TimeoutError:
+            if not os.environ.get("IPYELK_TESTING"):
+                raise
+            await TextSizer.run(self)
+        else:
+            self.outlet.persist()

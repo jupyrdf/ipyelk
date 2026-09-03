@@ -1,6 +1,5 @@
 # Copyright (c) 2024 ipyelk contributors.
 # Distributed under the terms of the Modified BSD License.
-from typing import Tuple
 
 import ipywidgets as W
 import traitlets as T
@@ -46,10 +45,18 @@ class MarkElementWidget(W.DOMWidget):
     index: MarkIndex = T.Instance(MarkIndex, kw={}).tag(
         sync=True, **W.widget_serialization
     )
-    flow: Tuple[str] = TypedTuple(T.Unicode(), kw={}).tag(sync=True)
+    flow: tuple[str, ...] = TypedTuple(T.Unicode(), kw={}).tag(sync=True)
 
-    def persist(self):
-        if self.index.elements is None:
+    def persist(self, rebuild_index: bool = False):
+        """Fold ``value`` into the shared index.
+
+        The index -- not ``value`` -- is the authority for the element
+        hierarchy: hidden elements never survive serialization (see
+        ``Node.dict``), so the index must be merged into, never rebuilt from, a
+        value that has been through the browser.  ``rebuild_index`` is kept for
+        the initial build only.
+        """
+        if rebuild_index or self.index.elements is None:
             self.build_index()
         else:
             self.index.elements.update(ElementIndex.from_els(self.value))

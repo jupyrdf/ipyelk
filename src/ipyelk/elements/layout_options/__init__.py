@@ -1,4 +1,4 @@
-"""Set of Widgets to help configure Elk Layout Options
+"""set of Widgets to help configure Elk Layout Options
 https://www.eclipse.org/elk/reference/options.html
 """
 
@@ -71,13 +71,9 @@ __all__ = [
     "EadesRepulsion",
     "EdgeCenterLabelPlacementStrategy",
     "EdgeEdgeLayerSpacing",
-    "EdgeCenterLabelPlacementStrategy",
-    "EdgeEdgeLayerSpacing",
     "EdgeLabelPlacement",
     "EdgeLabelSideSelection",
     "EdgeLabelSpacing",
-    "EdgeLabelSpacing",
-    "EdgeNodeLayerSpacing",
     "EdgeNodeLayerSpacing",
     "EdgeNodeSpacing",
     "EdgeRouting",

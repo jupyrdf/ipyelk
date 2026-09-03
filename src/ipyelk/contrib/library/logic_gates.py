@@ -6,7 +6,8 @@ Based on https://upload.wikimedia.org/wikipedia/commons/c/cb/Circuit_elements.sv
 
 """
 
-from typing import Dict, List, Optional
+from __future__ import annotations
+
 from uuid import uuid4
 
 from ...elements import Node, NodeProperties, Port, Symbol, SymbolSpec, shapes
@@ -14,9 +15,9 @@ from ...elements import layout_options as opt
 
 
 class Gate(Symbol):
-    ports: Dict = {"a": "WEST", "b": "WEST", "out": "EAST"}
+    ports: dict = {"a": "WEST", "b": "WEST", "out": "EAST"}
 
-    def get_labels(self, id=None) -> List:
+    def get_labels(self, id=None) -> list:
         return [
             {
                 "id": f"{uuid4()}",
@@ -31,7 +32,7 @@ class Gate(Symbol):
             },
         ]
 
-    def get_ports(self, id=None) -> List[Port]:
+    def get_ports(self, id=None) -> list[Port]:
         return [
             {
                 "id": f"{id}.{key}",
@@ -47,7 +48,7 @@ class Gate(Symbol):
             for key, value in self.ports.items()
         ]
 
-    def get_layoutOptions(self) -> Dict:
+    def get_layoutOptions(self) -> dict:
         return opt.OptionsWidget(
             options=[
                 opt.PortConstraints(value="FIXED_SIDE"),
@@ -59,7 +60,7 @@ class Gate(Symbol):
         ).value
 
     @classmethod
-    def make_defs(cls, symbols: Optional[List[Symbol]] = None) -> SymbolSpec:
+    def make_defs(cls, symbols: list[Symbol] | None = None) -> SymbolSpec:
         symbols = [c() for c in cls.__subclasses__()]  # type: ignore
         return SymbolSpec().add(*symbols)
 
@@ -271,4 +272,4 @@ class Not_Gate(Gate):
     height: float = 26
     x: float = 291
     y: float = 530
-    ports: Dict = {"in": "WEST", "out": "EAST"}
+    ports: dict = {"in": "WEST", "out": "EAST"}
