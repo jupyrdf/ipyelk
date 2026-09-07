@@ -1,7 +1,6 @@
 # Copyright (c) 2024 ipyelk contributors.
 # Distributed under the terms of the Modified BSD License.
 
-from typing import List
 
 import ipywidgets as W
 import traitlets as T
@@ -18,9 +17,9 @@ WRAPPING_STRATEGY_OPTIONS = {
 class GraphWrappingStrategy(LayoutOptionWidget):
     """For certain graphs and certain prescribed drawing areas it may be
     desirable to split the laid out graph into chunks that are placed side by
-    side. The edges that connect different chunks are ‘wrapped’ around from the
+    side. The edges that connect different chunks are 'wrapped' around from the
     end of one chunk to the start of the other chunk. The points between the
-    chunks are referred to as ‘cuts’.
+    chunks are referred to as 'cuts'.
 
     https://www.eclipse.org/elk/reference/options/org-eclipse-elk-layered-wrapping-strategy.html
     """
@@ -33,7 +32,7 @@ class GraphWrappingStrategy(LayoutOptionWidget):
     horizontal = T.Enum(values=["left", "center", "right"], default_value="left")
     value = T.Enum(value=WRAPPING_STRATEGY_OPTIONS.values(), default_value="OFF")
 
-    def _ui(self) -> List[W.Widget]:
+    def _ui(self) -> list[W.Widget]:
         dropdown = W.Dropdown(options=list(WRAPPING_STRATEGY_OPTIONS.items()))
         T.link((self, "value"), (dropdown, "value"))
 
@@ -65,7 +64,7 @@ class CorrectionFactorForWrapping(SpacingOptionWidget):
     """At times and for certain types of graphs the executed wrapping may
     produce results that are consistently biased in the same fashion: either
     wrapping to often or to rarely. This factor can be used to correct the bias.
-    Internally, it is simply multiplied with the ‘aspect ratio’ layout option.
+    Internally, it is simply multiplied with the 'aspect ratio' layout option.
 
     https://www.eclipse.org/elk/reference/options/org-eclipse-elk-layered-wrapping-correctionFactor.html
     """

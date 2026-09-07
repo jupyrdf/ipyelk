@@ -1,10 +1,12 @@
 # Copyright (c) 2024 ipyelk contributors.
 # Distributed under the terms of the Modified BSD License.
+from __future__ import annotations
+
 import asyncio
 import re
 from datetime import datetime, timedelta
 from enum import Enum
-from typing import Callable, Optional, Tuple
+from typing import Callable
 
 import ipywidgets as W
 import traitlets as T
@@ -22,7 +24,7 @@ class PipeDisposition(Enum):
 
 class PipeStatus(W.Widget):
     disposition = T.Instance(PipeDisposition, default_value=PipeDisposition.done)
-    elapsed: Optional[timedelta] = T.Instance(timedelta, allow_none=True)
+    elapsed: timedelta | None = T.Instance(timedelta, allow_none=True)
     exception = T.Instance(Exception, allow_none=True)
     _task: asyncio.Future = None
 
@@ -30,6 +32,7 @@ class PipeStatus(W.Widget):
         PipeDisposition.waiting: 0,
         PipeDisposition.running: 0.5,
         PipeDisposition.done: 1,
+        PipeDisposition.error: 1,
     }
 
     STATES = {
@@ -48,7 +51,7 @@ class PipeStatus(W.Widget):
         return PipeStatus(disposition=PipeDisposition.running)
 
     @classmethod
-    def finished(cls, start_time: Optional[datetime] = None):
+    def finished(cls, start_time: datetime | None = None):
         return PipeStatus(
             disposition=PipeDisposition.done,
             elapsed=datetime.now() - start_time if start_time else None,
@@ -72,7 +75,7 @@ class PipeStatus(W.Widget):
         return self.disposition == PipeDisposition.waiting
 
 
-def rep_elapsed(delta: Optional[timedelta]):
+def rep_elapsed(delta: timedelta | None):
     if not delta:
         return ""
     seconds = delta.total_seconds()
@@ -116,10 +119,10 @@ class PipeStatusView(W.VBox):
             r=r,
         )
 
-    def update_children(self, pipe: "Pipe"):
+    def update_children(self, pipe: Pipe):
         self.children = [self.html]
 
-    def update(self, pipe: "Pipe"):
+    def update(self, pipe: Pipe):
         """Method to update the status given changes in the pipe."""
         error = ""
         status = pipe.status
@@ -180,9 +183,10 @@ class Pipe(W.Widget):
     enabled: bool = T.Bool(default_value=True)
     inlet: MarkElementWidget = T.Instance(MarkElementWidget, kw={})
     outlet: MarkElementWidget = T.Instance(MarkElementWidget, kw={})
-    observes: Tuple[str] = TypedTuple(T.Unicode(), kw={})
-    reports: Tuple[str] = TypedTuple(T.Unicode(), kw={})
-    on_progress: Optional[Callable] = T.Any(allow_none=True)
+    observes: tuple[str, ...] = TypedTuple(T.Unicode(), kw={})
+    reports: tuple[str, ...] = TypedTuple(T.Unicode(), kw={})
+    on_progress: Callable | None = T.Callable(default_value=None, allow_none=True)
+    on_error: Callable | None = T.Callable(default_value=None, allow_none=True)
     _task: asyncio.Future = None
     status: PipeStatus = T.Instance(PipeStatus, kw={})
     status_widget: W.DOMWidget = T.Instance(W.DOMWidget, allow_none=True)
@@ -218,11 +222,20 @@ class Pipe(W.Widget):
 
     def _post_run(self, future: asyncio.Future):
         try:
-            future.exception()
+            exception = future.exception()
         except asyncio.CancelledError:
-            pass
-        except Exception as E:
-            raise E
+            return
+        if exception is None:
+            return
+        if (
+            not isinstance(self.status, PipeStatus)
+            or self.status.exception is not exception
+        ):
+            self.status = PipeStatus.error(
+                start_time=datetime.now(), exception=exception
+            )
+        if callable(self.on_error):
+            self.on_error(self, exception)
 
     async def run(self):
         """Run method that takes the input performs checks/changes, and sets the
@@ -254,14 +267,19 @@ class Pipe(W.Widget):
     def status_update(
         self,
         status: PipeStatus,
-        pipe: Optional["Pipe"] = None,
+        pipe: Pipe | None = None,
     ):
         if isinstance(pipe, Pipe):
             pipe.status_update(status=status)
         self.status = status
 
         if callable(self.on_progress):
-            self.on_progress(self)
+            try:
+                self.on_progress(self)
+            except Exception:
+                self.log.exception(
+                    "Error in on_progress callback for %s", type(self).__name__
+                )
 
     def get_progress_value(self) -> float:
         return self.status.step()
@@ -290,3 +308,24 @@ class SyncedOutletPipe(Pipe):
 
 class SyncedPipe(SyncedOutletPipe, SyncedInletPipe):
     """Both inlet and value are synced with the browser"""
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.on_msg(self._handle_browser_msg)
+
+    def _handle_browser_msg(
+        self, widget: W.Widget, content: dict[str, object], buffers: list[bytes] | None
+    ):
+        """Reject the pending roundtrip future if the browser reports an error.
+
+        This is the browser -> kernel error channel: a frontend that fails to
+        produce an outlet value answers with an ``action: error`` message so
+        the kernel stops waiting (and stops re-sending) instead of retrying
+        or timing out.
+        """
+        if isinstance(content, dict) and content.get("action") == "error":
+            future = getattr(self, "_roundtrip_future", None)
+            if future is not None and not future.done():
+                future.set_exception(
+                    RuntimeError(str(content.get("error", "browser pipe failed")))
+                )

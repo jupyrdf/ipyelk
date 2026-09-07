@@ -3,8 +3,6 @@
 # Copyright (c) 2024 ipyelk contributors.
 # Distributed under the terms of the Modified BSD License.
 
-from typing import List
-
 import traitlets as T
 from ipywidgets import DOMWidget
 
@@ -43,7 +41,7 @@ class SprottyViewer(DOMWidget, Viewer):
 
     def center(
         self,
-        model_ids: List[str] = None,
+        model_ids: list[str] = None,
         animate: bool = None,
         retain_zoom: bool = None,
     ):
@@ -62,7 +60,7 @@ class SprottyViewer(DOMWidget, Viewer):
 
     def fit(
         self,
-        model_ids: List[str] = None,
+        model_ids: list[str] = None,
         animate: bool = None,
         max_zoom: float = None,
         padding: float = None,

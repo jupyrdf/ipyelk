@@ -1,8 +1,6 @@
 # Copyright (c) 2024 ipyelk contributors.
 # Distributed under the terms of the Modified BSD License.
-# from typing import Dict, List, Optional
-
-from typing import Optional, Set
+from __future__ import annotations
 
 from ipywidgets import DOMWidget
 from pydantic.v1 import BaseModel, Field, validator
@@ -22,31 +20,31 @@ class Point(BaseModel):
 
 
 class BaseShape(BaseModel):
-    type: Optional[str]
+    type: str | None
 
     class Config:
         copy_on_model_validation = "none"
 
 
 class EdgeShape(BaseShape):
-    type: Optional[str] = "edge"
-    start: Optional[str]
-    end: Optional[str]
+    type: str | None = "edge"
+    start: str | None
+    end: str | None
 
 
 class ElementShape(BaseShape):
-    x: Optional[float]
-    y: Optional[float]
-    width: Optional[float]
-    height: Optional[float]
-    use: Optional[str] = Field(None, description="Meaning is specialized in subclasses")
-    delay: Optional[int] = Field(
+    x: float | None
+    y: float | None
+    width: float | None
+    height: float | None
+    use: str | None = Field(None, description="Meaning is specialized in subclasses")
+    delay: int | None = Field(
         None,
         description="Only used for delayed rendering of embedded jupyterlab widgets",
     )
 
     @classmethod
-    def valid_subtypes(cls) -> Set[str]:
+    def valid_subtypes(cls) -> set[str]:
         """Iterate over subclasses and extracts the known `type` defaults"""
         return set(c.__fields__["type"].default for c in cls.__subclasses__()) | {
             cls.__fields__["type"].default,
@@ -63,13 +61,13 @@ class ElementShape(BaseShape):
 
 
 class PortShape(ElementShape):
-    type: Optional[str] = "port"
-    use: Optional[str] = Field(None, description="Symbol Identifier")
+    type: str | None = "port"
+    use: str | None = Field(None, description="Symbol Identifier")
 
 
 class LabelShape(ElementShape):
-    type: Optional[str] = "label"
-    use: Optional[str] = Field(None, description="Symbol Identifier")
+    type: str | None = "label"
+    use: str | None = Field(None, description="Symbol Identifier")
 
 
 class Icon(LabelShape):
@@ -184,3 +182,6 @@ class Widget(NodeShape):
 class HTML(NodeShape):
     type: str = "node:html"
     use: str = Field(..., description="HTML code")
+
+
+Widget.update_forward_refs(DOMWidget=DOMWidget)

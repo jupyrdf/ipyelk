@@ -1,7 +1,6 @@
 # Copyright (c) 2024 ipyelk contributors.
 # Distributed under the terms of the Modified BSD License.
 from datetime import datetime
-from typing import Tuple
 
 import ipywidgets as W
 import traitlets as T
@@ -59,7 +58,7 @@ class PipelineStatusView(PipeStatusView):
 
 
 class Pipeline(SyncedOutletPipe):
-    pipes: Tuple[Pipe] = T.List(T.Instance(Pipe), kw={}).tag(
+    pipes: tuple[Pipe, ...] = T.List(T.Instance(Pipe), kw={}).tag(
         sync=True, **W.widget_serialization
     )
 
@@ -147,11 +146,14 @@ class Pipeline(SyncedOutletPipe):
             prev = pipe.outlet
 
         if prev is not self.outlet:
-            broken.append((i, i + 1))
+            last_pipe_index = len(self.pipes) - 1
+            broken.append((last_pipe_index, last_pipe_index + 1))
 
         if broken:
             raise BrokenPipe(broken)
         return True
 
     def get_progress_value(self) -> float:
+        if not self.pipes:
+            return 1.0
         return sum(pipe.get_progress_value() for pipe in self.pipes) / len(self.pipes)

@@ -1,7 +1,5 @@
 # Copyright (c) 2024 ipyelk contributors.
 # Distributed under the terms of the Modified BSD License.
-from typing import Dict, Type
-
 from pydantic.v1 import Field
 
 from ...elements import (
@@ -82,7 +80,7 @@ class BlockDiagram(Partition):
         connectors.StraightArrow(identifier="generalization", r=4, closed=True),
     )
 
-    style: Dict[str, Dict] = {
+    style: dict[str, dict[str, str]] = {
         " .elklabel.compartment_title_1": {
             "font-weight": "bold",
         },
@@ -106,4 +104,4 @@ class BlockDiagram(Partition):
             "fill": "transparent",
         },
     }
-    default_edge: Type[Edge] = Field(default=Association)
+    default_edge: type[Edge] = Field(default=Association)

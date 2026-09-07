@@ -1,7 +1,6 @@
 # Copyright (c) 2024 ipyelk contributors.
 # Distributed under the terms of the Modified BSD License.
 
-from typing import List
 
 import ipywidgets as W
 import traitlets as T
@@ -64,7 +63,7 @@ DIRECTION_OPTIONS = {
 class InlineEdgeLabels(LayoutOptionWidget):
     """If true, an edge label is placed directly on its edge. May only apply to
     center edge labels. This kind of label placement is only advisable if the
-    label’s rendering is such that it is not crossed by its edge and thus stays
+    label's rendering is such that it is not crossed by its edge and thus stays
     legible.
 
     https://www.eclipse.org/elk/reference/options/org-eclipse-elk-edgeLabels-inline.html
@@ -77,7 +76,7 @@ class InlineEdgeLabels(LayoutOptionWidget):
 
     inline = T.Bool(default_value=False)
 
-    def _ui(self) -> List[W.Widget]:
+    def _ui(self) -> list[W.Widget]:
         cb = W.Checkbox(description="Inline Edge Labels")
 
         T.link((self, "inline"), (cb, "value"))
@@ -100,7 +99,7 @@ class EdgeLabelPlacement(LayoutOptionWidget):
 
     value = T.Enum(values=list(EDGE_LABEL_OPTIONS.values()), default_value="CENTER")
 
-    def _ui(self) -> List[W.Widget]:
+    def _ui(self) -> list[W.Widget]:
         dropdown = W.Dropdown(
             description="Edge Label Placement", options=list(EDGE_LABEL_OPTIONS.items())
         )
@@ -123,7 +122,7 @@ class EdgeType(LayoutOptionWidget):
 
     value = T.Enum(values=list(EDGE_TYPE_OPTIONS.values()), default_value="NONE")
 
-    def _ui(self) -> List[W.Widget]:
+    def _ui(self) -> list[W.Widget]:
         dropdown = W.Dropdown(
             description="Edge Type", options=list(EDGE_TYPE_OPTIONS.items())
         )
@@ -146,7 +145,7 @@ class EdgeThickness(LayoutOptionWidget):
 
     thickness = T.Float(default_value=1, min=0)
 
-    def _ui(self) -> List[W.Widget]:
+    def _ui(self) -> list[W.Widget]:
         slider = W.FloatSlider(description="Edge Thickness", min=0)
 
         T.link((self, "thickness"), (slider, "value"))
@@ -186,7 +185,7 @@ class EdgeNodeSpacing(SpacingOptionWidget):
 
 class EdgeEdgeLayerSpacing(SpacingOptionWidget):
     """Spacing to be preserved between pairs of edges that are routed between
-    the same pair of layers. Note that ‘spacing.edgeEdge’ is used for the
+    the same pair of layers. Note that 'spacing.edgeEdge' is used for the
     spacing between pairs of edges crossing the same layer.
 
     https://www.eclipse.org/elk/reference/options/org-eclipse-elk-layered-spacing-edgeEdgeBetweenLayers.html
@@ -200,8 +199,8 @@ class EdgeEdgeLayerSpacing(SpacingOptionWidget):
 
 class EdgeNodeLayerSpacing(SpacingOptionWidget):
     """The spacing to be preserved between nodes and edges that are routed next
-    to the node’s layer. For the spacing between nodes and edges that cross the
-    node’s layer‘spacing.edgeNode’ is used.
+    to the node's layer. For the spacing between nodes and edges that cross the
+    node's layer 'spacing.edgeNode' is used.
 
     https://www.eclipse.org/elk/reference/options/org-eclipse-elk-layered-spacing-edgeNodeBetweenLayers.html
     """
@@ -215,7 +214,7 @@ class EdgeNodeLayerSpacing(SpacingOptionWidget):
 class EdgeLabelSpacing(SpacingOptionWidget):
     """The minimal distance to be preserved between a label and the edge it is
      associated with. Note that the placement of a label is influenced by the
-     ‘edgelabels.placement’ option.
+     'edgelabels.placement' option.
 
     https://www.eclipse.org/elk/reference/options/org-eclipse-elk-spacing-edgeLabel.html
     """
@@ -240,7 +239,7 @@ class EdgeLabelSideSelection(LayoutOptionWidget):
 
     value = T.Enum(values=list(EDGESIDE_OPTIONS.values()), default_value="SMART_DOWN")
 
-    def _ui(self) -> List[W.Widget]:
+    def _ui(self) -> list[W.Widget]:
         dropdown = W.Dropdown(
             description="Edge Label Side Selection",
             options=list(EDGESIDE_OPTIONS.items()),
@@ -266,7 +265,7 @@ class EdgeCenterLabelPlacementStrategy(LayoutOptionWidget):
         default_value="MEDIAN_LAYER",
     )
 
-    def _ui(self) -> List[W.Widget]:
+    def _ui(self) -> list[W.Widget]:
         dropdown = W.Dropdown(
             description="Edge Label Side Selection",
             options=list(EDGE_LABEL_PLACEMENT_STRATEGY.items()),
@@ -278,7 +277,7 @@ class EdgeCenterLabelPlacementStrategy(LayoutOptionWidget):
 
 
 class EadesRepulsion(LayoutOptionWidget):
-    """Factor for repulsive forces in Eades’ model.
+    """Factor for repulsive forces in Eades' model.
 
     https://www.eclipse.org/elk/reference/options/org-eclipse-elk-force-repulsion.html
     """
@@ -290,7 +289,7 @@ class EadesRepulsion(LayoutOptionWidget):
 
     repulsion = T.Float(default_value=5, min=0.001)
 
-    def _ui(self) -> List[W.Widget]:
+    def _ui(self) -> list[W.Widget]:
         slider = W.FloatSlider(min=0.001)
         T.link((self, "repulsion"), (slider, "value"))
 
@@ -318,7 +317,7 @@ class EdgeRouting(LayoutOptionWidget):
         values=list(EDGE_ROUTING_OPTIONS.values()), default_value="UNDEFINED"
     )
 
-    def _ui(self) -> List[W.Widget]:
+    def _ui(self) -> list[W.Widget]:
         dropdown = W.Dropdown(
             description="Edge Label Side Selection",
             options=list(EDGE_ROUTING_OPTIONS.items()),
@@ -340,7 +339,7 @@ class FeedbackEdges(LayoutOptionWidget):
     applies_to = ["parents"]
     reroute = T.Bool(default_value=False)
 
-    def _ui(self) -> List[W.Widget]:
+    def _ui(self) -> list[W.Widget]:
         cb = W.Checkbox()
 
         T.link((self, "reroute"), (cb, "value"))
@@ -366,7 +365,7 @@ class MergeEdges(LayoutOptionWidget):
 
     merge = T.Bool(default_value=False)
 
-    def _ui(self) -> List[W.Widget]:
+    def _ui(self) -> list[W.Widget]:
         cb = W.Checkbox(description="Merge Edges")
 
         T.link((self, "merge"), (cb, "value"))
@@ -394,7 +393,7 @@ class MergeHierarchyCrossingEdges(LayoutOptionWidget):
 
     merge = T.Bool(default_value=True)
 
-    def _ui(self) -> List[W.Widget]:
+    def _ui(self) -> list[W.Widget]:
         cb = W.Checkbox(description="Merge Hierarchy Crossing Edges")
         T.link((self, "merge"), (cb, "value"))
         return [cb]
@@ -416,7 +415,7 @@ class Direction(LayoutOptionWidget):
 
     value = T.Enum(values=list(DIRECTION_OPTIONS.values()), default_value="UNDEFINED")
 
-    def _ui(self) -> List[W.Widget]:
+    def _ui(self) -> list[W.Widget]:
         dropdown = W.Dropdown(options=list(DIRECTION_OPTIONS.items()))
         T.link((self, "value"), (dropdown, "value"))
 

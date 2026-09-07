@@ -1,7 +1,9 @@
 # Copyright (c) 2024 ipyelk contributors.
 # Distributed under the terms of the Modified BSD License.
+from __future__ import annotations
+
 from collections import defaultdict
-from typing import ClassVar, List, Optional
+from typing import ClassVar
 from uuid import uuid4
 
 from pydantic.v1 import BaseModel, Field
@@ -15,7 +17,7 @@ class Registry(BaseModel):
     """Context Manager to generate and maintain a lookup of objects to identifiers"""
 
     ids: defaultdict = Field(repr=False, default_factory=id_factory)
-    stack: ClassVar[List] = []
+    stack: ClassVar[list] = []
 
     class Config:
         copy_on_model_validation = "none"
@@ -28,7 +30,7 @@ class Registry(BaseModel):
         self.get_contexts().pop()
 
     @classmethod
-    def get_context(cls, error_if_none=True) -> Optional["Registry"]:
+    def get_context(cls, error_if_none=True) -> Registry | None:
         try:
             return cls.get_contexts()[-1]
         except IndexError:
@@ -37,11 +39,11 @@ class Registry(BaseModel):
             return None
 
     @classmethod
-    def get_contexts(cls) -> List:
+    def get_contexts(cls) -> list:
         return cls.stack
 
     @classmethod
-    def get_id(cls, key) -> Optional[str]:
+    def get_id(cls, key) -> str | None:
         context = cls.get_context(error_if_none=False)
         if context:
             return context[key]

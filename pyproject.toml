@@ -25,11 +25,10 @@ classifiers = [
   "Programming Language :: Python :: 3.11",
   "Programming Language :: Python :: 3.12",
   "Programming Language :: Python :: 3.13",
-  "Programming Language :: Python :: 3.9",
   "Programming Language :: Python :: 3",
 ]
 license.text = "BSD-3-Clause"
-requires-python = ">=3.9"
+requires-python = ">=3.10"
 dependencies = [
   "ipywidgets >=8.0.1,<9",
   "jsonschema >=4.18",
@@ -59,7 +58,7 @@ warn_untyped_fields = true
 [tool.coverage.run]
 parallel = true
 branch = true
-disable_warnings = ["module-not-imported", "no-data-collected"]
+disable_warnings = ["module-not-imported", "no-data-collected", "no-sysmon-context"]
 
 [tool.coverage.html]
 show_contexts = true
@@ -186,7 +185,7 @@ ignore = [
   "SIM102",
   "SIM118",
   "SLF001",
-  "TCH003",
+  "TC003",
   "TD002",
   "TD003",
   "TD004",
@@ -233,6 +232,7 @@ ignore = [
 ]
 "atest/**/*.py" = ["INP001"]
 "docs/**/*.py" = ["INP001", "A001", "ANN401"]
+"src/ipyelk/__init__.py" = ["RUF067"]
 "**/*.ipynb" = [
   "A001",
   "A004",
@@ -246,6 +246,7 @@ ignore = [
   "PLR0914",
   "PLR0917",
   "PLR2004",
+  "PLC2701",
   "PLR6104",
   "PLW0603",
   "RUF006",

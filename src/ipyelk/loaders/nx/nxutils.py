@@ -1,8 +1,9 @@
 # Copyright (c) 2024 ipyelk contributors.
 # Distributed under the terms of the Modified BSD License.
 
+from __future__ import annotations
+
 from collections.abc import Hashable, Iterator
-from typing import Dict, Optional
 
 import networkx as nx
 
@@ -18,7 +19,7 @@ from ...exceptions import NotFoundError
 
 
 def process_endpoints(
-    u: Hashable, v: Hashable, data: Dict, el_map: HierarchicalIndex
+    u: Hashable, v: Hashable, data: dict, el_map: HierarchicalIndex
 ) -> Edge:
     """Process the edge (u,v,data) for `sourcePort` `targetPort` and return Edge
 
@@ -101,7 +102,7 @@ def single_root(g) -> bool:
     return nx.is_tree(g)
 
 
-def process_hierarchy(graph, hierarchy: Optional[nx.DiGraph]) -> nx.DiGraph:
+def process_hierarchy(graph, hierarchy: nx.DiGraph | None) -> nx.DiGraph:
     if hierarchy is None:
         hierarchy = nx.DiGraph()
     else:
@@ -135,7 +136,7 @@ def as_in_hierarchy(
     node: HierarchicalElement,
     hierarchy: nx.DiGraph,
     el_map: HierarchicalIndex,
-    nx_node_map: Optional[Dict[Node, Hashable]] = None,
+    nx_node_map: dict[Node, Hashable] | None = None,
 ):
     """Attempts to convert node to how it appears in the hierarchical graph
 
@@ -174,7 +175,7 @@ def lca(
     node1: HierarchicalElement,
     node2: HierarchicalElement,
     el_map: HierarchicalIndex,
-    nx_node_map: Optional[Dict[Node, Hashable]] = None,
+    nx_node_map: dict[Node, Hashable] | None = None,
 ) -> HierarchicalElement:
     """Find the lowest common ancestor between two nodes in the hierarchy. This
     is used to assign the correct edge owner based on it's source and target
@@ -207,7 +208,7 @@ def get_owner(
     edge: Edge,
     hierarchy: nx.DiGraph,
     el_map: HierarchicalIndex,
-    nx_node_map: Optional[Dict[Node, Hashable]] = None,
+    nx_node_map: dict[Node, Hashable] | None = None,
 ) -> Node:
     u = edge.source
     v = edge.target

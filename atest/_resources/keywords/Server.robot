@@ -39,6 +39,7 @@ Setup Server and Browser
     Create Directory    ${home}
     Create Directory    ${OUTPUT DIR}${/}logs
     Create Notebok Server Config    ${home}
+    Create ATest Kernel Startup    ${home}
     Initialize User Settings
     IF    "${TOTAL_COVERAGE}" == "1"    Initialize Coverage Kernel    ${home}
     ${cmd} =    Create Lab Launch Command
@@ -48,6 +49,10 @@ Setup Server and Browser
     Set Suite Variable    ${PREVIOUS LAB LOG LENGTH}    0    children=${TRUE}
     ${server} =    Start Process    ${cmd}    shell=yes
     ...    env:HOME=${home}
+    # Windows ignores HOME (`ntpath.expanduser` uses USERPROFILE), so the kernel
+    # startup file below would silently never load there
+    ...    env:IPYTHONDIR=${home}${/}.ipython
+    ...    env:IPYELK_TESTING=true
     ...    env:JUPYTER_CONFIG_DIR=${home}${/}${ETC_PATH}
     ...    env:JUPYTER_PREFER_ENV_PATH=0
     ...    cwd=${home}
@@ -126,6 +131,18 @@ Create Notebok Server Config
     [Documentation]    Copies in notebook server config file to disables npm/build checks
     [Arguments]    ${home}
     Copy File    ${FIXTURES}${/}${NBSERVER CONF}    ${home}${/}${NBSERVER CONF}
+
+Create ATest Kernel Startup
+    [Documentation]    Configure kernels launched by these browser tests.
+    [Arguments]    ${home}
+    ${startup_dir} =    Set Variable    ${home}${/}.ipython${/}profile_default${/}startup
+    Create Directory    ${startup_dir}
+    ${content} =    Catenate    SEPARATOR=\n
+    ...    import os
+    ...    os.environ["IPYELK_TESTING"] = "true"
+    ...    from ipyelk.pipes.text_sizer import BrowserTextSizer
+    ...    BrowserTextSizer.timeout.default_value = 1.0
+    Create File    ${startup_dir}${/}00-ipyelk-atest.py    ${content}
 
 Initialize User Settings
     [Documentation]    Configure the settings directory, and modify settings that make tests less reproducible

@@ -1,7 +1,6 @@
 # Copyright (c) 2024 ipyelk contributors.
 # Distributed under the terms of the Modified BSD License.
 
-from typing import Tuple
 
 import ipywidgets as W
 import traitlets as T
@@ -44,7 +43,7 @@ class Viewer(W.Widget):
         sync=True, **W.widget_serialization
     )
 
-    viewed: Tuple[str] = TypedTuple(trait=T.Unicode()).tag(
+    viewed: tuple[str, ...] = TypedTuple(trait=T.Unicode()).tag(
         sync=True
     )  # list element ids in the current view bounding box
     fit_tool: FitTool = T.Instance(FitTool)

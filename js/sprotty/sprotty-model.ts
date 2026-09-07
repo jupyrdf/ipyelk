@@ -11,7 +11,6 @@ import {
   SNodeImpl,
   alignFeature,
   boundsFeature,
-  edgeLayoutFeature,
   editFeature,
   fadeFeature,
   hoverFeedbackFeature,
@@ -68,7 +67,12 @@ export class ElkLabel extends SLabelImpl {
     boundsFeature,
     alignFeature,
     layoutableChildFeature,
-    edgeLayoutFeature,
+    // NOT edgeLayoutFeature: with it, sprotty's EdgeLayoutPostprocessor
+    // re-anchors edge labels along the route and treats ELK's ABSOLUTE
+    // label coordinates as a relative offset, so every edge label renders
+    // shifted by roughly its edge's origin (measured +144 px in a live
+    // diagram). ELK has already placed the labels; without the feature
+    // they render exactly where elkjs put them.
     fadeFeature,
   ];
   properties: ElkProperties;

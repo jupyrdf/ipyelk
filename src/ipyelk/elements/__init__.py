@@ -42,7 +42,6 @@ __all__ = [
     "Compartment",
     "Edge",
     "EdgeProperties",
-    "EdgeProperties",
     "EdgeReport",
     "EdgeShape",
     "ElementIndex",

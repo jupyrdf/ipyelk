@@ -1,6 +1,8 @@
 # Copyright (c) 2024 ipyelk contributors.
 # Distributed under the terms of the Modified BSD License.
-from typing import Any, Optional
+from __future__ import annotations
+
+from typing import Any
 
 import networkx as nx
 from pydantic.v1 import BaseModel, Field
@@ -14,13 +16,13 @@ class Mark(BaseModel):
     a networkx node.
 
     :param node: Incoming Element to wrap
-    :return: Tuple that describes this current node and context to be used in a
+    :return: tuple that describes this current node and context to be used in a
     networkx graph.
     """
 
     element: BaseElement = Field(...)
     context: Registry = Field(...)
-    selector: Optional[Any] = Field(None, exclude=True)
+    selector: Any | None = Field(None, exclude=True)
 
     def __hash__(self):
         return hash((id(self.element), id(self.context)))

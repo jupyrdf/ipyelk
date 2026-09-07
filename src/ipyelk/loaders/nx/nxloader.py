@@ -1,9 +1,10 @@
 # Copyright (c) 2024 ipyelk contributors.
 # Distributed under the terms of the Modified BSD License.
-from collections.abc import Hashable
-from typing import Dict, Optional
+from __future__ import annotations
 
-import networkx as nx
+from collections.abc import Hashable
+from typing import TYPE_CHECKING
+
 import traitlets as T
 
 from ...diagram import Diagram
@@ -18,6 +19,9 @@ from .nxutils import (
     process_hierarchy,
 )
 
+if TYPE_CHECKING:
+    import networkx as nx
+
 
 class NXLoader(Loader):
     root_id: str = T.Unicode(allow_none=True)
@@ -25,12 +29,12 @@ class NXLoader(Loader):
     def load(
         self,
         graph: nx.MultiDiGraph,
-        hierarchy: Optional[nx.DiGraph] = None,
+        hierarchy: nx.DiGraph | None = None,
     ) -> MarkElementWidget:
         hierarchy = process_hierarchy(graph, hierarchy)
 
         # add graph nodes
-        nx_node_map: Dict[Node, Hashable] = {}
+        nx_node_map: dict[Node, Hashable] = {}
         for n in graph.nodes():
             el = from_nx_node(n, graph)
             nx_node_map[el] = n

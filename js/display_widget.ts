@@ -2,8 +2,6 @@
  * Copyright (c) 2024 ipyelk contributors.
  * Distributed under the terms of the Modified BSD License.
  */
-import difference from 'lodash/difference';
-
 import {
   Action,
   HoverFeedbackAction,
@@ -34,6 +32,7 @@ import {
   unpack_models as deserialize,
 } from '@jupyter-widgets/base';
 
+import { canonicalSelection, selectionDelta } from './selection_util';
 import createContainer from './sprotty/di-config';
 import { JLModelSource } from './sprotty/diagram-server';
 // import { VNode } from 'snabbdom';
@@ -246,10 +245,31 @@ export class ELKViewerView extends DOMWidgetView {
     }
   }
 
+  // The selection write-back below is ASYNC (getSelection resolves one
+  // action-queue slot later), so two SelectActions dispatched close
+  // together each read the OTHER action's resulting state and write it
+  // back, flipping the selection tool's `ids` forever: a self-sustaining
+  // microtask oscillation that pegs the renderer main thread.  The
+  // generation stamp drops every superseded gather; only the LATEST
+  // SelectAction's write-back lands, which by construction matches the
+  // final sprotty state.
+  //
+  // The stamp is per VIEW, and `change:ids` is observed by EVERY view of a
+  // shared diagram model, so it cannot see a write-back bouncing between two
+  // views (a linked output view, 03_App): each side legitimately sees a new
+  // gather. `selectionDelta`/`canonicalSelection` close that door by making
+  // the write-back set-based and order-independent, so a reordering is not a
+  // change and there is nothing to bounce.
+  private selectionWriteBackGen = 0;
+
   handle(action: Action) {
     switch (action.kind) {
       case SelectAction.KIND:
+        const writeBackGen = ++this.selectionWriteBackGen;
         this.source.getSelection().then((selection) => {
+          if (writeBackGen !== this.selectionWriteBackGen) {
+            return; // a newer SelectAction superseded this gather
+          }
           let ids = [];
           let nodes = [];
           selection.forEach((node, i) => {
@@ -258,9 +278,13 @@ export class ELKViewerView extends DOMWidgetView {
           });
           let selectionTool = this.model.get('selection');
           if (selectionTool != null) {
-            selectionTool.set('ids', ids);
+            const next = canonicalSelection(ids);
+            this.setSelectedNodes(next);
+            if (!selectionDelta(selectionTool.get('ids'), next).changed) {
+              return; // same selection, possibly gathered in another order
+            }
+            selectionTool.set('ids', next);
             selectionTool.save_changes();
-            this.setSelectedNodes(ids);
             this.model.diagramUpdated.emit(void 0);
           }
         });
@@ -303,15 +327,18 @@ export class ELKViewerView extends DOMWidgetView {
     if (selection != null) {
       let selected: string[] = selection.get('ids');
       let old_selected: string[] = selection.previous('ids');
-      let exiting: string[] = difference(old_selected, selected);
-      let entering: string[] = difference(selected, old_selected);
+      const { entering, exiting, changed } = selectionDelta(old_selected, selected);
+      this.setSelectedNodes(selected);
+      if (!changed) {
+        // nothing entered or left: dispatching would only feed the write-back
+        return;
+      }
       await this.actionDispatcher.dispatch(
         SelectAction.create({
           selectedElementsIDs: entering,
           deselectedElementsIDs: exiting,
         }),
       );
-      this.setSelectedNodes(selected);
       this.model.diagramUpdated.emit(void 0);
     }
   }

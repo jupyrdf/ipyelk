@@ -1,8 +1,10 @@
 # Copyright (c) 2024 ipyelk contributors.
 # Distributed under the terms of the Modified BSD License.
+from __future__ import annotations
+
 import abc
 import textwrap
-from typing import Dict, List, Optional, Type, Union
+from typing import Type
 
 from pydantic.v1 import BaseModel, Field, PrivateAttr
 
@@ -15,7 +17,7 @@ exclude_hidden = CounterContextManager()
 exclude_layout = CounterContextManager()
 
 
-def merge_excluded(cls: Type[BaseModel], *fields: str) -> List[str]:
+def merge_excluded(cls: Type[BaseModel], *fields: str) -> list[str]:
     base = set(getattr(cls.Config, "excluded", []))
     return list(base | set(fields))
 
@@ -30,11 +32,11 @@ class ElementMetadata(BaseModel):
 
 class BaseProperties(BaseModel):
     cssClasses: str = Field("", description="whitespace separated list of css classes")
-    shape: Optional[BaseShape]
-    key: Optional[str] = Field(
+    shape: BaseShape | None
+    key: str | None = Field(
         None, description="Used to provide lookup functionality from owner"
     )
-    hidden: Optional[bool] = Field(
+    hidden: bool | None = Field(
         None, description="Specifies if the element and it's nested elements are hidden"
     )
 
@@ -55,15 +57,15 @@ class BaseProperties(BaseModel):
 
 
 class NodeProperties(BaseProperties):
-    shape: Optional[NodeShape]
+    shape: NodeShape | None
 
     def get_shape(self) -> NodeShape:
         return super().get_shape()
 
 
 class LabelProperties(BaseProperties):
-    shape: Optional[LabelShape]
-    selectable: Optional[bool] = Field(
+    shape: LabelShape | None
+    selectable: bool | None = Field(
         False, description="Specifies if label is individually selectable"
     )
 
@@ -72,21 +74,21 @@ class LabelProperties(BaseProperties):
 
 
 class PortProperties(BaseProperties):
-    shape: Optional[PortShape]
+    shape: PortShape | None
 
     def get_shape(self) -> PortShape:
         return super().get_shape()
 
 
 class EdgeProperties(BaseProperties):
-    shape: Optional[EdgeShape]
+    shape: EdgeShape | None
 
     def get_shape(self) -> EdgeShape:
         return super().get_shape()
 
 
 class IDElement(BaseModel, abc.ABC):
-    id: Optional[str] = Field(
+    id: str | None = Field(
         None,
         description=(
             "Must be a unique identifier for valid elk json. "
@@ -100,7 +102,7 @@ class IDElement(BaseModel, abc.ABC):
     def __eq__(self, other):
         return id(self) == id(other)
 
-    def dict(self, **kwargs) -> Dict:
+    def dict(self, **kwargs) -> dict:
         """Shimming in the ability to have excluded fields by default. This
         should be removeable in future versions of pydantic
         """
@@ -136,8 +138,8 @@ class IDElement(BaseModel, abc.ABC):
 
 
 class BaseElement(IDElement, abc.ABC):
-    labels: List["Label"] = Field(default_factory=list)
-    layoutOptions: Dict = Field(default_factory=dict)
+    labels: list[Label] = Field(default_factory=list)
+    layoutOptions: dict = Field(default_factory=dict)
     metadata: ElementMetadata = Field(default_factory=ElementMetadata)
     properties: BaseProperties = Field(default_factory=BaseProperties)
 
@@ -146,7 +148,7 @@ class BaseElement(IDElement, abc.ABC):
         validate_assignment = True
         excluded = merge_excluded(IDElement, "metadata", "labels")
 
-    def add_class(self, *className: str) -> "BaseElement":
+    def add_class(self, *className: str) -> BaseElement:
         """Adds a class to the top level element of the widget.
 
         Doesn't add the class if it already exists.
@@ -156,7 +158,7 @@ class BaseElement(IDElement, abc.ABC):
         self.properties.cssClasses = " ".join(dom_classes).strip()
         return self
 
-    def remove_class(self, *className: str) -> "BaseElement":
+    def remove_class(self, *className: str) -> BaseElement:
         """Removes a class from the top level element of the widget.
 
         Doesn't remove the class if it doesn't exist.
@@ -173,15 +175,15 @@ class BaseElement(IDElement, abc.ABC):
         return data
 
 
-def list_visible(els: List[BaseElement], **kwargs):
+def list_visible(els: list[BaseElement], **kwargs):
     return [el.dict(**kwargs) for el in els if not el.properties.hidden]
 
 
 class ShapeElement(BaseElement, abc.ABC):
-    x: Optional[float]
-    y: Optional[float]
-    width: Optional[float]
-    height: Optional[float]
+    x: float | None
+    y: float | None
+    width: float | None
+    height: float | None
 
     def dict(self, **kwargs):
         data = super().dict(**kwargs)
@@ -207,9 +209,9 @@ class ShapeElement(BaseElement, abc.ABC):
 
 
 class HierarchicalElement(ShapeElement, abc.ABC):
-    _parent: Optional["Node"] = PrivateAttr(None)
+    _parent: Node | None = PrivateAttr(None)
 
-    def set_parent(self, parent: Optional["Node"] = None):
+    def set_parent(self, parent: Node | None = None):
         if parent is not None:
             assert self._parent is None or self._parent is parent, (
                 f"{self.__class__.__name__} owned by different node"
@@ -217,10 +219,10 @@ class HierarchicalElement(ShapeElement, abc.ABC):
         self._parent = parent
         return self
 
-    def get_parent(self) -> Optional["Node"]:
+    def get_parent(self) -> Node | None:
         return self._parent
 
-    def set_key(self, key: Optional[str]):
+    def set_key(self, key: str | None):
         assert self.properties.key is None or self.properties.key == key, (
             "Key has already been set"
         )
@@ -231,17 +233,13 @@ class HierarchicalElement(ShapeElement, abc.ABC):
 class EdgeSection(IDElement):
     startPoint: Point
     endPoint: Point
-    bendPoints: List[Point] = Field(None, description="array of {x,y} pairs")
-    incomingShape: Optional[str] = Field(
-        None, description="node and / or port identifier"
-    )
-    outgoingShape: Optional[str] = Field(
-        None, description="node and / or port identifier"
-    )
-    incomingSections: Optional[List[str]] = Field(
+    bendPoints: list[Point] = Field(None, description="array of {x,y} pairs")
+    incomingShape: str | None = Field(None, description="node and / or port identifier")
+    outgoingShape: str | None = Field(None, description="node and / or port identifier")
+    incomingSections: list[str] | None = Field(
         None, description="array of edge section identifiers"
     )
-    outgoingSections: Optional[List[str]] = Field(
+    outgoingSections: list[str] | None = Field(
         None, description="array of edge section identifiers"
     )
 
@@ -250,7 +248,7 @@ class Edge(BaseElement):
     properties: EdgeProperties = Field(default_factory=EdgeProperties)
     source: HierarchicalElement = Field(...)
     target: HierarchicalElement = Field(...)
-    sections: Optional[List[EdgeSection]] = Field(
+    sections: list[EdgeSection] | None = Field(
         description="Captures the routing of an edge through a drawing",
     )
 
@@ -280,7 +278,7 @@ class Label(ShapeElement):
     )  # completely empty strings exclude label in node sizing
     properties: LabelProperties = Field(default_factory=LabelProperties)
 
-    def wrap(self, **kwargs) -> List["Label"]:
+    def wrap(self, **kwargs) -> list[Label]:
         data = self.dict()
         return [
             Label(**{**data, "text": line})
@@ -298,7 +296,7 @@ class Port(HierarchicalElement):
         # non-pydantic configs
         excluded = merge_excluded(HierarchicalElement)
 
-    def get_id(self) -> Optional[str]:
+    def get_id(self) -> str | None:
         if self.id is None:
             parent_id = Registry.get_id(self.get_parent())
             self_id = Registry.get_id(self)
@@ -308,9 +306,9 @@ class Port(HierarchicalElement):
 
 
 class Node(HierarchicalElement):
-    ports: List[Port] = Field(default_factory=list)
-    children: List["Node"] = Field(default_factory=list)
-    edges: List[Edge] = Field(default_factory=list)
+    ports: list[Port] = Field(default_factory=list)
+    children: list[Node] = Field(default_factory=list)
+    edges: list[Edge] = Field(default_factory=list)
     properties: NodeProperties = Field(default_factory=NodeProperties)
 
     class Config:
@@ -345,11 +343,11 @@ class Node(HierarchicalElement):
         data["edges"] = list_visible(self.edges, **kwargs)
         return data
 
-    def add_child(self, child: "Node", key: Optional[str] = None) -> "Node":
+    def add_child(self, child: Node, key: str | None = None) -> Node:
         self.children.append(child.set_parent(self).set_key(key))
         return child
 
-    def remove_child(self, child: "Node"):
+    def remove_child(self, child: Node):
         """Remove the specified child from the children list as well as it's
         parent reference.
 
@@ -364,7 +362,7 @@ class Node(HierarchicalElement):
             raise NotFoundError("Child element not found") from E
         return child
 
-    def get_child(self, key: str) -> "Node":
+    def get_child(self, key: str) -> Node:
         """Method to iterate through children and find a match based on `key`
 
         :param key: key to match
@@ -380,7 +378,7 @@ class Node(HierarchicalElement):
             raise NotFoundError("Child not found")
         raise NotUniqueError(f"{key} is not unique. Found {found} matching children.")
 
-    def add_port(self, port: Port, key: Optional[str] = None) -> Port:
+    def add_port(self, port: Port, key: str | None = None) -> Port:
         self.ports.append(port.set_parent(self).set_key(key))
         return port
 
@@ -402,8 +400,8 @@ class Node(HierarchicalElement):
 
     def add_edge(
         self,
-        source: Union["Node", Port],
-        target: Union["Node", Port],
+        source: Node | Port,
+        target: Node | Port,
         cls: Type[Edge] = Edge,
     ) -> Edge:
         # for elk to layout correctly, edges must be owned by their lowest

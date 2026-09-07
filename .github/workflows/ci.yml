@@ -24,9 +24,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: prefix-dev/setup-pixi@v0.8.1
+      - uses: prefix-dev/setup-pixi@v0.10.0
         with:
-          pixi-version: v0.34.0
+          pixi-version: v0.67.0
           cache: true
           environments: build
           cache-key: job-build
@@ -35,6 +35,14 @@ jobs:
           path: |
             node_modules
           key: ${{ env.CACHE_EPOCH }}-${{ hashFiles('yarn.lock') }}-node-modules
+      # the labextension build resolves `@jupyterlab/core-meta` over the network
+      # (the legacy `@jupyterlab/builder` cannot read a locally installed copy):
+      # cache it, or a slow npm registry kills the build (seen: read timeout in
+      # `build-js-ext`, which took the whole atest run with it)
+      - uses: actions/cache@v4
+        with:
+          path: ~/.cache/jupyterlab_builder
+          key: ${{ env.CACHE_EPOCH }}-${{ hashFiles('package.json') }}-jlpm-core-meta
       - run: pixi run setup-js
       - run: touch node_modules/.cached-in-ci
       - run: pixi run dist
@@ -57,9 +65,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: prefix-dev/setup-pixi@v0.8.1
+      - uses: prefix-dev/setup-pixi@v0.10.0
         with:
-          pixi-version: v0.34.0
+          pixi-version: v0.67.0
           cache: true
           environments: build
           cache-key: job-build
@@ -68,6 +76,14 @@ jobs:
           path: |
             node_modules
           key: ${{ env.CACHE_EPOCH }}-${{ hashFiles('yarn.lock') }}-node-modules
+      # the labextension build resolves `@jupyterlab/core-meta` over the network
+      # (the legacy `@jupyterlab/builder` cannot read a locally installed copy):
+      # cache it, or a slow npm registry kills the build (seen: read timeout in
+      # `build-js-ext`, which took the whole atest run with it)
+      - uses: actions/cache@v4
+        with:
+          path: ~/.cache/jupyterlab_builder
+          key: ${{ env.CACHE_EPOCH }}-${{ hashFiles('package.json') }}-jlpm-core-meta
       - run: pixi run setup-js
       - run: touch node_modules/.cached-in-ci
       - run: pixi run build-js-ext-cov
@@ -84,9 +100,9 @@ jobs:
     needs: [build]
     steps:
       - uses: actions/checkout@v4
-      - uses: prefix-dev/setup-pixi@v0.8.1
+      - uses: prefix-dev/setup-pixi@v0.10.0
         with:
-          pixi-version: v0.34.0
+          pixi-version: v0.67.0
           cache: true
           environments: build lint
           cache-key: job-lint
@@ -110,9 +126,9 @@ jobs:
     needs: [build]
     steps:
       - uses: actions/checkout@v4
-      - uses: prefix-dev/setup-pixi@v0.8.1
+      - uses: prefix-dev/setup-pixi@v0.10.0
         with:
-          pixi-version: v0.34.0
+          pixi-version: v0.67.0
           cache: true
           environments: build check docs lite
           cache-key: job-lint
@@ -145,21 +161,21 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        vm: [ubuntu-latest, windows-latest, macos-13, macos-latest]
+        vm: [ubuntu-latest, windows-latest, macos-14, macos-latest]
         task: [test, test-oldest]
         exclude:
-          - { vm: macos-13, task: test }
+          - { vm: macos-14, task: test }
           - { vm: macos-latest, task: test-oldest }
         include:
-          - { vm: macos-13, atest-args: '' }
+          - { vm: macos-14, atest-args: '' }
           - { vm: macos-latest, atest-args: '' }
           - { vm: ubuntu-latest, atest-args: '' }
           - { vm: windows-latest, atest-args: '--exclude ci:skip-win' }
     steps:
       - uses: actions/checkout@v4
-      - uses: prefix-dev/setup-pixi@v0.8.1
+      - uses: prefix-dev/setup-pixi@v0.10.0
         with:
-          pixi-version: v0.34.0
+          pixi-version: v0.67.0
           cache: true
           environments: a${{ matrix.task }} i${{ matrix.task }} u${{ matrix.task }}
           cache-key: job-${{ matrix.task }}
@@ -173,7 +189,17 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: ipyelk-${{ github.run_number }}-build-cov
+      # the labextension build resolves `@jupyterlab/core-meta` over the network
+      # (the legacy `@jupyterlab/builder` cannot read a locally installed copy):
+      # cache it, or a slow npm registry kills the build (seen: read timeout in
+      # `build-js-ext`, which took the whole atest run with it)
+      - uses: actions/cache@v4
+        with:
+          path: ~/.cache/jupyterlab_builder
+          key: ${{ env.CACHE_EPOCH }}-${{ hashFiles('package.json') }}-jlpm-core-meta
       - run: pixi run u${{ matrix.task }}-pytest
+      - if: matrix.task == 'test'
+        run: pixi run test-js
       - run: pixi run i${{ matrix.task }}-nbconvert
       - if: matrix.task == 'test' && matrix.vm == 'ubuntu-latest'
         uses: actions/cache@v4

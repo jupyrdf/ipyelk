@@ -27,7 +27,7 @@ def test_self_edge_lca():
     context = Registry()
     with context:
         index = HierarchicalIndex.from_els(root)
-        edge_report, id_report = index.get_reports()
+        edge_report, _ = index.get_reports()
 
     assert len(edge_report.lca_mismatch) == 1
     for edge, (current_owner, expected_owner) in edge_report.lca_mismatch.items():

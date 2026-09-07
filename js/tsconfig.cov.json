@@ -8,5 +8,6 @@
   },
   "extends": "../tsconfigbase.json",
   "include": ["./**/*"],
+  "exclude": ["tests"],
   "references": [{ "path": "../tsconfig.cov.json" }]
 }

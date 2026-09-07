@@ -1,12 +1,11 @@
 # Copyright (c) 2024 ipyelk contributors.
 # Distributed under the terms of the Modified BSD License.
 from collections import namedtuple
-from typing import Dict, List
 
 EMPTY_SENTINEL = namedtuple("Sentinel", [])
 
 
-def add_excluded_fields(kwargs: Dict, excluded: List) -> Dict:
+def add_excluded_fields(kwargs: dict, excluded: list) -> dict:
     """Shim function to help manipulate excluded fields from the `dict`
     method
     """

@@ -10,7 +10,11 @@ import { Signal } from '@lumino/signaling';
 import { unpack_models as deserialize } from '@jupyter-widgets/base';
 import { DOMWidgetModel } from '@jupyter-widgets/base';
 
-import { ElkNode } from './sprotty/json/elkgraph-json';
+import {
+  applyProperties,
+  layoutErrorMessage,
+  prepareGraphForElk,
+} from './layout_widget_util';
 import { ELK_DEBUG, IRunMessage, NAME, VERSION } from './tokens';
 
 import Worker from '!!worker-loader!elkjs/lib/elk-worker.js';
@@ -23,58 +27,6 @@ const TheElk = new ELK.default({
     return new (Worker as any)();
   },
 } as any);
-
-function collectProperties(node: ElkNode) {
-  let props: Map<string, any> = new Map();
-
-  function strip(node) {
-    props[node.id] = node.properties;
-    delete node['properties'];
-    // children
-    if (node.children) {
-      node.children.map(strip);
-    }
-    // ports
-    if (node.ports) {
-      node.ports.map(strip);
-    }
-    // labels
-    if (node.labels) {
-      node.labels.map(strip);
-    }
-    // edges
-    if (node.edges) {
-      node.edges.map(strip);
-    }
-  }
-  strip(node);
-  return props;
-}
-
-function applyProperties(node: ElkNode, props: Map<string, any>) {
-  function apply(node) {
-    node.properties = props[node.id];
-
-    // children
-    if (node.children) {
-      node.children.map(apply);
-    }
-    // ports
-    if (node.ports) {
-      node.ports.map(apply);
-    }
-    // labels
-    if (node.labels) {
-      node.labels.map(apply);
-    }
-    // edges
-    if (node.edges) {
-      node.edges.map(apply);
-    }
-  }
-  apply(node);
-  return node;
-}
 
 export class ELKLayoutModel extends DOMWidgetModel {
   static model_name = 'ELKLayoutModel';
@@ -123,27 +75,27 @@ export class ELKLayoutModel extends DOMWidgetModel {
   }
 
   async layout() {
-    // There looks like a bug with how elkjs failing to process edge properties
-    // if they are anything more than simple strings. Elkjs doesnt need to operate
-    // on the information passed in `properties` from ipyelk to sprotty so this
-    // will strip them before calling elk and then reapply after
-    // const {rootNode} = this;
+    // elkjs chokes on non-string element `properties`, and does not need
+    // them -- prepareGraphForElk deep-copies the inlet value and strips them
+    // off the copy (never the shared inlet value itself, which must survive
+    // duplicate `run` messages / overlapping refreshes), and they are
+    // reapplied onto the layout result afterwards.
     const rootNode: ELK.ElkNode = this.get('inlet')?.get('value');
     let outlet: DOMWidgetModel = this.get('outlet'); // target output
     if (rootNode == null || outlet == null) {
       return null;
     }
-    let propmap = collectProperties(rootNode);
-    // strip properties out
+    const { graph, propmap } = prepareGraphForElk(rootNode);
     this.ensureElk();
     let result;
     try {
-      result = await this._elk.layout(rootNode);
+      result = await this._elk.layout(graph);
       // reapply properties
       applyProperties(result, propmap);
     } catch (error) {
-      result = {};
       console.error(error);
+      this.send(layoutErrorMessage(error));
+      return null;
     }
 
     outlet.set('value', { ...result });

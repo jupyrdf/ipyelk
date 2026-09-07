@@ -6,7 +6,7 @@
 - Get [pixi](https://pixi.sh)
 
 ```bash
-mamba install "pixi==0.34.0"
+mamba install "pixi==0.67.0"
 ```
 
 ## Get Started

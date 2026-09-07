@@ -8,3 +8,4 @@ dist/
 lib/
 node_modules/
 src/_d/
+.DS_Store

@@ -2,7 +2,7 @@
 # Distributed under the terms of the Modified BSD License.
 
 import asyncio
-from typing import List, Tuple, Type
+from typing import Type
 
 import ipywidgets as W
 import traitlets as T
@@ -46,7 +46,7 @@ class Diagram(StyledWidget):
 
     pipe: Pipe = T.Instance(Pipe).tag(sync=True, **W.widget_serialization)
     view: Viewer = T.Instance(Viewer).tag(sync=True, **W.widget_serialization)
-    tools: Tuple[Tool] = W.trait_types.TypedTuple(T.Instance(Tool)).tag(
+    tools: tuple[Tool, ...] = W.trait_types.TypedTuple(T.Instance(Tool)).tag(
         sync=True, **W.widget_serialization
     )
     toolbar: Toolbar = T.Instance(Toolbar, kw={})
@@ -103,7 +103,7 @@ class Diagram(StyledWidget):
         self.refresh()
 
     @T.default("tools")
-    def _default_tools(self) -> List[Tool]:
+    def _default_tools(self) -> list[Tool]:
         return [
             self.view.selection,
             self.view.fit_tool,
@@ -168,11 +168,14 @@ class Diagram(StyledWidget):
 
         def update_view(future: asyncio.Task):
             try:
-                future.exception()
+                exception = future.exception()
             except asyncio.CancelledError:
-                pass
-            except Exception as E:
-                raise E
+                return
+            if exception is not None:
+                # do not propagate a stale/empty layout to the view, but say so:
+                # a silently failed layout looks exactly like a hung diagram
+                self.log.warning("Diagram refresh failed: %r", exception)
+                return
             layout = self.pipe.outlet.value
             self.view.source.value = layout
             self.pipe.inlet.value = layout

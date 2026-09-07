@@ -1,22 +1,26 @@
 # Copyright (c) 2024 ipyelk contributors.
 # Distributed under the terms of the Modified BSD License.
+from __future__ import annotations
+
 from collections.abc import Hashable
 from dataclasses import dataclass
-from typing import Dict, List, Optional
+from typing import TYPE_CHECKING
 
-from .. import elements  # import Mark, Node, BaseElement
 from ..model.model import ElkNode, ElkPort
+
+if TYPE_CHECKING:
+    from .. import elements
 
 
 @dataclass(frozen=True)
 class Edge:
     source: Hashable
-    source_port: Optional[Hashable]
+    source_port: Hashable | None
     target: Hashable
-    target_port: Optional[Hashable]
+    target_port: Hashable | None
     owner: Hashable
-    data: Dict
-    mark: Optional[elements.Mark]
+    data: dict
+    mark: elements.Mark | None
 
     def __hash__(self):
         return hash((self.source, self.source_port, self.target, self.target_port))
@@ -26,7 +30,7 @@ class Edge:
 class Port:
     node: Hashable
     elkport: ElkPort
-    mark: Optional[elements.Mark]
+    mark: elements.Mark | None
 
     def __hash__(self):
         return hash(tuple([hash(self.node), hash(self.elkport.id)]))
@@ -34,6 +38,6 @@ class Port:
 
 # TODO investigating following pattern for various map
 # https://github.com/pandas-dev/pandas/issues/33025#issuecomment-699636759
-NodeMap = Dict[Hashable, ElkNode]
-EdgeMap = Dict[Hashable, List[Edge]]
-PortMap = Dict[Hashable, Port]
+NodeMap = dict[Hashable, ElkNode]
+EdgeMap = dict[Hashable, list[Edge]]
+PortMap = dict[Hashable, Port]

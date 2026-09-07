@@ -24,10 +24,14 @@ class PipelineProgressBar(Tool):
         bar.max = 1
 
         if pipe.status.exception:
+            # the run is over: fill the bar and leave it visible as a
+            # warning instead of an eternally "in progress" sliver
+            bar.value = bar.max
             bar.bar_style = "warning"
-        else:
+            bar.layout.visibility = "visible"
+        elif bar.value == bar.max:
             bar.bar_style = ""
-        if bar.value == bar.max:
             bar.layout.visibility = "hidden"
         else:
+            bar.bar_style = ""
             bar.layout.visibility = "visible"

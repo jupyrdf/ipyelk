@@ -4,7 +4,6 @@
 
 import json
 from pathlib import Path
-from typing import List
 
 import jsonschema
 
@@ -17,7 +16,7 @@ ElkSchemaValidator = jsonschema.Draft7Validator(SCHEMA)
 
 
 def validate_elk_json(value) -> bool:
-    errors: List[jsonschema.ValidationError] = list(
+    errors: list[jsonschema.ValidationError] = list(
         ElkSchemaValidator.iter_errors(value)
     )
 

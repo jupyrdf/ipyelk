@@ -1,7 +1,6 @@
 # Copyright (c) 2024 ipyelk contributors.
 # Distributed under the terms of the Modified BSD License.
 
-from typing import List
 
 import ipywidgets as W
 import traitlets as T
@@ -34,8 +33,8 @@ MODEL_ORDER_OPTIONS = {
 
 
 class NodeSizeConstraints(LayoutOptionWidget):
-    """What should be taken into account when calculating a node’s size. Empty
-    size constraints specify that a node’s size is already fixed and should not
+    """What should be taken into account when calculating a node's size. Empty
+    size constraints specify that a node's size is already fixed and should not
     be changed.
     https://www.eclipse.org/elk/reference/options/org-eclipse-elk-nodeSize-constraints.html
 
@@ -66,7 +65,7 @@ class NodeSizeConstraints(LayoutOptionWidget):
         super().__init__(*args, **kwargs)
         self._update_value()
 
-    def _ui(self) -> List[W.Widget]:
+    def _ui(self) -> list[W.Widget]:
         cb_node_labels = W.Checkbox(description="Node Labels")
         cb_ports = W.Checkbox(description="Port")
         cb_port_labels = W.Checkbox(description="Port Labels")
@@ -115,7 +114,7 @@ class NodeSizeMinimum(LayoutOptionWidget):
     width = T.Int(default_value=10)
     height = T.Int(default_value=10)
 
-    def _ui(self) -> List[W.Widget]:
+    def _ui(self) -> list[W.Widget]:
         width_slider = W.IntSlider(description="Width")
         height_slider = W.IntSlider(description="Height")
 
@@ -143,12 +142,12 @@ class NodeSizeOptions(LayoutOptionWidget):
         * MINIMUM_SIZE_ACCOUNTS_FOR_PADDING - If this option is set and paddings
         are computed by the algorithm, the minimum size plus the computed
         padding are a lower bound on the node size. If this option is not set,
-        the minimum size will be applied to the node’s whole size regardless of
+        the minimum size will be applied to the node's whole size regardless of
         any computed padding. Note that, depending on the algorithm, this option
         may only apply to non-hierarchical nodes. This option only makes sense
         if size constraints include MINIMUM_SIZE.
         * COMPUTE_PADDING - With this option set, the padding of nodes will be
-        computed and returned as part of the algorithm’s result. If port labels
+        computed and returned as part of the algorithm's result. If port labels
         or node labels are placed, they may influence the size of the padding.
         Note that, depending on the algorithm, this option may only apply to
         non-hierarchical nodes. This option is independent of the size
@@ -195,7 +194,7 @@ class NodeSizeOptions(LayoutOptionWidget):
     force_tabular_node_labels = T.Bool()
     asymmetrical = T.Bool()
 
-    def _ui(self) -> List[W.Widget]:
+    def _ui(self) -> list[W.Widget]:
         checkboxes = []
         for attr, value in NODESIZE_OPTIONS_OPTIONS.items():
             cb = W.Checkbox(description=attr.replace("_", " ").title())
@@ -224,7 +223,7 @@ class NodeSizeOptions(LayoutOptionWidget):
 
 
 class NodeLabelPlacement(LayoutOptionWidget):
-    """Hints for where node labels are to be placed; if empty, the node label’s
+    """Hints for where node labels are to be placed; if empty, the node label's
     position is not modified.
 
     https://www.eclipse.org/elk/reference/options/org-eclipse-elk-nodeLabels-placement.html
@@ -240,7 +239,7 @@ class NodeLabelPlacement(LayoutOptionWidget):
     vertical = T.Enum(values=["top", "center", "bottom"], default_value="top")
     inside = T.Bool(default_value=True)
 
-    def _ui(self) -> List[W.Widget]:
+    def _ui(self) -> list[W.Widget]:
         horizontal_options = W.RadioButtons(
             description="Horizontal",
             options=(
@@ -296,7 +295,7 @@ class NodeLabelPlacement(LayoutOptionWidget):
 class ActivateInsideSelfLoops(LayoutOptionWidget):
     """Whether this node allows to route self loops inside of it instead of
     around it. If set to true, this will make the node a compound node if it
-    isn’t already, and will require the layout algorithm to support compound
+    isn't already, and will require the layout algorithm to support compound
     nodes with hierarchical ports.
 
     https://www.eclipse.org/elk/reference/options/org-eclipse-elk-insideSelfLoops-activate.html
@@ -309,7 +308,7 @@ class ActivateInsideSelfLoops(LayoutOptionWidget):
 
     activate = T.Bool(default_value=False)
 
-    def _ui(self) -> List[W.Widget]:
+    def _ui(self) -> list[W.Widget]:
         cb = W.Checkbox(description="Activate Inside Self Loops")
         T.link((self, "activate"), (cb, "value"))
 
@@ -339,7 +338,7 @@ class HierarchyHandling(LayoutOptionWidget):
         values=list(HIERARCHY_HANDLING.values()), default_value="INCLUDE_CHILDREN"
     )
 
-    def _ui(self) -> List[W.Widget]:
+    def _ui(self) -> list[W.Widget]:
         dropdown = W.Dropdown(options=list(HIERARCHY_HANDLING.items()))
         T.link((self, "value"), (dropdown, "value"))
 
@@ -361,7 +360,7 @@ class LayoutPartition(LayoutOptionWidget):
     index = T.Int(default_value=0)
     dependencies = (("org.eclipse.elk.partitioning.activate", "true"),)
 
-    def _ui(self) -> List[W.Widget]:
+    def _ui(self) -> list[W.Widget]:
         input_widget = W.IntText()
 
         T.link((self, "index"), (input_widget, "value"))
@@ -390,7 +389,7 @@ class LayoutPartitioning(LayoutOptionWidget):
 
     active = T.Bool(default_value=False)
 
-    def _ui(self) -> List[W.Widget]:
+    def _ui(self) -> list[W.Widget]:
         cb = W.Checkbox(description="Layout Partitioning")
         T.link((self, "active"), (cb, "value"))
         return [cb]
@@ -401,7 +400,7 @@ class LayoutPartitioning(LayoutOptionWidget):
 
 
 class Padding(LayoutOptionWidget):
-    """The padding to be left to a parent element’s border when placing child
+    """The padding to be left to a parent element's border when placing child
     elements. This can also serve as an output option of a layout algorithm if
     node size calculation is setup appropriately.
 
@@ -419,7 +418,7 @@ class Padding(LayoutOptionWidget):
 
     _elk_traits = ["top", "bottom", "left", "right"]
 
-    def _ui(self) -> List[W.Widget]:
+    def _ui(self) -> list[W.Widget]:
         sliders = []
         for trait in self._traits:
             slider = W.FloatSlider(description=f"{trait.title()} Padding")
@@ -444,7 +443,7 @@ class ConsiderModelOrder(LayoutOptionWidget):
 
     value = T.Enum(values=list(MODEL_ORDER_OPTIONS.values()), default_value="NONE")
 
-    def _ui(self) -> List[W.Widget]:
+    def _ui(self) -> list[W.Widget]:
         dropdown = W.Dropdown(options=list(MODEL_ORDER_OPTIONS.items()))
         T.link((self, "value"), (dropdown, "value"))
 
@@ -462,7 +461,7 @@ class ExpandNodes(LayoutOptionWidget):
 
     activate = T.Bool(default_value=False)
 
-    def _ui(self) -> List[W.Widget]:
+    def _ui(self) -> list[W.Widget]:
         cb = W.Checkbox(description="Expand Nodes")
         T.link((self, "activate"), (cb, "value"))
 
@@ -474,7 +473,7 @@ class ExpandNodes(LayoutOptionWidget):
 
 
 class AspectRatio(LayoutOptionWidget):
-    """The padding to be left to a parent element’s border when placing child
+    """The padding to be left to a parent element's border when placing child
     elements. This can also serve as an output option of a layout algorithm if
     node size calculation is setup appropriately.
 
@@ -487,7 +486,7 @@ class AspectRatio(LayoutOptionWidget):
 
     ratio = T.Float(min=0, default_value=0.01)
 
-    def _ui(self) -> List[W.Widget]:
+    def _ui(self) -> list[W.Widget]:
         slider = W.FloatSlider(description="Aspect Ratio")
         T.link((self, "ratio"), (slider, "value"))
         return [slider]
@@ -514,7 +513,7 @@ class ContentAlignment(LayoutOptionWidget):
     horizontal = T.Enum(values=["left", "center", "right"], default_value="left")
     vertical = T.Enum(values=["top", "center", "bottom"], default_value="top")
 
-    def _ui(self) -> List[W.Widget]:
+    def _ui(self) -> list[W.Widget]:
         horizontal_options = W.RadioButtons(
             description="Horizontal",
             options=(

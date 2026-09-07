@@ -39,11 +39,11 @@ import { SElkConnectorSymbol } from './json/symbols';
 import { ElkNode } from './sprotty-model';
 
 interface JLSprottyWidget {
-  vnode: VNode;
+  vnode: VNode | undefined;
   node: ElkNode;
-  widget: WidgetModel;
+  widget: WidgetModel | string | undefined;
   visible: boolean;
-  html: string;
+  html: string | undefined;
 }
 
 /**
@@ -52,7 +52,7 @@ interface JLSprottyWidget {
  */
 export class ElkModelRenderer extends ModelRenderer {
   source: JLModelSource;
-  widgets: Map<string, JLSprottyWidget>;
+  widgets: Record<string, JLSprottyWidget>;
 
   constructor(
     readonly viewRegistry: ViewRegistry,
@@ -63,7 +63,7 @@ export class ElkModelRenderer extends ModelRenderer {
   ) {
     super(viewRegistry, targetKind, postprocessors, args);
     this.source = source;
-    this.widgets = new Map();
+    this.widgets = {};
   }
 
   getSelected(): ElkNode[] {
@@ -132,8 +132,19 @@ export class ElkModelRenderer extends ModelRenderer {
   /**
    * Method iterate over the JupyterLab widgets and render the VNodes
    */
-  renderJLNodeWidgets(args?: object): VNode[] {
+  renderJLNodeWidgets(root?: Readonly<SParentElementImpl>, args?: object): VNode[] {
     let vnodes: VNode[] = [];
+    if (root) {
+      for (let jlsw of this.collectJLWidgetNodes(root)) {
+        let vnode = this.widgetContainer(jlsw, args);
+        if (vnode != null) {
+          this.decorate(vnode, jlsw.node);
+          vnodes.push(vnode);
+        }
+      }
+      return vnodes;
+    }
+
     for (let key in this.widgets) {
       let jlsw: JLSprottyWidget = this.widgets[key];
       let vnode = this.widgetContainer(jlsw, args);
@@ -143,6 +154,36 @@ export class ElkModelRenderer extends ModelRenderer {
       }
     }
     return vnodes;
+  }
+
+  private *collectJLWidgetNodes(
+    parent: Readonly<SParentElementImpl>,
+  ): Generator<JLSprottyWidget> {
+    for (let child of parent.children) {
+      if (getSubType(child) == 'widget') {
+        let node = child as ElkNode;
+        yield {
+          vnode: undefined,
+          node: node,
+          widget: node.properties?.shape?.use,
+          visible: true,
+          html: undefined,
+        };
+      } else if (getSubType(child) == 'html') {
+        let node = child as ElkNode;
+        yield {
+          vnode: undefined,
+          node: node,
+          widget: undefined,
+          visible: true,
+          html: node.properties?.shape?.use,
+        };
+      }
+
+      if ('children' in child) {
+        yield* this.collectJLWidgetNodes(child as Readonly<SParentElementImpl>);
+      }
+    }
   }
 
   /**
@@ -197,6 +238,9 @@ export class ElkModelRenderer extends ModelRenderer {
   async renderContent(vnode: VNode, jlsw: JLSprottyWidget, args?: object) {
     if (getSubType(jlsw.node) == 'widget') {
       let widget = jlsw.widget;
+      if (!widget) {
+        return;
+      }
       let widget_model: DOMWidgetModel;
       if (typeof widget === 'string' || widget instanceof String) {
         widget_model = await this.source.widget_manager.get_model(widget as any);
