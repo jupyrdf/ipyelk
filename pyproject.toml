@@ -33,7 +33,7 @@ dependencies = [
   "ipywidgets >=8.0.1,<9",
   "jsonschema >=4.18",
   "networkx",
-  "pydantic >=1.10.17,<3", # uses the v1 compatibility layer
+  "pydantic >=2.12,<3",
 ]
 
 [project.urls]
@@ -52,7 +52,6 @@ directory = "src/_d"
 init_forbid_extra = true
 init_typed = true
 warn_required_dynamic_aliases = true
-warn_untyped_fields = true
 
 # coverage #############################################################################
 [tool.coverage.run]
@@ -87,7 +86,6 @@ asyncio_default_fixture_loop_scope = "function"
 cache_dir = "build/.cache/pytest"
 filterwarnings = [
   "error",
-  "ignore::DeprecationWarning:pydantic",
   "ignore:.*create_comm.*:DeprecationWarning",
 ]
 generate_report_on_test = true

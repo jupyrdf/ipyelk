@@ -42,7 +42,7 @@ class VisibilityPipe(Pipe):
 
         # serialize the elements excluding hidden
         with exclude_hidden, exclude_layout:
-            data = root.dict()
+            data = root.model_dump()
 
         # new root node with slack edges / ports introduced due to hidden
         # elements

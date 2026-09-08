@@ -2,17 +2,21 @@
 # Distributed under the terms of the Modified BSD License.
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Type
+from typing import Type
 
-from pydantic.v1 import Field
-from pydantic.v1.fields import FieldInfo
+from pydantic import (
+    Field,
+    SerializationInfo,
+    SerializerFunctionWrapHandler,
+    model_serializer,
+)
 
 from ..util import merge
 from . import layout_options as opt
-from .elements import Edge, Label, LabelProperties, Node, merge_excluded
-
-if TYPE_CHECKING:
-    from .shapes import Icon
+from .elements import Edge, Label, LabelProperties, Node
+from .shapes import (
+    Icon,  # ruff: ignore[typing-only-first-party-import] - Pydantic resolves this annotation at runtime.
+)
 
 record_opts = opt.OptionsWidget(
     options=[
@@ -65,14 +69,8 @@ def is_edge(edge) -> bool:
 
 class Partition(Node):
     default_edge: Type[Edge] = Field(
-        default=Edge, description="default edge style to apply"
+        default=Edge, exclude=True, description="default edge style to apply"
     )
-
-    class Config:
-        copy_on_model_validation = "none"
-
-        # non-pydantic configs
-        excluded = merge_excluded(Node, "default_edge")
 
     def __getitem__(self, key):
         if isinstance(key, slice):
@@ -88,17 +86,7 @@ class Partition(Node):
             return edge
 
     def get_default_edge(self) -> Type[Edge]:
-        if isinstance(self.default_edge, FieldInfo):
-            edge_cls = self.default_edge.default
-            if not issubclass(edge_cls, Edge):
-                edge_cls = self.default_edge.default_factory()
-        else:
-            edge_cls = self.default_edge
-        if not issubclass(edge_cls, Edge):
-            raise TypeError(
-                f"Not able to find the default edge type.\n Found: {edge_cls}"
-            )
-        return edge_cls
+        return self.default_edge
 
 
 class Record(Node):
@@ -106,15 +94,14 @@ class Record(Node):
     width: float = Field(
         default=80, description="Width needs to be shared by all children "
     )
-    min_height: float = Field(default=20, description="Minimum height of a compartment")
+    min_height: float = Field(
+        default=20, exclude=True, description="Minimum height of a compartment"
+    )
 
-    class Config:
-        copy_on_model_validation = "none"
-
-        # non-pydantic configs
-        excluded = merge_excluded(Node, "min_height")
-
-    def dict(self, **kwargs):
+    @model_serializer(mode="wrap")
+    def serialize_element(
+        self, handler: SerializerFunctionWrapHandler, info: SerializationInfo
+    ):
         # TODO need ability to resize the min width based on label/child max width
         for child in self.children:
             child.layoutOptions = merge(
@@ -128,17 +115,11 @@ class Record(Node):
                 ).value,
                 child.layoutOptions,
             )
-        return super().dict(**kwargs)
+        return super().serialize_element(handler, info)
 
 
 class Compartment(Node):
-    bullet_shape: Icon | None = None
-
-    class Config:
-        copy_on_model_validation = "none"
-
-        # non-pydantic configs
-        excluded = merge_excluded(Node, "headings", "content", "bullet_shape")
+    bullet_shape: Icon | None = Field(None, exclude=True)
 
     def make_labels(
         self, headings: list[str] = None, content: list[str] = None
@@ -149,11 +130,13 @@ class Compartment(Node):
             content = []
         bullet_label = []
         if self.bullet_shape:
-            bullet_label = Label(
-                properties=LabelProperties(shape=self.bullet_shape),
-                layoutOptions=bullet_opts,
-                selectable=True,
-            )
+            bullet_label = [
+                Label(
+                    properties=LabelProperties(shape=self.bullet_shape),
+                    layoutOptions=bullet_opts,
+                    selectable=True,
+                )
+            ]
         if headings and not content:
             heading_label_opts = center_label_opts
             heading_cls = "compartment_title"

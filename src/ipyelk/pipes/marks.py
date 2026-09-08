@@ -52,7 +52,7 @@ class MarkElementWidget(W.DOMWidget):
 
         The index -- not ``value`` -- is the authority for the element
         hierarchy: hidden elements never survive serialization (see
-        ``Node.dict``), so the index must be merged into, never rebuilt from, a
+        ``Node.model_dump``), so the index must be merged into, never rebuilt from, a
         value that has been through the browser.  ``rebuild_index`` is kept for
         the initial build only.
         """
@@ -74,4 +74,4 @@ class MarkElementWidget(W.DOMWidget):
     def _repr_mimebundle_(self, **kwargs):
         from IPython.display import JSON, display
 
-        display(JSON(self.value.dict()))
+        display(JSON(self.value.model_dump()))

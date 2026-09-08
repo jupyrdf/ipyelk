@@ -6,7 +6,7 @@ from ipyelk.elements import Edge, Label, Node, Port, shapes
 
 def test_node_instances():
     n1 = Node()
-    n1.dict()
+    n1.model_dump()
 
 
 def test_add_child():
@@ -15,7 +15,7 @@ def test_add_child():
     p = n.add_child(Node(), key)
     assert p.get_parent() is n, "Expect port parent to be the node"
     assert n.get_child(key) is p, "Expect node port dict to return same port"
-    n.dict()
+    n.model_dump()
 
 
 def test_add_port():
@@ -24,7 +24,7 @@ def test_add_port():
     p = n.add_port(Port(), key)
     assert p.get_parent() is n, "Expect port parent to be the node"
     assert n.get_port(key) is p, "Expect node port dict to return same port"
-    n.dict()
+    n.model_dump()
 
 
 def test_edge_node_instances():
@@ -36,16 +36,16 @@ def test_edge_node_instances():
     )
     assert e.source is n1, "Edge source instance changed"
     assert e.target is n2, "Edge target instance changed"
-    n1.dict()
-    n2.dict()
-    e.dict()
+    n1.model_dump()
+    n2.model_dump()
+    e.model_dump()
 
 
 def test_node_label_instance():
     label = Label()
     n = Node(labels=[label])
     assert n.labels[0] is label, "Expect node label instance to match"
-    label.dict()
+    label.model_dump()
 
 
 def test_edge_port_instances():
@@ -58,14 +58,14 @@ def test_edge_port_instances():
     )
     assert e.source is x, "Edge source instance changed"
     assert e.target is n2, "Edge target instance changed"
-    n1.dict()
-    x.dict()
-    n2.dict()
-    e.dict()
+    n1.model_dump()
+    x.model_dump()
+    n2.model_dump()
+    e.model_dump()
 
 
 def test_node_shape():
     shape = shapes.Ellipse()
     n = Node(properties={"shape": shape})
-    data = n.dict()
+    data = n.model_dump()
     assert data["properties"]["shape"].get("type") == shape.type

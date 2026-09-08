@@ -65,7 +65,7 @@ def test_persist_indexes_new_elements_from_browser_roundtrip():
 
 
 def test_persist_keeps_hidden_elements_the_browser_never_sees():
-    """`Node.dict` drops hidden children, so a value that has been through the
+    """`Node.model_dump` drops hidden children, so a value that has been through the
     browser cannot be allowed to shrink the index -- the collapse/expand tool
     has nothing left to un-hide otherwise.
     """
@@ -75,7 +75,7 @@ def test_persist_keeps_hidden_elements_the_browser_never_sees():
     widget.build_index()
 
     # what comes back from the browser: hidden elements stripped
-    widget.value = convert_elkjson(root.dict())
+    widget.value = convert_elkjson(root.model_dump())
     widget.persist()
 
     assert widget.index.elements.get("plot") is hidden

@@ -3,24 +3,27 @@
 from __future__ import annotations
 
 from collections import defaultdict
-from typing import ClassVar
+from typing import Annotated, Any, ClassVar
 from uuid import uuid4
 
-from pydantic.v1 import BaseModel, Field
+from pydantic import BaseModel, Field
+
+
+def new_id() -> str:
+    return str(uuid4())
 
 
 def id_factory():
-    return defaultdict(lambda: str(uuid4()))
+    return defaultdict(new_id)
 
 
 class Registry(BaseModel):
     """Context Manager to generate and maintain a lookup of objects to identifiers"""
 
-    ids: defaultdict = Field(repr=False, default_factory=id_factory)
+    ids: defaultdict[Any, Annotated[str, Field(default_factory=new_id)]] = Field(
+        repr=False, default_factory=id_factory
+    )
     stack: ClassVar[list] = []
-
-    class Config:
-        copy_on_model_validation = "none"
 
     def __enter__(self):
         self.get_contexts().append(self)

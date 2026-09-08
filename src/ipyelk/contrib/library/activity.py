@@ -1,6 +1,6 @@
 # Copyright (c) 2024 ipyelk contributors.
 # Distributed under the terms of the Modified BSD License.
-from pydantic.v1 import Field
+from pydantic import Field
 
 from ...elements import (
     Edge,
@@ -171,4 +171,4 @@ class ActivityDiagram(Partition):
         },
         exclude=True,
     )
-    default_edge: type[Edge] = Field(default=SimpleArrow)
+    default_edge: type[Edge] = Field(default=SimpleArrow, exclude=True)

@@ -4,6 +4,12 @@
 
 ### Development
 
+- Migrate to native Pydantic 2 validation and serialization; require `pydantic >=2.12,<3`.
+  Use `model_dump()` / `model_dump_json()` instead of `dict()` / `json()`.
+  Custom models now use `model_config`, `Field(exclude=True)`, and native serializers
+  instead of `Config`, `merge_excluded`, and `dict()` overrides. Nested subclass
+  fields and graph references are preserved; shape serialization no longer mutates
+  dimensions. Explicit serialization field selections are now respected.
 - Minimum supported Python is now `3.10`
 - Upgrade the pinned `pixi` from `0.34.0` to `0.67.0` (and `setup-pixi` to `v0.10.0`);
   relocking updates `libgfortran5` `13.2.0`→`14.2.0`, fixing a macOS arm64 dyld failure

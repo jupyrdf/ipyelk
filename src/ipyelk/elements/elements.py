@@ -4,22 +4,28 @@ from __future__ import annotations
 
 import abc
 import textwrap
-from typing import Type
+from typing import Type, get_args
 
-from pydantic.v1 import BaseModel, Field, PrivateAttr
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    Field,
+    PrivateAttr,
+    SerializationInfo,
+    SerializeAsAny,
+    SerializerFunctionWrapHandler,
+    computed_field,
+    field_serializer,
+    model_serializer,
+)
 
 from ..exceptions import NotFoundError, NotUniqueError
-from .common import CounterContextManager, add_excluded_fields
+from .common import CounterContextManager, serialize_value
 from .registry import Registry
 from .shapes import BaseShape, EdgeShape, LabelShape, NodeShape, Point, PortShape
 
 exclude_hidden = CounterContextManager()
 exclude_layout = CounterContextManager()
-
-
-def merge_excluded(cls: Type[BaseModel], *fields: str) -> list[str]:
-    base = set(getattr(cls.Config, "excluded", []))
-    return list(base | set(fields))
 
 
 class ElementMetadata(BaseModel):
@@ -32,7 +38,7 @@ class ElementMetadata(BaseModel):
 
 class BaseProperties(BaseModel):
     cssClasses: str = Field("", description="whitespace separated list of css classes")
-    shape: BaseShape | None
+    shape: SerializeAsAny[BaseShape | None] = None
     key: str | None = Field(
         None, description="Used to provide lookup functionality from owner"
     )
@@ -40,31 +46,30 @@ class BaseProperties(BaseModel):
         None, description="Specifies if the element and it's nested elements are hidden"
     )
 
-    class Config:
-        copy_on_model_validation = "none"
-        validate_assignment = True
+    model_config = ConfigDict(validate_assignment=True)
 
     def get_shape(self) -> BaseShape:
         if self.shape is None:
-            field = self.__fields__["shape"]
-            cls = (
-                field.default_factory
-                if field.default_factory is not None
-                else field.type_
-            )
-            self.shape = cls()
+            field = type(self).model_fields["shape"]
+            if field.default_factory is not None:
+                self.shape = field.get_default(
+                    call_default_factory=True, validated_data=self.__dict__
+                )
+            else:
+                cls = next(t for t in get_args(field.annotation) if t is not type(None))
+                self.shape = cls()
         return self.shape
 
 
 class NodeProperties(BaseProperties):
-    shape: NodeShape | None
+    shape: SerializeAsAny[NodeShape | None] = None
 
     def get_shape(self) -> NodeShape:
         return super().get_shape()
 
 
 class LabelProperties(BaseProperties):
-    shape: LabelShape | None
+    shape: SerializeAsAny[LabelShape | None] = None
     selectable: bool | None = Field(
         False, description="Specifies if label is individually selectable"
     )
@@ -74,14 +79,14 @@ class LabelProperties(BaseProperties):
 
 
 class PortProperties(BaseProperties):
-    shape: PortShape | None
+    shape: SerializeAsAny[PortShape | None] = None
 
     def get_shape(self) -> PortShape:
         return super().get_shape()
 
 
 class EdgeProperties(BaseProperties):
-    shape: EdgeShape | None
+    shape: SerializeAsAny[EdgeShape | None] = None
 
     def get_shape(self) -> EdgeShape:
         return super().get_shape()
@@ -102,28 +107,12 @@ class IDElement(BaseModel, abc.ABC):
     def __eq__(self, other):
         return id(self) == id(other)
 
-    def dict(self, **kwargs) -> dict:
-        """Shimming in the ability to have excluded fields by default. This
-        should be removeable in future versions of pydantic
-        """
-        excluded = getattr(self.Config, "excluded", [])
-        if excluded:
-            kwargs = add_excluded_fields(kwargs, excluded)
-        data = super().dict(**kwargs)
-        data["id"] = self.get_id()
-
-        # mechanism to convert some fields to a list representation if needed
-        for key in getattr(self.Config, "to_list", []):
-            if key in data:
-                value = data[key]
-                if isinstance(value, (set, list, tuple)):
-                    value = list(value)
-                elif isinstance(value, dict):
-                    value = list(data[key].values())
-                else:
-                    raise TypeError(f"Need to handle converting {key}:{type(value)}")
-                data[key] = value
-
+    @model_serializer(mode="wrap")
+    def serialize_element(
+        self, handler: SerializerFunctionWrapHandler, info: SerializationInfo
+    ):
+        data = handler(self)
+        serialize_value(data, "id", self.get_id(), info)
         return data
 
     def get_id(self) -> str:
@@ -134,19 +123,16 @@ class IDElement(BaseModel, abc.ABC):
     def _repr_mimebundle_(self, **kwargs):
         from IPython.display import JSON, display
 
-        display(JSON(self.dict()))
+        display(JSON(self.model_dump()))
 
 
 class BaseElement(IDElement, abc.ABC):
-    labels: list[Label] = Field(default_factory=list)
+    labels: list[SerializeAsAny[Label]] = Field(default_factory=list)
     layoutOptions: dict = Field(default_factory=dict)
-    metadata: ElementMetadata = Field(default_factory=ElementMetadata)
-    properties: BaseProperties = Field(default_factory=BaseProperties)
+    metadata: ElementMetadata = Field(default_factory=ElementMetadata, exclude=True)
+    properties: SerializeAsAny[BaseProperties] = Field(default_factory=BaseProperties)
 
-    class Config:
-        copy_on_model_validation = "none"
-        validate_assignment = True
-        excluded = merge_excluded(IDElement, "metadata", "labels")
+    model_config = ConfigDict(validate_assignment=True)
 
     def add_class(self, *className: str) -> BaseElement:
         """Adds a class to the top level element of the widget.
@@ -169,42 +155,30 @@ class BaseElement(IDElement, abc.ABC):
         ).strip()
         return self
 
-    def dict(self, **kwargs):
-        data = super().dict(**kwargs)
-        data["labels"] = list_visible(self.labels, **kwargs)
-        return data
-
-
-def list_visible(els: list[BaseElement], **kwargs):
-    return [el.dict(**kwargs) for el in els if not el.properties.hidden]
+    @field_serializer(
+        "labels", "ports", "children", "edges", mode="wrap", check_fields=False
+    )
+    def serialize_visible(self, elements, handler: SerializerFunctionWrapHandler):
+        return handler([el for el in elements if not el.properties.hidden])
 
 
 class ShapeElement(BaseElement, abc.ABC):
-    x: float | None
-    y: float | None
-    width: float | None
-    height: float | None
+    x: float | None = None
+    y: float | None = None
+    width: float | None = None
+    height: float | None = None
 
-    def dict(self, **kwargs):
-        data = super().dict(**kwargs)
-        # potentially set width and height if there is a shape defined in the
-        # properties
-        width = 0
-        height = 0
-        if self.properties.shape:
-            shape = self.properties.shape
-            width = shape.width
-            height = shape.height
-        # update width if not set
-        if data.get("width", None) is None and width is not None:
-            data["width"] = width
-        # update height if not set
-        if data.get("height", None) is None and height is not None:
-            data["height"] = height
-
-        # if exclude_layout.active:
-        #     for attr in ["x", "y", "width", "height"]:
-        #         data[attr] = None
+    @model_serializer(mode="wrap")
+    def serialize_element(
+        self, handler: SerializerFunctionWrapHandler, info: SerializationInfo
+    ):
+        data = super().serialize_element(handler, info)
+        shape = self.properties.shape
+        for key in ("width", "height"):
+            if getattr(self, key) is None:
+                value = shape.dimension(key) if shape else 0
+                if value is not None:
+                    serialize_value(data, key, value, info)
         return data
 
 
@@ -233,7 +207,7 @@ class HierarchicalElement(ShapeElement, abc.ABC):
 class EdgeSection(IDElement):
     startPoint: Point
     endPoint: Point
-    bendPoints: list[Point] = Field(None, description="array of {x,y} pairs")
+    bendPoints: list[Point] | None = Field(None, description="array of {x,y} pairs")
     incomingShape: str | None = Field(None, description="node and / or port identifier")
     outgoingShape: str | None = Field(None, description="node and / or port identifier")
     incomingSections: list[str] | None = Field(
@@ -245,30 +219,36 @@ class EdgeSection(IDElement):
 
 
 class Edge(BaseElement):
-    properties: EdgeProperties = Field(default_factory=EdgeProperties)
-    source: HierarchicalElement = Field(...)
-    target: HierarchicalElement = Field(...)
+    properties: SerializeAsAny[EdgeProperties] = Field(default_factory=EdgeProperties)
+    source: HierarchicalElement = Field(..., exclude=True)
+    target: HierarchicalElement = Field(..., exclude=True)
     sections: list[EdgeSection] | None = Field(
+        None,
         description="Captures the routing of an edge through a drawing",
     )
 
-    class Config:
-        copy_on_model_validation = "none"
-        validate_assignment = True
-        excluded = merge_excluded(BaseElement, "source", "target")
+    @computed_field  # type: ignore[prop-decorator]  # Mypy cannot model decorated properties.
+    @property
+    def sources(self) -> list[str | None]:
+        return [self.source.get_id()]
+
+    @computed_field  # type: ignore[prop-decorator]
+    @property
+    def targets(self) -> list[str | None]:
+        return [self.target.get_id()]
 
     def points(self):
         u = self.source if isinstance(self.source, Node) else self.source.get_parent()
         v = self.target if isinstance(self.target, Node) else self.target.get_parent()
         return u, v
 
-    def dict(self, **kwargs):
-        data = super().dict(**kwargs)
-        data["sources"] = [self.source.get_id()]
-        data["targets"] = [self.target.get_id()]
+    @model_serializer(mode="wrap")
+    def serialize_element(
+        self, handler: SerializerFunctionWrapHandler, info: SerializationInfo
+    ):
+        data = super().serialize_element(handler, info)
         if exclude_layout.active:
-            for attr in ["sections"]:
-                data[attr] = None
+            serialize_value(data, "sections", None, info)
         return data
 
 
@@ -276,10 +256,10 @@ class Label(ShapeElement):
     text: str = Field(
         " ", description="Text shown for label"
     )  # completely empty strings exclude label in node sizing
-    properties: LabelProperties = Field(default_factory=LabelProperties)
+    properties: SerializeAsAny[LabelProperties] = Field(default_factory=LabelProperties)
 
     def wrap(self, **kwargs) -> list[Label]:
-        data = self.dict()
+        data = self.model_dump()
         return [
             Label(**{**data, "text": line})
             for line in textwrap.wrap(self.text, **kwargs)
@@ -287,14 +267,7 @@ class Label(ShapeElement):
 
 
 class Port(HierarchicalElement):
-    properties: PortProperties = Field(default_factory=PortProperties)
-
-    class Config:
-        copy_on_model_validation = "none"
-        validate_assignment = True
-
-        # non-pydantic configs
-        excluded = merge_excluded(HierarchicalElement)
+    properties: SerializeAsAny[PortProperties] = Field(default_factory=PortProperties)
 
     def get_id(self) -> str | None:
         if self.id is None:
@@ -306,20 +279,13 @@ class Port(HierarchicalElement):
 
 
 class Node(HierarchicalElement):
-    ports: list[Port] = Field(default_factory=list)
-    children: list[Node] = Field(default_factory=list)
-    edges: list[Edge] = Field(default_factory=list)
-    properties: NodeProperties = Field(default_factory=NodeProperties)
+    ports: list[SerializeAsAny[Port]] = Field(default_factory=list)
+    children: list[SerializeAsAny[Node]] = Field(default_factory=list)
+    edges: list[SerializeAsAny[Edge]] = Field(default_factory=list)
+    properties: SerializeAsAny[NodeProperties] = Field(default_factory=NodeProperties)
 
-    class Config:
-        copy_on_model_validation = "none"
-        validate_assignment = True
-
-        # non-pydantic configs
-        excluded = merge_excluded(HierarchicalElement, "ports", "children", "edges")
-
-    def __init__(self, **data):  # type: ignore
-        super().__init__(**data)
+    def model_post_init(self, context) -> None:
+        super().model_post_init(context)
         for port in self.ports:
             port.set_parent(self)
 
@@ -328,6 +294,12 @@ class Node(HierarchicalElement):
 
     def __getattr__(self, key: str):
         try:
+            # Pydantic hides this runtime hook from static type checkers.
+            return super().__getattr__(key)  # type: ignore[misc]
+        except AttributeError:
+            if key.startswith("_"):
+                raise
+        try:
             return self.get_child(key)
         except NotFoundError:
             try:
@@ -335,13 +307,6 @@ class Node(HierarchicalElement):
             except NotFoundError:
                 pass
         raise AttributeError
-
-    def dict(self, **kwargs):
-        data = super().dict(**kwargs)
-        data["ports"] = list_visible(self.ports, **kwargs)
-        data["children"] = list_visible(self.children, **kwargs)
-        data["edges"] = list_visible(self.edges, **kwargs)
-        return data
 
     def add_child(self, child: Node, key: str | None = None) -> Node:
         self.children.append(child.set_parent(self).set_key(key))
@@ -413,7 +378,7 @@ class Node(HierarchicalElement):
         return edge
 
     def __setattr__(self, key, value):
-        if key == "_parent":
+        if key.startswith("_") or key in type(self).model_fields:
             super().__setattr__(key, value)
         elif isinstance(value, Port):
             self.add_port(port=value, key=key)
@@ -423,11 +388,11 @@ class Node(HierarchicalElement):
             super().__setattr__(key, value)
 
 
-Label.update_forward_refs()
-Port.update_forward_refs()
-Edge.update_forward_refs()
-BaseElement.update_forward_refs()
-Node.update_forward_refs()
-HierarchicalElement.update_forward_refs()
-EdgeShape.update_forward_refs()
-EdgeProperties.update_forward_refs()
+Label.model_rebuild()
+Port.model_rebuild()
+Edge.model_rebuild()
+BaseElement.model_rebuild()
+Node.model_rebuild()
+HierarchicalElement.model_rebuild()
+EdgeShape.model_rebuild()
+EdgeProperties.model_rebuild()

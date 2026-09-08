@@ -10,7 +10,7 @@ from .index import HierarchicalIndex, VisIndex
 
 if TYPE_CHECKING:
     from ipywidgets import DOMWidget
-    from pydantic.v1 import BaseModel
+    from pydantic import BaseModel
 
 
 def pop_edges(data: dict, edges: dict | None = None) -> dict:
@@ -36,7 +36,7 @@ def apply_edges(data: dict, edges: dict) -> dict:
 def convert_elkjson(data: dict, vis_index: VisIndex = None) -> Node:
     # pop_edges currently mutates `data` by popping the edge dict
     edges_map = pop_edges(data)  # dict of node.id to edge list
-    root = Node(**data)  # new element hierarchy without edges
+    root = Node.model_validate(data)  # new element hierarchy without edges
     el_map = HierarchicalIndex.from_els(
         root, vis_index=vis_index
     )  # get mapping of ids to elements
@@ -56,7 +56,7 @@ def to_json(model: BaseModel | None, widget: DOMWidget) -> dict | None:
     """
     if model is None:
         return None
-    return model.dict(exclude_none=True)
+    return model.model_dump(mode="json", exclude_none=True)
 
 
 def from_elk_json(js: dict | None, manager: object) -> Node | None:

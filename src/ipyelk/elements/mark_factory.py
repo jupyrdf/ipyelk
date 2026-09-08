@@ -5,7 +5,7 @@ from __future__ import annotations
 from typing import Any
 
 import networkx as nx
-from pydantic.v1 import BaseModel, Field
+from pydantic import BaseModel, Field, SerializationInfo, model_serializer
 
 from .elements import BaseElement, Edge, Node
 from .registry import Registry
@@ -30,9 +30,22 @@ class Mark(BaseModel):
     def __eq__(self, other):
         return hash(self) == hash(other)
 
-    def dict(self, **kwargs):
+    @model_serializer
+    def serialize_mark(self, info: SerializationInfo) -> dict:
         with self.context:
-            return self.element.dict(**kwargs)
+            return self.element.model_dump(
+                mode=info.mode,
+                context=info.context,
+                # Core's IncExCall annotation is broader than BaseModel's IncEx.
+                include=info.include,  # type: ignore[arg-type]
+                exclude=info.exclude,  # type: ignore[arg-type]
+                by_alias=info.by_alias,
+                exclude_none=info.exclude_none,
+                exclude_unset=info.exclude_unset,
+                exclude_defaults=info.exclude_defaults,
+                exclude_computed_fields=info.exclude_computed_fields,
+                round_trip=info.round_trip,
+            )
 
     def get_selector(self):
         if isinstance(self.element, Edge):
@@ -62,7 +75,7 @@ class MarkFactory(BaseModel):
                 g.add_node(
                     nx_node,
                     mark=nx_node,
-                    elkjson=node.dict(exclude={"children", "edges", "parent"}),
+                    elkjson=node.model_dump(exclude={"children", "edges", "parent"}),
                 )
 
             for child in get_children(node):
@@ -80,7 +93,7 @@ class MarkFactory(BaseModel):
                             g.add_node(
                                 nx_pt,
                                 mark=nx_pt,
-                                elkjson=pt.dict(
+                                elkjson=pt.model_dump(
                                     exclude={"children", "edges", "parent"}
                                 ),
                             )
@@ -91,7 +104,7 @@ class MarkFactory(BaseModel):
                     nx_u,
                     nx_v,
                     mark=mark,
-                    elkjson=edge.dict(),
+                    elkjson=edge.model_dump(),
                 )
                 mark.set_edge_selector(nx_u, nx_v, key)
             return nx_node

@@ -6,7 +6,7 @@ from collections import defaultdict
 from collections.abc import Iterator, Mapping
 
 import networkx as nx
-from pydantic.v1 import BaseModel, Field
+from pydantic import BaseModel, Field, SerializeAsAny
 
 from ..exceptions import NotFoundError
 from .common import EMPTY_SENTINEL
@@ -14,16 +14,13 @@ from .elements import BaseElement, Edge, HierarchicalElement, Label, Node, Port
 
 
 class IDReport(BaseModel):
-    duplicated: dict[str, list[BaseElement]] = Field(
+    duplicated: dict[str, list[SerializeAsAny[BaseElement]]] = Field(
         default_factory=dict,
         description="Mapping of elements with a non unique id",
     )
-    null_ids: list[BaseElement] = Field(
+    null_ids: list[SerializeAsAny[BaseElement]] = Field(
         default_factory=list, description="Elements without an id"
     )
-
-    class Config:
-        copy_on_model_validation = "none"
 
     def __bool__(self):
         return len(self.duplicated) + len(self.null_ids) > 0
@@ -51,15 +48,9 @@ class EdgeReport(BaseModel):
         description="edges that have a mismatched lowest common ancestor",
     )
 
-    class Config:
-        copy_on_model_validation = "none"
-
 
 class VisIndex(BaseModel):
-    class Config:
-        copy_on_model_validation = "none"
-
-    hidden: dict[str, BaseElement] = Field(
+    hidden: dict[str, SerializeAsAny[BaseElement]] = Field(
         default_factory=dict,
         description=("mapping of old visabile elements ids to old elements"),
     )
@@ -118,10 +109,7 @@ class VisIndex(BaseModel):
 
 
 class ElementIndex(BaseModel):
-    elements: Mapping[str, BaseElement] = Field(default_factory=dict)
-
-    class Config:
-        copy_on_model_validation = "none"
+    elements: Mapping[str, SerializeAsAny[BaseElement]] = Field(default_factory=dict)
 
     def get(self, key: str) -> BaseElement:
         key = str(key)
@@ -195,7 +183,7 @@ class ElementIndex(BaseModel):
 
         Known ids are updated in place (element identity is preserved, which is
         what keeps `hidden` elements -- stripped from every serialized value by
-        `Node.dict` -- alive across browser roundtrips); unknown ids are added,
+        `Node.model_dump` -- alive across browser roundtrips); unknown ids are added,
         so elements that only exist in a value coming back from the browser
         (e.g. slack ports) become addressable without discarding the index.
         """
@@ -288,7 +276,9 @@ class ElementIndex(BaseModel):
 
 
 class HierarchicalIndex(ElementIndex):
-    elements: Mapping[str, HierarchicalElement] = Field(default_factory=dict)
+    elements: Mapping[str, SerializeAsAny[HierarchicalElement]] = Field(
+        default_factory=dict
+    )
     vis_index: VisIndex = Field(default_factory=VisIndex)
 
     @classmethod

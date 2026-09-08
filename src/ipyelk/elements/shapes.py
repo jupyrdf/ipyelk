@@ -2,41 +2,48 @@
 # Distributed under the terms of the Modified BSD License.
 from __future__ import annotations
 
-from ipywidgets import DOMWidget
-from pydantic.v1 import BaseModel, Field, validator
+from ipywidgets import (
+    DOMWidget,  # ruff: ignore[typing-only-third-party-import] - Pydantic resolves this annotation at runtime.
+)
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    Field,
+    SerializationInfo,
+    SerializerFunctionWrapHandler,
+    field_validator,
+    model_serializer,
+)
 
-from .common import add_excluded_fields
+from .common import serialize_value
 
 
 class Point(BaseModel):
     x: float = 0
     y: float = 0
 
-    class Config:
-        copy_on_model_validation = "none"
-
     def __init__(self, x=0, y=0):
         super().__init__(x=x, y=y)
 
 
 class BaseShape(BaseModel):
-    type: str | None
+    type: str | None = None
 
-    class Config:
-        copy_on_model_validation = "none"
+    def dimension(self, key: str) -> float | None:
+        return getattr(self, key, None)
 
 
 class EdgeShape(BaseShape):
     type: str | None = "edge"
-    start: str | None
-    end: str | None
+    start: str | None = None
+    end: str | None = None
 
 
 class ElementShape(BaseShape):
-    x: float | None
-    y: float | None
-    width: float | None
-    height: float | None
+    x: float | None = None
+    y: float | None = None
+    width: float | None = None
+    height: float | None = None
     use: str | None = Field(None, description="Meaning is specialized in subclasses")
     delay: int | None = Field(
         None,
@@ -46,18 +53,30 @@ class ElementShape(BaseShape):
     @classmethod
     def valid_subtypes(cls) -> set[str]:
         """Iterate over subclasses and extracts the known `type` defaults"""
-        return set(c.__fields__["type"].default for c in cls.__subclasses__()) | {
-            cls.__fields__["type"].default,
+        return set(c.model_fields["type"].default for c in cls.__subclasses__()) | {
+            cls.model_fields["type"].default,
             None,
         }
 
-    @validator("type")
+    @field_validator("type")
+    @classmethod
     def subtype_validator(cls, v):
         """Checks that there is a subclass that defines the `type`"""
         subtypes = cls.valid_subtypes()
         if v not in subtypes:
             raise ValueError(f"Unexpected Subtype: `{v}` not in `{subtypes}`")
         return v
+
+    @model_serializer(mode="wrap")
+    def serialize_shape(
+        self, handler: SerializerFunctionWrapHandler, info: SerializationInfo
+    ):
+        data = handler(self)
+        for key in ("x", "y", "width", "height"):
+            value = self.dimension(key)
+            if value != getattr(self, key):
+                serialize_value(data, key, value, info)
+        return data
 
 
 class PortShape(ElementShape):
@@ -93,17 +112,13 @@ class Path(NodeShape):
 
 class Circle(NodeShape):
     type: str = "node:round"
-    radius: float = 0
+    radius: float = Field(0, exclude=True)
 
-    def dict(self, **kwargs):
-        self.width = self.radius * 2
-        self.height = self.radius * 2
-        kwargs = add_excluded_fields(kwargs, excluded=["radius"])
-        data = super().dict(**kwargs)
-
-        data["x"] = self.radius if self.x is None else self.x
-        data["y"] = self.radius if self.y is None else self.y
-        return data
+    def dimension(self, key: str) -> float | None:
+        if key in {"width", "height"}:
+            return self.radius * 2
+        value = super().dimension(key)
+        return self.radius if value is None else value
 
 
 class SVG(NodeShape):
@@ -113,22 +128,13 @@ class SVG(NodeShape):
 
 class Ellipse(NodeShape):
     type: str = "node:round"
-    rx: float = 0
-    ry: float = 0
+    rx: float = Field(0, exclude=True)
+    ry: float = Field(0, exclude=True)
 
-    class Config:
-        copy_on_model_validation = "none"
-        excluded = ["metadata"]
-
-    def dict(self, **kwargs):
-        if self.rx and not self.width:
-            self.width = self.rx * 2
-        if self.ry and not self.height:
-            self.height = self.ry * 2
-        kwargs = add_excluded_fields(kwargs, excluded=["rx", "ry"])
-        data = super().dict(**kwargs)
-
-        return data
+    def dimension(self, key: str) -> float | None:
+        value = super().dimension(key)
+        radius = {"width": self.rx, "height": self.ry}.get(key)
+        return radius * 2 if radius and not value else value
 
 
 class Diamond(NodeShape):
@@ -139,10 +145,10 @@ class Comment(NodeShape):
     type: str = "node:comment"
     use: str = Field(str(15), description="The size of the cornor notch as a string")
 
-    def dict(self, **kwargs):
-        data = super().dict(**kwargs)
-        data["use"] = str(data["use"])
-        return data
+    @field_validator("use", mode="before")
+    @classmethod
+    def stringify_size(cls, value):
+        return str(value) if isinstance(value, (int, float)) else value
 
 
 class Rect(NodeShape):
@@ -166,16 +172,18 @@ class ForeignObject(NodeShape):
 
 class Widget(NodeShape):
     type: str = "node:widget"
-    widget: DOMWidget = Field(description="Ipywidgets as Foreign object html")
+    widget: DOMWidget = Field(
+        exclude=True, description="Ipywidgets as Foreign object html"
+    )
 
-    class Config:
-        copy_on_model_validation = "none"
-        arbitrary_types_allowed = True
+    model_config = ConfigDict(arbitrary_types_allowed=True)
 
-    def dict(self, **kwargs):
-        kwargs = add_excluded_fields(kwargs, excluded=["widget"])
-        data = super().dict(**kwargs)
-        data["use"] = self.widget.model_id
+    @model_serializer(mode="wrap")
+    def serialize_shape(
+        self, handler: SerializerFunctionWrapHandler, info: SerializationInfo
+    ):
+        data = super().serialize_shape(handler, info)
+        serialize_value(data, "use", self.widget.model_id, info)
         return data
 
 
@@ -184,4 +192,4 @@ class HTML(NodeShape):
     use: str = Field(..., description="HTML code")
 
 
-Widget.update_forward_refs(DOMWidget=DOMWidget)
+Widget.model_rebuild()
