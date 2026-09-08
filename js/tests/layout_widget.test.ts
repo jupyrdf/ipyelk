@@ -2,6 +2,7 @@
  * Copyright (c) 2024 ipyelk contributors.
  * Distributed under the terms of the Modified BSD License.
  */
+import ELK from 'elkjs/lib/elk.bundled';
 import { describe, expect, it } from 'vitest';
 
 import {
@@ -45,6 +46,31 @@ describe('layoutErrorMessage', () => {
 });
 
 describe('prepareGraphForElk', () => {
+  it('lays out ports and edges with ELK and restores widget properties', async () => {
+    const inlet = makeGraph();
+    inlet.layoutOptions = { 'elk.algorithm': 'layered', 'elk.direction': 'RIGHT' };
+    for (const node of inlet.children) {
+      node.width = 30;
+      node.height = 20;
+    }
+    inlet.children[0].ports[0].width = 5;
+    inlet.children[0].ports[0].height = 5;
+    inlet.edges[0].sources = ['n1.p0'];
+    const original = JSON.parse(JSON.stringify(inlet));
+    const { graph, propmap } = prepareGraphForElk(inlet);
+    const elk = new ELK();
+    const result = await elk.layout(graph);
+    expect(result.width).toBeGreaterThan(0);
+    expect(result.height).toBeGreaterThan(0);
+    expect(result.children[1].x).toBeGreaterThan(result.children[0].x);
+    expect(result.edges[0].sections[0].startPoint).toBeDefined();
+    expect(result.edges[0].sections[0].endPoint).toBeDefined();
+    const restored = applyProperties(result, propmap);
+    expect(restored.children[0].ports[0].properties.cssClasses).toBe('port');
+    expect(restored.edges[0].properties.cssClasses).toBe('edge dashed');
+    expect(inlet).toEqual(original);
+  });
+
   it('strips properties from the copy and collects them all', () => {
     const { graph, propmap } = prepareGraphForElk(makeGraph());
     expect(graph.properties).toBeUndefined();

@@ -4,6 +4,7 @@
 
 ### Development
 
+- Upgrade ELK.js to `0.12.0`.
 - Migrate to native Pydantic 2 validation and serialization; require `pydantic >=2.12,<3`.
   Use `model_dump()` / `model_dump_json()` instead of `dict()` / `json()`.
   Custom models now use `model_config`, `Field(exclude=True)`, and native serializers
