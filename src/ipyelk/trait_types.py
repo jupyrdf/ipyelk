@@ -10,13 +10,13 @@ import traitlets
 class Schema(traitlets.Any):
     """any... but validated by a jsonschema.Validator"""
 
-    _validator: jsonschema.Draft7Validator = None
+    _validator: jsonschema.Draft7Validator
 
     def __init__(self, validator, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self._validator = validator
 
-    def validate(self, obj, value):
+    def validate(self, obj: traitlets.HasTraits, value: object) -> object:
         errors: list[jsonschema.ValidationError] = list(
             self._validator.iter_errors(value)
         )

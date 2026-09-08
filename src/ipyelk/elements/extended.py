@@ -122,7 +122,7 @@ class Compartment(Node):
     bullet_shape: Icon | None = Field(None, exclude=True)
 
     def make_labels(
-        self, headings: list[str] = None, content: list[str] = None
+        self, headings: list[str] | None = None, content: list[str] | None = None
     ) -> Compartment:
         if headings is None:
             headings = []
@@ -132,9 +132,10 @@ class Compartment(Node):
         if self.bullet_shape:
             bullet_label = [
                 Label(
-                    properties=LabelProperties(shape=self.bullet_shape),
+                    properties=LabelProperties(
+                        shape=self.bullet_shape, selectable=True
+                    ),
                     layoutOptions=bullet_opts,
-                    selectable=True,
                 )
             ]
         if headings and not content:

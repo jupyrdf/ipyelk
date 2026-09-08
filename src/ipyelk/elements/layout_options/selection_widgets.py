@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import re
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, ClassVar
 
 import ipywidgets as W
 import traitlets as T
@@ -13,20 +13,24 @@ if TYPE_CHECKING:
 
 
 class LayoutOptionWidget(W.VBox):
-    identifier: str = None
-    metadata_provider: str = None
-    applies_to: list[ElkGraphElement] = None
-    group: str = None
-    title: str = None  # optional title for UI purposes
+    identifier: ClassVar[str | None] = None
+    metadata_provider: str | None = None
+    applies_to: ClassVar[
+        str | type[ElkGraphElement] | list[str | type[ElkGraphElement]] | None
+    ] = None
+    group: ClassVar[str | None] = None
+    title: ClassVar[str | None] = None  # optional title for UI purposes
 
-    value = T.Unicode()
+    # Traitlets descriptors expose the instance value as a string, while the
+    # descriptor itself is parameterized by its accepted input types.
+    value: Any = T.Unicode(allow_none=True)
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self._update_value()
 
-    def _repr_mimebundle_(self, **kwargs):
-        if not self.children:
+    def _repr_mimebundle_(self, **kwargs) -> None:
+        if not self.children:  # type: ignore[has-type]
             self.children = self._ui()
         super()._repr_mimebundle_(**kwargs)
 
@@ -35,11 +39,11 @@ class LayoutOptionWidget(W.VBox):
             "Subclasses should implement their specific UI Controls"
         )
 
-    def _update_value(self):
+    def _update_value(self, change: T.Bunch | None = None):
         pass  # expecting subclasses to override
 
     @classmethod
-    def matches(cls, elk_type: type[ElkGraphElement]):
+    def matches(cls, elk_type: type[ElkGraphElement]) -> bool:
         """Checks if this LayoutOption applies to given ElkGraphElement type"""
         if cls.applies_to is None:
             return False
@@ -64,17 +68,17 @@ class SpacingOptionWidget(LayoutOptionWidget):
         return [slider]
 
     @T.observe("spacing")
-    def _update_value(self, change: T.Bunch = None):
+    def _update_value(self, change: T.Bunch | None = None):
         self.value = str(self.spacing)
 
 
 class OptionsWidget(W.Accordion, LayoutOptionWidget):
-    identifier: Any = T.Any()
-    options: list[OptionsWidget] = T.List()
-    value: dict = T.Dict()
+    identifier = T.Any()
+    options: Any = T.List()
+    value: Any = T.Dict()
 
     @T.observe("options")
-    def _update_options(self, change: T.Bunch = None):
+    def _update_options(self, change: T.Bunch | None = None) -> None:
         if change and change.old is not T.Undefined:
             for old_option in change.old or []:
                 old_option.unobserve(self._update_value, "value")
@@ -96,7 +100,7 @@ class OptionsWidget(W.Accordion, LayoutOptionWidget):
             self.set_title(i, title)
         return self.options
 
-    def _update_value(self, change: T.Bunch = None):
+    def _update_value(self, change: T.Bunch | None = None):
         value = {}
         for option in self.options:
             if option.value is not None:
@@ -115,7 +119,7 @@ class OptionsWidget(W.Accordion, LayoutOptionWidget):
         """
         identifier = key
         try:
-            if issubclass(key, LayoutOptionWidget):
+            if isinstance(key, type) and issubclass(key, LayoutOptionWidget):
                 identifier = key.identifier
         except TypeError:
             pass  # okay if key is not a class

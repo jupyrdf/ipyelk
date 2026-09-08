@@ -24,9 +24,9 @@ if TYPE_CHECKING:
 
 
 class NXLoader(Loader):
-    root_id: str = T.Unicode(allow_none=True)
+    root_id = T.Unicode(allow_none=True)
 
-    def load(
+    def load(  # type: ignore[override]
         self,
         graph: nx.MultiDiGraph,
         hierarchy: nx.DiGraph | None = None,
@@ -53,6 +53,8 @@ class NXLoader(Loader):
             for u, v in hierarchy.edges():
                 parent = u if isinstance(u, Node) else el_map.get(u)
                 child = v if isinstance(v, Node) else el_map.get(v)
+                if not isinstance(parent, Node) or not isinstance(child, Node):
+                    raise TypeError("Hierarchy edges must connect nodes")
                 parent.add_child(child)
 
             # add element edges
@@ -73,7 +75,9 @@ class NXLoader(Loader):
 
             for el, n in nx_node_map.items():
                 if not el.labels and el.id != root.id:
-                    el.labels.append(Label(text=el.get_id()))
+                    label_id = el.get_id()
+                    if label_id is not None:
+                        el.labels.append(Label(text=label_id))
 
         return MarkElementWidget(
             value=self.apply_layout_defaults(root),

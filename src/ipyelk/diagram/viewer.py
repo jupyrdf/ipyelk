@@ -29,25 +29,23 @@ class Viewer(W.Widget):
 
     """
 
-    source: MarkElementWidget = T.Instance(MarkElementWidget, allow_none=True).tag(
+    source = T.Instance(MarkElementWidget, allow_none=True).tag(
         sync=True, **W.widget_serialization
     )
 
-    selection: Selection = T.Instance(Selection, kw={}).tag(
-        sync=True, **W.widget_serialization
-    )
-    hover: Hover = T.Instance(Hover, kw={}).tag(sync=True, **W.widget_serialization)
+    selection = T.Instance(Selection, kw={}).tag(sync=True, **W.widget_serialization)
+    hover = T.Instance(Hover, kw={}).tag(sync=True, **W.widget_serialization)
     zoom = T.Instance(Zoom, kw={}).tag(sync=True, **W.widget_serialization)
     pan = T.Instance(Pan, kw={}).tag(sync=True, **W.widget_serialization)
-    control_overlay: ControlOverlay = T.Instance(ControlOverlay, kw={}).tag(
+    control_overlay = T.Instance(ControlOverlay, kw={}).tag(
         sync=True, **W.widget_serialization
     )
 
-    viewed: tuple[str, ...] = TypedTuple(trait=T.Unicode()).tag(
+    viewed = TypedTuple(trait=T.Unicode()).tag(
         sync=True
     )  # list element ids in the current view bounding box
-    fit_tool: FitTool = T.Instance(FitTool)
-    center_tool: CenterTool = T.Instance(CenterTool)
+    fit_tool = T.Instance(FitTool)
+    center_tool = T.Instance(CenterTool)
 
     @T.default("fit_tool")
     def _default_fit_tool(self) -> FitTool:

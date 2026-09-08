@@ -29,6 +29,7 @@ fix = {depends-on = [
 lint = {depends-on = [
   "lint-ruff-format",
   "lint-ruff-check",
+  "lint-mypy",
   "lint-robot-dryrun",
   "lint-actionlint",
   "lint-audit",
@@ -432,6 +433,10 @@ inputs = ["examples/", "!**/{.ipynb_checkpoints,__pycache__}/"]
 cmd = "actionlint -shellcheck=shellcheck -pyflakes=pyflakes"
 inputs = [".github/workflows"]
 
+[feature.tasks-lint.tasks.lint-mypy]
+cmd = "mypy"
+inputs = ["src/**/*.py", "pyproject.toml"]
+
 [feature.tasks-lint.tasks.lint-audit]
 cmd = "jlpm npm audit"
 inputs = ["yarn.lock"]
@@ -542,11 +547,13 @@ nodejs = "22.*"
 
 [feature.deps-lint.dependencies]
 actionlint-with-all = "*"
+mypy = ">=2.3,<3"
 nbconvert-core = "*"
 nbstripout = "*"
 ruff = "*"
 taplo = "*"
 types-jsonschema = "*"
+types-networkx = "*"
 
 [feature.deps-py.dependencies]
 python = ">=3.10"
@@ -651,6 +658,7 @@ lint = {features = [
   "deps-lint",
   "deps-node",
   "deps-py",
+  "deps-run",
   "tasks-lint",
 ]}
 build = {features = [

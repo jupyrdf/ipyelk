@@ -13,7 +13,7 @@ from .view_tools import Selection
 
 
 class ToggleCollapsedTool(Tool):
-    selection: Selection = T.Instance(Selection)
+    selection = T.Instance(Selection)
 
     @T.default("reports")
     def _default_reports(self):
@@ -33,12 +33,14 @@ class ToggleCollapsedTool(Tool):
                 should_refresh = True
 
         # trigger refresh if needed
-        if should_refresh:
+        if should_refresh and self.tee and self.tee.inlet:
             self.tee.inlet.flow = self.reports
 
     def get_related(self, element: BaseElement):
         if isinstance(element, Compartment):
-            return element.get_parent().children[1:]
+            parent = element.get_parent()
+            if parent:
+                return parent.children[1:]
         if isinstance(element, Node):
             return element.children
 

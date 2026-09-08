@@ -8,6 +8,7 @@ from ...elements import (
     Partition,
     Record,
     SymbolSpec,
+    shapes,
 )
 from ...elements import layout_options as opt
 from ..molds import connectors
@@ -42,19 +43,27 @@ class Block(Record):
 
 
 class Composition(Edge):
-    properties: EdgeProperties = EdgeProperties(shape={"start": "composition"})
+    properties: EdgeProperties = EdgeProperties(
+        shape=shapes.EdgeShape(start="composition")
+    )
 
 
 class Aggregation(Edge):
-    properties: EdgeProperties = EdgeProperties(shape={"start": "aggregation"})
+    properties: EdgeProperties = EdgeProperties(
+        shape=shapes.EdgeShape(start="aggregation")
+    )
 
 
 class Containment(Edge):
-    properties: EdgeProperties = EdgeProperties(shape={"start": "containment"})
+    properties: EdgeProperties = EdgeProperties(
+        shape=shapes.EdgeShape(start="containment")
+    )
 
 
 class DirectedAssociation(Edge):
-    properties: EdgeProperties = EdgeProperties(shape={"end": "directed_association"})
+    properties: EdgeProperties = EdgeProperties(
+        shape=shapes.EdgeShape(end="directed_association")
+    )
 
 
 class Association(Edge):
@@ -62,7 +71,9 @@ class Association(Edge):
 
 
 class Generalization(Edge):
-    properties: EdgeProperties = EdgeProperties(shape={"start": "generalization"})
+    properties: EdgeProperties = EdgeProperties(
+        shape=shapes.EdgeShape(start="generalization")
+    )
 
 
 class BlockDiagram(Partition):

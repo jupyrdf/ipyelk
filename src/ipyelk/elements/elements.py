@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import abc
 import textwrap
-from typing import Type, get_args
+from typing import Type, cast, get_args
 
 from pydantic import (
     BaseModel,
@@ -18,6 +18,7 @@ from pydantic import (
     field_serializer,
     model_serializer,
 )
+from typing_extensions import Self
 
 from ..exceptions import NotFoundError, NotUniqueError
 from .common import CounterContextManager, serialize_value
@@ -58,14 +59,14 @@ class BaseProperties(BaseModel):
             else:
                 cls = next(t for t in get_args(field.annotation) if t is not type(None))
                 self.shape = cls()
-        return self.shape
+        return cast("BaseShape", self.shape)
 
 
 class NodeProperties(BaseProperties):
     shape: SerializeAsAny[NodeShape | None] = None
 
     def get_shape(self) -> NodeShape:
-        return super().get_shape()
+        return cast("NodeShape", super().get_shape())
 
 
 class LabelProperties(BaseProperties):
@@ -75,21 +76,21 @@ class LabelProperties(BaseProperties):
     )
 
     def get_shape(self) -> LabelShape:
-        return super().get_shape()
+        return cast("LabelShape", super().get_shape())
 
 
 class PortProperties(BaseProperties):
     shape: SerializeAsAny[PortShape | None] = None
 
     def get_shape(self) -> PortShape:
-        return super().get_shape()
+        return cast("PortShape", super().get_shape())
 
 
 class EdgeProperties(BaseProperties):
     shape: SerializeAsAny[EdgeShape | None] = None
 
     def get_shape(self) -> EdgeShape:
-        return super().get_shape()
+        return cast("EdgeShape", super().get_shape())
 
 
 class IDElement(BaseModel, abc.ABC):
@@ -115,7 +116,7 @@ class IDElement(BaseModel, abc.ABC):
         serialize_value(data, "id", self.get_id(), info)
         return data
 
-    def get_id(self) -> str:
+    def get_id(self) -> str | None:
         if self.id is not None:
             return self.id
         return Registry.get_id(self)
@@ -134,7 +135,7 @@ class BaseElement(IDElement, abc.ABC):
 
     model_config = ConfigDict(validate_assignment=True)
 
-    def add_class(self, *className: str) -> BaseElement:
+    def add_class(self, *className: str) -> Self:
         """Adds a class to the top level element of the widget.
 
         Doesn't add the class if it already exists.
@@ -144,7 +145,7 @@ class BaseElement(IDElement, abc.ABC):
         self.properties.cssClasses = " ".join(dom_classes).strip()
         return self
 
-    def remove_class(self, *className: str) -> BaseElement:
+    def remove_class(self, *className: str) -> Self:
         """Removes a class from the top level element of the widget.
 
         Doesn't remove the class if it doesn't exist.

@@ -48,8 +48,9 @@ class Registry(BaseModel):
     @classmethod
     def get_id(cls, key) -> str | None:
         context = cls.get_context(error_if_none=False)
-        if context:
-            return context[key]
+        if not context:
+            return None
+        return context[key]
 
     def __getitem__(self, key):
         return self.ids[key]

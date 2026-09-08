@@ -1,6 +1,6 @@
 # Copyright (c) 2024 ipyelk contributors.
 # Distributed under the terms of the Modified BSD License.
-
+from __future__ import annotations
 
 import ipywidgets as W
 import traitlets as T
@@ -213,7 +213,7 @@ class NodeSizeOptions(LayoutOptionWidget):
         "force_tabular_node_labels",
         "asymmetrical",
     )
-    def _update_value(self, change: T.Bunch = None):
+    def _update_value(self, change: T.Bunch | None = None):
         options = []
         for attr, option in NODESIZE_OPTIONS_OPTIONS.items():
             value = getattr(self, attr)
@@ -315,7 +315,7 @@ class ActivateInsideSelfLoops(LayoutOptionWidget):
         return [cb]
 
     @T.observe("activate")
-    def _update_value(self, change: T.Bunch = None):
+    def _update_value(self, change: T.Bunch | None = None):
         self.value = "true" if self.activate else "false"
 
 
@@ -367,7 +367,7 @@ class LayoutPartition(LayoutOptionWidget):
         return [input_widget]
 
     @T.observe("index")
-    def _update_value(self, change: T.Bunch = None):
+    def _update_value(self, change: T.Bunch | None = None):
         self.value = str(self.index)
 
 
@@ -395,7 +395,7 @@ class LayoutPartitioning(LayoutOptionWidget):
         return [cb]
 
     @T.observe("active")
-    def _update_value(self, change: T.Bunch = None):
+    def _update_value(self, change: T.Bunch | None = None):
         self.value = "true" if self.active else "false"
 
 
@@ -427,7 +427,7 @@ class Padding(LayoutOptionWidget):
         return sliders
 
     @T.observe("top", "bottom", "left", "right")
-    def _update_value(self, change: T.Bunch = None):
+    def _update_value(self, change: T.Bunch | None = None):
         padding = ",".join([f"{t}={getattr(self, t)}" for t in self._elk_traits])
         self.value = f"[{padding}]"
 
@@ -468,7 +468,7 @@ class ExpandNodes(LayoutOptionWidget):
         return [cb]
 
     @T.observe("activate")
-    def _update_value(self, change: T.Bunch = None):
+    def _update_value(self, change: T.Bunch | None = None):
         self.value = "true" if self.activate else "false"
 
 
@@ -492,7 +492,7 @@ class AspectRatio(LayoutOptionWidget):
         return [slider]
 
     @T.observe("ratio")
-    def _update_value(self, change: T.Bunch = None):
+    def _update_value(self, change: T.Bunch | None = None):
         self.value = str(self.ratio)
 
 

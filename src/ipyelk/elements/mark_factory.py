@@ -84,6 +84,8 @@ class MarkFactory(BaseModel):
 
             for edge in node.edges:
                 endpts = edge.points()
+                assert endpts[0] is not None
+                assert endpts[1] is not None
                 nx_u, nx_v = map(lambda n: Mark(element=n, context=context), endpts)
                 for nx_pt, pt in zip([nx_u, nx_v], endpts):
                     if nx_pt not in g:
@@ -110,12 +112,12 @@ class MarkFactory(BaseModel):
             return nx_node
 
     def __call__(self, *nodes, follow_edges=True):
-        g = nx.MultiDiGraph()
-        tree = nx.DiGraph()
+        g: nx.MultiDiGraph = nx.MultiDiGraph()
+        tree: nx.DiGraph = nx.DiGraph()
         for node in nodes:
             self._add(node, g, tree, follow_edges=follow_edges)
         return (g, tree)
 
 
-def get_children(node: Node) -> Node:
+def get_children(node: Node) -> list[Node]:
     return getattr(node, "children", [])

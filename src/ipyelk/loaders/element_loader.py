@@ -7,7 +7,7 @@ from .loader import Loader
 
 
 class ElementLoader(Loader):
-    def load(self, root: Node) -> MarkElementWidget:
+    def load(self, root: Node) -> MarkElementWidget:  # type: ignore[override]
         return MarkElementWidget(
             value=self.apply_layout_defaults(root),
         )

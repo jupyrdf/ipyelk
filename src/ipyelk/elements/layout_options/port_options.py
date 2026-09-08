@@ -1,5 +1,6 @@
 # Copyright (c) 2024 ipyelk contributors.
 # Distributed under the terms of the Modified BSD License.
+from __future__ import annotations
 
 import ipywidgets as W
 import traitlets as T
@@ -299,7 +300,7 @@ class TreatPortLabelsAsGroup(LayoutOptionWidget):
         return [cb]
 
     @T.observe("treat_as_group")
-    def _update_value(self, change: T.Bunch = None):
+    def _update_value(self, change: T.Bunch | None = None):
         self.value = "true" if self.treat_as_group else "false"
 
 
@@ -327,7 +328,7 @@ class AdditionalPortSpace(LayoutOptionWidget):
         return [slider]
 
     @T.observe("space")
-    def _update_value(self, change: T.Bunch = None):
+    def _update_value(self, change: T.Bunch | None = None):
         self.value = f"{self.space}"
 
 
@@ -358,7 +359,7 @@ class AllowNonFlowPortsToSwitchSides(LayoutOptionWidget):
         return [cb]
 
     @T.observe("allow_switch")
-    def _update_value(self, change: T.Bunch = None):
+    def _update_value(self, change: T.Bunch | None = None):
         if self.allow_switch:
             self.value = "true"
         else:

@@ -1,5 +1,6 @@
 # Copyright (c) 2024 ipyelk contributors.
 # Distributed under the terms of the Modified BSD License.
+from __future__ import annotations
 
 import ipywidgets as W
 import traitlets as T
@@ -8,7 +9,6 @@ from ipywidgets.widgets.trait_types import TypedTuple
 from ..elements import (
     BaseElement,
     ElementIndex,
-    HierarchicalElement,
     Node,
     Registry,
     elk_serialization,
@@ -16,35 +16,39 @@ from ..elements import (
 
 
 class MarkIndex(W.DOMWidget):
-    elements: ElementIndex = T.Instance(ElementIndex, allow_none=True)
-    context: Registry = T.Instance(Registry, kw={})
+    elements = T.Instance(ElementIndex, allow_none=True)
+    context = T.Instance(Registry, kw={})
 
-    _root: Node = None
+    _root: Node | None = None
 
     def to_id(self, element: BaseElement):
         return element.get_id()
 
-    def from_id(self, key) -> HierarchicalElement:
-        return self.elements.get(key)
+    def from_id(self, key: str) -> BaseElement:
+        elements = self.elements
+        if elements is None:
+            raise ValueError("Can't have no elements!")
+        element = elements.get(key)
+        return element
 
     @property
     def root(self) -> Node:
         if self._root is None:
             self._update_root()
+        if self._root is None:
+            raise ValueError("Root cannot be None after updating it!")
         return self._root
 
     @T.observe("elements")
-    def _update_root(self, change=None):
+    def _update_root(self, change: T.Bunch | None = None):
         self._root = None
         if self.elements:
             self._root = self.elements.root()
 
 
 class MarkElementWidget(W.DOMWidget):
-    value: Node = T.Instance(Node, allow_none=True).tag(sync=True, **elk_serialization)
-    index: MarkIndex = T.Instance(MarkIndex, kw={}).tag(
-        sync=True, **W.widget_serialization
-    )
+    value = T.Instance(Node, allow_none=True).tag(sync=True, **elk_serialization)
+    index = T.Instance(MarkIndex, kw={}).tag(sync=True, **W.widget_serialization)
     flow: tuple[str, ...] = TypedTuple(T.Unicode(), kw={}).tag(sync=True)
 
     def persist(self, rebuild_index: bool = False):
@@ -58,7 +62,7 @@ class MarkElementWidget(W.DOMWidget):
         """
         if rebuild_index or self.index.elements is None:
             self.build_index()
-        else:
+        elif self.value is not None:
             self.index.elements.update(ElementIndex.from_els(self.value))
         return self
 
@@ -74,4 +78,5 @@ class MarkElementWidget(W.DOMWidget):
     def _repr_mimebundle_(self, **kwargs):
         from IPython.display import JSON, display
 
-        display(JSON(self.value.model_dump()))
+        if self.value:
+            display(JSON(self.value.model_dump()))

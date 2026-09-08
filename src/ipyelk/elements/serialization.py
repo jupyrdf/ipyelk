@@ -33,7 +33,7 @@ def apply_edges(data: dict, edges: dict) -> dict:
     return edges
 
 
-def convert_elkjson(data: dict, vis_index: VisIndex = None) -> Node:
+def convert_elkjson(data: dict, vis_index: VisIndex | None = None) -> Node:
     # pop_edges currently mutates `data` by popping the edge dict
     edges_map = pop_edges(data)  # dict of node.id to edge list
     root = Node.model_validate(data)  # new element hierarchy without edges

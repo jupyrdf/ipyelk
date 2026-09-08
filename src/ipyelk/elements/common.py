@@ -4,7 +4,8 @@ from collections import namedtuple
 
 from pydantic import SerializationInfo
 
-EMPTY_SENTINEL = namedtuple("Sentinel", [])
+Sentinel = namedtuple("Sentinel", [])
+EMPTY_SENTINEL = Sentinel
 
 
 def serialize_value(data: dict, key: str, value, info: SerializationInfo) -> None:

@@ -78,6 +78,12 @@ cache_dir = "build/.cache/.mypy_cache"
 plugins = ["pydantic.mypy"]
 files = "src"
 allow_redefinition = true
+check_untyped_defs = true
+
+# ipywidgets does not publish type information or a separate stub package.
+[[tool.mypy.overrides]]
+module = ["ipywidgets", "ipywidgets.*"]
+ignore_missing_imports = true
 
 # pytest ###############################################################################
 [tool.pytest.ini_options]

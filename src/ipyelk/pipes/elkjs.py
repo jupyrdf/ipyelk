@@ -24,7 +24,7 @@ class ElkJS(SyncedPipe):
         default_value=(F.Anythinglayout,),
     )
     reports: tuple[str, ...] = TypedTuple(T.Unicode(), default_value=(F.Layout,))
-    timeout: float = T.Float(
+    timeout = T.Float(
         default_value=30.0,
         help=(
             "Seconds to wait for the browser to return a layout before giving up; "
@@ -34,9 +34,6 @@ class ElkJS(SyncedPipe):
 
     async def run(self):
         # watch once
-        if self.outlet is None:
-            return
-
         # signal to browser (re-sending until a frontend answers) and wait
         # for done, browser error, or deadline
         await browser_roundtrip(self, timeout=self.timeout or None)

@@ -30,7 +30,7 @@ class GraphWrappingStrategy(LayoutOptionWidget):
     group = "wrapping"
 
     horizontal = T.Enum(values=["left", "center", "right"], default_value="left")
-    value = T.Enum(value=WRAPPING_STRATEGY_OPTIONS.values(), default_value="OFF")
+    value = T.Enum(values=list(WRAPPING_STRATEGY_OPTIONS.values()), default_value="OFF")
 
     def _ui(self) -> list[W.Widget]:
         dropdown = W.Dropdown(options=list(WRAPPING_STRATEGY_OPTIONS.items()))

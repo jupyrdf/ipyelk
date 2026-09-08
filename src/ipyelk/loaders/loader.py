@@ -16,24 +16,26 @@ if TYPE_CHECKING:
     from ..pipes import MarkElementWidget
 
 ROOT_OPTS: dict[str, str] = {
-    opt.HierarchyHandling.identifier: opt.HierarchyHandling().value
+    opt.HierarchyHandling.identifier: str(opt.HierarchyHandling().value)
 }
 NODE_OPTS: dict[str, str] = {
     opt.NodeSizeConstraints.identifier: opt.NodeSizeConstraints().value,
 }
 PORT_OPTS: dict[str, str] = {}
 LABEL_OPTS: dict[str, str] = {
-    opt.NodeLabelPlacement.identifier: opt.NodeLabelPlacement(horizontal="center").value
+    opt.NodeLabelPlacement.identifier: str(
+        opt.NodeLabelPlacement(horizontal="center").value
+    )
 }
 EDGE_OPTS: dict[str, str] = {}
 
 
 class Loader(Tool):
-    default_node_opts: dict[str, str] | None = T.Dict(NODE_OPTS, allow_none=True)
-    default_root_opts: dict[str, str] | None = T.Dict(ROOT_OPTS, allow_none=True)
-    default_label_opts: dict[str, str] | None = T.Dict(LABEL_OPTS, allow_none=True)
-    default_port_opts: dict[str, str] | None = T.Dict(PORT_OPTS, allow_none=True)
-    default_edge_opts: dict[str, str] | None = T.Dict(EDGE_OPTS, allow_none=True)
+    default_node_opts = T.Dict(NODE_OPTS, allow_none=True)
+    default_root_opts = T.Dict(ROOT_OPTS, allow_none=True)
+    default_label_opts = T.Dict(LABEL_OPTS, allow_none=True)
+    default_port_opts = T.Dict(PORT_OPTS, allow_none=True)
+    default_edge_opts = T.Dict(EDGE_OPTS, allow_none=True)
 
     def load(self) -> MarkElementWidget:
         raise NotImplementedError("Subclasses should implement their behavior")
@@ -62,9 +64,9 @@ class Loader(Tool):
 
     def clear_defaults(self) -> Loader:
         """Removes the current default layout options for the loader"""
-        self.default_node_opts = None
-        self.default_root_opts = None
-        self.default_label_opts = None
-        self.default_port_opts = None
-        self.default_edge_opts = None
+        self.default_node_opts = None  # type: ignore[assignment]
+        self.default_root_opts = None  # type: ignore[assignment]
+        self.default_label_opts = None  # type: ignore[assignment]
+        self.default_port_opts = None  # type: ignore[assignment]
+        self.default_edge_opts = None  # type: ignore[assignment]
         return self

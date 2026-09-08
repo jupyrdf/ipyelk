@@ -1,5 +1,6 @@
 # Copyright (c) 2024 ipyelk contributors.
 # Distributed under the terms of the Modified BSD License.
+from __future__ import annotations
 
 from collections import defaultdict
 from itertools import chain
@@ -15,7 +16,7 @@ class Toolbar(W.HBox, StyledWidget):
     """Toolbar for an Elk App"""
 
     tools = T.List(T.Instance(Tool), kw={})
-    close_btn: W.Button = T.Instance(W.Button)
+    close_btn = T.Instance(W.Button)
     on_close = T.Any(
         default_value=None
     )  # holds a callable function to execute when close button is pressed
@@ -38,7 +39,7 @@ class Toolbar(W.HBox, StyledWidget):
         return btn
 
     @T.observe("on_close")
-    def _update_close_callback(self, change: T.Bunch = None):
+    def _update_close_callback(self, change: T.Bunch | None = None):
         """Toggle visiblity of the close button depending on if the `on_close` trait
         is callable
         """
@@ -46,7 +47,7 @@ class Toolbar(W.HBox, StyledWidget):
         self.close_btn.layout.visibility = shown
 
     @T.observe("tools")
-    def _update_children(self, change: T.Bunch = None):
+    def _update_children(self, change: T.Bunch | None = None):
         self.children = self.tool_order() + [self.close_btn]
 
         # only have widgets shown if commands are specified or a on_close callback

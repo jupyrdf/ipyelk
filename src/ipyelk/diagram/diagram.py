@@ -1,5 +1,6 @@
 # Copyright (c) 2024 ipyelk contributors.
 # Distributed under the terms of the Modified BSD License.
+from __future__ import annotations
 
 import asyncio
 from typing import Type
@@ -40,19 +41,15 @@ class Diagram(StyledWidget):
 
     """
 
-    source: MarkElementWidget = T.Instance(
-        MarkElementWidget, kw={}, help="Syncs Elk JSON Elements"
-    )
+    source = T.Instance(MarkElementWidget, kw={}, help="Syncs Elk JSON Elements")
 
-    pipe: Pipe = T.Instance(Pipe).tag(sync=True, **W.widget_serialization)
-    view: Viewer = T.Instance(Viewer).tag(sync=True, **W.widget_serialization)
-    tools: tuple[Tool, ...] = W.trait_types.TypedTuple(T.Instance(Tool)).tag(
+    pipe = T.Instance(Pipe).tag(sync=True, **W.widget_serialization)
+    view = T.Instance(Viewer).tag(sync=True, **W.widget_serialization)
+    tools = W.trait_types.TypedTuple(T.Instance(Tool)).tag(
         sync=True, **W.widget_serialization
     )
-    toolbar: Toolbar = T.Instance(Toolbar, kw={})
-    symbols: SymbolSpec = T.Instance(SymbolSpec, kw={}).tag(
-        sync=True, **symbol_serialization
-    )
+    toolbar = T.Instance(Toolbar, kw={})
+    symbols = T.Instance(SymbolSpec, kw={}).tag(sync=True, **symbol_serialization)
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -82,7 +79,7 @@ class Diagram(StyledWidget):
         return pipeline
 
     @T.observe("view")
-    def _update_children(self, change: T.Bunch = None):
+    def _update_children(self, change: T.Bunch | None = None):
         """Handle if the viewer instance changes by reobserving handler
         functions
 
@@ -113,7 +110,7 @@ class Diagram(StyledWidget):
         ]
 
     @T.observe("tools")
-    def _update_tools(self, change=None):
+    def _update_tools(self, change: T.Bunch | None = None):
         if change and isinstance(change.old, tuple):
             for tool in change.old or []:
                 tool.tee = None
@@ -143,7 +140,7 @@ class Diagram(StyledWidget):
 
         return matches[0]
 
-    def register_tool(self, tool: Tool) -> "Diagram":
+    def register_tool(self, tool: Tool) -> Diagram:
         """Add a new tool to the diagram.
 
         :param tool: new tool instance to add to the diagram.
@@ -159,7 +156,7 @@ class Diagram(StyledWidget):
         self.tools = tuple([*self.tools, tool])
         return self
 
-    def refresh(self, change: T.Bunch = None) -> asyncio.Task:
+    def refresh(self, change: T.Bunch | None = None) -> asyncio.Task:
         """Create asynchronous refresh task which will update the view given any
         changes.
         """
@@ -177,6 +174,8 @@ class Diagram(StyledWidget):
                 self.log.warning("Diagram refresh failed: %r", exception)
                 return
             layout = self.pipe.outlet.value
+            if self.view.source is None:
+                return
             self.view.source.value = layout
             self.pipe.inlet.value = layout
             self.pipe.inlet.flow = tuple()

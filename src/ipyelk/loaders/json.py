@@ -9,7 +9,7 @@ from .loader import Loader
 
 
 class ElkJSONLoader(Loader):
-    def load(self, data: dict) -> MarkElementWidget:
+    def load(self, data: dict) -> MarkElementWidget:  # type: ignore[override]
         return MarkElementWidget(
             value=self.apply_layout_defaults(convert_elkjson(data)),
         )
