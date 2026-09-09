@@ -203,6 +203,9 @@ def test_native_validation():
     with pytest.raises(ValidationError):
         shapes.NodeShape(type="unknown")
     assert shapes.Comment(use=15).use == "15"
+    comment = shapes.Comment()
+    comment.use = 20
+    assert comment.use == "20"
     with pytest.raises(ValidationError):
         shapes.Comment(use=None)
     with pytest.raises(ValidationError):

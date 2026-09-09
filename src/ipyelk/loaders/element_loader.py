@@ -6,8 +6,8 @@ from ..pipes import MarkElementWidget
 from .loader import Loader
 
 
-class ElementLoader(Loader):
-    def load(self, root: Node) -> MarkElementWidget:  # type: ignore[override]
+class ElementLoader(Loader[Node]):
+    def load(self, root: Node) -> MarkElementWidget:
         return MarkElementWidget(
             value=self.apply_layout_defaults(root),
         )

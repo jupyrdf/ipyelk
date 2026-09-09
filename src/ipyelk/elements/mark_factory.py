@@ -36,7 +36,10 @@ class Mark(BaseModel):
             return self.element.model_dump(
                 mode=info.mode,
                 context=info.context,
-                # Core's IncExCall annotation is broader than BaseModel's IncEx.
+                # Forwarding pydantic's own arguments unchanged; the two SDK
+                # annotations disagree (`core_schema.IncExCall` is
+                # `set[int | str] | dict[int | str, ...]`, `BaseModel.model_dump`
+                # takes `set[int] | set[str] | Mapping[int, ...] | Mapping[str, ...]`).
                 include=info.include,  # type: ignore[arg-type]
                 exclude=info.exclude,  # type: ignore[arg-type]
                 by_alias=info.by_alias,

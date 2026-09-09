@@ -23,10 +23,10 @@ if TYPE_CHECKING:
     import networkx as nx
 
 
-class NXLoader(Loader):
+class NXLoader(Loader["nx.MultiDiGraph"]):
     root_id = T.Unicode(allow_none=True)
 
-    def load(  # type: ignore[override]
+    def load(
         self,
         graph: nx.MultiDiGraph,
         hierarchy: nx.DiGraph | None = None,

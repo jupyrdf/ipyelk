@@ -2,9 +2,7 @@
 # Distributed under the terms of the Modified BSD License.
 from __future__ import annotations
 
-from ipywidgets import (
-    DOMWidget,  # ruff: ignore[typing-only-third-party-import] - Pydantic resolves this annotation at runtime.
-)
+from ipywidgets import DOMWidget
 from pydantic import (
     BaseModel,
     ConfigDict,
@@ -144,6 +142,9 @@ class Diamond(NodeShape):
 class Comment(NodeShape):
     type: str = "node:comment"
     use: str = Field(str(15), description="The size of the cornor notch as a string")
+
+    # coerce on assignment too (`comment.use = 20`), as the v1 `dict()` override did
+    model_config = ConfigDict(validate_assignment=True)
 
     @field_validator("use", mode="before")
     @classmethod

@@ -23,8 +23,12 @@ def test_id_report_message_interpolates_null_ids():
 
 
 def test_element_index_rejects_unresolved_missing_id():
-    with pytest.raises(ValueError, match="without an id"):
-        ElementIndex.from_els(Node())
+    root = Node(children=[Node(children=[Node()])])
+    with pytest.raises(ValueError, match="without an id") as excinfo:
+        ElementIndex.from_els(root)
+    # the message names the element type, not the (recursive) element repr
+    assert str(excinfo.value).startswith("Cannot index element without an id (Node)")
+    assert "children" not in str(excinfo.value)
 
 
 def test_element_index_keeps_registry_generated_ids():

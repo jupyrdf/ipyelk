@@ -75,7 +75,7 @@ class ToolButton(Tool):
     :param handler: Called when button is pressed.
     """
 
-    handler = T.Callable(default_value=None, allow_none=True)  # type: ignore[assignment,misc]
+    handler = T.Callable(default_value=None, allow_none=True)
     description = T.Unicode(default_value="")
 
     @T.default("ui")

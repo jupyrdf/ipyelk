@@ -8,5 +8,5 @@ from .tool import Tool
 
 class Painter(Tool):
     cssClasses = T.Unicode(default_value="")
-    marks: list[object] = T.List(default_value=[])  # type: ignore[assignment]
+    marks = T.List[object](default_value=[])
     name = T.Unicode()

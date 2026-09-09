@@ -220,6 +220,14 @@ ignore = [
   "SIM108",
 ]
 
+[tool.ruff.lint.flake8-type-checking]
+# ruff 0.16 exempts `typing_extensions` only while this table is absent; keep it
+exempt-modules = ["typing", "typing_extensions"]
+# Pydantic evaluates field annotations at runtime, so their imports must stay out
+# of `if TYPE_CHECKING:` blocks. ruff only follows same-module inheritance, so the
+# element base subclassed from other modules is listed explicitly.
+runtime-evaluated-base-classes = ["pydantic.BaseModel", "ipyelk.elements.elements.Node"]
+
 [tool.ruff.lint.per-file-ignores]
 "**/tests/*.py" = [
   "ANN401",

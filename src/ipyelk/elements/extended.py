@@ -14,9 +14,7 @@ from pydantic import (
 from ..util import merge
 from . import layout_options as opt
 from .elements import Edge, Label, LabelProperties, Node
-from .shapes import (
-    Icon,  # ruff: ignore[typing-only-first-party-import] - Pydantic resolves this annotation at runtime.
-)
+from .shapes import Icon
 
 record_opts = opt.OptionsWidget(
     options=[

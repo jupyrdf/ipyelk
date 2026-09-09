@@ -8,8 +8,8 @@ from ..pipes import MarkElementWidget
 from .loader import Loader
 
 
-class ElkJSONLoader(Loader):
-    def load(self, data: dict) -> MarkElementWidget:  # type: ignore[override]
+class ElkJSONLoader(Loader[dict]):
+    def load(self, data: dict) -> MarkElementWidget:
         return MarkElementWidget(
             value=self.apply_layout_defaults(convert_elkjson(data)),
         )

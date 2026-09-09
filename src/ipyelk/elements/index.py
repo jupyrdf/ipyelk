@@ -13,6 +13,14 @@ from .common import EMPTY_SENTINEL
 from .elements import BaseElement, Edge, HierarchicalElement, Label, Node, Port
 
 
+def _missing_id(el: BaseElement, what: str = "element") -> ValueError:
+    # type name only: an element repr recurses through its whole subtree
+    return ValueError(
+        f"Cannot index {what} without an id ({type(el).__name__}); "
+        "set `id` or build the index inside a Registry context"
+    )
+
+
 class IDReport(BaseModel):
     duplicated: dict[str, list[SerializeAsAny[BaseElement]]] = Field(
         default_factory=dict,
@@ -73,16 +81,15 @@ class VisIndex(BaseModel):
             if is_hidden:
                 el_id = el.get_id()
                 if el_id is None:
-                    raise ValueError(f"Cannot index element without an id: {el!r}")
+                    raise _missing_id(el)
                 if not isinstance(last, BaseElement):
                     raise ValueError(
-                        f"Cannot index hidden element without a visible ancestor: {el!r}"
+                        f"Cannot index hidden {type(el).__name__} {el_id!r} "
+                        "without a visible ancestor"
                     )
                 last_id = last.get_id()
                 if last_id is None:
-                    raise ValueError(
-                        f"Cannot index visible ancestor without an id: {last!r}"
-                    )
+                    raise _missing_id(last, "visible ancestor")
                 index[el_id] = el
                 last_visible[el_id] = last_id
         return cls(
@@ -145,7 +152,7 @@ class ElementIndex(BaseModel):
         for el in iter_elements(*els):
             el_id = el.get_id()
             if el_id is None:
-                raise ValueError(f"Cannot index element without an id: {el!r}")
+                raise _missing_id(el)
             elements[el_id] = el
         return cls(
             elements=elements,
@@ -305,7 +312,7 @@ class HierarchicalIndex(ElementIndex):
             if isinstance(el, HierarchicalElement):
                 el_id = el.get_id()
                 if el_id is None:
-                    raise ValueError(f"Cannot index element without an id: {el!r}")
+                    raise _missing_id(el)
                 elements[el_id] = el
         if vis_index is None:
             vis_index = VisIndex()
