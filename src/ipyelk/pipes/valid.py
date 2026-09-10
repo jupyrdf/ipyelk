@@ -21,7 +21,8 @@ class ValidationPipe(Pipe):
     errors = T.Dict(kw={})
 
     async def run(self) -> None:
-        index: MarkIndex = self.inlet.build_index()
+        # report ids before any are assigned: `fix_null_id` decides (apply_fixes)
+        index: MarkIndex = self.inlet.build_index(assign_ids=False)
         with index.context:
             self.get_reports(index)
             self.errors = self.collect_errors()
