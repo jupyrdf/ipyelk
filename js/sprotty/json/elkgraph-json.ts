@@ -28,6 +28,13 @@ export interface ElkProperties {
   shape?: Shape;
   isSymbol?: boolean;
   selectable?: boolean;
+  /** hover text rendered as the label's svg `<title>` (e.g. the full text of a truncated label) */
+  tooltip?: string;
+  /**
+   * render a full-width horizontal rule across the parent node just above
+   * this label (e.g. a compartment header); opt-in, unset/false draws nothing
+   */
+  separator?: boolean;
 }
 
 export function isPrimitive(edge: ElkEdge): edge is ElkPrimitiveEdge {

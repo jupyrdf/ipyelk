@@ -74,6 +74,20 @@ class LabelProperties(BaseProperties):
     selectable: bool | None = Field(
         False, description="Specifies if label is individually selectable"
     )
+    tooltip: str | None = Field(
+        None,
+        description=(
+            "Hover text for the label (rendered as the label's svg <title>), "
+            "e.g. the full text of a truncated label"
+        ),
+    )
+    separator: bool | None = Field(
+        None,
+        description=(
+            "Render a full-width horizontal rule across the parent node just "
+            "above this label (e.g. a compartment header); unset/False draws nothing"
+        ),
+    )
 
     def get_shape(self) -> LabelShape:
         return cast("LabelShape", super().get_shape())

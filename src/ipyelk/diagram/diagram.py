@@ -156,12 +156,16 @@ class Diagram(StyledWidget):
         self.tools = tuple([*self.tools, tool])
         return self
 
-    def refresh(self, change: T.Bunch | None = None) -> asyncio.Task:
+    def refresh(self, change: T.Bunch | None = None) -> asyncio.Task | None:
         """Create asynchronous refresh task which will update the view given any
         changes.
+
+        Returns ``None`` when no event loop is running (see ``Pipe.schedule_run``).
         """
         self.log.debug("Refreshing diagram")
-        task: asyncio.Task = self.pipe.schedule_run()
+        task = self.pipe.schedule_run()
+        if task is None:
+            return None
 
         def update_view(future: asyncio.Task):
             try:

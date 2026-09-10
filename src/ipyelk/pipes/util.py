@@ -5,6 +5,13 @@ from __future__ import annotations
 import asyncio
 import os
 from time import monotonic
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    import ipywidgets as W
+
+    from ..diagram.viewer import Viewer
+    from .base import SyncedPipe
 
 
 def wait_for_change(widget, value, timeout: float | None = None):
@@ -78,6 +85,8 @@ async def browser_roundtrip(
 
     future_value = wait_for_change(pipe.outlet, trait)
     pipe._roundtrip_future = future_value
+    # a fresh roundtrip resets the stale re-sync throttle (see SyncedPipe)
+    pipe._stale_resync_interval = 0.0
     deadline = None if timeout is None else monotonic() + timeout
     delay = initial_delay
     try:
@@ -100,3 +109,37 @@ async def browser_roundtrip(
                 return
     finally:
         pipe._roundtrip_future = None
+
+
+def resync_stale(
+    widget: SyncedPipe | Viewer,
+    *others: W.Widget | None,
+    missing: object = None,
+    min_interval: float = 2.0,
+    max_interval: float = 30.0,
+) -> bool:
+    """Re-send the state of ``widget`` and ``others`` after the browser reports
+    ``action: stale``; ``False`` when throttled.
+
+    Widget state sync has no retransmit, and jupyter-server's iopub rate
+    limiter silently drops ``comm_msg`` under bursty load (a run-all creating
+    many diagrams), leaving a frontend model that can never serve a request.
+    The re-sync goes over the same congested channel, so it is throttled: the
+    gap doubles between ``min_interval`` and ``max_interval`` per re-sync; a
+    caller starting fresh work resets ``widget._stale_resync_interval``.
+    """
+    now = monotonic()
+    interval = widget._stale_resync_interval
+    if now - widget._stale_resync_at < interval:
+        return False
+    widget._stale_resync_at = now
+    widget._stale_resync_interval = min(max(min_interval, interval * 2), max_interval)
+    widget.log.debug(
+        "Browser reports stale state for %s (missing: %s); re-syncing",
+        type(widget).__name__,
+        missing,
+    )
+    for w in (widget, *others):
+        if w is not None:
+            w.send_state()
+    return True

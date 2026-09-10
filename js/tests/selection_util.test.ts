@@ -4,7 +4,11 @@
  */
 import { describe, expect, it } from 'vitest';
 
-import { canonicalSelection, selectionDelta } from '../selection_util';
+import {
+  canonicalSelection,
+  selectionAfterLayout,
+  selectionDelta,
+} from '../selection_util';
 
 describe('selectionDelta', () => {
   it('reports what entered and what left', () => {
@@ -44,5 +48,32 @@ describe('canonicalSelection', () => {
   it('drops duplicates and tolerates nothing', () => {
     expect(canonicalSelection(['b', 'a', 'b'])).toEqual(['a', 'b']);
     expect(canonicalSelection(undefined)).toEqual([]);
+  });
+});
+
+// Pure selection policy; the browser checks exercise its model-submission wiring.
+describe('selectionAfterLayout', () => {
+  const exists = (id: string) => id !== 'gone';
+
+  it('replays queued selections over live ids', () => {
+    expect(selectionAfterLayout(['n1', 'gone'], ['ignored'], exists)).toEqual(['n1']);
+  });
+
+  it('uses live ids when no selection was queued', () => {
+    expect(selectionAfterLayout(null, ['n1', 'n2', 'gone'], exists)).toEqual([
+      'n1',
+      'n2',
+    ]);
+  });
+
+  it('preserves an empty kernel selection', () => {
+    expect(selectionAfterLayout([], ['n1'], exists)).toEqual([]);
+    expect(selectionAfterLayout(null, [], exists)).toEqual([]);
+  });
+
+  it('selects nothing when ids are absent or there is no selection tool', () => {
+    expect(selectionAfterLayout(null, ['gone'], exists)).toEqual([]);
+    expect(selectionAfterLayout(null, undefined, exists)).toEqual([]);
+    expect(selectionAfterLayout(undefined, null, exists)).toEqual([]);
   });
 });

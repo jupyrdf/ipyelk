@@ -1,12 +1,13 @@
 # Copyright (c) 2024 ipyelk contributors.
 # Distributed under the terms of the Modified BSD License.
-
+from __future__ import annotations
 
 import ipywidgets as W
 import traitlets as T
 from ipywidgets.widgets.trait_types import TypedTuple
 
 from ..pipes import MarkElementWidget
+from ..pipes.util import resync_stale
 from ..tools import CenterTool, ControlOverlay, FitTool, Hover, Pan, Selection, Zoom
 
 
@@ -46,6 +47,31 @@ class Viewer(W.Widget):
     )  # list element ids in the current view bounding box
     fit_tool = T.Instance(FitTool)
     center_tool = T.Instance(CenterTool)
+
+    def __init__(self, *args, **kwargs):
+        self._stale_resync_at: float = 0.0
+        self._stale_resync_interval: float = 0.0
+        super().__init__(*args, **kwargs)
+        self.on_msg(self._handle_browser_msg)
+
+    def _handle_browser_msg(
+        self, widget: W.Widget, content: dict[str, object], buffers: list[bytes] | None
+    ):
+        """Re-sync a frontend view that reports ``action: stale``.
+
+        ``source`` starts ``None`` at comm-open and is rewired to the pipe
+        outlet by a later state update -- one message a congested iopub
+        channel may drop, leaving a blank diagram with no error. The frontend
+        reports ``stale`` while it has nothing to render; re-emitting the
+        viewer's state (and the source's, which carries the laid-out value)
+        heals the divergence. See ``ipyelk.pipes.util.resync_stale``.
+        """
+        if isinstance(content, dict) and content.get("action") == "stale":
+            resync_stale(self, self.source, missing=content.get("missing"))
+
+    @T.observe("source")
+    def _reset_stale_throttle(self, change: T.Bunch | None = None):
+        self._stale_resync_interval = 0.0
 
     @T.default("fit_tool")
     def _default_fit_tool(self) -> FitTool:
