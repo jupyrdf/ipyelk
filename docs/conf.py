@@ -104,7 +104,7 @@ else:
                 return
             rst = pypandoc.convert_text(description, "rst", format="md")
             if isinstance(container, list):
-                container.append(self._linme(self._cell(rst)))
+                container.append(self._line(self._cell(rst)))
             else:
                 self.state.nested_parse(
                     self._convert_content(rst), self.lineno, container
