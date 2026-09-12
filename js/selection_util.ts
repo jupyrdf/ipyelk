@@ -31,3 +31,12 @@ export function selectionDelta(
 export function canonicalSelection(ids: string[] | undefined | null): string[] {
   return [...new Set(ids || [])].sort();
 }
+
+/** Replay queued or initial kernel selections, excluding ids absent from the model. */
+export function selectionAfterLayout(
+  pending: string[] | null | undefined,
+  live: string[] | null | undefined,
+  exists: (id: string) => boolean,
+): string[] {
+  return (pending ?? live ?? []).filter(exists);
+}

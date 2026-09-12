@@ -187,6 +187,62 @@ def test_lazy_shape_and_assignment_validation(properties, shape_cls):
         value.hidden = "not a boolean"
 
 
+def test_label_tooltip_round_trips():
+    """``tooltip`` reaches the browser (``exclude_none`` drops it when unset)."""
+    widget = HTML()
+    try:
+        bare = Node(id="root", labels=[Label(id="l", text="short")])
+        assert "tooltip" not in to_json(bare, widget)["labels"][0]["properties"]
+
+        root = Node(
+            id="root",
+            labels=[
+                Label(
+                    id="l",
+                    text="short...",
+                    properties=LabelProperties(tooltip="the full untruncated text"),
+                )
+            ],
+        )
+        data = to_json(root, widget)
+        assert data["labels"][0]["properties"]["tooltip"] == "the full untruncated text"
+        restored = convert_elkjson(json.loads(json.dumps(data)))
+        assert restored.labels[0].properties.tooltip == "the full untruncated text"
+    finally:
+        widget.close()
+
+
+def test_label_separator_round_trips():
+    """``separator`` is opt-in: absent unless set, ``True`` reaches the browser."""
+    widget = HTML()
+    try:
+        bare = Node(id="root", labels=[Label(id="l", text="plain")])
+        assert "separator" not in to_json(bare, widget)["labels"][0]["properties"]
+
+        root = Node(
+            id="root",
+            labels=[
+                Label(
+                    id="l",
+                    text="header",
+                    properties=LabelProperties(separator=True, separatorGap=2.5),
+                )
+            ],
+        )
+        data = to_json(root, widget)
+        assert data["labels"][0]["properties"]["separator"] is True
+        assert data["labels"][0]["properties"]["separatorGap"] == pytest.approx(2.5)
+        restored = convert_elkjson(json.loads(json.dumps(data)))
+        assert restored.labels[0].properties.separator is True
+        assert restored.labels[0].properties.separatorGap == pytest.approx(2.5)
+        with pytest.raises(ValidationError):
+            LabelProperties(separator="not a boolean")
+        with pytest.raises(ValidationError):
+            LabelProperties(separatorGap=-1)
+    finally:
+        widget.close()
+
+
 def test_native_validation():
     assert issubclass(Node, BaseModel)
     node = Node.model_validate_json('{"id":"root","children":[{"id":"child"}]}')

@@ -7,6 +7,7 @@ import { random } from 'lodash';
 import { DOMWidgetModel, DOMWidgetView } from '@jupyter-widgets/base';
 import { unpack_models as deserialize } from '@jupyter-widgets/base';
 
+import { layoutErrorMessage, staleMessage } from './layout_widget_util';
 import { ElkLabel, ElkNode } from './sprotty/json/elkgraph-json';
 import { ELK_CSS, ELK_DEBUG, IRunMessage, NAME, VERSION } from './tokens';
 
@@ -88,7 +89,14 @@ export class ELKTextSizerModel extends DOMWidgetModel {
     // check message and decide if should call `measure`
     switch (content.action) {
       case 'run':
-        this.measure();
+        // Report synchronous failures so the kernel stops retrying instead
+        // of waiting for the roundtrip deadline.
+        try {
+          this.measure();
+        } catch (error) {
+          console.error('ELK text sizer failed:', error);
+          this.send(layoutErrorMessage(error));
+        }
         break;
     }
   }
@@ -100,7 +108,9 @@ export class ELKTextSizerModel extends DOMWidgetModel {
   measure() {
     const rootNode: ElkNode = this.get('inlet')?.get('value');
     let outlet: DOMWidgetModel = this.get('outlet'); // target output
-    if (rootNode == null || outlet == null) {
+    const stale = staleMessage(this.get('inlet'), rootNode, outlet);
+    if (stale != null) {
+      this.send(stale); // unservable: let the kernel re-sync the state
       return null;
     }
     ELK_DEBUG && console.log('Root Node:', rootNode);
@@ -127,13 +137,21 @@ export class ELKTextSizerModel extends DOMWidgetModel {
 
     // Callback to take measurements and remove element from DOM
     window.requestAnimationFrame(() => {
-      this.read_sizes(texts, elements);
-      let output = { ...rootNode };
-      output['out'] = random();
-      outlet.set('value', output);
-      outlet.save_changes();
-      if (!ELK_DEBUG) {
-        document.body.removeChild(el);
+      // a throw in this deferred callback is otherwise an unhandled error
+      // nobody correlates with the pipe: report it like the sync path
+      try {
+        this.read_sizes(texts, elements);
+        let output = { ...rootNode };
+        output['out'] = random();
+        outlet.set('value', output);
+        outlet.save_changes();
+      } catch (error) {
+        console.error('ELK text sizer failed:', error);
+        this.send(layoutErrorMessage(error));
+      } finally {
+        if (!ELK_DEBUG && el.parentNode) {
+          document.body.removeChild(el);
+        }
       }
     });
   }

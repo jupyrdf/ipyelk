@@ -41,6 +41,9 @@ function svgStr(point: Point) {
   return `${point.x},${point.y}`;
 }
 
+/** Default gap (SVG pixels) between a separator rule and its label. */
+const DEFAULT_SEPARATOR_GAP = 1.0;
+
 @injectable()
 export class ElkNodeView extends RectangularNodeView {
   render(node: ElkNode, context: ElkModelRenderer): VNode | undefined {
@@ -60,6 +63,7 @@ export class ElkNodeView extends RectangularNodeView {
       <g>
         {mark}
         <g class-elkchildren={true}>{this.renderChildren(node, context)}</g>
+        {this.renderSeparators(node)}
       </g>
     );
   }
@@ -69,6 +73,27 @@ export class ElkNodeView extends RectangularNodeView {
       <rect x="0" y="0" width={node.size.width} height={node.size.height}></rect>
     );
     return mark;
+  }
+
+  /**
+   * One full-width `<path class="elkseparator">` per child label with
+   * `properties.separator === true`, at the label's y minus the gap, spanning
+   * the node's final laid-out width.  Siblings of the node's mark, so
+   * `.elknode.selected ~ .elkseparator` style hooks can reach them.
+   */
+  renderSeparators(node: ElkNode): VNode[] {
+    const width = node.size?.width;
+    if (!(Number.isFinite(width) && width > 0)) return [];
+    const rules: VNode[] = [];
+    for (const child of node.children) {
+      if (child instanceof ElkLabel && child.properties?.separator === true) {
+        const gap = child.properties.separatorGap ?? DEFAULT_SEPARATOR_GAP;
+        if (!Number.isFinite(gap)) continue;
+        const y = child.position.y - gap;
+        rules.push(<path class-elkseparator={true} d={`M 0,${y} L ${width},${y}`} />);
+      }
+    }
+    return rules;
   }
 
   renderChildren(node: ElkNode, context: ElkModelRenderer): VNode[] {
@@ -320,12 +345,15 @@ export class ElkLabelView extends ShapeView {
       );
       setClass(mark, use, true);
     } else {
+      /** Full label text for the native SVG hover tooltip when text is truncated. */
+      const tooltip = label.properties?.tooltip;
       mark = (
         <text
           class-elklabel={true}
           class-selected={label.selected}
           class-mouseover={label.hoverFeedback}
         >
+          {tooltip ? <title>{tooltip}</title> : undefined}
           {label.text}
         </text>
       );

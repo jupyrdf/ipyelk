@@ -264,7 +264,18 @@ export class ElkModelRenderer extends ModelRenderer {
           el.style.transform = '';
         }, delay);
       }
-      Widget.attach(view.luminoWidget, vnode.elm as HTMLElement);
+      const host = vnode.elm as HTMLElement;
+      if (host == null || !host.isConnected) {
+        /**
+         * The virtual DOM may replace a container while the widget view is
+         * created. A later insert hook owns attachment; Lumino rejects this
+         * detached host, so discard this superseded view.
+         */
+        ELK_DEBUG && console.log('ELK skipping widget attach: container detached');
+        view.remove();
+        return;
+      }
+      Widget.attach(view.luminoWidget, host);
     }
   }
 

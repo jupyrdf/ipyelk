@@ -8,6 +8,34 @@ export function layoutErrorMessage(error: unknown): { action: 'error'; error: st
   return { action: 'error', error: `${error}` };
 }
 
+export type TStaleMessage = {
+  action: 'stale';
+  missing: { inlet: boolean; value: boolean; outlet: boolean };
+};
+
+/**
+ * The browser -> kernel report for a `run` request the pipe model cannot
+ * serve: its inlet / inlet value / outlet never arrived. jupyter-server's
+ * iopub rate limiter silently drops `comm_msg` under bursty load and the
+ * widget protocol has no retransmit. Without this report, retries cannot
+ * repair missing state before the roundtrip deadline. The kernel answers
+ * `stale` by re-sending the widget state.
+ * Returns `null` when the model IS servable.
+ */
+export function staleMessage(
+  inlet: unknown,
+  value: unknown,
+  outlet: unknown,
+): TStaleMessage | null {
+  if (value != null && outlet != null) {
+    return null;
+  }
+  return {
+    action: 'stale',
+    missing: { inlet: inlet == null, value: value == null, outlet: outlet == null },
+  };
+}
+
 type TProperties = Record<string, ElkProperties | undefined>;
 type ElkElementWithChildren = ElkGraphElement & {
   children?: ElkNode[];

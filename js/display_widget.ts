@@ -5,6 +5,7 @@
 import {
   Action,
   HoverFeedbackAction,
+  SModelElement,
   SModelRoot,
   SelectAction,
   SelectionResult, // SModelRegistry,
@@ -29,14 +30,19 @@ import { Widget } from '@lumino/widgets';
 import {
   DOMWidgetModel,
   DOMWidgetView,
+  WidgetView,
   unpack_models as deserialize,
 } from '@jupyter-widgets/base';
 
-import { canonicalSelection, selectionDelta } from './selection_util';
+import {
+  canonicalSelection,
+  selectionAfterLayout,
+  selectionDelta,
+} from './selection_util';
 import createContainer from './sprotty/di-config';
 import { JLModelSource } from './sprotty/diagram-server';
 // import { VNode } from 'snabbdom';
-import { ELK_CSS, NAME, TAnyELKMessage, VERSION } from './tokens';
+import { ELK_CSS, ELK_DEBUG, NAME, TAnyELKMessage, VERSION } from './tokens';
 import { NodeExpandTool, NodeSelectTool } from './tools';
 import {
   FeedbackActionDispatcher,
@@ -45,6 +51,12 @@ import {
 import { ToolTYPES } from './tools/types';
 
 const POLL = 300;
+/**
+ * Maximum interval for browser-side recovery probes. These are rate-capped,
+ * not time-limited: they stop when a source becomes renderable or the view
+ * disconnects. Pipe deadlines are separate.
+ */
+const STALE_DELAY_MAX = 10000;
 
 export class ELKControlModel extends DOMWidgetModel {
   static model_name = 'ELKControlModel';
@@ -118,18 +130,40 @@ export class ELKViewerView extends DOMWidgetView {
   // elementRegistry: SModelRegistry;
   currentRoot: SModelRoot;
   was_shown = new PromiseDelegate<void>();
+  /**
+   * A kernel-side selection that arrived before the first layout was
+   * submitted; replayed after `diagramLayout` creates the Sprotty model.
+   */
+  private pendingSelected: string[] | null = null;
+  /**
+   * Source whose `change:value` listener is currently connected. This stays
+   * unset until initialization completes because Backbone calls `initialize`
+   * from `super()`, and a field initializer would overwrite that source.
+   */
+  private connectedSource: DOMWidgetModel | null | undefined;
 
-  initialize(parameters: any) {
+  initialize(parameters: WidgetView.IInitializeParameters) {
     super.initialize(parameters);
     this.luminoWidget.addClass(ELK_CSS.widget_class);
-    this.on('change:source', this.on_source_changed, this);
+    // `change:source` fires on the MODEL: subscribing on the view (`this.on`)
+    // is a channel nobody triggers, so a source wired after view-init never
+    // attached its change:value listener and the diagram stayed blank.
+    // listenTo: `remove()` -> `stopListening()` cleans up with the view.
+    this.listenTo(this.model, 'change:source', this.on_source_changed);
     this.on_source_changed();
   }
   async on_source_changed() {
-    // TODO disconnect old ones
     let source = this.model.get('source');
+    if (source === this.connectedSource) {
+      return;
+    }
+    // exactly one live value listener: drop the previous source's
+    if (this.connectedSource) {
+      this.stopListening(this.connectedSource, 'change:value');
+    }
+    this.connectedSource = source;
     if (source) {
-      source.on('change:value', this.diagramLayout, this);
+      this.listenTo(source, 'change:value', this.diagramLayout);
       this.diagramLayout();
     }
   }
@@ -204,6 +238,12 @@ export class ELKViewerView extends DOMWidgetView {
     this.diagramLayout().catch((err) =>
       console.warn('ELK Failed initial view render', err),
     );
+    // the `source` reference arrives as a state update AFTER comm-open and
+    // jupyter-server's iopub rate limiter silently drops state updates
+    // under bursty load; a view left watching a missing/empty source stayed
+    // blank forever. Report the stale state (with backoff) until renderable
+    // so the kernel re-syncs the wiring (Viewer._handle_browser_msg).
+    this.scheduleStaleCheck();
 
     // timeout is ugly workaround for gh issue #94. Still potential for bounding
     // box being stale but added resize call to the `fit` and `center` actions
@@ -216,6 +256,34 @@ export class ELKViewerView extends DOMWidgetView {
   updateControlOverlay() {
     let overlay = this.model.get('control_overlay');
     this.source.control_overlay = overlay;
+  }
+
+  /** Delay (ms) before the next stale-state check; doubles per silent retry. */
+  private staleDelay = 2000;
+
+  /**
+   * Report a non-renderable viewer state and retry with exponential backoff.
+   * This acts as a state-recovery handshake for dropped widget updates; it is
+   * deliberately kept in the frontend because it paces browser-to-kernel
+   * transport rather than diagram layout.
+   */
+  scheduleStaleCheck() {
+    setTimeout(() => {
+      if (!this.el.isConnected) {
+        return; // the view was removed; a live sibling view owns the pump
+      }
+      const source = this.model.get('source');
+      if (source != null && source.get('value') != null) {
+        return; // renderable: the change:value wiring takes it from here
+      }
+      ELK_DEBUG && console.warn('ELK viewer reporting stale source');
+      this.model.send(
+        { action: 'stale', missing: { source: source == null, value: true } },
+        {},
+      );
+      this.staleDelay = Math.min(this.staleDelay * 2, STALE_DELAY_MAX);
+      this.scheduleStaleCheck();
+    }, this.staleDelay);
   }
 
   resize = (width = -1, height = -1) => {
@@ -326,6 +394,17 @@ export class ELKViewerView extends DOMWidgetView {
     let selection = this.model.get('selection');
     if (selection != null) {
       let selected: string[] = selection.get('ids');
+      if (this.source?.index == null) {
+        // the kernel can set selection ids before the first layout has been
+        // submitted (a comm set_state racing initSprotty / diagramLayout):
+        // there is no sprotty model or index to select against yet. Queue
+        // the ids; diagramLayout replays them once the first model lands.
+        this.pendingSelected = selected;
+        ELK_DEBUG &&
+          console.log('ELK queueing selection before first layout', selected);
+        return;
+      }
+      this.pendingSelected = null; // a live selection supersedes any queued one
       let old_selected: string[] = selection.previous('ids');
       const { entering, exiting, changed } = selectionDelta(old_selected, selected);
       this.setSelectedNodes(selected);
@@ -347,9 +426,20 @@ export class ELKViewerView extends DOMWidgetView {
    * Keep reference of the current selected nodes on the selection widget
    */
   async setSelectedNodes(selected: string[]) {
-    this.source.selectedNodes = selected.map(
-      (id) => this.source.index.getById(id) as any,
-    );
+    const index = this.source?.index;
+    if (index == null) {
+      // no model submitted yet (or a disposed view's zombie listener):
+      // there is nothing to map the ids against
+      ELK_DEBUG &&
+        console.log('ELK skipping setSelectedNodes: no model index', selected);
+      return;
+    }
+    // the index holds the submitted schema elements (SModelElement), not the
+    // rendered Impl instances; the renderer resolves those by id. Ids the
+    // kernel knows but the model does not resolve to nothing: drop them.
+    this.source.selectedNodes = selected
+      .map((id) => index.getById(id))
+      .filter((element): element is SModelElement => element != null);
   }
 
   updateHoverTool() {
@@ -387,6 +477,23 @@ export class ELKViewerView extends DOMWidgetView {
       return null;
     }
     await this.source.updateLayout(layout, symbols, this.div_id);
+    // Apply kernel selection on the initial model and on structural replacements.
+    // Ordinary coordinate-only updates already retain sprotty selection.
+    const selected = selectionAfterLayout(
+      this.pendingSelected,
+      this.model.get('selection')?.get('ids'),
+      (id) => this.source.getById(id) != null,
+    );
+    this.pendingSelected = null;
+    this.setSelectedNodes(selected); // [] when every selected id is gone
+    if (selected.length) {
+      await this.actionDispatcher.dispatch(
+        SelectAction.create({
+          selectedElementsIDs: selected,
+          deselectedElementsIDs: [],
+        }),
+      );
+    }
     this.model.layoutUpdated.emit();
     this.model.diagramUpdated.emit();
   }

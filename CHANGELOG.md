@@ -4,12 +4,12 @@
 
 ### Development
 
-- Migrate to native Pydantic 2 validation and serialization; require `pydantic >=2.12,<3`.
-  Use `model_dump()` / `model_dump_json()` instead of `dict()` / `json()`.
-  Custom models now use `model_config`, `Field(exclude=True)`, and native serializers
-  instead of `Config`, `merge_excluded`, and `dict()` overrides. Nested subclass
-  fields and graph references are preserved; shape serialization no longer mutates
-  dimensions. Explicit serialization field selections are now respected.
+- Migrate to native Pydantic 2 validation and serialization; require
+  `pydantic >=2.12,<3`. Use `model_dump()` / `model_dump_json()` instead of `dict()` /
+  `json()`. Custom models now use `model_config`, `Field(exclude=True)`, and native
+  serializers instead of `Config`, `merge_excluded`, and `dict()` overrides. Nested
+  subclass fields and graph references are preserved; shape serialization no longer
+  mutates dimensions. Explicit serialization field selections are now respected.
 - Fix Python typing throughout the package and run mypy as part of `pixi run lint`.
 - Minimum supported Python is now `3.10`
 - Upgrade the pinned `pixi` from `0.34.0` to `0.67.0` (and `setup-pixi` to `v0.10.0`);
@@ -17,9 +17,19 @@
   that broke `numpy`/`bqplot` in the example notebooks
 - Only reinstall requirements in the `07_Simulation` example when `ipyelk` is missing,
   and add `tooltip`s to its control widgets
+- Preserve the normal labextension in `src/_d` during the coverage build
+  (`build-js-ext-cov`), which emptied it and left `pixi run build` with an unloadable
+  extension (`_build.load: "static"`)
 
 ### `@jupyrdf/jupyter-elk 2.1.2`
 
+- Add optional label tooltips and full-width separators above labels.
+- Observe source rewiring and apply initial kernel selections after model submission
+  completes.
+- Report missing browser state for re-sync and surface text-measurement errors through
+  the kernel error channel.
+- Discard widget views whose attachment host disappears while they load.
+- Attribute label hover feedback to the nearest hoverable element.
 - Fix the SVG exporter `enabled` flag, which was always `true` (F5)
 - Report browser-side layout failures to the kernel instead of silently emitting an
   empty layout (F6)
@@ -53,6 +63,11 @@
 
 ### `ipyelk 2.1.2`
 
+- Allow diagram construction without a running event loop. `Pipe.schedule_run()` and
+  `Diagram.refresh()` return `None` when they cannot schedule a task.
+- Add optional `LabelProperties.tooltip` and `LabelProperties.separator` fields.
+- Re-send widget state after a browser reports missing state, with throttling.
+- Echo terminal progress state twice, cancelling pending echoes on updates and close.
 - Fix `IDReport.message()` printing literal `{eid}`/`{el}` placeholders (F1)
 - Fix `Pipeline.check()` / `get_progress_value()` crashing on an empty pipeline (F2)
 - Give each `Tool` its own `on_run` callback dispatcher (was shared across all tools)

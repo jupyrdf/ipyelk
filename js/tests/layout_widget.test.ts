@@ -9,6 +9,7 @@ import {
   collectProperties,
   layoutErrorMessage,
   prepareGraphForElk,
+  staleMessage,
 } from '../layout_widget_util';
 
 /** a small graph with `properties` on every element kind */
@@ -88,5 +89,28 @@ describe('collectProperties', () => {
     const propmap = collectProperties(graph);
     expect(graph.properties).toBeUndefined(); // mutated -- by design
     expect(propmap['root'].cssClasses).toBe('sysml-diagram');
+  });
+});
+
+describe('staleMessage', () => {
+  // the browser -> kernel half of the stale re-sync protocol: SyncedPipe
+  // answers `action: stale` by re-sending the pipe's (and endpoints') state
+  it('is null when the run request is servable', () => {
+    expect(staleMessage({}, { id: 'root' }, {})).toBeNull();
+  });
+
+  it('reports which of inlet / value / outlet never arrived', () => {
+    expect(staleMessage(undefined, undefined, {})).toEqual({
+      action: 'stale',
+      missing: { inlet: true, value: true, outlet: false },
+    });
+    expect(staleMessage({}, undefined, {})).toEqual({
+      action: 'stale',
+      missing: { inlet: false, value: true, outlet: false },
+    });
+    expect(staleMessage({}, { id: 'root' }, null)).toEqual({
+      action: 'stale',
+      missing: { inlet: false, value: false, outlet: true },
+    });
   });
 });

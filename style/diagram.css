@@ -68,6 +68,14 @@ symbol.elksymbol {
   dominant-baseline: hanging;
 }
 
+/* full-width rule above a label with properties.separator (decorative only) */
+.jp-ElkView .elkseparator {
+  fill: none;
+  stroke: var(--jp-elk-node-stroke);
+  stroke-width: var(--jp-elk-stroke-width);
+  pointer-events: none;
+}
+
 .jp-ElkView .elkjunction {
   stroke: none;
   fill: var(--jp-elk-edge-stroke);

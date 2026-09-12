@@ -14,6 +14,7 @@ import {
   applyProperties,
   layoutErrorMessage,
   prepareGraphForElk,
+  staleMessage,
 } from './layout_widget_util';
 import { ELK_DEBUG, IRunMessage, NAME, VERSION } from './tokens';
 
@@ -82,7 +83,9 @@ export class ELKLayoutModel extends DOMWidgetModel {
     // reapplied onto the layout result afterwards.
     const rootNode: ELK.ElkNode = this.get('inlet')?.get('value');
     let outlet: DOMWidgetModel = this.get('outlet'); // target output
-    if (rootNode == null || outlet == null) {
+    const stale = staleMessage(this.get('inlet'), rootNode, outlet);
+    if (stale != null) {
+      this.send(stale); // unservable: let the kernel re-sync the state
       return null;
     }
     const { graph, propmap } = prepareGraphForElk(rootNode);

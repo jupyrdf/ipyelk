@@ -12,6 +12,7 @@ import traitlets as T
 from ipywidgets.widgets.trait_types import TypedTuple
 
 from .marks import MarkElementWidget
+from .util import resync_stale
 
 
 class PipeDisposition(Enum):
@@ -209,12 +210,24 @@ class Pipe(W.Widget):
             raise NotImplementedError
         return self.status_widget._repr_mimebundle_(**kwargs)
 
-    def schedule_run(self, change: T.Bunch | None = None) -> asyncio.Task:
-        """Schedule rerunning the pipe on the event loop."""
+    def schedule_run(self, change: T.Bunch | None = None) -> asyncio.Task | None:
+        """Schedule rerunning the pipe on the event loop.
+
+        Returns ``None`` (and schedules nothing) when no event loop is running,
+        e.g. when a diagram is built in a plain script or a test: there is no
+        loop to run the task on, so raising would only crash widget
+        construction (``Diagram(source=...)`` refreshes from a trait observer).
+        """
         # schedule task on loop
         if self._task:
             self._task.cancel()
-        self._task = asyncio.create_task(self.run())
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            self.log.debug("No running event loop; not scheduling %s", type(self))
+            self._task = None
+            return None
+        self._task = loop.create_task(self.run())
 
         self._task.add_done_callback(self._post_run)
         return self._task
@@ -309,22 +322,36 @@ class SyncedPipe(SyncedOutletPipe, SyncedInletPipe):
     """Both inlet and value are synced with the browser"""
 
     def __init__(self, *args, **kwargs):
+        self._stale_resync_at: float = 0.0
+        self._stale_resync_interval: float = 0.0
         super().__init__(*args, **kwargs)
         self.on_msg(self._handle_browser_msg)
 
     def _handle_browser_msg(
         self, widget: W.Widget, content: dict[str, object], buffers: list[bytes] | None
     ):
-        """Reject the pending roundtrip future if the browser reports an error.
+        """React to the browser's answers on the pipe's custom-message channel.
 
-        This is the browser -> kernel error channel: a frontend that fails to
-        produce an outlet value answers with an ``action: error`` message so
-        the kernel stops waiting (and stops re-sending) instead of retrying
-        or timing out.
+        * ``action: error`` -- the frontend failed to produce an outlet value;
+          reject the pending roundtrip future so the kernel stops waiting (and
+          stops re-sending) instead of retrying or timing out.
+        * ``action: stale`` -- the frontend got a ``run`` request it cannot
+          serve because state it needs (inlet/outlet wiring, the inlet value)
+          never arrived: widget state sync has no retransmit, and
+          jupyter-server's iopub rate limiter silently drops ``comm_msg``
+          under bursty load. Re-emit the full state of the pipe and its
+          endpoints so the ongoing resend loop can converge within its
+          ``timeout``; throttled, since the re-sync (three states, the inlet
+          value can be large) goes over the same congested channel.
         """
-        if isinstance(content, dict) and content.get("action") == "error":
+        if not isinstance(content, dict):
+            return
+        action = content.get("action")
+        if action == "error":
             future = getattr(self, "_roundtrip_future", None)
             if future is not None and not future.done():
                 future.set_exception(
                     RuntimeError(str(content.get("error", "browser pipe failed")))
                 )
+        elif action == "stale":
+            resync_stale(self, self.inlet, self.outlet, missing=content.get("missing"))

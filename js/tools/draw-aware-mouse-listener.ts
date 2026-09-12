@@ -4,7 +4,12 @@
  */
 import { Action, HoverFeedbackAction } from 'sprotty-protocol';
 
-import { MouseListener, SModelElementImpl } from 'sprotty';
+import {
+  MouseListener,
+  SModelElementImpl,
+  findParentByFeature,
+  isHoverable,
+} from 'sprotty';
 
 import { DiagramTool } from './tool';
 
@@ -59,15 +64,34 @@ export class DragAwareHoverMouseListener extends DragAwareMouseListener {
     super();
   }
 
+  // attribute hover feedback to the nearest HOVERABLE ancestor, as sprotty's
+  // HoverMouseListener and the select tool (findParentByFeature) do: the raw
+  // target under the pointer is often a node's LABEL, which has no
+  // hoverFeedbackFeature, so HoverFeedbackCommand dropped the action and
+  // hovering a label gave no feedback at all
   mouseOver(target: SModelElementImpl, event: MouseEvent): Action[] {
+    const hoverTarget = findParentByFeature(target, isHoverable);
+    if (hoverTarget === undefined) {
+      return [];
+    }
     return [
-      HoverFeedbackAction.create({ mouseoverElement: target.id, mouseIsOver: true }),
+      HoverFeedbackAction.create({
+        mouseoverElement: hoverTarget.id,
+        mouseIsOver: true,
+      }),
     ];
   }
 
   mouseOut(target: SModelElementImpl, event: MouseEvent): (Action | Promise<Action>)[] {
+    const hoverTarget = findParentByFeature(target, isHoverable);
+    if (hoverTarget === undefined) {
+      return [];
+    }
     return [
-      HoverFeedbackAction.create({ mouseoverElement: target.id, mouseIsOver: false }),
+      HoverFeedbackAction.create({
+        mouseoverElement: hoverTarget.id,
+        mouseIsOver: false,
+      }),
     ];
   }
 }

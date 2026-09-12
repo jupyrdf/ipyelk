@@ -32,14 +32,18 @@ import { ELK_DEBUG } from '../tokens';
 
 import { ElkGraphJsonToSprotty, SSymbolGraph } from './json/elkgraph-to-sprotty';
 import { SSymbolModelFactory } from './renderer';
-import { ElkNode } from './sprotty-model';
 
 @injectable()
 export class JLModelSource extends LocalModelSource {
   elkToSprotty: ElkGraphJsonToSprotty;
   widget_manager: IWidgetManager;
   control_overlay: any;
-  selectedNodes: ElkNode[];
+  /**
+   * Ids of selected submitted schema elements. The renderer resolves each id
+   * to its rendered instance with `getById`; retaining only this structural
+   * contract prevents schema and implementation objects being mixed.
+   */
+  selectedNodes: Array<Pick<SModelElement, 'id'>>;
   index: SModelIndex;
   elementRegistry: SModelRegistry;
   factory: SSymbolModelFactory;
@@ -75,7 +79,7 @@ export class JLModelSource extends LocalModelSource {
     index?: SModelIndex,
   ): Promise<void> {
     ELK_DEBUG && console.log('doSubmitModel');
-    super.doSubmitModel(newRoot, update, cause, index);
+    await super.doSubmitModel(newRoot, update, cause, index);
     if (!index) {
       index = new SModelIndex();
       index.add(this.currentRoot);

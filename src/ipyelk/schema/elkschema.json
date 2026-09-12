@@ -277,8 +277,20 @@
         "selectable": {
           "type": "boolean"
         },
+        "separator": {
+          "description": "render a full-width horizontal rule across the parent node just above this label (e.g. a compartment header); opt-in, unset/false draws nothing",
+          "type": "boolean"
+        },
+        "separatorGap": {
+          "description": "Distance in SVG pixels between a separator and the top of its label. Defaults to `1` when omitted.",
+          "type": "number"
+        },
         "shape": {
           "$ref": "#/definitions/Shape"
+        },
+        "tooltip": {
+          "description": "Hover text rendered as the label's SVG `<title>`; typically the complete text for a visually truncated label.",
+          "type": "string"
         }
       },
       "type": "object"
