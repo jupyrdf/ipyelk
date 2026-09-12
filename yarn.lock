@@ -563,6 +563,32 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@inversifyjs/common@npm:1.4.0":
+  version: 1.4.0
+  resolution: "@inversifyjs/common@npm:1.4.0"
+  checksum: 39745f440c97fab25b1068a59c415a08620049c99502405840590c29c0e96cd8ebb544100da7f1fc933d9aa03ad14297df0120097b74bd3363e215b80a7e74e2
+  languageName: node
+  linkType: hard
+
+"@inversifyjs/core@npm:1.3.5":
+  version: 1.3.5
+  resolution: "@inversifyjs/core@npm:1.3.5"
+  dependencies:
+    "@inversifyjs/common": 1.4.0
+    "@inversifyjs/reflect-metadata-utils": 0.2.4
+  checksum: 72cd81e94c7b02c0a2f6abe85fba54b74db0813801939c410c7b55d7eb45b5eb34ef2ee049a32695a5fbb22992d9878f6e7001456067d9de58f4f3947545567f
+  languageName: node
+  linkType: hard
+
+"@inversifyjs/reflect-metadata-utils@npm:0.2.4":
+  version: 0.2.4
+  resolution: "@inversifyjs/reflect-metadata-utils@npm:0.2.4"
+  peerDependencies:
+    reflect-metadata: 0.2.2
+  checksum: 83d657d3bfdd86b1a5f96820fed9e790493dc8d178aee432839ee4e9f2b071f159e78c21b71157ebb798a37e6e2a0948110f9cc0512ca1224690d1d4bba2d515
+  languageName: node
+  linkType: hard
+
 "@isaacs/cliui@npm:^8.0.2":
   version: 8.0.2
   resolution: "@isaacs/cliui@npm:8.0.2"
@@ -696,19 +722,18 @@ __metadata:
     "@trivago/prettier-plugin-sort-imports": ^4.0.0
     "@types/lodash": ^4.14.162
     "@types/node": ^22.8.6
-    elkjs: 0.9.3
-    inversify: ~6.0.2
+    elkjs: 0.12.0
+    inversify: 6.2.2
     nyc: ^17.1.0
     prettier: ^3.3.0
     prettier-package-json: ^2.8.0
     prettier-plugin-sort-json: ^4.0
     raw-loader: ^4.0.2
-    reflect-metadata: ^0.1.13
+    reflect-metadata: ^0.2.2
     rimraf: ^6.0.1
     source-map-loader: ^4.0.1
-    sprotty: 1.3.0
-    sprotty-elk: 1.3.0
-    sprotty-protocol: ^1.3.0
+    sprotty: 1.4.0
+    sprotty-protocol: ^1.4.0
     ts-json-schema-generator: ^2.3.0
     ts-node: ^10.9.1
     typescript: 5.2.2
@@ -3471,10 +3496,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"elkjs@npm:0.9.3":
-  version: 0.9.3
-  resolution: "elkjs@npm:0.9.3"
-  checksum: 1293e42e0ea034b39d3719f3816b7b3cbaceb52a3114f2c1bd5ddd969bb1e36ae0afef58e77864fff7a1018dc5e96c177e9b0a40c16e4aaac26eb87f5785be4b
+"elkjs@npm:0.12.0":
+  version: 0.12.0
+  resolution: "elkjs@npm:0.12.0"
+  checksum: cdaf25a05ef5343d177cdfe305c57b03c82645a3851fa1cd60961beab9003da8cf9772671dea7620576b5f847b9156fa4ea66208d22502a564ec1cf39ff23d35
   languageName: node
   linkType: hard
 
@@ -4113,10 +4138,15 @@ __metadata:
   languageName: node
   linkType: hard
 
-"inversify@npm:~6.0.2":
-  version: 6.0.3
-  resolution: "inversify@npm:6.0.3"
-  checksum: acb1852d3e6a100527b8bf3bf0f74b845ae12548955b119749f57f1f157e32c84d41080f8e1412a1196401ab13afbb46d6100527c6dad0de28ee9272d5103a53
+"inversify@npm:6.2.2, inversify@npm:^6.1.3":
+  version: 6.2.2
+  resolution: "inversify@npm:6.2.2"
+  dependencies:
+    "@inversifyjs/common": 1.4.0
+    "@inversifyjs/core": 1.3.5
+  peerDependencies:
+    reflect-metadata: ~0.2.2
+  checksum: f9471853514ab0dd57d9c86bdd989da59d81954edda7bf5e5b1b552223b55897ffa6f8566e577f4265cfaf3ad8904d4cfeebb852e154df47740496fb5717b545
   languageName: node
   linkType: hard
 
@@ -5585,10 +5615,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"reflect-metadata@npm:^0.1.13":
-  version: 0.1.14
-  resolution: "reflect-metadata@npm:0.1.14"
-  checksum: 155ad339319cec3c2d9d84719f730f8b6a6cd2a074733ec29dbae6c89d48a2914c7d07a2350212594f3aae160fa4da4f903e6512f27ceaf968443a7c692bcad0
+"reflect-metadata@npm:^0.2.2":
+  version: 0.2.2
+  resolution: "reflect-metadata@npm:0.2.2"
+  checksum: a66c7b583e4efdd8f3c3124fbff33da2d0c86d8280617516308b32b2159af7a3698c961db3246387f56f6316b1d33a608f39bb2b49d813316dfc58f6d3bf3210
   languageName: node
   linkType: hard
 
@@ -6036,38 +6066,24 @@ __metadata:
   languageName: node
   linkType: hard
 
-"sprotty-elk@npm:1.3.0":
-  version: 1.3.0
-  resolution: "sprotty-elk@npm:1.3.0"
-  dependencies:
-    elkjs: ^0.8.2
-    inversify: ~6.0.2
-    sprotty-protocol: ^1.3.0
-  dependenciesMeta:
-    inversify:
-      optional: true
-  checksum: eaaf361f0cf7b3a73d1453a1d4a65e5f397b94ee36c809ea0bda732b1398ae6c3f998b13926cf1ddaee565bc2bf4cb2fe455110b5a93dee4ec6ec8d90ae1f856
+"sprotty-protocol@npm:^1.4.0":
+  version: 1.4.0
+  resolution: "sprotty-protocol@npm:1.4.0"
+  checksum: 8657a5c2ac4b8c58c3f07cce30280d448311e5902ef4c9386749f8178e6cb2e9bd14582e9a30785f410fae16a7585bda52697e24a37e8d9510d7a9ad2800af75
   languageName: node
   linkType: hard
 
-"sprotty-protocol@npm:^1.3.0":
-  version: 1.3.0
-  resolution: "sprotty-protocol@npm:1.3.0"
-  checksum: 7312340c89f5da4bcf764735f079bdcf334b9f7a0b262339440dfb0e662f1c27bcb5ae8bce36ae66e1c1740ebb6a929548eff79259cedf942ad1e58df94c6bbd
-  languageName: node
-  linkType: hard
-
-"sprotty@npm:1.3.0":
-  version: 1.3.0
-  resolution: "sprotty@npm:1.3.0"
+"sprotty@npm:1.4.0":
+  version: 1.4.0
+  resolution: "sprotty@npm:1.4.0"
   dependencies:
     autocompleter: ^9.1.2
     file-saver: ^2.0.5
-    inversify: ~6.0.2
+    inversify: ^6.1.3
     snabbdom: ~3.5.1
-    sprotty-protocol: ^1.3.0
+    sprotty-protocol: ^1.4.0
     tinyqueue: ^2.0.3
-  checksum: ff893e238b0384ab45ed01a5ba6be062b2bfae505ea7b56e709b06dd91ce10866f2f77da8c54b6a2d05f18ea0bb2fdf88f3b3a318fd41703340f374246db4167
+  checksum: ce061cb886938f43635b31b631437a0350ca258cdfebeaaf63ca262276d24c9c7c87a1dd440df4bc92990f04c09ba4528ff9fc1dc5db229ac9e3b8220799a7ba
   languageName: node
   linkType: hard
 

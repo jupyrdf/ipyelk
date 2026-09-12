@@ -4,12 +4,15 @@
  */
 import {
   Action,
+  CenterAction,
+  FitToScreenAction,
   HoverFeedbackAction,
   SModelElement,
   SModelRoot,
   SelectAction,
   SelectionResult, // SModelRegistry,
   SetModelAction,
+  SetViewportAction,
   UpdateModelAction,
 } from 'sprotty-protocol';
 
@@ -18,11 +21,12 @@ import {
 import {
   ActionDispatcher,
   ActionHandlerRegistry, // IModelFactory,
-  // SModelFactory,
+  CommandStackOptions,
+  InitializeCanvasBoundsAction, // SModelFactory,
   TYPES,
 } from 'sprotty';
 
-import { PromiseDelegate } from '@lumino/coreutils';
+import { PromiseDelegate, UUID } from '@lumino/coreutils';
 import { Message } from '@lumino/messaging';
 import { Signal } from '@lumino/signaling';
 import { Widget } from '@lumino/widgets';
@@ -30,10 +34,12 @@ import { Widget } from '@lumino/widgets';
 import {
   DOMWidgetModel,
   DOMWidgetView,
+  WidgetModel,
   WidgetView,
   unpack_models as deserialize,
 } from '@jupyter-widgets/base';
 
+import { hoverAfterFeedback, hoverFeedbackActions } from './hover_util';
 import {
   canonicalSelection,
   selectionAfterLayout,
@@ -41,6 +47,7 @@ import {
 } from './selection_util';
 import createContainer from './sprotty/di-config';
 import { JLModelSource } from './sprotty/diagram-server';
+import { PainterStyles } from './sprotty/json/elkgraph-to-sprotty';
 // import { VNode } from 'snabbdom';
 import { ELK_CSS, ELK_DEBUG, NAME, TAnyELKMessage, VERSION } from './tokens';
 import { NodeExpandTool, NodeSelectTool } from './tools';
@@ -49,6 +56,13 @@ import {
   IFeedbackActionDispatcher,
 } from './tools/feedback/feedback-action-dispatcher';
 import { ToolTYPES } from './tools/types';
+import {
+  IViewportReport,
+  ViewportReporter,
+  modelIds,
+  viewedIds,
+  viewportRect,
+} from './viewport_util';
 
 const POLL = 300;
 /**
@@ -56,6 +70,8 @@ const POLL = 300;
  * not time-limited: they stop when a source becomes renderable or the view
  * disconnects. Pipe deadlines are separate.
  */
+// trailing debounce for viewport reports: a wheel/drag burst -> one kernel write
+const VIEWPORT_DEBOUNCE = 100;
 const STALE_DELAY_MAX = 10000;
 
 export class ELKControlModel extends DOMWidgetModel {
@@ -88,8 +104,7 @@ export class ELKViewerModel extends DOMWidgetModel {
     selection: { deserialize },
     hover: { deserialize },
     painter: { deserialize },
-    zoom: { deserialize },
-    pan: { deserialize },
+    viewport: { deserialize },
     control_overlay: { deserialize },
   };
   layoutUpdated = new Signal<ELKViewerModel, void>(this);
@@ -141,6 +156,24 @@ export class ELKViewerView extends DOMWidgetView {
    * from `super()`, and a field initializer would overwrite that source.
    */
   private connectedSource: DOMWidgetModel | null | undefined;
+  /** Hover tool whose `change:hovered_id` this view observes. */
+  private connectedHover: DOMWidgetModel | null | undefined;
+  /** Painter whose `change:styles` this view observes. */
+  private connectedPainter: WidgetModel | null | undefined;
+  /** Identifies this view in viewport reports and `set_viewport` commands. */
+  readonly view_id: string = UUID.uuid4();
+  private viewportReportTimer: number | null = null;
+  /** Coalesces viewport snapshots before writing meaningful changes to the tool. */
+  private readonly viewportReporter = new ViewportReporter(
+    () => this.gatherViewport(),
+    (report) => {
+      const viewport: WidgetModel = this.model.get('viewport');
+      viewport.set(report);
+      viewport.save_changes();
+    },
+  );
+  /** Sprotty animation length; animated viewport actions settle after this delay. */
+  private animationDuration = 0;
 
   initialize(parameters: WidgetView.IInitializeParameters) {
     super.initialize(parameters);
@@ -204,9 +237,13 @@ export class ELKViewerView extends DOMWidgetView {
     this.feedbackDispatcher = container.get<FeedbackActionDispatcher>(
       ToolTYPES.IFeedbackActionDispatcher,
     );
+    this.animationDuration = container.get<CommandStackOptions>(
+      TYPES.CommandStackOptions,
+    ).defaultDuration;
     // this.model.on('change:mark_layout', this.diagramLayout, this);
     this.model.on('change:selection', this.updateSelectedTool, this);
     this.model.on('change:hover', this.updateHoverTool, this);
+    this.model.on('change:painter', this.updatePainterTool, this);
     this.model.on('change:interaction', this.interaction_mode_changed, this);
     this.model.on('msg:custom', this.handleMessage, this);
     this.model.on('change:symbols', this.diagramLayout, this);
@@ -215,6 +252,7 @@ export class ELKViewerView extends DOMWidgetView {
     // init for the first time
     this.updateSelectedTool();
     this.updateHoverTool();
+    this.updatePainterTool();
     this.updateControlOverlay();
 
     this.touch(); //to sync back the diagram state
@@ -227,6 +265,11 @@ export class ELKViewerView extends DOMWidgetView {
     // getting hook for
     this.registry.register(SetModelAction.KIND, this);
     this.registry.register(UpdateModelAction.KIND, this);
+    // every way the camera or canvas can change reports the viewport
+    this.registry.register(SetViewportAction.KIND, this);
+    this.registry.register(CenterAction.KIND, this);
+    this.registry.register(FitToScreenAction.KIND, this);
+    this.registry.register(InitializeCanvasBoundsAction.KIND, this);
 
     // Register Tools
     // this.toolManager.registerDefaultTools(
@@ -254,8 +297,27 @@ export class ELKViewerView extends DOMWidgetView {
   }
 
   updateControlOverlay() {
-    let overlay = this.model.get('control_overlay');
+    const overlay: WidgetModel | null = this.model.get('control_overlay');
+    const previous = this.source.control_overlay;
+    if (previous && previous !== overlay) {
+      this.stopListening(previous, 'change:children');
+    }
     this.source.control_overlay = overlay;
+    if (overlay) {
+      // the container is only rendered for a non-empty overlay, and the kernel
+      // usually fills `children` AFTER the selection render that would show
+      // it: re-render when the overlay gains or loses its children
+      this.listenTo(overlay, 'change:children', this.rerenderControlOverlay);
+    }
+  }
+
+  rerenderControlOverlay() {
+    if (this.source?.index == null) {
+      return; // nothing submitted yet; the first layout renders the overlay
+    }
+    this.source.updateModel().catch((err) => {
+      console.warn('ELK failed to re-render the control overlay', err);
+    });
   }
 
   /** Delay (ms) before the next stale-state check; doubles per silent retry. */
@@ -360,11 +422,15 @@ export class ELKViewerView extends DOMWidgetView {
       case SelectionResult.KIND:
         break;
       case HoverFeedbackAction.KIND:
-        let hoverFeedback: HoverFeedbackAction = action as HoverFeedbackAction;
-        if (hoverFeedback.mouseIsOver) {
-          let hover = this.model.get('hover');
-          if (hover != null) {
-            hover.set('ids', hoverFeedback.mouseoverElement);
+        const hoverFeedback = action as HoverFeedbackAction;
+        const hover = this.model.get('hover');
+        if (hover != null) {
+          const current: string | null = hover.get('hovered_id');
+          const next = hoverAfterFeedback(current, hoverFeedback);
+          // the feedback this view itself dispatches from updateHover lands
+          // here too: an unchanged id is written back to nothing
+          if (next !== current) {
+            hover.set('hovered_id', next);
             hover.save_changes();
             this.model.diagramUpdated.emit(void 0);
           }
@@ -379,9 +445,73 @@ export class ELKViewerView extends DOMWidgetView {
         break;
       case UpdateModelAction.KIND:
         break;
+      case SetViewportAction.KIND:
+      case CenterAction.KIND:
+      case FitToScreenAction.KIND:
+        // the handler runs when the action is dispatched; an animated move only
+        // settles after sprotty's animation, so report once that has ended
+        const { animate } = action as
+          | SetViewportAction
+          | CenterAction
+          | FitToScreenAction;
+        this.scheduleViewportReport(animate ? this.animationDuration : 0);
+        break;
+      case InitializeCanvasBoundsAction.KIND:
+        this.scheduleViewportReport();
+        break;
       default:
         break;
     }
+  }
+
+  /** Report the viewport `VIEWPORT_DEBOUNCE` ms (plus `extra`) after the last trigger. */
+  scheduleViewportReport(extra = 0) {
+    if (this.viewportReportTimer != null) {
+      window.clearTimeout(this.viewportReportTimer);
+    }
+    this.viewportReportTimer = window.setTimeout(() => {
+      this.viewportReportTimer = null;
+      this.reportViewport().catch((err) =>
+        console.warn('ELK failed to report the viewport', err),
+      );
+    }, VIEWPORT_DEBOUNCE + extra);
+  }
+
+  /**
+   * Write this view's camera and the ids it shows to the kernel's `Viewer.viewport`
+   * as ONE state update; the reporter drops superseded gathers and snapshots the
+   * kernel could not tell from the last one.
+   */
+  async reportViewport(): Promise<void> {
+    if (this.model.get('viewport') == null) {
+      return;
+    }
+    await this.viewportReporter.report();
+  }
+
+  /** This view's snapshot, or null while it is detached or has nothing rendered. */
+  private async gatherViewport(): Promise<IViewportReport | null> {
+    const layout = this.model.get('source')?.get('value');
+    if (!this.el.isConnected || layout == null || this.source?.index == null) {
+      return null;
+    }
+    const { scroll, zoom, canvasBounds } = await this.source.getViewport();
+    const rect = viewportRect(scroll, zoom, canvasBounds);
+    return {
+      view_id: this.view_id,
+      origin: [scroll.x, scroll.y],
+      zoom,
+      canvas_size: [canvasBounds.width, canvasBounds.height],
+      viewed_ids: viewedIds(this.source.root, rect, modelIds(layout)),
+    };
+  }
+
+  remove() {
+    if (this.viewportReportTimer != null) {
+      window.clearTimeout(this.viewportReportTimer);
+      this.viewportReportTimer = null;
+    }
+    return super.remove();
   }
 
   updateSelectedTool() {
@@ -443,26 +573,53 @@ export class ELKViewerView extends DOMWidgetView {
   }
 
   updateHoverTool() {
-    let hover = this.model.get('hover');
+    const hover = this.model.get('hover');
+    if (hover === this.connectedHover) {
+      return;
+    }
+    // exactly one live listener: drop the previous tool's (`.on` outlived
+    // both the tool swap and the view; listenTo is released by `remove()`)
+    if (this.connectedHover) {
+      this.stopListening(this.connectedHover, 'change:hovered_id');
+    }
+    this.connectedHover = hover;
     if (hover != null) {
-      hover.on('change:ids', this.updateHover, this);
+      this.listenTo(hover, 'change:hovered_id', this.updateHover);
     }
   }
 
   async updateHover() {
-    let hover = this.model.get('hover');
+    const hover = this.model.get('hover');
     if (hover != null) {
-      let hovered: string = hover.get('ids');
-      let old_hovered: string = hover.previous('ids');
-      await this.actionDispatcher.dispatchAll([
-        HoverFeedbackAction.create({ mouseoverElement: hovered, mouseIsOver: true }),
-        HoverFeedbackAction.create({
-          mouseoverElement: old_hovered,
-          mouseIsOver: false,
-        }),
-      ]);
+      const hovered: string | null = hover.get('hovered_id');
+      const previous: string | null = hover.previous('hovered_id');
+      await this.actionDispatcher.dispatchAll(hoverFeedbackActions(previous, hovered));
       this.model.diagramUpdated.emit(void 0);
     }
+  }
+
+  updatePainterTool() {
+    const painter: WidgetModel | null = this.model.get('painter');
+    if (painter === this.connectedPainter) {
+      return;
+    }
+    if (this.connectedPainter) {
+      this.stopListening(this.connectedPainter, 'change:styles');
+    }
+    this.connectedPainter = painter;
+    if (painter != null) {
+      // painted classes are merged at transform time, so a paint is a re-render of
+      // the SAME layout: sprotty's update keeps selection, hover feedback and the
+      // camera, and the kernel value (the model) is never touched
+      this.listenTo(painter, 'change:styles', this.diagramLayout);
+    }
+  }
+
+  /** The kernel `Painter.styles`, `{}` without a painter. */
+  painterStyles(): PainterStyles {
+    const painter: WidgetModel | null = this.model.get('painter');
+    const styles: PainterStyles | undefined = painter?.get('styles');
+    return styles == null ? {} : styles;
   }
 
   async interaction_mode_changed() {
@@ -476,7 +633,7 @@ export class ELKViewerView extends DOMWidgetView {
       // bailing
       return null;
     }
-    await this.source.updateLayout(layout, symbols, this.div_id);
+    await this.source.updateLayout(layout, symbols, this.div_id, this.painterStyles());
     // Apply kernel selection on the initial model and on structural replacements.
     // Ordinary coordinate-only updates already retain sprotty selection.
     const selected = selectionAfterLayout(
@@ -496,6 +653,8 @@ export class ELKViewerView extends DOMWidgetView {
     }
     this.model.layoutUpdated.emit();
     this.model.diagramUpdated.emit();
+    // a re-layout moves elements under a camera that did not change: re-report
+    this.scheduleViewportReport();
   }
 
   normalizeElementIds(model_id: string | string[] | null) {
@@ -528,6 +687,15 @@ export class ELKViewerView extends DOMWidgetView {
           content.max_zoom == null ? Infinity : content.max_zoom,
           content.animate == null ? true : content.animate,
         );
+        break;
+      case 'viewport':
+        if (content.view_id != null && content.view_id !== this.view_id) {
+          break; // addressed to another view of this diagram
+        }
+        this.resize(); // ensure bounds are accurate before moving
+        this.source
+          .setViewport(content.origin, content.zoom, content.animate)
+          .catch((err) => console.warn('ELK failed to set the viewport', err));
         break;
       default:
         console.warn('ELK unhandled message', content);

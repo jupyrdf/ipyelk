@@ -85,14 +85,15 @@ export class ElkModelRenderer extends ModelRenderer {
   renderJLOverlayControl(args?: object): VNode[] {
     ELK_DEBUG && console.log('render control overlay');
     let vnodes: VNode[] = [];
-    if (this.source.control_overlay) {
+    const overlay_widget = this.source.control_overlay;
+    // opt-in: no overlay, or a Box with nothing to show, renders no container
+    if (overlay_widget && overlay_widget.get('children')?.length) {
       let selected = this.getSelected();
       // filter selectedNodes...
       if (selected.length == 0 || !selected[0]) {
         // exit is nothing is selected or no control_overlay
         return vnodes;
       }
-      let overlay_widget = this.source.control_overlay;
 
       // let activeNode = selected[0];
       let elkNode = new ElkNode();
