@@ -57,8 +57,9 @@ class MarkElementWidget(W.DOMWidget):
         The index -- not ``value`` -- is the authority for the element
         hierarchy: hidden elements never survive serialization (see
         ``Node.model_dump``), so the index must be merged into, never rebuilt from, a
-        value that has been through the browser.  ``rebuild_index`` is kept for
-        the initial build only.
+        value that has been through the browser.  ``rebuild_index`` is for the
+        full Python-side hierarchy only (initially, or after adding elements);
+        the merge path requires every element to already carry an id.
         """
         if rebuild_index or self.index.elements is None:
             self.build_index()
@@ -66,12 +67,25 @@ class MarkElementWidget(W.DOMWidget):
             self.index.elements.update(ElementIndex.from_els(self.value))
         return self
 
-    def build_index(self) -> MarkIndex:
+    def build_index(self, *, assign_ids: bool = True) -> MarkIndex:
+        """Index ``value``; by default pin the resulting ids onto the elements.
+
+        The index's ``Registry`` assigns ids to elements that have none; writing
+        them back is what lets every later serialization -- which runs outside
+        the Registry -- emit the ids the index is keyed by, so ``persist`` can
+        merge what comes back from the browser.  Explicit ids are never changed.
+        ``assign_ids=False`` leaves ``id`` untouched so a caller can report or
+        reject unassigned ids first (``ValidationPipe.fix_null_id``).
+        """
         if self.value is None:
             index = ElementIndex()
         else:
             with self.index.context:
                 index = ElementIndex.from_els(self.value)
+            if assign_ids:
+                for key, el in index.items():
+                    if el.id is None:
+                        el.id = key
         self.index.elements = index
         return self.index
 
