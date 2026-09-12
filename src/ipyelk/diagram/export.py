@@ -20,14 +20,14 @@ class Exporter(W.Widget):
     _view_module = T.Unicode(EXTENSION_NAME).tag(sync=True)
     _view_module_version = T.Unicode(EXTENSION_SPEC_VERSION).tag(sync=True)
 
-    viewer: Viewer = T.Instance(Viewer, allow_none=True).tag(
+    viewer = T.Instance(Viewer, allow_none=True).tag(
         sync=True, **W.widget_serialization
     )
-    value: str = T.Unicode(allow_none=True).tag(sync=True)
-    enabled: bool = T.Bool(default_value=True).tag(sync=True)
-    extra_css: str = T.Unicode(default_value="").tag(sync=True)
-    padding: float = T.Float(20).tag(sync=True)
-    diagram: Diagram = T.Instance(Diagram, allow_none=True).tag(
+    value = T.Unicode(allow_none=True).tag(sync=True)
+    enabled = T.Bool(default_value=True).tag(sync=True)
+    extra_css = T.Unicode(default_value="").tag(sync=True)
+    padding = T.Float(20).tag(sync=True)
+    diagram = T.Instance(Diagram, allow_none=True).tag(
         sync=True, **W.widget_serialization
     )
     strip_ids = T.Bool(default_value=True).tag(sync=True)

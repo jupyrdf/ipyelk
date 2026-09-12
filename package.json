@@ -79,7 +79,7 @@
     "ts-json-schema-generator": "^2.3.0",
     "ts-node": "^10.9.1",
     "typescript": "5.2.2",
-    "vitest": "^3.2.6",
+    "vitest": "^4.1.11",
     "webpack": "^5.76.1",
     "worker-loader": "^3.0.2",
     "yarn-berry-deduplicate": "^6.1.1"

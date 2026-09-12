@@ -1,6 +1,6 @@
 # Copyright (c) 2024 ipyelk contributors.
 # Distributed under the terms of the Modified BSD License.
-from pydantic.v1 import Field
+from pydantic import Field
 
 from ...elements import (
     Edge,
@@ -10,6 +10,7 @@ from ...elements import (
     NodeProperties,
     Partition,
     Port,
+    PortProperties,
     Symbol,
     SymbolSpec,
     shapes,
@@ -98,13 +99,14 @@ class Decision(Node):
         self.add_port(
             key="input",
             port=Port(
-                properties={"shape": small_port_shape}, layoutOptions=port_opts("NORTH")
+                properties=PortProperties(shape=small_port_shape),
+                layoutOptions=port_opts("NORTH"),
             ),
         )
         self.add_port(
             key="true",
             port=Port(
-                properties={"shape": small_port_shape},
+                properties=PortProperties(shape=small_port_shape),
                 labels=[Label(text="true")],
                 layoutOptions=port_opts("WEST"),
             ),
@@ -112,7 +114,7 @@ class Decision(Node):
         self.add_port(
             key="false",
             port=Port(
-                properties={"shape": small_port_shape},
+                properties=PortProperties(shape=small_port_shape),
                 labels=[Label(text="false")],
                 layoutOptions=port_opts("EAST"),
             ),
@@ -142,7 +144,9 @@ class EndActivity(Node):
 
 
 class SimpleArrow(Edge):
-    properties: EdgeProperties = EdgeProperties(shape={"end": arrow_head.identifier})
+    properties: EdgeProperties = EdgeProperties(
+        shape=shapes.EdgeShape(end=arrow_head.identifier)
+    )
 
 
 class ActivityDiagram(Partition):
@@ -171,4 +175,4 @@ class ActivityDiagram(Partition):
         },
         exclude=True,
     )
-    default_edge: type[Edge] = Field(default=SimpleArrow)
+    default_edge: type[Edge] = Field(default=SimpleArrow, exclude=True)

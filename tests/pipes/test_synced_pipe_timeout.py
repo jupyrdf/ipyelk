@@ -65,7 +65,7 @@ def test_persist_indexes_new_elements_from_browser_roundtrip():
 
 
 def test_persist_keeps_hidden_elements_the_browser_never_sees():
-    """`Node.dict` drops hidden children, so a value that has been through the
+    """`Node.model_dump` drops hidden children, so a value that has been through the
     browser cannot be allowed to shrink the index -- the collapse/expand tool
     has nothing left to un-hide otherwise.
     """
@@ -75,7 +75,7 @@ def test_persist_keeps_hidden_elements_the_browser_never_sees():
     widget.build_index()
 
     # what comes back from the browser: hidden elements stripped
-    widget.value = convert_elkjson(root.dict())
+    widget.value = convert_elkjson(root.model_dump())
     widget.persist()
 
     assert widget.index.elements.get("plot") is hidden
@@ -98,3 +98,29 @@ async def test_no_browser_env_skips_the_roundtrip(monkeypatch):
         await asyncio.wait_for(pipe.run(), timeout=1.0)
 
     assert sent == [], "nothing should be sent when no frontend can answer"
+
+
+def test_persist_merges_ids_assigned_by_validation_pipe():
+    """Un-id'd hierarchies get ids from ``ValidationPipe`` (inside the index's
+    Registry) before they reach the wire; from there the browser roundtrip and the
+    ``persist`` merge path work without a Registry context (PR #145 review).
+    """
+    from ipyelk.elements.serialization import to_json
+    from ipyelk.pipes import ValidationPipe
+
+    root = Node()
+    child = root.add_child(Node(labels=[Label(text="A")]), key="a")
+    root.add_edge(child, root)
+    pipe = ValidationPipe()
+    pipe.inlet = MarkElementWidget(value=root)
+    pipe.outlet = MarkElementWidget()
+
+    asyncio.run(pipe.run())
+
+    wire = to_json(pipe.outlet.value, None)
+    assert wire["id"]
+    assert wire["children"][0]["id"]
+    assert wire["edges"][0]["sources"] == [wire["children"][0]["id"]]
+    pipe.outlet.value = convert_elkjson(wire)
+    pipe.outlet.persist()
+    assert pipe.outlet.index.elements.get(wire["id"]) is root

@@ -1,6 +1,9 @@
 # Copyright (c) 2024 ipyelk contributors.
 # Distributed under the terms of the Modified BSD License.
+from __future__ import annotations
+
 from dataclasses import dataclass
+from typing import ClassVar, cast
 
 import ipywidgets as W
 import traitlets as T
@@ -10,9 +13,9 @@ from .selection_widgets import LayoutOptionWidget
 
 @dataclass
 class Algorithm:
-    identifier: str
-    metadata_provider: str
-    title: str
+    identifier: ClassVar[str]
+    metadata_provider: ClassVar[str]
+    title: ClassVar[str]
 
 
 class Draw2DLayout(Algorithm):
@@ -74,7 +77,8 @@ class LayoutAlgorithm(LayoutOptionWidget):
 
     def _ui(self) -> list[W.Widget]:
         options = [
-            (cls.title, identifier) for (identifier, cls) in ALGORITHM_OPTIONS.items()
+            (cast("type[Algorithm]", cls).title, identifier)
+            for (identifier, cls) in ALGORITHM_OPTIONS.items()
         ]
         dropdown = W.Dropdown(description="Layout Algorithm", options=options)
 
@@ -88,10 +92,12 @@ class LayoutAlgorithm(LayoutOptionWidget):
         return self._update_metadata_provider()
 
     @T.observe("value")
-    def _update_metadata_provider(self, change: T.Bunch = None):
+    def _update_metadata_provider(self, change: T.Bunch | None = None):
         """Change Handler to update the metadata provider based on current
         selected algorithm
         """
-        provider = ALGORITHM_OPTIONS[self.value].metadata_provider
+        provider = cast(
+            "type[Algorithm]", ALGORITHM_OPTIONS[self.value]
+        ).metadata_provider
         self.metadata_provider = provider
         return provider

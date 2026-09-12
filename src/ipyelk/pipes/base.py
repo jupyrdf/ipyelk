@@ -6,7 +6,6 @@ import asyncio
 import re
 from datetime import datetime, timedelta
 from enum import Enum
-from typing import Callable
 
 import ipywidgets as W
 import traitlets as T
@@ -24,9 +23,9 @@ class PipeDisposition(Enum):
 
 class PipeStatus(W.Widget):
     disposition = T.Instance(PipeDisposition, default_value=PipeDisposition.done)
-    elapsed: timedelta | None = T.Instance(timedelta, allow_none=True)
-    exception = T.Instance(Exception, allow_none=True)
-    _task: asyncio.Future = None
+    elapsed = T.Instance(timedelta, allow_none=True)
+    exception = T.Instance(BaseException, allow_none=True)
+    _task: asyncio.Future | None = None
 
     STEPS = {
         PipeDisposition.waiting: 0,
@@ -58,7 +57,7 @@ class PipeStatus(W.Widget):
         )
 
     @classmethod
-    def error(cls, start_time: datetime, exception: Exception):
+    def error(cls, start_time: datetime, exception: BaseException):
         return PipeStatus(
             disposition=PipeDisposition.error,
             elapsed=datetime.now() - start_time,
@@ -66,10 +65,10 @@ class PipeStatus(W.Widget):
         )
 
     def step(self) -> float:
-        return self.STEPS.get(self.disposition)
+        return float(self.STEPS[self.disposition])
 
     def state(self) -> str:
-        return self.STATES.get(self.disposition)
+        return self.STATES[self.disposition]
 
     def dirty(self) -> bool:
         return self.disposition == PipeDisposition.waiting
@@ -106,7 +105,7 @@ class PipeStatusView(W.VBox):
     """
 
     include_exception = T.Bool(default_value=False)
-    html: W.HTML = T.Instance(W.HTML, kw={})
+    html = T.Instance(W.HTML, kw={})
 
     @property
     def badge(self):
@@ -180,16 +179,16 @@ class Pipe(W.Widget):
 
     """
 
-    enabled: bool = T.Bool(default_value=True)
-    inlet: MarkElementWidget = T.Instance(MarkElementWidget, kw={})
-    outlet: MarkElementWidget = T.Instance(MarkElementWidget, kw={})
+    enabled = T.Bool(default_value=True)
+    inlet = T.Instance(MarkElementWidget, kw={})
+    outlet = T.Instance(MarkElementWidget, kw={})
     observes: tuple[str, ...] = TypedTuple(T.Unicode(), kw={})
     reports: tuple[str, ...] = TypedTuple(T.Unicode(), kw={})
-    on_progress: Callable | None = T.Callable(default_value=None, allow_none=True)
-    on_error: Callable | None = T.Callable(default_value=None, allow_none=True)
-    _task: asyncio.Future = None
-    status: PipeStatus = T.Instance(PipeStatus, kw={})
-    status_widget: W.DOMWidget = T.Instance(W.DOMWidget, allow_none=True)
+    on_progress = T.Callable(default_value=None, allow_none=True)
+    on_error = T.Callable(default_value=None, allow_none=True)
+    _task: asyncio.Future | None = None
+    status = T.Instance(PipeStatus, kw={})
+    status_widget = T.Instance(W.DOMWidget, allow_none=True)
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -198,7 +197,7 @@ class Pipe(W.Widget):
     def _default_status_widget(self):
         widget = PipeStatusView()
 
-        def update(change=None):
+        def update(change: T.Bunch | None = None):
             widget.update(self)
 
         update()
@@ -210,7 +209,7 @@ class Pipe(W.Widget):
             raise NotImplementedError
         return self.status_widget._repr_mimebundle_(**kwargs)
 
-    def schedule_run(self, change: T.Bunch = None) -> asyncio.Task:
+    def schedule_run(self, change: T.Bunch | None = None) -> asyncio.Task:
         """Schedule rerunning the pipe on the event loop."""
         # schedule task on loop
         if self._task:

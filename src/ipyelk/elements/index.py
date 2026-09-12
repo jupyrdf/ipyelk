@@ -3,27 +3,32 @@
 from __future__ import annotations
 
 from collections import defaultdict
-from collections.abc import Iterator, Mapping
+from collections.abc import Iterator
 
 import networkx as nx
-from pydantic.v1 import BaseModel, Field
+from pydantic import BaseModel, Field, SerializeAsAny
 
 from ..exceptions import NotFoundError
 from .common import EMPTY_SENTINEL
 from .elements import BaseElement, Edge, HierarchicalElement, Label, Node, Port
 
 
+def _missing_id(el: BaseElement, what: str = "element") -> ValueError:
+    # type name only: an element repr recurses through its whole subtree
+    return ValueError(
+        f"Cannot index {what} without an id ({type(el).__name__}); "
+        "set `id` or build the index inside a Registry context"
+    )
+
+
 class IDReport(BaseModel):
-    duplicated: dict[str, list[BaseElement]] = Field(
+    duplicated: dict[str, list[SerializeAsAny[BaseElement]]] = Field(
         default_factory=dict,
         description="Mapping of elements with a non unique id",
     )
-    null_ids: list[BaseElement] = Field(
+    null_ids: list[SerializeAsAny[BaseElement]] = Field(
         default_factory=list, description="Elements without an id"
     )
-
-    class Config:
-        copy_on_model_validation = "none"
 
     def __bool__(self):
         return len(self.duplicated) + len(self.null_ids) > 0
@@ -51,15 +56,9 @@ class EdgeReport(BaseModel):
         description="edges that have a mismatched lowest common ancestor",
     )
 
-    class Config:
-        copy_on_model_validation = "none"
-
 
 class VisIndex(BaseModel):
-    class Config:
-        copy_on_model_validation = "none"
-
-    hidden: dict[str, BaseElement] = Field(
+    hidden: dict[str, SerializeAsAny[BaseElement]] = Field(
         default_factory=dict,
         description=("mapping of old visabile elements ids to old elements"),
     )
@@ -81,14 +80,24 @@ class VisIndex(BaseModel):
         for el, is_hidden, last in iter_visible(*els):
             if is_hidden:
                 el_id = el.get_id()
+                if el_id is None:
+                    raise _missing_id(el)
+                if not isinstance(last, BaseElement):
+                    raise ValueError(
+                        f"Cannot index hidden {type(el).__name__} {el_id!r} "
+                        "without a visible ancestor"
+                    )
+                last_id = last.get_id()
+                if last_id is None:
+                    raise _missing_id(last, "visible ancestor")
                 index[el_id] = el
-                last_visible[el_id] = last.get_id()
+                last_visible[el_id] = last_id
         return cls(
             hidden=index,
             last_visible=last_visible,
         )
 
-    def get(self, key) -> tuple[HierarchicalElement, str]:
+    def get(self, key) -> tuple[BaseElement | None, str | None]:
         return self.hidden.get(key), self.last_visible.get(key)
 
     def __len__(self):
@@ -118,10 +127,7 @@ class VisIndex(BaseModel):
 
 
 class ElementIndex(BaseModel):
-    elements: Mapping[str, BaseElement] = Field(default_factory=dict)
-
-    class Config:
-        copy_on_model_validation = "none"
+    elements: dict[str, SerializeAsAny[BaseElement]] = Field(default_factory=dict)
 
     def get(self, key: str) -> BaseElement:
         key = str(key)
@@ -142,7 +148,12 @@ class ElementIndex(BaseModel):
 
     @classmethod
     def from_els(cls, *els: BaseElement) -> ElementIndex:
-        elements = {el.get_id(): el for el in iter_elements(*els)}
+        elements: dict[str, SerializeAsAny[BaseElement]] = {}
+        for el in iter_elements(*els):
+            el_id = el.get_id()
+            if el_id is None:
+                raise _missing_id(el)
+            elements[el_id] = el
         return cls(
             elements=elements,
         )
@@ -157,8 +168,8 @@ class ElementIndex(BaseModel):
 
     def edges(
         self,
-        source: HierarchicalElement = EMPTY_SENTINEL,
-        target: HierarchicalElement = EMPTY_SENTINEL,
+        source: HierarchicalElement | type = EMPTY_SENTINEL,
+        target: HierarchicalElement | type = EMPTY_SENTINEL,
     ) -> Iterator[tuple[str, Edge]]:
         for key, edge in self.iter_types(Edge):
             if source is not EMPTY_SENTINEL and edge.source is not source:
@@ -195,7 +206,7 @@ class ElementIndex(BaseModel):
 
         Known ids are updated in place (element identity is preserved, which is
         what keeps `hidden` elements -- stripped from every serialized value by
-        `Node.dict` -- alive across browser roundtrips); unknown ids are added,
+        `Node.model_dump` -- alive across browser roundtrips); unknown ids are added,
         so elements that only exist in a value coming back from the browser
         (e.g. slack ports) become addressable without discarding the index.
         """
@@ -228,6 +239,7 @@ class ElementIndex(BaseModel):
                 null_ids.append(el)
                 continue
             eid = el.get_id()
+            assert eid is not None
             if eid in ids:
                 duplicated[eid].append(el)
             else:
@@ -249,7 +261,7 @@ class ElementIndex(BaseModel):
         from ..loaders.nx.nxutils import get_owner
 
         orphans: set[Node] = set()
-        lca_mismatch: dict[Edge, tuple[Node, Node]] = {}
+        lca_mismatch: dict[Edge, tuple[Node, Node | None]] = {}
 
         root = self.root()
 
@@ -263,7 +275,7 @@ class ElementIndex(BaseModel):
                     orphans.add(ancestor)
 
         # check
-        hierarchy = nx.DiGraph()
+        hierarchy: nx.DiGraph = nx.DiGraph()
         hierarchy.add_edges_from(iter_hierarchy(root, types=(HierarchicalElement,)))
         hierarchy.add_edges_from(
             iter_hierarchy(*orphans, root=root, types=(HierarchicalElement,))
@@ -288,18 +300,20 @@ class ElementIndex(BaseModel):
 
 
 class HierarchicalIndex(ElementIndex):
-    elements: Mapping[str, HierarchicalElement] = Field(default_factory=dict)
+    elements: dict[str, SerializeAsAny[BaseElement]] = Field(default_factory=dict)
     vis_index: VisIndex = Field(default_factory=VisIndex)
 
     @classmethod
     def from_els(
         cls, *els: BaseElement, vis_index: VisIndex | None = None
     ) -> HierarchicalIndex:
-        elements = {
-            el.get_id(): el
-            for el in iter_elements(*els)
-            if isinstance(el, HierarchicalElement)
-        }
+        elements: dict[str, SerializeAsAny[BaseElement]] = {}
+        for el in iter_elements(*els):
+            if isinstance(el, HierarchicalElement):
+                el_id = el.get_id()
+                if el_id is None:
+                    raise _missing_id(el)
+                elements[el_id] = el
         if vis_index is None:
             vis_index = VisIndex()
         return cls(
@@ -360,6 +374,8 @@ class HierarchicalIndex(ElementIndex):
             )
         # get old hidden element and the id of it's last visible ancestor
         _hidden_el, last_visible_id = self.vis_index.get(key)
+        if last_visible_id is None:
+            raise NotFoundError(f"Visible ancestor for {key} not found")
         node = self.get(last_visible_id)
         assert isinstance(node, Node)
         try:
@@ -389,6 +405,8 @@ class HierarchicalIndex(ElementIndex):
         hidden = self.is_hidden(el_id)
         if hidden and self.vis_index:
             _, el_id = self.vis_index.get(el_id)
+            if el_id is None:
+                raise NotFoundError(f"Visible ancestor for {el_id} not found")
         element = self.get(el_id)
         if isinstance(element, Port):
             element = element._parent

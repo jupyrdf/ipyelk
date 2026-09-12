@@ -51,6 +51,8 @@ def get_endpoint(
 ) -> HierarchicalElement:
     if not isinstance(pt, HierarchicalElement):
         pt = el_map.get(str(pt))  # must at least be an identifier in the element map
+    if not isinstance(pt, HierarchicalElement):
+        raise NotFoundError(f"Unable to resolve endpoint {pt}")
     if port_key is EMPTY_SENTINEL:
         return pt  # no need to try and resolve a port
 
@@ -153,7 +155,7 @@ def as_in_hierarchy(
 
     if parent in hierarchy:
         return parent
-    if nx_node_map and parent in nx_node_map:
+    if nx_node_map and isinstance(parent, Node) and parent in nx_node_map:
         return nx_node_map[parent]
 
     if isinstance(parent, HierarchicalElement):
@@ -164,7 +166,7 @@ def as_in_hierarchy(
         # should be an identifer to something in the element map
         el = el_map[parent]
         if isinstance(el, Port):
-            parent = el.parent
+            parent = el.get_parent()
     if parent in hierarchy:
         return parent
     raise NotFoundError(f"Unable to find {node} in the hierarchy")

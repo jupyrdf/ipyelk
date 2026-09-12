@@ -9,7 +9,7 @@ from __future__ import annotations
 
 from collections import namedtuple
 from dataclasses import dataclass
-from typing import Any, Callable, Type, TypeVar, cast
+from typing import Any, Callable, Protocol, TypeVar, cast
 
 # Sentinel Value for tracking the root node in the Elk JSON
 ElkRoot = namedtuple("ElkRootNode", [])()
@@ -17,7 +17,15 @@ ElkRoot = namedtuple("ElkRootNode", [])()
 ElkNullElement = namedtuple("ElkNullElement", [])()
 
 
+class ElkSerializable(Protocol):
+    @classmethod
+    def from_dict(cls, obj: Any) -> Any: ...
+
+    def to_dict(self) -> dict: ...
+
+
 T = TypeVar("T")
+S = TypeVar("S", bound=ElkSerializable)
 
 
 def strip_none(data: dict) -> dict:
@@ -79,12 +87,12 @@ def to_float(x: Any) -> float:
     return x
 
 
-def to_class(c: Type[T], x: Any) -> dict:
+def to_class(c: type[S], x: Any) -> dict:
     if not isinstance(x, c):
         # can we make it?
         x = c.from_dict(x)
     assert isinstance(x, c), f"Expected to be type of {c} received {type(c)}"
-    return cast("Any", x).to_dict()
+    return cast("S", x).to_dict()
 
 
 def from_int(x: Any) -> int:
@@ -227,7 +235,7 @@ class ElkPoint:
 
 @dataclass
 class ElkGraphElement:
-    id: str = None
+    id: str | None = None
     labels: list | None = None
     layoutOptions: dict[str, str] | None = None
 
@@ -258,7 +266,7 @@ class ElkGraphElement:
 
 @dataclass
 class ElkShape(ElkGraphElement):
-    id: str = None
+    id: str | None = None
     height: float | None = None
     labels: list | None = None
     layoutOptions: dict[str, str] | None = None
@@ -309,7 +317,7 @@ class ElkShape(ElkGraphElement):
 
 @dataclass
 class ElkLabel(ElkShape):
-    id: str = None
+    id: str | None = None
     text: str = ""
     height: float | None = None
     labels: list[ElkLabel] | None = None
@@ -388,7 +396,7 @@ class ElkLabel(ElkShape):
 
 @dataclass
 class ElkEdge(ElkGraphElement):
-    id: str = None
+    id: str | None = None
     junctionPoints: list[ElkPoint] | None = None
     labels: list[ElkLabel] | None = None
     layoutOptions: dict[str, str] | None = None
@@ -428,9 +436,9 @@ class ElkEdge(ElkGraphElement):
 
 @dataclass
 class ElkEdgeSection(ElkGraphElement):
-    id: str = None
-    endPoint: ElkPoint = None
-    startPoint: ElkPoint = None
+    id: str | None = None
+    endPoint: ElkPoint | None = None
+    startPoint: ElkPoint | None = None
     bendPoints: list[ElkPoint] | None = None
     incomingSections: list[str] | None = None
     incomingShape: str | None = None
@@ -505,7 +513,7 @@ class ElkEdgeSection(ElkGraphElement):
 
 @dataclass
 class ElkExtendedEdge(ElkEdge):
-    id: str = None
+    id: str | None = None
     sections: list[ElkEdgeSection] | None = None
     sources: list[str] | None = None
     targets: list[str] | None = None
@@ -573,7 +581,7 @@ class ElkExtendedEdge(ElkEdge):
 
 @dataclass
 class ElkPort(ElkShape):
-    id: str = None
+    id: str | None = None
     height: float | None = None
     labels: list[ElkLabel] | None = None
     layoutOptions: dict[str, str] | None = None
@@ -632,7 +640,7 @@ class ElkPort(ElkShape):
 
 @dataclass
 class ElkNode(ElkShape):
-    id: str = None
+    id: str | None = None
     children: list[ElkNode] | None = None
     edges: list[ElkEdge] | None = None
     height: float | None = None
@@ -718,7 +726,7 @@ class ElkNode(ElkShape):
 
 @dataclass
 class ElkPrimitiveEdge(ElkEdge):
-    id: str = None
+    id: str | None = None
     source: str = ""
     target: str = ""
     bendPoints: list[ElkPoint] | None = None

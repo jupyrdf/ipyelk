@@ -5,7 +5,7 @@ from __future__ import annotations
 from typing import Any
 
 import networkx as nx
-from pydantic.v1 import BaseModel, Field
+from pydantic import BaseModel, Field, SerializationInfo, model_serializer
 
 from .elements import BaseElement, Edge, Node
 from .registry import Registry
@@ -30,9 +30,25 @@ class Mark(BaseModel):
     def __eq__(self, other):
         return hash(self) == hash(other)
 
-    def dict(self, **kwargs):
+    @model_serializer
+    def serialize_mark(self, info: SerializationInfo) -> dict:
         with self.context:
-            return self.element.dict(**kwargs)
+            return self.element.model_dump(
+                mode=info.mode,
+                context=info.context,
+                # Forwarding pydantic's own arguments unchanged; the two SDK
+                # annotations disagree (`core_schema.IncExCall` is
+                # `set[int | str] | dict[int | str, ...]`, `BaseModel.model_dump`
+                # takes `set[int] | set[str] | Mapping[int, ...] | Mapping[str, ...]`).
+                include=info.include,  # type: ignore[arg-type]
+                exclude=info.exclude,  # type: ignore[arg-type]
+                by_alias=info.by_alias,
+                exclude_none=info.exclude_none,
+                exclude_unset=info.exclude_unset,
+                exclude_defaults=info.exclude_defaults,
+                exclude_computed_fields=info.exclude_computed_fields,
+                round_trip=info.round_trip,
+            )
 
     def get_selector(self):
         if isinstance(self.element, Edge):
@@ -62,7 +78,7 @@ class MarkFactory(BaseModel):
                 g.add_node(
                     nx_node,
                     mark=nx_node,
-                    elkjson=node.dict(exclude={"children", "edges", "parent"}),
+                    elkjson=node.model_dump(exclude={"children", "edges", "parent"}),
                 )
 
             for child in get_children(node):
@@ -71,6 +87,8 @@ class MarkFactory(BaseModel):
 
             for edge in node.edges:
                 endpts = edge.points()
+                assert endpts[0] is not None
+                assert endpts[1] is not None
                 nx_u, nx_v = map(lambda n: Mark(element=n, context=context), endpts)
                 for nx_pt, pt in zip([nx_u, nx_v], endpts):
                     if nx_pt not in g:
@@ -80,7 +98,7 @@ class MarkFactory(BaseModel):
                             g.add_node(
                                 nx_pt,
                                 mark=nx_pt,
-                                elkjson=pt.dict(
+                                elkjson=pt.model_dump(
                                     exclude={"children", "edges", "parent"}
                                 ),
                             )
@@ -91,18 +109,18 @@ class MarkFactory(BaseModel):
                     nx_u,
                     nx_v,
                     mark=mark,
-                    elkjson=edge.dict(),
+                    elkjson=edge.model_dump(),
                 )
                 mark.set_edge_selector(nx_u, nx_v, key)
             return nx_node
 
     def __call__(self, *nodes, follow_edges=True):
-        g = nx.MultiDiGraph()
-        tree = nx.DiGraph()
+        g: nx.MultiDiGraph = nx.MultiDiGraph()
+        tree: nx.DiGraph = nx.DiGraph()
         for node in nodes:
             self._add(node, g, tree, follow_edges=follow_edges)
         return (g, tree)
 
 
-def get_children(node: Node) -> Node:
+def get_children(node: Node) -> list[Node]:
     return getattr(node, "children", [])

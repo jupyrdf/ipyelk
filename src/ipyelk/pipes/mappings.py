@@ -6,7 +6,7 @@ from collections.abc import Hashable
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
-from ..model.model import ElkNode, ElkPort
+from ..elements.layout_options.model import ElkNode, ElkPort
 
 if TYPE_CHECKING:
     from .. import elements

@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import asyncio
-from typing import Callable
 
 import ipywidgets as W
 import traitlets as T
@@ -15,15 +14,11 @@ from ..pipes import Pipe
 class Tool(W.Widget):
     """An interactive element to control a diagram."""
 
-    tee: Pipe = T.Instance(Pipe, allow_none=True).tag(
-        sync=True, **W.widget_serialization
-    )
-    on_done: Callable | None = T.Callable(
-        default_value=None, allow_none=True
-    )  # callback when done
+    tee = T.Instance(Pipe, allow_none=True).tag(sync=True, **W.widget_serialization)
+    on_done = T.Callable(default_value=None, allow_none=True)  # callback when done
     disable = T.Bool(default_value=False).tag(sync=True, **W.widget_serialization)
     reports = TypedTuple(T.Unicode(), kw={})
-    _task: asyncio.Future = None
+    _task: asyncio.Future | None = None
     ui = T.Instance(W.DOMWidget, allow_none=True)
     priority = T.Int(default_value=10)
     _on_run_handlers = T.Instance(W.CallbackDispatcher, kw={})
@@ -80,8 +75,8 @@ class ToolButton(Tool):
     :param handler: Called when button is pressed.
     """
 
-    handler: Callable | None = T.Callable(default_value=None, allow_none=True)
-    description: str = T.Unicode(default_value="")
+    handler = T.Callable(default_value=None, allow_none=True)
+    description = T.Unicode(default_value="")
 
     @T.default("ui")
     def _default_ui(self):

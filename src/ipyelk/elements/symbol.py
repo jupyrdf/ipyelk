@@ -1,7 +1,7 @@
 # Copyright (c) 2024 ipyelk contributors.
 # Distributed under the terms of the Modified BSD License.
 
-from pydantic.v1 import BaseModel, Field
+from pydantic import BaseModel, Field, SerializeAsAny
 
 from .elements import Node
 from .shapes import Point
@@ -11,7 +11,9 @@ class Symbol(BaseModel):
     identifier: str = Field(
         ..., description="Unique identifier for uses of this symbol to reference"
     )
-    element: Node = Field(..., description="Root element for the symbol")
+    element: SerializeAsAny[Node] = Field(
+        ..., description="Root element for the symbol"
+    )
     width: float = Field(..., title="Width", description="Viewbox width")
     height: float = Field(..., title="Height", description="Viewbox height")
     x: float = Field(0, title="X", description="Viewbox X Position")
@@ -32,7 +34,7 @@ class EndpointSymbol(Symbol):
 class SymbolSpec(BaseModel):
     """A set of symbols with unique identifiers"""
 
-    library: dict[str, Symbol] = Field(
+    library: dict[str, SerializeAsAny[Symbol]] = Field(
         default_factory=dict,
         description="Mapping of unique symbol identifiers to a symbol",
     )

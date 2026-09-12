@@ -10,7 +10,15 @@ from __future__ import annotations
 
 from uuid import uuid4
 
-from ...elements import Node, NodeProperties, Port, Symbol, SymbolSpec, shapes
+from ...elements import (
+    Node,
+    NodeProperties,
+    Port,
+    PortProperties,
+    Symbol,
+    SymbolSpec,
+    shapes,
+)
 from ...elements import layout_options as opt
 
 
@@ -34,17 +42,15 @@ class Gate(Symbol):
 
     def get_ports(self, id=None) -> list[Port]:
         return [
-            {
-                "id": f"{id}.{key}",
-                "width": 0.1,
-                "height": 0.1,
-                "properties": {
-                    "key": str(key),
-                },
-                "layoutOptions": opt.OptionsWidget(
+            Port(
+                id=f"{id}.{key}",
+                width=0.1,
+                height=0.1,
+                properties=PortProperties(key=str(key)),
+                layoutOptions=opt.OptionsWidget(
                     options=[opt.PortSide(value=value)]
                 ).value,
-            }
+            )
             for key, value in self.ports.items()
         ]
 

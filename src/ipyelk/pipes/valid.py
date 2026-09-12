@@ -20,7 +20,7 @@ class ValidationPipe(Pipe):
     schema_report = T.Dict(kw={})
     errors = T.Dict(kw={})
 
-    async def run(self):
+    async def run(self) -> None:
         index: MarkIndex = self.inlet.build_index()
         with index.context:
             self.get_reports(index)
@@ -40,10 +40,12 @@ class ValidationPipe(Pipe):
                 raise ValueError("Outlet value is not valid")
 
     def get_reports(self, index: MarkIndex):
+        if index.elements is None:
+            raise ValueError("Mark index has no elements")
         self.edge_report, self.id_report = index.elements.get_reports()
 
     def collect_errors(self) -> dict:
-        errors = {}
+        errors: dict[str, object] = {}
         if self.id_report.duplicated:
             errors["Nonunique Element Ids"] = self.id_report.duplicated
 

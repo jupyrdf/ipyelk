@@ -33,7 +33,7 @@ dependencies = [
   "ipywidgets >=8.0.1,<9",
   "jsonschema >=4.18",
   "networkx",
-  "pydantic >=1.10.17,<3", # uses the v1 compatibility layer
+  "pydantic >=2.12,<3",
 ]
 
 [project.urls]
@@ -52,7 +52,6 @@ directory = "src/_d"
 init_forbid_extra = true
 init_typed = true
 warn_required_dynamic_aliases = true
-warn_untyped_fields = true
 
 # coverage #############################################################################
 [tool.coverage.run]
@@ -79,6 +78,12 @@ cache_dir = "build/.cache/.mypy_cache"
 plugins = ["pydantic.mypy"]
 files = "src"
 allow_redefinition = true
+check_untyped_defs = true
+
+# ipywidgets does not publish type information or a separate stub package.
+[[tool.mypy.overrides]]
+module = ["ipywidgets", "ipywidgets.*"]
+ignore_missing_imports = true
 
 # pytest ###############################################################################
 [tool.pytest.ini_options]
@@ -87,7 +92,6 @@ asyncio_default_fixture_loop_scope = "function"
 cache_dir = "build/.cache/pytest"
 filterwarnings = [
   "error",
-  "ignore::DeprecationWarning:pydantic",
   "ignore:.*create_comm.*:DeprecationWarning",
 ]
 generate_report_on_test = true
@@ -215,6 +219,14 @@ ignore = [
   "S603",
   "SIM108",
 ]
+
+[tool.ruff.lint.flake8-type-checking]
+# ruff 0.16 exempts `typing_extensions` only while this table is absent; keep it
+exempt-modules = ["typing", "typing_extensions"]
+# Pydantic evaluates field annotations at runtime, so their imports must stay out
+# of `if TYPE_CHECKING:` blocks. ruff only follows same-module inheritance, so the
+# element base subclassed from other modules is listed explicitly.
+runtime-evaluated-base-classes = ["pydantic.BaseModel", "ipyelk.elements.elements.Node"]
 
 [tool.ruff.lint.per-file-ignores]
 "**/tests/*.py" = [

@@ -23,12 +23,19 @@ Open JupyterLab
     ${geckolog} =    Set Variable    ${OUTPUT DIR}${/}logs${/}geckodriver-${NEXT BROWSER}.log
     # normalize windows slashes
     ${geckolog} =    Set Variable    ${geckolog.replace('\\', '/')}
+    # close_fds: selenium defaults it to False on Windows, so geckodriver/firefox
+    # inherit robot's stdout/stderr pipe handles; an orphaned firefox then keeps
+    # pabot waiting for EOF after robot exits (6h CI hang). Object form: the
+    # `service=` string parser rejects `popen_kw`.
+    ${service} =    Evaluate
+    ...    selenium.webdriver.FirefoxService(log_output=$geckolog, executable_path=$GECKODRIVER, popen_kw={"close_fds": True})
+    ...    selenium.webdriver
 
     Open Browser
     ...    about:blank
     ...    headlessfirefox
     ...    options=${options}
-    ...    service=log_output='${geckolog}'; executable_path='${GECKODRIVER}'
+    ...    service=${service}
     Wait Until Keyword Succeeds    3x    5s    Wait For Splash
 
 Wait For Splash

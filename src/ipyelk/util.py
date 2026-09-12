@@ -18,8 +18,8 @@ def to_dict(obj):
         data = obj
     elif hasattr(obj, "to_dict"):
         data = obj.to_dict()
-    elif hasattr(obj, "dict"):
-        data = obj.dict()
+    elif hasattr(obj, "model_dump"):
+        data = obj.model_dump()
     else:
         raise TypeError("Unable to convert to dictionary")
     return data

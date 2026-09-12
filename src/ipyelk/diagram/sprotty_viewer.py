@@ -1,7 +1,8 @@
-"""Widget for interacting with ELK rendered using Sprotty"""
-
 # Copyright (c) 2024 ipyelk contributors.
 # Distributed under the terms of the Modified BSD License.
+"""Widget for interacting with ELK rendered using Sprotty"""
+
+from __future__ import annotations
 
 import traitlets as T
 from ipywidgets import DOMWidget
@@ -35,15 +36,13 @@ class SprottyViewer(DOMWidget, Viewer):
     _view_module = T.Unicode(EXTENSION_NAME).tag(sync=True)
     _view_module_version = T.Unicode(EXTENSION_SPEC_VERSION).tag(sync=True)
 
-    symbols: SymbolSpec = T.Instance(SymbolSpec, kw={}).tag(
-        sync=True, **symbol_serialization
-    )
+    symbols = T.Instance(SymbolSpec, kw={}).tag(sync=True, **symbol_serialization)
 
     def center(
         self,
-        model_ids: list[str] = None,
-        animate: bool = None,
-        retain_zoom: bool = None,
+        model_ids: list[str] | None = None,
+        animate: bool | None = None,
+        retain_zoom: bool | None = None,
     ):
         """Center Diagram View on specified model ids
 
@@ -60,10 +59,10 @@ class SprottyViewer(DOMWidget, Viewer):
 
     def fit(
         self,
-        model_ids: list[str] = None,
-        animate: bool = None,
-        max_zoom: float = None,
-        padding: float = None,
+        model_ids: list[str] | None = None,
+        animate: bool | None = None,
+        max_zoom: float | None = None,
+        padding: float | None = None,
     ):
         """Pan/Zoom the Diagram View to focus on particular model ids
 

@@ -1,6 +1,6 @@
 # Copyright (c) 2024 ipyelk contributors.
 # Distributed under the terms of the Modified BSD License.
-from pydantic.v1 import Field
+from pydantic import Field
 
 from ...elements import (
     Edge,
@@ -8,7 +8,7 @@ from ...elements import (
     Partition,
     Record,
     SymbolSpec,
-    merge_excluded,
+    shapes,
 )
 from ...elements import layout_options as opt
 from ..molds import connectors
@@ -43,19 +43,27 @@ class Block(Record):
 
 
 class Composition(Edge):
-    properties: EdgeProperties = EdgeProperties(shape={"start": "composition"})
+    properties: EdgeProperties = EdgeProperties(
+        shape=shapes.EdgeShape(start="composition")
+    )
 
 
 class Aggregation(Edge):
-    properties: EdgeProperties = EdgeProperties(shape={"start": "aggregation"})
+    properties: EdgeProperties = EdgeProperties(
+        shape=shapes.EdgeShape(start="aggregation")
+    )
 
 
 class Containment(Edge):
-    properties: EdgeProperties = EdgeProperties(shape={"start": "containment"})
+    properties: EdgeProperties = EdgeProperties(
+        shape=shapes.EdgeShape(start="containment")
+    )
 
 
 class DirectedAssociation(Edge):
-    properties: EdgeProperties = EdgeProperties(shape={"end": "directed_association"})
+    properties: EdgeProperties = EdgeProperties(
+        shape=shapes.EdgeShape(end="directed_association")
+    )
 
 
 class Association(Edge):
@@ -63,45 +71,49 @@ class Association(Edge):
 
 
 class Generalization(Edge):
-    properties: EdgeProperties = EdgeProperties(shape={"start": "generalization"})
+    properties: EdgeProperties = EdgeProperties(
+        shape=shapes.EdgeShape(start="generalization")
+    )
 
 
 class BlockDiagram(Partition):
     # TODO flesh out ideas of encapsulating diagram defs / styles / elements
-    class Config:
-        copy_on_model_validation = "none"
-        excluded = merge_excluded(Partition, "symbols", "style")
-
-    symbols: SymbolSpec = SymbolSpec().add(
-        connectors.Rhomb(identifier="composition", r=4),
-        connectors.Rhomb(identifier="aggregation", r=4),
-        connectors.Containment(identifier="containment", r=4),
-        connectors.StraightArrow(identifier="directed_association", r=4),
-        connectors.StraightArrow(identifier="generalization", r=4, closed=True),
+    symbols: SymbolSpec = Field(
+        SymbolSpec().add(
+            connectors.Rhomb(identifier="composition", r=4),
+            connectors.Rhomb(identifier="aggregation", r=4),
+            connectors.Containment(identifier="containment", r=4),
+            connectors.StraightArrow(identifier="directed_association", r=4),
+            connectors.StraightArrow(identifier="generalization", r=4, closed=True),
+        ),
+        exclude=True,
     )
 
-    style: dict[str, dict[str, str]] = {
-        " .elklabel.compartment_title_1": {
-            "font-weight": "bold",
+    style: dict[str, dict[str, str]] = Field(
+        {
+            " .elklabel.compartment_title_1": {
+                "font-weight": "bold",
+            },
+            " .elklabel.heading, .elklabel.compartment_title_2": {
+                "font-style": "italic",
+            },
+            " .arrow.inheritance": {
+                "fill": "none",
+            },
+            " .arrow.containment": {
+                "fill": "none",
+            },
+            " .arrow.aggregation": {
+                "fill": "none",
+            },
+            " .arrow.directed_association": {
+                "fill": "none",
+            },
+            " .internal>.elknode": {
+                "stroke": "transparent",
+                "fill": "transparent",
+            },
         },
-        " .elklabel.heading, .elklabel.compartment_title_2": {
-            "font-style": "italic",
-        },
-        " .arrow.inheritance": {
-            "fill": "none",
-        },
-        " .arrow.containment": {
-            "fill": "none",
-        },
-        " .arrow.aggregation": {
-            "fill": "none",
-        },
-        " .arrow.directed_association": {
-            "fill": "none",
-        },
-        " .internal>.elknode": {
-            "stroke": "transparent",
-            "fill": "transparent",
-        },
-    }
-    default_edge: type[Edge] = Field(default=Association)
+        exclude=True,
+    )
+    default_edge: type[Edge] = Field(default=Association, exclude=True)

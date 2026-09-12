@@ -87,6 +87,7 @@ _Log Console_, opened with the _Show Log Console_ command.
 ```bash
 pixi run fix
 pixi run lint
+pixi run lint-mypy  # run only the Python type checker
 pixi run test
 ```
 

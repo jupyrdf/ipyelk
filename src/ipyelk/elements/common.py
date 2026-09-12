@@ -2,21 +2,27 @@
 # Distributed under the terms of the Modified BSD License.
 from collections import namedtuple
 
-EMPTY_SENTINEL = namedtuple("Sentinel", [])
+from pydantic import SerializationInfo
+
+Sentinel = namedtuple("Sentinel", [])
+EMPTY_SENTINEL = Sentinel
 
 
-def add_excluded_fields(kwargs: dict, excluded: list) -> dict:
-    """Shim function to help manipulate excluded fields from the `dict`
-    method
-    """
-    exclude = kwargs.pop("exclude", None) or set()
-    if isinstance(exclude, set):
-        for i in excluded:
-            exclude.add(i)
+def serialize_value(data: dict, key: str, value, info: SerializationInfo) -> None:
+    """Add a derived ELK value while respecting the caller's field selection."""
+    if info.include is not None and key not in info.include:
+        return
+    if info.exclude is not None:
+        if isinstance(info.exclude, set) and key in info.exclude:
+            return
+        if isinstance(info.exclude, dict):
+            excluded = info.exclude.get(key)
+            if excluded is True or excluded is Ellipsis:
+                return
+    if value is None and info.exclude_none:
+        data.pop(key, None)
     else:
-        raise TypeError(f"TODO handle other types of exclude e.g. {type(exclude)}")
-    kwargs["exclude"] = exclude
-    return kwargs
+        data[key] = value
 
 
 class CounterContextManager:

@@ -1,5 +1,7 @@
 # Copyright (c) 2024 ipyelk contributors.
 # Distributed under the terms of the Modified BSD License.
+from __future__ import annotations
+
 from datetime import datetime
 
 import ipywidgets as W
@@ -13,7 +15,7 @@ class PipelineStatusView(PipeStatusView):
     toggle_btn = T.Instance(W.Button)
     include_exception = T.Bool(default_value=True)
     collapsed = T.Bool(default_value=True)
-    statuses = T.List()
+    statuses = T.List(T.Instance(W.Widget), default_value=[])
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -45,7 +47,7 @@ class PipelineStatusView(PipeStatusView):
             children.extend(self.statuses)
         self.children = children
 
-    def update_children(self, pipe: "Pipeline"):
+    def update_children(self, pipe: Pipeline):
         statuses = [p.status_widget for p in pipe.pipes]
         self.statuses = [
             W.HBox([
@@ -58,15 +60,13 @@ class PipelineStatusView(PipeStatusView):
 
 
 class Pipeline(SyncedOutletPipe):
-    pipes: tuple[Pipe, ...] = T.List(T.Instance(Pipe), kw={}).tag(
-        sync=True, **W.widget_serialization
-    )
+    pipes = T.List(T.Instance(Pipe), kw={}).tag(sync=True, **W.widget_serialization)
 
     @T.default("status_widget")
     def _default_status_widget(self):
         widget = PipelineStatusView()
 
-        def update(change=None):
+        def update(change: T.Bunch | None = None):
             widget.update(self)
 
         update()

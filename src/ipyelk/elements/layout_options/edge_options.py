@@ -1,6 +1,6 @@
 # Copyright (c) 2024 ipyelk contributors.
 # Distributed under the terms of the Modified BSD License.
-
+from __future__ import annotations
 
 import ipywidgets as W
 import traitlets as T
@@ -83,7 +83,7 @@ class InlineEdgeLabels(LayoutOptionWidget):
         return [cb]
 
     @T.observe("inline")
-    def _update_value(self, change: T.Bunch = None):
+    def _update_value(self, change: T.Bunch | None = None):
         self.value = "true" if self.inline else "false"
 
 
@@ -153,7 +153,7 @@ class EdgeThickness(LayoutOptionWidget):
         return [slider]
 
     @T.observe("thickness")
-    def _update_value(self, change: T.Bunch = None):
+    def _update_value(self, change: T.Bunch | None = None):
         self.value = str(self.thickness)
 
 
@@ -296,7 +296,7 @@ class EadesRepulsion(LayoutOptionWidget):
         return [slider]
 
     @T.observe("repulsion")
-    def _update_value(self, change: T.Bunch = None):
+    def _update_value(self, change: T.Bunch | None = None):
         self.value = str(self.repulsion)
 
 
@@ -346,7 +346,7 @@ class FeedbackEdges(LayoutOptionWidget):
         return [cb]
 
     @T.observe("reroute")
-    def _update_value(self, change: T.Bunch = None):
+    def _update_value(self, change: T.Bunch | None = None):
         self.value = "true" if self.reroute else "false"
 
 
@@ -372,7 +372,7 @@ class MergeEdges(LayoutOptionWidget):
         return [cb]
 
     @T.observe("merge")
-    def _update_value(self, change: T.Bunch = None):
+    def _update_value(self, change: T.Bunch | None = None):
         self.value = "true" if self.merge else "false"
 
 
@@ -399,7 +399,7 @@ class MergeHierarchyCrossingEdges(LayoutOptionWidget):
         return [cb]
 
     @T.observe("merge")
-    def _update_value(self, change: T.Bunch = None):
+    def _update_value(self, change: T.Bunch | None = None):
         self.value = "true" if self.merge else "false"
 
 

@@ -51,7 +51,7 @@ class Hover(Tool):
 
     """
 
-    ids: str = T.Unicode().tag(sync=True)  # list element ids currently hovered
+    ids = T.Unicode().tag(sync=True)  # list element ids currently hovered
 
 
 class Pan(Tool):
@@ -64,11 +64,11 @@ class Zoom(Tool):
 
 
 class FitTool(ToolButton):
-    description: str = T.Unicode(default_value="Fit")
+    description = T.Unicode(default_value="Fit")
 
 
 class CenterTool(ToolButton):
-    description: str = T.Unicode(default_value="Center")
+    description = T.Unicode(default_value="Center")
 
 
 class SetTool(Tool):
@@ -101,13 +101,20 @@ class SetTool(Tool):
             el.remove_class(*self.css_classes)
 
     def add(self):
-        self.active = tuple(set(self.active) | set(self.selection.elements()))
+        if self.selection:
+            self.active = tuple(set(self.active) | set(self.selection.elements()))
+        else:
+            self.active = tuple(set(self.active))
 
     def remove(self):
-        self.active = tuple(set(self.active) - set(self.selection.elements()))
+        if self.selection:
+            self.active = tuple(set(self.active) - set(self.selection.elements()))
+        else:
+            self.active = tuple(set(self.active))
 
     def set_active(self):
-        self.active = tuple(set(self.selection.elements()))
+        if self.selection:
+            self.active = tuple(set(self.selection.elements()))
 
     @T.default("ui")
     def _default_ui(self):

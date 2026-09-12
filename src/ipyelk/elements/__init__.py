@@ -15,7 +15,6 @@ from .elements import (
     PortProperties,
     exclude_hidden,
     exclude_layout,
-    merge_excluded,
 )
 from .extended import Compartment, Partition, Record
 from .index import (
@@ -78,6 +77,5 @@ __all__ = [
     "iter_hierarchy",
     "iter_labels",
     "iter_visible",
-    "merge_excluded",
     "symbol_serialization",
 ]

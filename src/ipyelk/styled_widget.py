@@ -1,5 +1,6 @@
 # Copyright (c) 2024 ipyelk contributors.
 # Distributed under the terms of the Modified BSD License.
+from __future__ import annotations
 
 import ipywidgets as W
 import traitlets as T
@@ -27,10 +28,10 @@ class StyledWidget(W.Box):
         return value
 
     @T.observe("style")
-    def _update_style(self, change: T.Bunch = None):
+    def _update_style(self, change: T.Bunch | None = None):
         """Build the custom css to attach to the dom"""
-        style = []
-        raw_css = []
+        style: list[str] = []
+        raw_css: list[str] = []
         for cls, attrs in self.style.items():
             if "@keyframes" not in cls:
                 # if the `_cls` begins with a whitespace prefix the selector
@@ -52,7 +53,7 @@ class StyledWidget(W.Box):
                 css_attributes = "\n".join(attributes)
             style.append(f"{selector}{{{css_attributes}}}")
         self.namespaced_css = "".join(style)
-        self.raw_css = raw_css
+        self.raw_css = tuple(raw_css)
         self._css_widget.value = f"<style>{self.namespaced_css}</style>"
 
     @property
