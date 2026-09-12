@@ -41,8 +41,8 @@ function svgStr(point: Point) {
   return `${point.x},${point.y}`;
 }
 
-// gap between a label's separator rule and the label's laid-out top edge
-const SEPARATOR_GAP = 1.0;
+/** Default gap (SVG pixels) between a separator rule and its label. */
+const DEFAULT_SEPARATOR_GAP = 1.0;
 
 @injectable()
 export class ElkNodeView extends RectangularNodeView {
@@ -87,7 +87,9 @@ export class ElkNodeView extends RectangularNodeView {
     const rules: VNode[] = [];
     for (const child of node.children) {
       if (child instanceof ElkLabel && child.properties?.separator === true) {
-        const y = child.position.y - SEPARATOR_GAP;
+        const gap = child.properties.separatorGap ?? DEFAULT_SEPARATOR_GAP;
+        if (!Number.isFinite(gap)) continue;
+        const y = child.position.y - gap;
         rules.push(<path class-elkseparator={true} d={`M 0,${y} L ${width},${y}`} />);
       }
     }
@@ -343,8 +345,7 @@ export class ElkLabelView extends ShapeView {
       );
       setClass(mark, use, true);
     } else {
-      // a truncated label carries its full text in properties.tooltip;
-      // the svg <title> is the native hover tooltip
+      /** Full label text for the native SVG hover tooltip when text is truncated. */
       const tooltip = label.properties?.tooltip;
       mark = (
         <text

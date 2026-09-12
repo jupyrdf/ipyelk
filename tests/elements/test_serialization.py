@@ -222,15 +222,23 @@ def test_label_separator_round_trips():
         root = Node(
             id="root",
             labels=[
-                Label(id="l", text="header", properties=LabelProperties(separator=True))
+                Label(
+                    id="l",
+                    text="header",
+                    properties=LabelProperties(separator=True, separatorGap=2.5),
+                )
             ],
         )
         data = to_json(root, widget)
         assert data["labels"][0]["properties"]["separator"] is True
+        assert data["labels"][0]["properties"]["separatorGap"] == pytest.approx(2.5)
         restored = convert_elkjson(json.loads(json.dumps(data)))
         assert restored.labels[0].properties.separator is True
+        assert restored.labels[0].properties.separatorGap == pytest.approx(2.5)
         with pytest.raises(ValidationError):
             LabelProperties(separator="not a boolean")
+        with pytest.raises(ValidationError):
+            LabelProperties(separatorGap=-1)
     finally:
         widget.close()
 

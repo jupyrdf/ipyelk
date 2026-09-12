@@ -638,6 +638,7 @@ pypandoc = "*"
 sphinx = "*"
 sphinx-autodoc-typehints = "*"
 sphinx-jsonschema = "*"
+sphinxcontrib-mermaid = "*"
 
 [feature.deps-dev.dependencies]
 sphinx-autobuild = "*"

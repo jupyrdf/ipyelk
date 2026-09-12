@@ -38,9 +38,12 @@ export class JLModelSource extends LocalModelSource {
   elkToSprotty: ElkGraphJsonToSprotty;
   widget_manager: IWidgetManager;
   control_overlay: any;
-  // the SUBMITTED schema elements currently selected (from `index`); the
-  // renderer resolves the rendered instances by id via `getById`
-  selectedNodes: SModelElement[];
+  /**
+   * Ids of selected submitted schema elements. The renderer resolves each id
+   * to its rendered instance with `getById`; retaining only this structural
+   * contract prevents schema and implementation objects being mixed.
+   */
+  selectedNodes: Array<Pick<SModelElement, 'id'>>;
   index: SModelIndex;
   elementRegistry: SModelRegistry;
   factory: SSymbolModelFactory;

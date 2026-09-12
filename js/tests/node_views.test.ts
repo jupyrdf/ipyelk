@@ -121,6 +121,15 @@ describe('ElkNodeView label separator', () => {
     expect(paths.every((p) => p.data?.class?.elkseparator === true)).toBe(true);
   });
 
+  it('uses a label-provided separator gap when supplied by Python', () => {
+    const node = makeNode(120, [
+      { y: 20, properties: { separator: true, separatorGap: 2.5 } },
+    ]);
+    expect(renderSeparatorPaths(node).map((p) => p.data?.attrs?.d)).toEqual([
+      'M 0,17.5 L 120,17.5',
+    ]);
+  });
+
   it('draws nothing for unmarked, false, or non-boolean-true labels', () => {
     // the kernel-side `separator: bool | None` schema cannot produce 'true'
     // (the string) but the wire format is untyped JSON: model it as such

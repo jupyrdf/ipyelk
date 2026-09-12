@@ -51,8 +51,11 @@ import {
 import { ToolTYPES } from './tools/types';
 
 const POLL = 300;
-// Viewer recovery probes are rate-capped, not time-limited: they stop when
-// a source becomes renderable or the view disconnects. Pipe deadlines are separate.
+/**
+ * Maximum interval for browser-side recovery probes. These are rate-capped,
+ * not time-limited: they stop when a source becomes renderable or the view
+ * disconnects. Pipe deadlines are separate.
+ */
 const STALE_DELAY_MAX = 10000;
 
 export class ELKControlModel extends DOMWidgetModel {
@@ -127,12 +130,16 @@ export class ELKViewerView extends DOMWidgetView {
   // elementRegistry: SModelRegistry;
   currentRoot: SModelRoot;
   was_shown = new PromiseDelegate<void>();
-  // a kernel-side selection that arrived BEFORE the first layout was
-  // submitted (no sprotty model/index exists yet); replayed by
-  // diagramLayout after the first submit
+  /**
+   * A kernel-side selection that arrived before the first layout was
+   * submitted; replayed after `diagramLayout` creates the Sprotty model.
+   */
   private pendingSelected: string[] | null = null;
-  // Backbone calls initialize() inside super(); an initializer here would
-  // overwrite the source recorded there after super() returns.
+  /**
+   * Source whose `change:value` listener is currently connected. This stays
+   * unset until initialization completes because Backbone calls `initialize`
+   * from `super()`, and a field initializer would overwrite that source.
+   */
   private connectedSource: DOMWidgetModel | null | undefined;
 
   initialize(parameters: WidgetView.IInitializeParameters) {
@@ -251,9 +258,15 @@ export class ELKViewerView extends DOMWidgetView {
     this.source.control_overlay = overlay;
   }
 
-  // delay (ms) before the next stale-state check; doubles per silent retry
+  /** Delay (ms) before the next stale-state check; doubles per silent retry. */
   private staleDelay = 2000;
 
+  /**
+   * Report a non-renderable viewer state and retry with exponential backoff.
+   * This acts as a state-recovery handshake for dropped widget updates; it is
+   * deliberately kept in the frontend because it paces browser-to-kernel
+   * transport rather than diagram layout.
+   */
   scheduleStaleCheck() {
     setTimeout(() => {
       if (!this.el.isConnected) {

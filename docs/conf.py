@@ -48,6 +48,7 @@ else:
         "sphinx.ext.autodoc",
         "sphinx_autodoc_typehints",
         "sphinx-jsonschema",
+        "sphinxcontrib.mermaid",
     ]
 
     # meta

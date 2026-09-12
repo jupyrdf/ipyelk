@@ -88,6 +88,14 @@ class LabelProperties(BaseProperties):
             "above this label (e.g. a compartment header); unset/False draws nothing"
         ),
     )
+    separatorGap: float | None = Field(
+        None,
+        ge=0,
+        description=(
+            "Distance in SVG pixels between this label's separator and its top; "
+            "defaults to 1 when omitted"
+        ),
+    )
 
     def get_shape(self) -> LabelShape:
         return cast("LabelShape", super().get_shape())
