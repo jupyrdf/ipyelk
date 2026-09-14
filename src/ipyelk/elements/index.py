@@ -225,6 +225,17 @@ class ElementIndex(BaseModel):
             if e1 is None:
                 self.elements[key] = e2
             elif type(e1) == type(e2):
+                # A collapsed view projects hidden ports onto a visible ancestor.
+                # They reuse the original id but their geometry/options belong to
+                # that ancestor, not to the hidden port restored on expansion.
+                if isinstance(e1, Port) and isinstance(e2, Port):
+                    parent1, parent2 = e1.get_parent(), e2.get_parent()
+                    if (
+                        parent1 is not None
+                        and parent2 is not None
+                        and parent1.get_id() != parent2.get_id()
+                    ):
+                        continue
                 for field in fields:
                     if hasattr(e1, field) and hasattr(e2, field):
                         setattr(e1, field, getattr(e2, field))

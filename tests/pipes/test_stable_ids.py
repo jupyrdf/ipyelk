@@ -139,6 +139,32 @@ def test_slack_port_keeps_hidden_elements_id_and_object():
     assert widget.index.root is root
 
 
+def test_slack_port_does_not_overwrite_hidden_port_geometry():
+    root = Node(id="r")
+    source = root.add_child(Node(id="source"))
+    child = root.add_child(Node(id="child", properties=NodeProperties(hidden=True)))
+    anchor = child.add_port(
+        Port(
+            id="child.in",
+            x=0,
+            y=21,
+            width=0,
+            height=0,
+            layoutOptions={"org.eclipse.elk.port.side": "WEST"},
+        )
+    )
+    root.add_edge(source, anchor).id = "edge"
+    widget = MarkElementWidget(value=root)
+    widget.persist(rebuild_index=True)
+    visible = convert_elkjson(root.model_dump(), VisIndex.from_els(root))
+    widget.value = visible
+    widget.persist()
+    assert anchor.y == 21
+    assert anchor.width == 0
+    assert anchor.layoutOptions == {"org.eclipse.elk.port.side": "WEST"}
+    assert anchor.get_parent() is child
+
+
 def test_validation_pipe_fix_null_id_false_still_rejects_unassigned_ids():
     """``build_index`` pinning ids must not make the strict knob a no-op."""
     root = Node(children=[Node()])

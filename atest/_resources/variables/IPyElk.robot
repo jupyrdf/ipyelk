@@ -17,6 +17,7 @@ ${NODE MENAGERIE}           12_Node_Menagerie
 ${COMPOUNDS}                13_Compounds
 ${TEXT STYLE}               14_Text_Styling
 ${NESTING PLOTS}            15_Nesting_Plots
+${CERVIDAE TREE}            16_Cervidae_Tree
 #
 # some widget-specific CSS
 #
