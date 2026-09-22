@@ -60,6 +60,19 @@
   kept dispatching `SelectAction`s between two views until the browser ran out of memory
   (F16)
 - Add a `vitest` unit-test harness (F5)
+- Upgrade ELK.js from `0.9.3` to `0.12.0` ([#140]). `ElkEdge` gains an optional
+  `container` field in the generated schema, and a `vitest` lays out a graph with the
+  real bundle to pin the port, edge-section and `properties` round-trip contract.
+- Upgrade `sprotty` and `sprotty-protocol` from `1.3.0` to `1.4.0`, which requires
+  `inversify ^6.1.3` (pinned to `6.2.2`) and `reflect-metadata ^0.2.2`. The `inversify`
+  shared module declares its `version` statically: its `lib/esm` entry ships a
+  version-less `package.json`, so webpack module federation would otherwise register it
+  as `0` and warn on every page load; a unit test keeps the static version exact, equal
+  to the dependency pin and inside the declared `requiredVersion`.
+- Drop the unused `sprotty-elk` dependency: nothing in `js/` ever imported it, `sprotty`
+  and `sprotty-protocol` do not depend on it, and the built extension has no reference
+  to it. Its `elkjs ^0.8.2` range was the only thing that conflicted with ELK.js
+  `0.12.0`, so the `resolutions.elkjs` override goes with it ([#140]).
 
 ### `ipyelk 2.1.2`
 
@@ -101,6 +114,8 @@
   `nbconvert --execute` does) a pipe gives up its roundtrip immediately instead of
   keeping a task alive across cell boundaries re-sending `run` requests for 30 s, which
   wedged kernels on slower CI runners (F15)
+
+[#140]: https://github.com/jupyrdf/ipyelk/issues/140
 
 ## `2.1.1`
 

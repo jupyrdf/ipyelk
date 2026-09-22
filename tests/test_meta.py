@@ -57,3 +57,52 @@ def test_py_version(the_readme_text: str, the_pyproject_data: dict[str, Any]) ->
     """Verify the bottom python pin is accurate."""
     requires_python = the_pyproject_data["project"]["requires-python"]
     assert f"""python {requires_python}""" in the_readme_text
+
+
+def test_static_shared_package_versions() -> None:
+    """Verify statically declared shared-module versions match the dependency pins.
+
+    ``jupyterlab.sharedPackages.<pkg>.version`` is only needed where webpack cannot
+    read the version itself (e.g. ``inversify`` resolves to ``lib/esm/index.js``,
+    whose sibling ``package.json`` carries no version). Such a static value must be
+    an exact version, equal to the pinned dependency, and inside the declared
+    ``requiredVersion`` range, or the three drift apart silently.
+    """
+    import json
+    import re
+
+    exact = re.compile(r"^(\d+)\.(\d+)\.(\d+)$")
+    ranged = re.compile(r"^([\^~]?)(\d+)\.(\d+)\.(\d+)$")
+
+    def parse(version: str) -> tuple[int, int, int]:
+        match = exact.match(version)
+        assert match, f"{version!r} is not an exact semver (no ^ or ~ allowed)"
+        major, minor, patch = match.groups()
+        return int(major), int(minor), int(patch)
+
+    def satisfies(version: str, required: str) -> bool:
+        match = ranged.match(required)
+        assert match, f"unsupported requiredVersion {required!r}"
+        op, *floor_parts = match.groups()
+        floor = tuple(int(n) for n in floor_parts)
+        if not op:
+            return parse(version) == floor
+        if op == "~" or floor[0] == 0:
+            ceiling = (floor[0], floor[1] + 1, 0)
+        else:
+            ceiling = (floor[0] + 1, 0, 0)
+        return floor <= parse(version) < ceiling
+
+    package_json = json.loads(
+        (Path(__file__).parent.parent / "package.json").read_text(encoding="utf-8")
+    )
+    dependencies = package_json["dependencies"]
+    shared = package_json["jupyterlab"]["sharedPackages"]
+    static = {pkg: cfg for pkg, cfg in shared.items() if "version" in cfg}
+    assert static, "at least inversify needs a static shared version"
+    for pkg, cfg in static.items():
+        version = cfg["version"]
+        parse(version)
+        assert dependencies[pkg] == version, (pkg, dependencies[pkg], version)
+        required = cfg.get("requiredVersion", version)
+        assert satisfies(version, required), (pkg, version, required)
