@@ -11,9 +11,9 @@ from ipywidgets.widgets.trait_types import TypedTuple
 
 from ..exceptions import (
     DeprecatedAPIError,
-    RegistrationMethod,
     RemovedAPI,
     check_removed,
+    registration_method,
 )
 from ..pipes import Pipe
 
@@ -190,6 +190,7 @@ class Tool(W.Widget):
         inlet = self.tee.inlet
         inlet.flow = tuple(dict.fromkeys((*inlet.flow, *self.reports)))
 
+    @registration_method(_REGISTRATION_ASSIGNED.format(name="on_start"))
     def on_start(self, callback, remove=False):
         """Register a callback for when this tool's work actually starts.
 
@@ -204,10 +205,7 @@ class Tool(W.Widget):
         """
         self._on_start_handlers.register_callback(callback, remove=remove)
 
-    on_start = RegistrationMethod(
-        on_start, _REGISTRATION_ASSIGNED.format(name="on_start")
-    )
-
+    @registration_method(_REGISTRATION_ASSIGNED.format(name="on_done"))
     def on_done(self, callback, remove=False):
         """Register a callback for when this tool's work succeeded.
 
@@ -222,8 +220,6 @@ class Tool(W.Widget):
 
         """
         self._on_done_handlers.register_callback(callback, remove=remove)
-
-    on_done = RegistrationMethod(on_done, _REGISTRATION_ASSIGNED.format(name="on_done"))
 
     def _finished(self, task: asyncio.Task):
         if task is self._task:

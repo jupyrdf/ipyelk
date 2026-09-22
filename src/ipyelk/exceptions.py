@@ -2,7 +2,6 @@
 # Distributed under the terms of the Modified BSD License.
 from __future__ import annotations
 
-import functools
 import types
 from collections.abc import Callable, Iterable
 
@@ -96,7 +95,10 @@ class RegistrationMethod:
     """
 
     def __init__(self, func: Callable, message: str):
-        functools.update_wrapper(self, func)
+        # not `functools.update_wrapper`: that wants a callable, and a descriptor is
+        # not one. Only the docstring matters here -- class-level access returns the
+        # wrapped function itself, so Sphinx and `inspect` see the real signature.
+        self.__doc__ = func.__doc__
         self.func = func
         self.message = message
 
@@ -107,6 +109,19 @@ class RegistrationMethod:
 
     def __set__(self, instance: object, value: object) -> None:
         raise DeprecatedAPIError(self.message)
+
+
+def registration_method(message: str) -> Callable[[Callable], RegistrationMethod]:
+    """Decorate a callback-registration method as call-only.
+
+    Declaring it as a decorator rather than rebinding the name after the ``def``
+    keeps one definition of the public name, which is what type checkers can follow.
+    """
+
+    def wrap(func: Callable) -> RegistrationMethod:
+        return RegistrationMethod(func, message)
+
+    return wrap
 
 
 def check_removed(cls: type, names: Iterable[str]) -> None:
