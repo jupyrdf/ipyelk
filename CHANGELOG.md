@@ -104,12 +104,18 @@
 - Removed names are hard errors for the whole 3.x line, not aliases or warnings:
   `Tool.handler`, `ToolButton.handler`, `Tool.on_run`, `Tool.disable`, `Hover.ids`,
   `Viewer.zoom`, `Viewer.pan`, `Viewer.viewed`, `ipyelk.tools.Zoom`, `ipyelk.tools.Pan`,
-  `Painter.cssClasses`, `Painter.marks`, `Painter.name`, and assigning `Tool.on_done`
-  raise `ipyelk.exceptions.DeprecatedAPIError` on read, assignment, and as constructor
-  keywords, with the reason and the replacement in the message (mechanism:
-  `ipyelk.exceptions.RemovedAPI` / `check_removed`; a module-level `__getattr__` for the
-  removed class names). Importing the misspelled `ipyelk.tools.contol_overlay` module
-  raises the same error naming the new path; it re-exports nothing.
+  `Painter.cssClasses`, `Painter.marks`, `Painter.name`, and assigning `Tool.on_start`
+  or `Tool.on_done` raise `ipyelk.exceptions.DeprecatedAPIError` (an `AttributeError`,
+  so `hasattr`, `getattr(..., default)` and introspection keep working) on read,
+  assignment, and as constructor keywords, with the reason and the replacement in the
+  message (mechanism: `ipyelk.exceptions.RemovedAPI` / `RegistrationMethod` /
+  `check_removed`). The removed module-level _names_ raise
+  `ipyelk.exceptions.DeprecatedImportError` instead, which is an `ImportError` and not
+  an `AttributeError`, because `from ipyelk.tools import Zoom` would otherwise lose the
+  message to a bare "cannot import name". Importing the misspelled
+  `ipyelk.tools.contol_overlay` module raises it too, naming the new path; it re-exports
+  nothing. Both flavours share the `ipyelk.exceptions.DeprecatedAPI` base, so one
+  `except` catches either.
 
 ### Migration
 
@@ -173,10 +179,11 @@ view.painter.clear()
 view.painter.styles  # {"n2": ("highlight",)}
 ```
 
-The removed names (`handler`, `on_run`, `disable`, `Hover.ids`, assigning `on_done`, the
-`contol_overlay` module, `Viewer.zoom`/`pan`/`viewed`, `ipyelk.tools.Zoom`/`Pan`,
-`Painter.cssClasses`/`marks`/`name`) raise `DeprecatedAPIError` throughout 3.x with the
-replacement in the message.
+The removed names (`handler`, `on_run`, `disable`, `Hover.ids`, assigning `on_start` or
+`on_done`, the `contol_overlay` module, `Viewer.zoom`/`pan`/`viewed`,
+`ipyelk.tools.Zoom`/`Pan`, `Painter.cssClasses`/`marks`/`name`) raise
+`DeprecatedAPIError` -- or `DeprecatedImportError` for the module-level names --
+throughout 3.x with the replacement in the message.
 
 ### `@jupyrdf/jupyter-elk 3.0.0`
 

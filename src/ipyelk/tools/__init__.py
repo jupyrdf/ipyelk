@@ -1,7 +1,7 @@
 # Copyright (c) 2024 ipyelk contributors.
 # Distributed under the terms of the Modified BSD License.
 
-from ..exceptions import DeprecatedAPIError
+from ..exceptions import DeprecatedImportError
 from .collapser import ToggleCollapsedTool
 from .control_overlay import ControlOverlay
 from .painter import Painter
@@ -33,7 +33,7 @@ _REMOVED = {  # ruff: ignore[non-empty-init-module]
 
 def __getattr__(name: str) -> object:
     if name in _REMOVED:
-        raise DeprecatedAPIError(_REMOVED[name])
+        raise DeprecatedImportError(_REMOVED[name])
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
 
 

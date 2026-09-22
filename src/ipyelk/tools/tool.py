@@ -9,8 +9,23 @@ import ipywidgets as W
 import traitlets as T
 from ipywidgets.widgets.trait_types import TypedTuple
 
-from ..exceptions import DeprecatedAPIError, RemovedAPI, check_removed
+from ..exceptions import (
+    DeprecatedAPIError,
+    RegistrationMethod,
+    RemovedAPI,
+    check_removed,
+)
 from ..pipes import Pipe
+
+_REGISTRATION_ASSIGNED = (
+    "Tool.{name} is a registration method in ipyelk 3.0, not an assignable "
+    "callable: a single slot let one assignment silently replace another "
+    "listener's callback (the Diagram registers its own refresh on on_done). "
+    "Register tool.{name}(callback) (called as callback(tool); remove=True "
+    "unregisters). This error is raised throughout 3.x."
+)
+#: the registration methods; assigning or passing them as constructor keywords raises
+_REGISTRATION_METHODS = ("on_start", "on_done")
 
 
 class Tool(W.Widget):
@@ -37,13 +52,15 @@ class Tool(W.Widget):
       reports are recorded**. They never fire when execution fails, is cancelled,
       or is rejected before starting. Errors are logged.
     * A request that was superseded by a newer :meth:`trigger` is stale: its
-      completion records its reports but does not touch the tool's task state or
-      fire ``on_done``.
+      completion records its reports and, when it succeeded, still fires
+      ``on_done``, but it never touches the tool's task state, which the newer
+      request owns.
 
     Both hooks are registration methods -- ``tool.on_start(callback)``,
     ``tool.on_done(callback)`` -- so several listeners (the owning
     :py:class:`~ipyelk.diagram.Diagram` registers its refresh on ``on_done``) can
-    coexist. Assigning ``tool.on_done = callback`` (the 2.x form) is an error.
+    coexist. Assigning ``tool.on_start = callback`` or ``tool.on_done = callback``
+    (the 2.x single-slot form) is an error.
     """
 
     tee = T.Instance(Pipe, allow_none=True).tag(sync=True, **W.widget_serialization)
@@ -86,26 +103,15 @@ class Tool(W.Widget):
         "anything. Use tool.disabled (the ipywidgets name), which rejects trigger() "
         "and clicks and disables the controls under tool.ui."
     )
-    _ON_DONE_ASSIGNED = (
-        "Tool.on_done is a registration method in ipyelk 3.0, not an assignable "
-        "callable: the single slot let one assignment silently replace the "
-        "Diagram's own refresh callback. Register tool.on_done(callback) (called as "
-        "callback(tool), success only; remove=True unregisters). This error is "
-        "raised throughout 3.x."
-    )
 
     def __init__(self, **kwargs: object):
         check_removed(type(self), kwargs)
-        if "on_done" in kwargs:
-            raise DeprecatedAPIError(self._ON_DONE_ASSIGNED)
+        for name in _REGISTRATION_METHODS:
+            if name in kwargs:
+                raise DeprecatedAPIError(_REGISTRATION_ASSIGNED.format(name=name))
         super().__init__(**kwargs)
         if self._dependencies:
             self.observe(self._update_controls, list(self._dependencies))
-
-    def __setattr__(self, name: str, value: object) -> None:
-        if name == "on_done":
-            raise DeprecatedAPIError(self._ON_DONE_ASSIGNED)
-        super().__setattr__(name, value)
 
     def trigger(self, *_: object) -> asyncio.Task:
         """Request execution: schedule :meth:`run` and return its task.
@@ -198,6 +204,10 @@ class Tool(W.Widget):
         """
         self._on_start_handlers.register_callback(callback, remove=remove)
 
+    on_start = RegistrationMethod(
+        on_start, _REGISTRATION_ASSIGNED.format(name="on_start")
+    )
+
     def on_done(self, callback, remove=False):
         """Register a callback for when this tool's work succeeded.
 
@@ -213,10 +223,11 @@ class Tool(W.Widget):
         """
         self._on_done_handlers.register_callback(callback, remove=remove)
 
+    on_done = RegistrationMethod(on_done, _REGISTRATION_ASSIGNED.format(name="on_done"))
+
     def _finished(self, task: asyncio.Task):
-        current = task is self._task  # else stale: a newer request owns the state
-        if current:
-            self._task = None
+        if task is self._task:
+            self._task = None  # else stale: a newer request owns the task state
         try:
             task.result()
         except asyncio.CancelledError:
@@ -224,8 +235,9 @@ class Tool(W.Widget):
         except Exception:
             self.log.exception(f"Error running tool: {type(self)}")
             return
-        if current:
-            self._on_done_handlers(self)
+        # every success fires, stale or not: a stale success is still a finished
+        # run whose reports the listeners (the Diagram's refresh) must see
+        self._on_done_handlers(self)
 
 
 class ToolButton(Tool):

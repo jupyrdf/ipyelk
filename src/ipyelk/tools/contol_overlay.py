@@ -6,9 +6,9 @@ This guard exists only to turn a stale import into an actionable error; it does
 not forward to the renamed module.
 """
 
-from ..exceptions import DeprecatedAPIError
+from ..exceptions import DeprecatedImportError
 
-raise DeprecatedAPIError(
+raise DeprecatedImportError(
     "ipyelk.tools.contol_overlay (misspelled) was removed in ipyelk 3.0; import "
     "ControlOverlay from ipyelk.tools.control_overlay (or ipyelk.tools). No alias: "
     "this error is raised throughout 3.x."

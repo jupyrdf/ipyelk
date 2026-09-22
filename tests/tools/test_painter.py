@@ -27,6 +27,7 @@ def test_defaults_and_state_only():
     assert painter.ui is None
     assert painter.reports == ()
     assert painter.trait_metadata("styles", "sync") is True
+    assert painter.trait_metadata("styles", "echo_update") is False  # no echo
     with pytest.raises(NotImplementedError):
         painter.trigger()  # no run(): nothing to schedule, no re-layout
 
@@ -116,7 +117,7 @@ def test_viewer_owns_a_live_painter_bound_by_the_diagram():
     # a default tool (no UI, so not in the toolbar): elements() resolves on the pipe
     assert diagram.view.painter in diagram.tools
     assert diagram.view.painter.tee is diagram.pipe
-    assert diagram.view.painter not in [t.ui for t in diagram.tools if t.ui is not None]
+    assert diagram.view.painter.ui is None
 
 
 @pytest.mark.parametrize("name", ["cssClasses", "marks", "name"])

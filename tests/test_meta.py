@@ -65,10 +65,30 @@ def test_static_shared_package_versions() -> None:
     ``jupyterlab.sharedPackages.<pkg>.version`` is only needed where webpack cannot
     read the version itself (e.g. ``inversify`` resolves to ``lib/esm/index.js``,
     whose sibling ``package.json`` carries no version). Such a static value must be
-    the exact pinned dependency, or the two drift apart silently.
+    the exact pinned dependency, or the two drift apart silently. It must also be
+    an exact semver that satisfies the shared ``requiredVersion``: a range there
+    (``"^6.2.2"``) is not a version ``ProvideSharedPlugin`` can use, and the
+    "Unsatisfied version" warnings return with green tests.
     """
     import json
+    import re
     from pathlib import Path
+
+    exact = re.compile(r"^(\d+)\.(\d+)\.(\d+)$")  # no range operators, no prerelease
+
+    def parse(version: str) -> tuple[int, int, int]:
+        match = exact.match(version)
+        assert match, f"not an exact semver: {version!r}"
+        return tuple(int(part) for part in match.groups())  # type: ignore[return-value]
+
+    def satisfies(version: str, required: str) -> bool:
+        # only the operators package.json uses today; extend when a new one appears
+        if required.startswith("^"):
+            low, actual = parse(required[1:]), parse(version)
+            # ^ pins the first non-zero component (npm semver caret rule)
+            pinned = next((i for i, part in enumerate(low) if part), len(low) - 1)
+            return actual[: pinned + 1] == low[: pinned + 1] and actual >= low
+        return parse(version) == parse(required)
 
     package_json = json.loads(
         (Path(__file__).parent.parent / "package.json").read_text(encoding="utf-8")
@@ -79,3 +99,14 @@ def test_static_shared_package_versions() -> None:
     assert static, "at least inversify needs a static shared version"
     for pkg, version in static.items():
         assert dependencies[pkg] == version, (pkg, dependencies[pkg], version)
+        assert exact.match(version), (pkg, version)  # what ProvideSharedPlugin needs
+        required = shared[pkg].get("requiredVersion", version)
+        assert satisfies(version, required), (pkg, version, required)
+
+    # the range check itself, so a wrong helper cannot pass a wrong package.json
+    assert satisfies("6.2.2", "^6.1.3")
+    assert not satisfies("7.0.0", "^6.1.3")
+    assert not satisfies("6.1.2", "^6.1.3")
+    assert satisfies("0.12.3", "^0.12.0")
+    assert not satisfies("0.13.0", "^0.12.0")
+    assert not exact.match("^6.2.2")

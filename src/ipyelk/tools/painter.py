@@ -40,9 +40,11 @@ class Painter(Tool):
 
     """
 
-    # a browser update arrives with lists: TypedTuple validation stores tuples
+    # a browser update arrives with lists: TypedTuple validation stores tuples.
+    # echo_update=False: a write is not echoed back to every frontend (the whole
+    # dict travels on each call, and ipywidgets 8.1 echoes by default)
     styles = T.Dict(key_trait=T.Unicode(), value_trait=TypedTuple(T.Unicode())).tag(
-        sync=True
+        sync=True, echo_update=False
     )
 
     #: removed names raise :class:`~ipyelk.exceptions.DeprecatedAPIError` through 3.x
