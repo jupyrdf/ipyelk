@@ -6,9 +6,11 @@ from __future__ import annotations
 
 import json
 import re
+import warnings
 from pathlib import Path
 from typing import Any
 
+import ipywidgets.widgets.widget as widget_module
 import pytest
 
 UTF8 = {"encoding": "utf-8"}
@@ -109,3 +111,44 @@ def the_readme_text() -> str:
     if not README_MD.exists():
         pytest.skip("Not in repo")
     return README_MD.read_text(**UTF8)
+
+
+@pytest.fixture
+def kernel_attached_comm(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Make kernel-side widget sends observable on ipywidgets 8.0.x.
+
+    ipywidgets >= 8.1 opens comms through the ``comm`` package, whose
+    no-kernel fallback ``DummyComm`` has no ``kernel`` attribute, so
+    ``Widget.notify_change``'s ``getattr(comm, "kernel", True) is not None``
+    gate passes and a trait write reaches ``send_state``/``_send``.  8.0.x
+    opens an ``ipykernel.comm.Comm`` and gates on ``comm.kernel is not None``:
+    with no kernel running, ``kernel`` is ``None`` and a kernel-side write is
+    never sent, so a test that captures ``_send`` sees nothing at all.
+    ipywidgets' own 8.0 test-suite installs a kernel-attached dummy for the
+    same reason; this does the same, and is a no-op on newer builds.  Opt in
+    per module (``pytestmark = pytest.mark.usefixtures(...)``) wherever a
+    test asserts on what a widget sends.
+    """
+    real_comm = getattr(widget_module, "Comm", None)
+    if real_comm is None:
+        return
+
+    class DummyComm(real_comm):  # type: ignore[valid-type,misc]
+        kernel = "attached"
+
+        def __init__(self, *args, **kwargs):
+            with warnings.catch_warnings():
+                warnings.simplefilter("ignore", DeprecationWarning)
+                super().__init__(*args, **kwargs)
+            self.messages = []
+
+        def open(self, *args, **kwargs):
+            pass
+
+        def send(self, *args, **kwargs):
+            self.messages.append((args, kwargs))
+
+        def close(self, *args, **kwargs):
+            pass
+
+    monkeypatch.setattr(widget_module, "Comm", DummyComm)

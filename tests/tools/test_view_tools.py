@@ -8,6 +8,10 @@ from ipyelk.elements import Label, Node
 from ipyelk.pipes import MarkElementWidget
 from ipyelk.tools import Hover, Selection
 
+# on ipywidgets 8.0.x a kernel-side write is only sent to a kernel-attached
+# comm (see ``conftest.kernel_attached_comm``)
+pytestmark = pytest.mark.usefixtures("kernel_attached_comm")
+
 
 def capture_sends(widget, monkeypatch):
     """Record every comm message ``widget`` would send as ``(method, keys)``."""
