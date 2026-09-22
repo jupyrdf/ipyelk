@@ -8,6 +8,8 @@ between stages, and a browser roundtrip that was sent is awaited to its
 answer.  Answers carry the request's generation so a stale one is dropped.
 """
 
+from __future__ import annotations
+
 import asyncio
 import logging
 
@@ -252,7 +254,8 @@ async def test_old_frontend_gen_zero_accepted_once_warned(monkeypatch, caplog):
         task = asyncio.create_task(pipe.run())
         await _ticks()
         with caplog.at_level(logging.WARNING, logger="traitlets"):
-            pipe.outlet.value = Node(id="unversioned")  # no gen written
+            # the browser's write, without a gen
+            pipe.outlet.set_state({"value": {"id": "unversioned"}})
             await asyncio.wait_for(task, timeout=2.0)
     assert pipe.outlet.gen == 0
     warnings = [r for r in caplog.records if "without a generation" in r.getMessage()]
@@ -327,3 +330,97 @@ async def test_replacing_the_source_cancels_the_detached_run():
     await asyncio.wait_for(diagram.pipe._task, timeout=2.0)
     assert diagram.pipe.inlet is diagram.source
     assert diagram.source.flow == ()
+
+
+@pytest.mark.asyncio
+async def test_identical_answer_arriving_as_gen_alone_resolves():
+    """The browser's update is a Backbone diff: a layout deep-equal to the
+    previous answer arrives as a change of ``gen`` only (an older extension
+    build; the current one forces ``value`` in).  The roundtrip must still
+    resolve instead of waiting out its deadline.
+    """
+    pipe, sends = _elkjs()
+    run1 = asyncio.create_task(pipe.run())
+    await _ticks()
+    _answer(pipe, 1, "same")
+    await asyncio.wait_for(run1, timeout=2.0)
+
+    run2 = asyncio.create_task(pipe.run())
+    await _ticks()
+    assert sends[-1] == {"action": "run", "gen": 2}
+    pipe.outlet.set_state({"gen": 2})  # `value` dropped from the diff
+    await asyncio.wait_for(run2, timeout=2.0)
+    assert pipe.outlet.value.id == "same"
+    assert pipe.outlet.gen == 2
+    assert pipe._roundtrip_future is None
+
+
+@pytest.mark.asyncio
+async def test_kernel_write_during_first_roundtrip_is_not_an_answer(
+    monkeypatch, caplog
+):
+    """While ``outlet.gen`` is still 0 a kernel-side ``value`` write must not
+    pass for the browser's (unversioned) answer; a browser ``set_state``
+    without ``gen`` still does, with one warning.
+    """
+    monkeypatch.setitem(util._WARNED, "unversioned", False)
+    pipe, _sends = _elkjs()
+    task = asyncio.create_task(pipe.run())
+    await _ticks()
+    with caplog.at_level(logging.WARNING, logger="traitlets"):
+        pipe.outlet.value = Node(id="kernel-side")
+        await _ticks()
+        assert not task.done(), "a kernel write is not the browser's answer"
+        assert pipe.outlet.gen == 0
+        assert not [r for r in caplog.records if "without a generation" in r.msg]
+
+        pipe.outlet.set_state({"value": {"id": "from-browser"}})  # no gen
+        await asyncio.wait_for(task, timeout=2.0)
+    assert pipe.outlet.value.id == "from-browser"
+    warnings = [r for r in caplog.records if "without a generation" in r.getMessage()]
+    assert len(warnings) == 1
+
+
+def _error(pipe, gen: int | None, text: str = "elk exploded") -> None:
+    content = {"action": "error", "error": text}
+    if gen is not None:
+        content["gen"] = gen
+    pipe._handle_browser_msg(pipe, content, None)
+
+
+@pytest.mark.asyncio
+async def test_late_error_for_an_abandoned_generation_is_ignored():
+    """The browser reports a failed run with its generation; only the pending
+    generation's error rejects the roundtrip.
+    """
+    pipe, sends = _elkjs()
+    task = pipe.schedule_run()
+    await _ticks()
+    assert pipe.cancel()
+    await _ticks()
+    assert task.cancelled()
+
+    successor = pipe.schedule_run()
+    await _ticks()
+    assert [s["gen"] for s in sends] == [1, 2]
+    _error(pipe, 1, "late failure of the abandoned run")
+    await _ticks()
+    assert not successor.done(), "an error for generation 1 is not ours"
+    assert not pipe._roundtrip_future.done()
+
+    _error(pipe, 2)
+    with pytest.raises(RuntimeError, match="elk exploded"):
+        await asyncio.wait_for(successor, timeout=2.0)
+
+
+@pytest.mark.asyncio
+async def test_error_without_a_generation_rejects_the_pending_roundtrip():
+    """An older extension build reports errors unstamped: still fatal."""
+    pipe, _sends = _elkjs()
+    task = asyncio.create_task(pipe.run())
+    await _ticks()
+    _error(pipe, None)
+    with pytest.raises(RuntimeError, match="elk exploded"):
+        await asyncio.wait_for(task, timeout=2.0)
+    assert pipe._roundtrip_future is None
+    _error(pipe, None)  # nothing pending: harmless

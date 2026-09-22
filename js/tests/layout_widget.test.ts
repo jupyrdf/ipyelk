@@ -2,10 +2,14 @@
  * Copyright (c) 2024 ipyelk contributors.
  * Distributed under the terms of the Modified BSD License.
  */
-import { describe, expect, it, vi } from 'vitest';
+import * as Backbone from 'backbone';
+import { describe, expect, it } from 'vitest';
+
+import { set as patchedSet } from '@jupyter-widgets/base/lib/backbone-patch';
 
 import {
   RunQueue,
+  answer,
   applyProperties,
   collectProperties,
   layoutErrorMessage,
@@ -179,6 +183,18 @@ describe('RunQueue', () => {
     expect(started).toEqual([3, 5]);
   });
 
+  it('ignores a re-sent request that lands after its generation was answered', async () => {
+    const { queue, started, gates } = makeQueue();
+    queue.request(2);
+    gates[2]();
+    await settle();
+    expect(queue.current).toBeNull();
+    expect(queue.request(2)).toBe('ignored');
+    expect(queue.request(1)).toBe('ignored');
+    expect(queue.request(3)).toBe('started');
+    expect(started).toEqual([2, 3]);
+  });
+
   it('coalesces unversioned requests (older kernel) into one trailing run', async () => {
     const { queue, started, gates } = makeQueue();
     expect(queue.request(undefined)).toBe('started');
@@ -205,5 +221,79 @@ describe('RunQueue', () => {
     await settle();
     expect(queue.current).toBeNull();
     expect(queue.request(3)).toBe('started');
+  });
+});
+
+describe('answer', () => {
+  // the browser half of the roundtrip answer: `save_changes` sends Backbone's
+  // `changedAttributes()` diff, which drops a deep-equal `value`, so a layout
+  // of an unchanged graph would reach the kernel as a change of `gen` alone
+  class Outlet extends Backbone.Model {
+    // `@jupyter-widgets/base` WidgetModel.set / save_changes, minus the
+    // comm: buffer every set's diff, send the buffer on save_changes
+    _buffered_state_diff: Record<string, unknown> = {};
+    sent: string[][] = [];
+
+    set(key: any, val?: any, options?: any): any {
+      const result = (patchedSet as any).call(this, key, val, options);
+      const attrs = this.changedAttributes() || {};
+      this._buffered_state_diff = { ...this._buffered_state_diff, ...attrs };
+      return result;
+    }
+
+    save_changes(): void {
+      this.sent.push(Object.keys(this._buffered_state_diff).sort());
+      this._buffered_state_diff = {};
+    }
+  }
+
+  const layout = () => ({ id: 'root', children: [{ id: 'n1', x: 1, y: 2 }] });
+
+  it('documents the Backbone diff dropping a deep-equal value', () => {
+    const outlet = new Outlet();
+    outlet.set({ value: layout(), gen: 1 });
+    outlet.save_changes();
+    outlet.set({ value: layout(), gen: 2 });
+    outlet.save_changes();
+    expect(outlet.sent).toEqual([['gen', 'value'], ['gen']]);
+  });
+
+  it('sends value and gen even when the value is deep-equal to the last answer', () => {
+    const outlet = new Outlet();
+    answer(outlet, layout(), 1);
+    answer(outlet, layout(), 2);
+    answer(outlet, layout(), 3);
+    expect(outlet.sent).toEqual([
+      ['gen', 'value'],
+      ['gen', 'value'],
+      ['gen', 'value'],
+    ]);
+    expect(outlet.get('value')).toEqual(layout());
+    expect(outlet.get('gen')).toBe(3);
+  });
+
+  it('does not announce the interim null value', () => {
+    const outlet = new Outlet();
+    const seen: unknown[] = [];
+    outlet.on('change:value', (_model: unknown, value: unknown) => seen.push(value));
+    answer(outlet, layout(), 1);
+    answer(outlet, layout(), 2);
+    expect(seen).toEqual([layout(), layout()]);
+  });
+});
+
+describe('layoutErrorMessage with a generation', () => {
+  it('stamps the failed request generation, omitting it when unknown', () => {
+    expect(layoutErrorMessage(new Error('boom'), 4)).toEqual({
+      action: 'error',
+      error: 'Error: boom',
+      gen: 4,
+    });
+    expect(layoutErrorMessage('boom', 0)).toEqual({
+      action: 'error',
+      error: 'boom',
+      gen: 0,
+    });
+    expect(layoutErrorMessage('boom')).not.toHaveProperty('gen');
   });
 });

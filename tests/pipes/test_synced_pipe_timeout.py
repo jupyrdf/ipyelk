@@ -30,7 +30,7 @@ async def test_elkjs_completes_when_browser_responds():
     async def fake_browser():
         # Simulate the browser writing the laid-out value back.
         await asyncio.sleep(0.01)
-        pipe.outlet.value = Node()
+        pipe.outlet.set_state({"value": {"id": "root"}, "gen": 1})
 
     browser = asyncio.create_task(fake_browser())
     await pipe.run()  # must return without raising

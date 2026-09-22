@@ -340,18 +340,44 @@ def iter_unsized_labels(el: dict):
 def kernel_receive(
     outlet, raw: str, gen: int | None = None, persist: bool = True
 ) -> None:
-    """The real browser -> kernel path, as ipywidgets runs it."""
+    """The real browser -> kernel path, as ipywidgets runs it.
+
+    Like the frontend's ``save_changes``, this sends Backbone's diff: an
+    attribute deep-equal to what the frontend model holds (``RECORDER``'s copy,
+    fed by the kernel's updates and by earlier answers) is dropped, so a
+    layout of an unchanged graph arrives as a change of ``gen`` alone, and an
+    answer that changes nothing at all sends nothing.  ``js/layout_widget_util.ts``
+    ``answer`` forces ``value`` back into the diff (``FORCE_VALUE``);
+    ``--no-force-value`` emulates an extension build without that fix.  Note
+    that real elkjs output is never deep-equal across runs -- it carries the
+    GWT object hash ``$H`` -- so this harness cannot exhibit the gen-only
+    answer; ``tests/pipes/test_generation.py`` covers the kernel side of it.
+    """
+    held = RECORDER.last_state.setdefault(outlet.comm.comm_id, {})
     RECORDER.inbound[0] += 1
     RECORDER.inbound[1] += len(raw)
     with timed("json.loads (comm in)"):
         parsed = json.loads(raw)
-    state = {"value": parsed}
-    if gen is not None:
+    state = {}
+    if FORCE_VALUE or parsed != held.get("value"):
+        state["value"] = parsed
+    else:
+        CALLS["browser stub: deep-equal value dropped from the diff"] += 1
+    if gen is not None and gen != held.get("gen", 0):
         state["gen"] = gen  # a kernel without the trait ignores the key
+    held.update(state)  # the frontend model now holds the answer
+    if not state:
+        CALLS["browser stub: empty diff, nothing sent"] += 1
+        return
     with timed("Widget.set_state (inbound)"):
         outlet.set_state(state)
     if persist:
         outlet.persist()
+
+
+#: whether the stub browser includes a deep-equal ``value`` in its answer,
+#: as the current ``js/layout_widget_util.ts`` ``answer`` does
+FORCE_VALUE = True
 
 
 class StubBrowser:
@@ -359,8 +385,9 @@ class StubBrowser:
 
     Mirrors ``RunQueue`` in ``js/layout_widget_util.ts``: one layout in flight
     per pipe, a re-sent request for that generation is ignored, a newer one
-    is queued and started once when the current layout resolves. A request
-    without a generation (an older kernel) coalesces into one trailing run.
+    is queued and started once when the current layout resolves, and a resend
+    landing after its generation was answered is ignored. A request without a
+    generation (an older kernel) coalesces into one trailing run.
     """
 
     def __init__(self, delay: float) -> None:
@@ -368,12 +395,17 @@ class StubBrowser:
         self.pipes: dict[str, object] = {}  # comm_id -> ElkJS pipe
         self.in_flight: dict[str, int] = {}
         self.queued: dict[str, int] = {}
+        self.completed: dict[str, int] = {}
         self.tasks: set[asyncio.Task] = set()
 
     def request(self, comm_id: str, gen: int | None) -> None:
         gen = gen or 0
         current = self.in_flight.get(comm_id)
         if current is None:
+            if 0 < gen <= self.completed.get(comm_id, 0):
+                # a resend that landed after its generation was answered
+                CALLS["browser stub: duplicate run ignored"] += 1
+                return
             self._launch(comm_id, gen)
             return
         queued = self.queued.get(comm_id)
@@ -408,8 +440,9 @@ class StubBrowser:
                 return
             PROF["elkjs layout (in node)"] += ELK.last["ms_layout"] / 1000
             PROF["elkjs strip/apply properties"] += ELK.last["ms_other"] / 1000
-            kernel_receive(pipe.outlet, raw, gen=gen or None, persist=False)
+            kernel_receive(pipe.outlet, raw, gen=gen, persist=False)
         finally:
+            self.completed[comm_id] = max(self.completed.get(comm_id, 0), gen)
             self.in_flight.pop(comm_id, None)
             queued = self.queued.pop(comm_id, None)
             if queued is not None:
@@ -563,26 +596,39 @@ async def run_case(shape: str, n: int) -> dict:
         pipe.inlet.flow = (F.Node.hidden,)
         case["collapse_workaround"] = await measure(diagram)
 
-    # burst: ten refresh() calls in one tick after one flow change
+    case["burst"] = await burst(diagram)
+    return case
+
+
+async def burst(diagram) -> dict:
+    """Ten ``refresh()`` calls in one tick after one flow change -- over an
+    unchanged graph, so the browser's answer is deep-equal to the last one.
+    """
+    from ipyelk.pipes import flows as F
+
     start, inbound = len(RECORDER.log), tuple(RECORDER.inbound)
     CALLS["browser stub: layouts"] = 0
-    pipe.inlet.flow = (F.Node.hidden,)
+    diagram.pipe.inlet.flow = (F.Node.hidden,)
+    t0 = time.perf_counter()
     tasks = [t for t in (diagram.refresh() for _ in range(BURST)) if t is not None]
-    await asyncio.gather(*tasks, return_exceptions=True)
+    outcomes = await asyncio.gather(*tasks, return_exceptions=True)
     await asyncio.sleep(0)
     if BROWSER is not None:
         await BROWSER.idle()
-    burst = RECORDER.summarize(start, inbound)
-    case["burst"] = {
+    summary = RECORDER.summarize(start, inbound)
+    return {
         "refresh_calls": BURST,
+        "wall_s": time.perf_counter() - t0,
+        "errors": sorted({
+            type(o).__name__ for o in outcomes if isinstance(o, BaseException)
+        }),
         "layouts": CALLS["browser stub: layouts"],
-        "layout_runs": burst["runs"].get("elk", 0),
-        "sizer_runs": burst["runs"].get("sizer", 0),
-        "messages": burst["messages"]["total"],
-        "bytes": burst["bytes"]["total"],
-        "browser_to_kernel": burst["browser_to_kernel"],
+        "layout_runs": summary["runs"].get("elk", 0),
+        "sizer_runs": summary["runs"].get("sizer", 0),
+        "messages": summary["messages"]["total"],
+        "bytes": summary["bytes"]["total"],
+        "browser_to_kernel": summary["browser_to_kernel"],
     }
-    return case
 
 
 def fmt_s(value: float) -> str:
@@ -601,6 +647,9 @@ def table(header: list[str], rows: list[list[str]]) -> str:
 
 
 BURST_KEYS = ("refresh_calls", "layout_runs", "layouts", "sizer_runs", "messages")
+BURST_HEADER = [
+    "Graph", "refresh()", "Layout runs", "Layouts", "Sizer runs", "Msgs", "Bytes", "Wall",
+]  # fmt: skip
 REFRESH_HEADER = [
     "Graph", "Elements", "Wall", "Validation", "Visibility", "elkjs",
     "Kernel sync", "Msgs", "update", "echo", "custom", "Bytes", "Runs", "Layouts",
@@ -673,20 +722,14 @@ def render(results: dict) -> str:
         ),
         (
             f"Burst: {BURST} `refresh()` calls in one tick",
-            [
-                "Graph",
-                "refresh()",
-                "Layout runs",
-                "Layouts",
-                "Sizer runs",
-                "Msgs",
-                "Bytes",
-            ],
+            BURST_HEADER,
             [
                 [
                     name(c),
                     *(str(c["burst"][k]) for k in BURST_KEYS),
                     fmt_b(c["burst"]["bytes"]),
+                    fmt_s(c["burst"]["wall_s"])
+                    + ("".join(f" ({e})" for e in c["burst"]["errors"])),
                 ]
                 for c in cases
             ],
@@ -746,6 +789,13 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--shapes", nargs="+", default=list(SHAPES), choices=SHAPES)
     parser.add_argument("--out", type=Path, default=ROOT / "build" / "bench")
     parser.add_argument(
+        "--no-force-value",
+        action="store_true",
+        help="stub browser drops a deep-equal value from its answer, like an "
+        "extension build before js/layout_widget_util.ts answer() (the kernel "
+        "must then resolve the roundtrip on gen alone)",
+    )
+    parser.add_argument(
         "--slow-browser",
         type=float,
         default=0.0,
@@ -755,6 +805,8 @@ def main(argv: list[str] | None = None) -> int:
     )
 
     args = parser.parse_args(argv)
+    global FORCE_VALUE  # ruff: ignore[global-statement]
+    FORCE_VALUE = not args.no_force_value
     if args.slow_browser:
         # the stub browser answers the real roundtrip; headless mode would
         # short-circuit it with an immediate TimeoutError

@@ -7,11 +7,19 @@ import { random } from 'lodash';
 import { DOMWidgetModel, DOMWidgetView } from '@jupyter-widgets/base';
 import { unpack_models as deserialize } from '@jupyter-widgets/base';
 
-import { RunQueue, layoutErrorMessage, staleMessage } from './layout_widget_util';
+import {
+  RunQueue,
+  answer,
+  layoutErrorMessage,
+  staleMessage,
+} from './layout_widget_util';
 import { ElkLabel, ElkNode } from './sprotty/json/elkgraph-json';
 import { ELK_CSS, ELK_DEBUG, IRunMessage, NAME, VERSION } from './tokens';
 
 // import { ElkNode } from './sprotty/sprotty-model';
+
+/** how long `measure` waits for an animation frame before measuring anyway */
+const MEASURE_FALLBACK_MS = 250;
 
 export class ELKTextSizerModel extends DOMWidgetModel {
   static model_name = 'ELKTextSizerModel';
@@ -107,7 +115,7 @@ export class ELKTextSizerModel extends DOMWidgetModel {
       return this.measure(gen);
     } catch (error) {
       console.error('ELK text sizer failed:', error);
-      this.send(layoutErrorMessage(error));
+      this.send(layoutErrorMessage(error, gen));
       return null;
     }
   }
@@ -150,7 +158,16 @@ export class ELKTextSizerModel extends DOMWidgetModel {
 
     // Callback to take measurements and remove element from DOM
     return new Promise<void>((resolve) => {
-      window.requestAnimationFrame(() => {
+      let done = false;
+      let frame = 0;
+      let timer = 0;
+      const finish = () => {
+        if (done) {
+          return;
+        }
+        done = true;
+        window.cancelAnimationFrame(frame);
+        window.clearTimeout(timer);
         // a throw in this deferred callback is otherwise an unhandled error
         // nobody correlates with the pipe: report it like the sync path
         try {
@@ -159,18 +176,24 @@ export class ELKTextSizerModel extends DOMWidgetModel {
           output['out'] = random();
           // value and generation in one message: the kernel matches the
           // answer to its request by `gen`
-          outlet.set({ value: output, gen });
-          outlet.save_changes();
+          answer(outlet, output, gen);
         } catch (error) {
           console.error('ELK text sizer failed:', error);
-          this.send(layoutErrorMessage(error));
+          this.send(layoutErrorMessage(error, gen));
         } finally {
           if (!ELK_DEBUG && el.parentNode) {
             document.body.removeChild(el);
           }
           resolve();
         }
-      });
+      };
+      // measure after a paint when one comes; a background tab never paints
+      // (its animation frames are suspended), and an unresolved measurement
+      // would hold the RunQueue's in-flight slot, so every re-sent request is
+      // ignored and the kernel waits out its deadline. The timer measures
+      // anyway: the layout is computed on demand by getBoundingClientRect.
+      frame = window.requestAnimationFrame(finish);
+      timer = window.setTimeout(finish, MEASURE_FALLBACK_MS);
     });
   }
 

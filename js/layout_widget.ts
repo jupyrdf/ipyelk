@@ -12,6 +12,7 @@ import { DOMWidgetModel } from '@jupyter-widgets/base';
 
 import {
   RunQueue,
+  answer,
   applyProperties,
   layoutErrorMessage,
   prepareGraphForElk,
@@ -106,12 +107,11 @@ export class ELKLayoutModel extends DOMWidgetModel {
       applyProperties(result, propmap);
     } catch (error) {
       console.error(error);
-      this.send(layoutErrorMessage(error));
+      this.send(layoutErrorMessage(error, gen));
       return null;
     }
 
-    outlet.set({ value: { ...result }, gen });
-    outlet.save_changes();
+    answer(outlet, { ...result }, gen);
     return result;
   }
 }

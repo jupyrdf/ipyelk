@@ -4,7 +4,6 @@ import asyncio
 
 import pytest
 
-from ipyelk.elements import Node
 from ipyelk.pipes import MarkElementWidget
 from ipyelk.pipes.base import PipeDisposition, PipeStatus
 from ipyelk.pipes.elkjs import ElkJS
@@ -57,7 +56,7 @@ async def test_run_resends_until_a_frontend_answers():
         sends.append(content)
         if len(sends) == 2:
             # the second request finds an attached frontend and is answered
-            pipe.outlet.value = Node()
+            pipe.outlet.set_state({"value": {"id": "root"}, "gen": 1})
 
     pipe.send = fake_send
 
