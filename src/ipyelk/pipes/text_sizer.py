@@ -53,6 +53,12 @@ def size(label: Label):
 
 
 def size_nested_label(label: Label) -> Label:
+    """Size a label from its nested sublabels: widths (plus each sublabel's
+    ``org.eclipse.elk.spacing.labelLabel``) add up, heights take the max.
+
+    Currently has no caller in ``ipyelk``; kept as a rule-of-thumb sizer for
+    nested labels.
+    """
     shape = label.properties.get_shape()
     width = label.width or shape.width or 0
     height = label.height or shape.height or 0
@@ -61,7 +67,7 @@ def size_nested_label(label: Label) -> Label:
         ls = size_nested_label(sublabel)
         layout_opts = sublabel.layoutOptions
         spacing = float(layout_opts.get("org.eclipse.elk.spacing.labelLabel", 0))
-        width += ls.width or 0 + spacing
+        width += (ls.width or 0) + spacing
         height = max(height, ls.height or 0)
 
     label.width = width
