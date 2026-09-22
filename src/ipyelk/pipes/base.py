@@ -12,7 +12,7 @@ import traitlets as T
 from ipywidgets.widgets.trait_types import TypedTuple
 
 from .marks import MarkElementWidget
-from .util import resync_stale
+from .util import resync_stale, settle
 
 
 class Superseded(Exception):
@@ -241,6 +241,18 @@ class Pipe(W.Widget):
         (``cancel`` is the explicit way to stop a run); a ``Pipeline`` instead
         gives way at its next stage boundary (``Superseded``).
 
+        One exception: a runner that lives on *another event loop* is handed
+        over -- cancelled (see ``cancel``) and replaced by a runner on the
+        caller's loop.  With ipykernel >= 7 and a frontend using kernel
+        subshells (JupyterLab 4.5+, ipywidgets 8.1.8+), cells run on the
+        kernel's main loop but every widget message -- a button click, the
+        browser's answers -- is handled on a subshell thread with its own
+        loop.  A refresh scheduled from a cell and then requested again from
+        a widget callback cannot be awaited there (``RuntimeError: ... attached
+        to a different loop``), and the returned task must be awaitable by
+        the caller, so the request is served by a runner the caller can wait
+        for.  The pending requests survive the hand-over (``_requested``).
+
         Returns ``None`` (and schedules nothing) when no event loop is running,
         e.g. when a diagram is built in a plain script or a test: there is no
         loop to run the task on, so raising would only crash widget
@@ -249,14 +261,22 @@ class Pipe(W.Widget):
         """
         self._requested += 1
         task = self._task
-        if task is not None and not task.done():
-            return task
         try:
             loop = asyncio.get_running_loop()
         except RuntimeError:
+            if task is not None and not task.done():
+                return task
             self.log.debug("No running event loop; not scheduling %s", type(self))
             self._task = None
             return None
+        if task is not None and not task.done():
+            if task.get_loop() is loop:
+                return task
+            self.log.debug(
+                "%s runner lives on another event loop; handing over",
+                type(self).__name__,
+            )
+            self.cancel()
         self._task = task = loop.create_task(self._serve_requests())
         task.add_done_callback(self._post_run)
         return task
@@ -315,7 +335,18 @@ class Pipe(W.Widget):
         task, self._task = self._task, None
         if task is None or task.done():
             return False
-        task.cancel()
+        loop = task.get_loop()
+        try:
+            on_own_loop = asyncio.get_running_loop() is loop
+        except RuntimeError:
+            on_own_loop = False
+        if on_own_loop:
+            task.cancel()
+        else:
+            # a task may only be cancelled from its own loop's thread (see
+            # ``util.settle``): from another, ``cancel`` neither is safe nor
+            # wakes the loop, and the run would linger until its next timer
+            loop.call_soon_threadsafe(task.cancel)
         return True
 
     def _post_run(self, future: asyncio.Future):
@@ -464,8 +495,10 @@ class SyncedPipe(SyncedOutletPipe, SyncedInletPipe):
                     content.get("error"),
                 )
                 return
-            future.set_exception(
-                RuntimeError(str(content.get("error", "browser pipe failed")))
+            settle(
+                future,
+                "set_exception",
+                RuntimeError(str(content.get("error", "browser pipe failed"))),
             )
         elif action == "stale":
             resync_stale(self, self.inlet, self.outlet, missing=content.get("missing"))
