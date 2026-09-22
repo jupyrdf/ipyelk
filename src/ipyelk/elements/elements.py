@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import abc
 import textwrap
-from typing import Type, cast, get_args
+from typing import Type, TypeVar, cast, get_args
 
 from pydantic import (
     BaseModel,
@@ -115,6 +115,9 @@ class EdgeProperties(BaseProperties):
         return cast("EdgeShape", super().get_shape())
 
 
+IDElementT = TypeVar("IDElementT", bound="IDElement")
+
+
 class IDElement(BaseModel, abc.ABC):
     id: str | None = Field(
         None,
@@ -132,6 +135,22 @@ class IDElement(BaseModel, abc.ABC):
 
     _wire_id: str | None = PrivateAttr(None)
 
+    def __copy__(self):
+        return self._as_new_object(super().__copy__())
+
+    def __deepcopy__(self, memo=None):
+        return self._as_new_object(super().__deepcopy__(memo))
+
+    @staticmethod
+    def _as_new_object(copied: IDElementT) -> IDElementT:
+        """A copy (``copy``, ``deepcopy``, ``model_copy``) is a new element.
+
+        It keeps an explicit ``id`` but never the original's wire id, which
+        would put two elements with one id on the wire.
+        """
+        copied._wire_id = None
+        return copied
+
     @model_serializer(mode="wrap")
     def serialize_element(
         self, handler: SerializerFunctionWrapHandler, info: SerializationInfo
@@ -144,12 +163,17 @@ class IDElement(BaseModel, abc.ABC):
         """The element's id: explicit, else the active ``Registry``'s, else ``None``.
 
         The Registry is seeded with the id this element has already put on the
-        wire (see ``wire_id``), so the id first serialised is the id the index
-        is later keyed by.
+        wire (see ``wire_id``), and an id the Registry mints becomes the wire
+        id, so the index keys and the wire agree whichever comes first.
         """
         if self.id is not None:
             return self.id
-        return Registry.get_id(self, self._wire_id)
+        return self._adopt_wire_id(Registry.get_id(self, self._wire_id))
+
+    def _adopt_wire_id(self, el_id: str | None) -> str | None:
+        if self._wire_id is None:
+            self._wire_id = el_id
+        return el_id
 
     def wire_id(self) -> str:
         """The id this element serialises with; never ``None``.
@@ -325,7 +349,7 @@ class Port(HierarchicalElement):
         """``<parent id>.<own id>`` when the own id is Registry-assigned."""
         if self.id is not None:
             return self.id
-        self_id = Registry.get_id(self, self._wire_id)
+        self_id = self._adopt_wire_id(Registry.get_id(self, self._wire_id))
         if self_id is None:
             return None
         return self._compose_id(self.get_parent(), self_id)

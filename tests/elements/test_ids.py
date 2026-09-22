@@ -9,11 +9,12 @@ element keeps.
 """
 
 import asyncio
+import copy
 import json
 
 import pytest
 
-from ipyelk.elements import Label, Node, Port, Registry
+from ipyelk.elements import ElementIndex, Label, Node, Port, Registry
 from ipyelk.pipes import MarkElementWidget, ValidationPipe
 
 
@@ -125,3 +126,63 @@ def test_label_wrap_does_not_share_generated_ids():
     assert len({line.id for line in lines}) == len(lines)
     assert not widget.index.elements.check_ids().duplicated
     widget.close()
+
+
+def test_copies_mint_their_own_wire_ids():
+    """A copy is a new element: it keeps an explicit ``id``, never the wire id."""
+    original = Node()
+    original.model_dump()
+    copies = [
+        copy.copy(original),
+        copy.deepcopy(original),
+        original.model_copy(),
+        original.model_copy(deep=True),
+    ]
+    assert all(el.id is None for el in copies)
+    assert len({el.wire_id() for el in [original, *copies]}) == 5
+
+    explicit = Node(id="keep", ports=[Port(id="p")])
+    assert copy.deepcopy(explicit).id == "keep"
+    assert copy.deepcopy(explicit).ports[0].id == "p"
+    assert explicit.model_copy(deep=True).id == "keep"
+    assert copy.copy(explicit).id == "keep"
+
+    first = Node()
+    first.model_dump()
+    second = copy.deepcopy(first)
+    root = Node(children=[first, second])
+    wire = root.model_dump()
+    assert wire["children"][0]["id"] != wire["children"][1]["id"]
+    widget = MarkElementWidget(value=root)
+    widget.persist(rebuild_index=True)
+    assert first.id == wire["children"][0]["id"]
+    assert second.id == wire["children"][1]["id"]
+    assert len(widget.index.elements.elements) == 3
+    report = widget.index.elements.check_ids()
+    assert not report.null_ids
+    assert not report.duplicated
+    widget.close()
+
+
+def test_registry_minted_id_becomes_the_wire_id():
+    """Index first, serialise later: index keys and wire ids agree."""
+    root = Node(children=[Node(ports=[Port()])])
+    child = root.children[0]
+    port = child.ports[0]
+    with Registry():
+        index = ElementIndex.from_els(root)
+        root_id, child_id, port_id = root.get_id(), child.get_id(), port.get_id()
+    assert root.id is None
+    assert child.id is None
+    assert port.id is None
+    wire = root.model_dump()
+    assert wire["id"] == root_id
+    assert wire["children"][0]["id"] == child_id
+    assert wire["children"][0]["ports"][0]["id"] == port_id
+    assert port_id.startswith(f"{child_id}.")
+    assert set(index.elements) <= {root_id, child_id, port_id}
+    assert index.elements[root_id] is root
+    with Registry():
+        assert root.get_id() == root_id, "a later Registry adopts the wire id"
+        assert port.get_id() == port_id
+    assert root.model_dump() == wire
