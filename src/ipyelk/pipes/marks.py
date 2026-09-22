@@ -20,6 +20,10 @@ class MarkIndex(W.DOMWidget):
     context = T.Instance(Registry, kw={})
 
     _root: Node | None = None
+    #: the last browser-written tree ``MarkElementWidget.persist`` merged in;
+    #: lets ``ValidationPipe`` recognise that copy if a caller swaps it into
+    #: the inlet (2.1.x ``Diagram.refresh`` did) rather than the user's root
+    merged_from: Node | None = None
 
     def to_id(self, element: BaseElement):
         return element.get_id()
@@ -83,6 +87,30 @@ class MarkElementWidget(W.DOMWidget):
             return False
         return super()._should_send_property(key, value)
 
+    def record(self, *tags: str) -> tuple[str, ...]:
+        """Add ``tags`` to the pending ``flow`` (order-preserving union).
+
+        Writers (tools, ``Diagram``) must *record* rather than assign: an
+        assignment overwrites whatever another writer left pending, and a
+        tag that was recorded while a run was in flight would be wiped by
+        that run's completion.
+        """
+        pending = list(self.flow)
+        pending.extend(tag for tag in tags if tag not in pending)
+        if len(pending) != len(self.flow):
+            self.flow = tuple(pending)
+        return self.flow
+
+    def take(self) -> tuple[str, ...]:
+        """Consume the pending ``flow``: return it and leave ``()`` behind.
+
+        A run takes the flow when it *starts*, so anything recorded while it
+        runs stays pending for the next run instead of being erased when
+        this one completes (``Pipeline.run``).
+        """
+        taken, self.flow = self.flow, ()
+        return taken
+
     def persist(self, rebuild_index: bool = False):
         """Fold ``value`` into the shared index.
 
@@ -97,6 +125,7 @@ class MarkElementWidget(W.DOMWidget):
             self.build_index()
         elif self.value is not None:
             self.index.elements.update(ElementIndex.from_els(self.value))
+            self.index.merged_from = self.value
         return self
 
     def build_index(self, *, assign_ids: bool = True) -> MarkIndex:
@@ -119,6 +148,7 @@ class MarkElementWidget(W.DOMWidget):
                     if el.id is None:
                         el.id = key
         self.index.elements = index
+        self.index.merged_from = None
         return self.index
 
     def _repr_mimebundle_(self, **kwargs):

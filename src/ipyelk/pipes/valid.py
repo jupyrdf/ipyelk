@@ -21,8 +21,25 @@ class ValidationPipe(Pipe):
     errors = T.Dict(kw={})
 
     async def run(self) -> None:
+        inlet = self.inlet
+        if (
+            inlet.index.elements is not None
+            and inlet.value is not None
+            and inlet.value is inlet.index.merged_from
+            and inlet.value is not inlet.index.root
+        ):
+            # A caller swapped the browser's laid-out copy into the inlet
+            # (``inlet.value = outlet.value``, as ``Diagram.refresh`` did before
+            # 2.1.3).  That copy has no hidden elements and none of the user's
+            # objects; the indexed root is the user's tree and already carries
+            # the geometry ``persist`` merged, so validate that instead.
+            self.log.warning(
+                "Inlet value is the browser copy merged into the index, not the "
+                "indexed root; validating the indexed hierarchy instead"
+            )
+            inlet.value = inlet.index.root
         # report ids before any are assigned: `fix_null_id` decides (apply_fixes)
-        index: MarkIndex = self.inlet.build_index(assign_ids=False)
+        index: MarkIndex = inlet.build_index(assign_ids=False)
         with index.context:
             self.get_reports(index)
             self.errors = self.collect_errors()

@@ -90,7 +90,7 @@ class Diagram(StyledWidget):
         self.children = [self.view, self.toolbar]
 
     def _update_view_sources(self):
-        self.source.flow = (F.New,)
+        self.source.record(F.New)
         self.pipe.inlet = self.source
         self.view.source = self.pipe.outlet
 
@@ -177,12 +177,16 @@ class Diagram(StyledWidget):
                 # a silently failed layout looks exactly like a hung diagram
                 self.log.warning("Diagram refresh failed: %r", exception)
                 return
+            # The inlet keeps the user's own tree: geometry and label sizes
+            # already reached it through ``outlet.persist()`` (shared index),
+            # and swapping in the laid-out copy would drop hidden elements and
+            # break identity for selection and tools on the next ``New`` run.
+            # The flow was taken when the run started (``Pipeline.run``), so
+            # nothing recorded meanwhile is cleared here.
             layout = self.pipe.outlet.value
             if self.view.source is None:
                 return
             self.view.source.value = layout
-            self.pipe.inlet.value = layout
-            self.pipe.inlet.flow = tuple()
 
         task.add_done_callback(update_view)
         return task
