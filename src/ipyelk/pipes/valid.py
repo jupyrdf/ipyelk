@@ -28,17 +28,22 @@ class ValidationPipe(Pipe):
             self.errors = self.collect_errors()
             if self.errors:
                 raise ValueError("Inlet value is not valid")
-            value = self.apply_fixes(index)
+            value, fixes = self.apply_fixes(index)
 
             if value is self.outlet.value:
                 # force refresh if same instance
                 self.outlet._notify_trait("value", None, value)
             else:
                 self.outlet.value = value
-            self.get_reports(self.outlet.build_index())
-            self.errors = self.collect_errors()
-            if self.errors:
-                raise ValueError("Outlet value is not valid")
+            # the outlet index is always rebuilt (it is the downstream
+            # authority and pins assigned ids), but re-reporting on it only
+            # tells us something new when a fix moved or added an element
+            outlet_index = self.outlet.build_index()
+            if fixes:
+                self.get_reports(outlet_index)
+                self.errors = self.collect_errors()
+                if self.errors:
+                    raise ValueError("Outlet value is not valid")
 
     def get_reports(self, index: MarkIndex):
         if index.elements is None:
@@ -63,16 +68,24 @@ class ValidationPipe(Pipe):
             errors["Schema Error"] = self.schema_report
         return errors
 
-    def apply_fixes(self, index: MarkIndex) -> Node:
+    def apply_fixes(self, index: MarkIndex) -> tuple[Node, int]:
+        """Apply the enabled fixes and return the root and how many were made.
+
+        The count is what lets :meth:`run` skip re-reporting on an outlet that
+        nothing changed.
+        """
         root = index.root
+        fixes = 0
         if self.id_report.null_ids and self.fix_null_id:
             self.log.warning(f"fixing {len(self.id_report.null_ids)} ids")
             for el in self.id_report.null_ids:
                 el.id = el.get_id()
+                fixes += 1
 
         if self.edge_report.orphans and self.fix_orphans:
             for el in self.edge_report.orphans:
                 root.add_child(el)
+                fixes += 1
 
         if self.edge_report.lca_mismatch and self.fix_edge_owners:
             for edge, (old, new) in self.edge_report.lca_mismatch.items():
@@ -80,4 +93,5 @@ class ValidationPipe(Pipe):
                 if new is None:
                     new = root
                 new.edges.append(edge)
-        return root
+                fixes += 1
+        return root, fixes
