@@ -70,7 +70,13 @@ class MarkElementWidget(W.DOMWidget):
     value = T.Instance(Node, allow_none=True).tag(
         sync=True, echo_update=False, **elk_serialization
     )
+    #: generation of the ``run`` request the browser answered when it last
+    #: wrote ``value`` (written in the same ``save_changes``); ``0`` until a
+    #: frontend answers, or forever with an older extension build.  Lets
+    #: ``browser_roundtrip`` tell a fresh answer from one to an abandoned run.
+    gen = T.Int(0).tag(sync=True, echo_update=False)
     index = T.Instance(MarkIndex, kw={}).tag(sync=True, **W.widget_serialization)
+
     flow: tuple[str, ...] = TypedTuple(T.Unicode(), kw={}).tag(sync=True)
 
     def _should_send_property(self, key, value):

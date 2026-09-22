@@ -15,6 +15,17 @@ from .marks import MarkElementWidget
 from .util import resync_stale
 
 
+class Superseded(Exception):
+    """A run gave way to a newer request at a stage boundary.
+
+    Raised by ``Pipeline`` between stages when ``Pipe.schedule_run`` was
+    called while the run was in flight; caught by the runner
+    (``Pipe._serve_requests``), which then serves the newer request.  Never
+    raised inside a stage: a browser roundtrip that was sent is always
+    awaited to its answer, error or timeout.
+    """
+
+
 class PipeDisposition(Enum):
     waiting = "waiting"
     running = "running"
@@ -187,8 +198,17 @@ class Pipe(W.Widget):
     reports: tuple[str, ...] = TypedTuple(T.Unicode(), kw={})
     on_progress = T.Callable(default_value=None, allow_none=True)
     on_error = T.Callable(default_value=None, allow_none=True)
+    #: the runner serving the pending requests (see ``schedule_run``); it
+    #: resolves after the *trailing* run, so ``await pipe._task`` waits for
+    #: every request made while it was alive
     _task: asyncio.Future | None = None
+    #: request counters: ``schedule_run`` bumps ``_requested``; the runner
+    #: stamps ``_generation`` when it starts a run, so ``_generation <
+    #: _requested`` means a newer request is pending
+    _generation: int = 0
+    _requested: int = 0
     status = T.Instance(PipeStatus, kw={})
+
     status_widget = T.Instance(W.DOMWidget, allow_none=True)
 
     def __init__(self, *args, **kwargs):
@@ -211,26 +231,78 @@ class Pipe(W.Widget):
         return self.status_widget._repr_mimebundle_(**kwargs)
 
     def schedule_run(self, change: T.Bunch | None = None) -> asyncio.Task | None:
-        """Schedule rerunning the pipe on the event loop.
+        """Request a run and return the task that will serve it.
+
+        Requests coalesce on the trailing edge: one *runner* task serves every
+        request made while it is alive, running ``run`` again until no newer
+        request is pending, so ten calls in one tick cost one run and a call
+        made mid-run costs one more run *after* the current one.  Nothing is
+        cancelled here -- a browser roundtrip that was sent is always awaited
+        (``cancel`` is the explicit way to stop a run); a ``Pipeline`` instead
+        gives way at its next stage boundary (``Superseded``).
 
         Returns ``None`` (and schedules nothing) when no event loop is running,
         e.g. when a diagram is built in a plain script or a test: there is no
         loop to run the task on, so raising would only crash widget
         construction (``Diagram(source=...)`` refreshes from a trait observer).
+        The request still counts and is served by the next runner.
         """
-        # schedule task on loop
-        if self._task:
-            self._task.cancel()
+        self._requested += 1
+        task = self._task
+        if task is not None and not task.done():
+            return task
         try:
             loop = asyncio.get_running_loop()
         except RuntimeError:
             self.log.debug("No running event loop; not scheduling %s", type(self))
             self._task = None
             return None
-        self._task = loop.create_task(self.run())
+        self._task = task = loop.create_task(self._serve_requests())
+        task.add_done_callback(self._post_run)
+        return task
 
-        self._task.add_done_callback(self._post_run)
-        return self._task
+    def superseded(self) -> bool:
+        """Whether a newer request arrived while the runner's current run is in
+        flight (a ``Pipeline`` checks this between stages).
+        """
+        task = self._task
+        return (
+            task is not None and not task.done() and self._generation < self._requested
+        )
+
+    async def _serve_requests(self) -> None:
+        """The runner: run until no request newer than the last run is pending."""
+        while self._generation < self._requested:
+            self._generation = self._requested
+            try:
+                await self.run()
+            except Superseded:
+                self.log.debug("%s gave way to a newer request", type(self).__name__)
+            except Exception:
+                if not self.superseded():
+                    raise
+                # the failed run is stale anyway; the newer request may well
+                # succeed (a ``Pipeline`` has already logged the stage error)
+                self.log.warning(
+                    "%s run failed; serving the newer request",
+                    type(self).__name__,
+                    exc_info=True,
+                )
+
+    def cancel(self) -> bool:
+        """Cancel the runner and drop its pending requests; ``True`` if one was alive.
+
+        This is the only thing that cancels a run: ``schedule_run`` never does.
+        Use it when the pipe is detached (``Diagram`` replaces its pipe or
+        source) -- an in-flight browser answer would otherwise be persisted
+        into an index nobody views.  The next ``schedule_run`` starts a fresh
+        runner.
+        """
+        task, self._task = self._task, None
+        if task is None or task.done():
+            return False
+        task.cancel()
+        return True
 
     def _post_run(self, future: asyncio.Future):
         try:
@@ -324,6 +396,10 @@ class SyncedOutletPipe(Pipe):
 
 class SyncedPipe(SyncedOutletPipe, SyncedInletPipe):
     """Both inlet and value are synced with the browser"""
+
+    #: generation of the last ``run`` request sent to the browser; the answer
+    #: carries it back in ``outlet.gen`` (see ``util.browser_roundtrip``)
+    _roundtrip_gen: int = 0
 
     def __init__(self, *args, **kwargs):
         self._stale_resync_at: float = 0.0

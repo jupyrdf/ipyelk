@@ -2,14 +2,13 @@
 # Distributed under the terms of the Modified BSD License.
 from __future__ import annotations
 
-import asyncio
 from datetime import datetime
 
 import ipywidgets as W
 import traitlets as T
 
 from ..exceptions import BrokenPipe
-from .base import Pipe, PipeStatus, PipeStatusView, SyncedOutletPipe
+from .base import Pipe, PipeStatus, PipeStatusView, Superseded, SyncedOutletPipe
 
 
 class PipelineStatusView(PipeStatusView):
@@ -64,7 +63,7 @@ class Pipeline(SyncedOutletPipe):
     pipes = T.List(T.Instance(Pipe), kw={}).tag(sync=True, **W.widget_serialization)
 
     #: what the in-flight run took from ``inlet.flow``; owed back if it does
-    #: not complete (see ``run`` and ``schedule_run``)
+    #: not complete (see ``run`` and ``cancel``)
     _taken: tuple[str, ...] = ()
 
     @T.default("status_widget")
@@ -89,14 +88,16 @@ class Pipeline(SyncedOutletPipe):
 
         # self.schedule_run()
 
-    def schedule_run(self, change: T.Bunch | None = None) -> asyncio.Task | None:
-        # ``Pipe.schedule_run`` cancels the in-flight run, but cancellation
-        # unwinds on a later loop turn (``wait_for`` on Python < 3.12 awaits
-        # its inner future first) -- possibly after the successor has already
-        # taken the pending flow and found nothing.  Hand the in-flight run's
-        # tags back now, before the successor exists.
-        self._release_taken()
-        return super().schedule_run(change)
+    def cancel(self) -> bool:
+        # Cancellation unwinds on a later loop turn (``wait_for`` on Python <
+        # 3.12 awaits its inner future first) -- possibly after a runner
+        # scheduled right after this call has taken the pending flow and found
+        # nothing.  Hand the in-flight run's tags back now.  (``schedule_run``
+        # no longer cancels: a superseded or failed run re-records in ``run``.)
+        cancelled = super().cancel()
+        if cancelled:
+            self._release_taken()
+        return cancelled
 
     def _release_taken(self) -> None:
         taken, self._taken = self._taken, ()
@@ -112,11 +113,12 @@ class Pipeline(SyncedOutletPipe):
         try:
             await self._run_pipes(taken)
         except BaseException:
-            # a failed or cancelled run retries: re-record what it took (unless
-            # ``schedule_run`` already handed it to a successor)
+            # a failed, superseded or cancelled run retries: re-record what it
+            # took (unless ``cancel`` already handed it to a successor)
             if self._taken is taken:
                 self._release_taken()
             raise
+
         self._taken = ()
         self.status_update(PipeStatus.finished(start_time=start))
 
@@ -125,6 +127,11 @@ class Pipeline(SyncedOutletPipe):
 
         # Look at enabled pipes
         for i, pipe in enumerate(self.pipes):
+            if i and self.superseded():
+                # a newer request arrived during the previous stage: the rest
+                # of this run would be stale work.  Only ever between stages --
+                # a browser roundtrip that was sent is awaited to its answer.
+                raise Superseded(f"superseded before stage {i}")
             # TODO use i and num_steps for reporting processing stage
             pipe_start_time = datetime.now()
             p_name = f"pipe {i}: {type(pipe)}"
@@ -134,6 +141,8 @@ class Pipeline(SyncedOutletPipe):
                     await pipe.run()
                 else:
                     pipe.outlet.value = pipe.inlet.value
+            except Superseded:
+                raise  # a nested pipeline gave way; not a stage error
             except Exception as err:
                 self.log.exception(f"Error running {p_name}")
                 self.status_update(

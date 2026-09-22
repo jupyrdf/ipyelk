@@ -148,10 +148,12 @@ async def test_report_recorded_during_run_is_kept_for_next_run():
 
 @pytest.mark.asyncio
 async def test_cancelled_run_hands_taken_flow_to_successor():
-    """Rescheduling over an in-flight run must not lose what that run took.
+    """Cancelling an in-flight run must not lose what that run took.
 
-    The successor takes at its start, which can be before the cancelled run
-    unwinds; ``Pipeline.schedule_run`` therefore hands the tags back first.
+    A runner scheduled right after ``cancel()`` takes at its start, which can
+    be before the cancelled run unwinds; ``Pipeline.cancel`` therefore hands
+    the tags back first.  (``schedule_run`` itself no longer cancels: it
+    joins the in-flight runner, see ``test_generation.py``.)
     """
     parked = _Parked(observes=(F.New,), reports=(F.Layout,))
     counting = _Counting(observes=(F.Layout,))
@@ -162,6 +164,8 @@ async def test_cancelled_run_hands_taken_flow_to_successor():
     await asyncio.sleep(0)
     assert pipeline.inlet.flow == ()
 
+    assert pipeline.cancel()
+    assert pipeline.inlet.flow == (F.New,), "handed back before the successor"
     second = pipeline.schedule_run()
     assert second is not first
     with pytest.raises(asyncio.CancelledError):

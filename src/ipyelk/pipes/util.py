@@ -48,6 +48,57 @@ def wait_for_change(widget, value, timeout: float | None = None):
     return future
 
 
+#: ``unversioned`` is set once a frontend answered without a generation (an
+#: older extension build); the acceptance is logged once per process
+_WARNED = {"unversioned": False}
+
+
+def wait_for_answer(pipe, gen: int, trait: str = "value") -> asyncio.Future:
+    """Return a future that resolves when the browser answers roundtrip ``gen``.
+
+    The frontend writes ``gen`` alongside ``value`` in one ``save_changes``
+    (``js/layout_widget.ts``, ``js/measure_text.ts``), so when the ``trait``
+    observer fires ``outlet.gen`` already carries the answer's generation
+    (``Widget.set_state`` sets every attribute before notifying).  An answer
+    for another generation -- the browser finishing a run that ``cancel``
+    abandoned -- is logged and ignored, and the future stays pending for the
+    right one.  ``gen == 0`` is an older frontend build that does not stamp
+    its answers: accepted, with a one-time warning, so the diagram still
+    renders (stale answers cannot be told apart in that case).
+    """
+    outlet = pipe.outlet
+    future: asyncio.Future = asyncio.get_event_loop().create_future()
+
+    def on_change(change):
+        if future.done():
+            return
+        answered = outlet.gen
+        if answered == gen:
+            future.set_result(change.new)
+        elif answered == 0:
+            if not _WARNED["unversioned"]:
+                _WARNED["unversioned"] = True
+
+                pipe.log.warning(
+                    "The frontend answered a %s run without a generation "
+                    "(older extension build?); accepting it, but a stale answer "
+                    "cannot be told from a fresh one",
+                    type(pipe).__name__,
+                )
+            future.set_result(change.new)
+        else:
+            pipe.log.debug(
+                "%s ignoring browser answer for generation %s while waiting for %s",
+                type(pipe).__name__,
+                answered,
+                gen,
+            )
+
+    future.add_done_callback(lambda _: outlet.unobserve(on_change, trait))
+    outlet.observe(on_change, trait)
+    return future
+
+
 async def browser_roundtrip(
     pipe,
     trait: str = "value",
@@ -55,8 +106,13 @@ async def browser_roundtrip(
     max_delay: float = 2.0,
     timeout: float | None = None,
 ):
-    """Send ``{"action": "run"}`` to a synced pipe's frontend and wait for the
-    pipe's outlet to change.
+    """Send ``{"action": "run", "gen": g}`` to a synced pipe's frontend and
+    wait for the pipe's outlet to be written for generation ``g``.
+
+    ``g`` counts this pipe's roundtrips; the frontend stamps its answer with
+    it (``outlet.gen``) so an answer to an earlier, abandoned request is
+    never taken for this one (``wait_for_answer``), and so a re-sent request
+    is recognised as the same work and not laid out twice.
 
     ``Widget.send`` only reaches a frontend that is already attached: a pipe
     that runs before its diagram is displayed (the common notebook flow --
@@ -83,7 +139,8 @@ async def browser_roundtrip(
     if os.environ.get("IPYELK_NO_BROWSER"):
         raise asyncio.TimeoutError
 
-    future_value = wait_for_change(pipe.outlet, trait)
+    pipe._roundtrip_gen = gen = getattr(pipe, "_roundtrip_gen", 0) + 1
+    future_value = wait_for_answer(pipe, gen, trait)
     pipe._roundtrip_future = future_value
     # a fresh roundtrip resets the stale re-sync throttle (see SyncedPipe)
     pipe._stale_resync_interval = 0.0
@@ -91,7 +148,7 @@ async def browser_roundtrip(
     delay = initial_delay
     try:
         while True:
-            pipe.send({"action": "run"})
+            pipe.send({"action": "run", "gen": gen})
             wait = delay
             if deadline is not None:
                 wait = min(delay, max(deadline - monotonic(), 0.01))
