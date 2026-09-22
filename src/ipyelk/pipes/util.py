@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import contextlib
 import os
 from time import monotonic
 from typing import TYPE_CHECKING
@@ -48,6 +49,42 @@ def wait_for_change(widget, value, timeout: float | None = None):
     return future
 
 
+def on_own_loop(future: asyncio.Future) -> bool:
+    """Whether the calling thread is running ``future``'s event loop."""
+    try:
+        return asyncio.get_running_loop() is future.get_loop()
+    except RuntimeError:
+        return False
+
+
+def settle(future: asyncio.Future, method: str, *args) -> None:
+    """Call ``future.<method>(*args)`` (``set_result``/``set_exception``) on
+    the loop the future belongs to, from whatever thread this runs on.
+
+    A widget's comm messages are handled on the thread that owns its comm:
+    with ipykernel >= 7 and a frontend that uses kernel subshells (JupyterLab
+    4.5+, ipywidgets 8.1.8+) that is a *subshell* thread with its own event
+    loop, while a runner scheduled from a cell lives on the kernel's main
+    loop.  A future may only be settled from its own loop's thread: from any
+    other, ``set_result`` is not thread-safe and, worse, does not wake the
+    loop, so the runner awaiting it sits until that loop's next timer -- the
+    ``browser_roundtrip`` re-send backoff -- and every answered request is
+    re-sent once.  ``call_soon_threadsafe`` delivers the answer and wakes the
+    loop; a future already settled (cancelled by a timeout) is left alone.
+    """
+
+    def apply():
+        if not future.done():
+            getattr(future, method)(*args)
+
+    if on_own_loop(future):
+        apply()
+        return
+    # a closed loop means nobody awaits this future any more
+    with contextlib.suppress(RuntimeError):
+        future.get_loop().call_soon_threadsafe(apply)
+
+
 def wait_for_answer(pipe, gen: int, trait: str = "value") -> asyncio.Future:
     """Return a future that resolves (with ``outlet.value``) when the browser
     answers roundtrip ``gen``.
@@ -84,7 +121,7 @@ def wait_for_answer(pipe, gen: int, trait: str = "value") -> asyncio.Future:
         answered = outlet.gen
         from_browser = "value" in outlet._property_lock
         if answered == gen:
-            future.set_result(outlet.value)
+            settle(future, "set_result", outlet.value)
         elif answered == 0 and from_browser:
             if not getattr(pipe, "_warned_unversioned", False):
                 pipe._warned_unversioned = True
@@ -94,7 +131,7 @@ def wait_for_answer(pipe, gen: int, trait: str = "value") -> asyncio.Future:
                     "cannot be told from a fresh one",
                     type(pipe).__name__,
                 )
-            future.set_result(outlet.value)
+            settle(future, "set_result", outlet.value)
         elif answered == 0:
             pipe.log.debug(
                 "%s ignoring a kernel-side %s write while waiting for generation %s",
@@ -188,6 +225,8 @@ async def browser_roundtrip(
         # which time a successor started in the same tick as ``cancel()`` may
         # already be waiting on *its* future, and a browser error for that
         # generation must still find it
+        # (the same holds for a run cancelled from another loop when
+        # ``Pipe.schedule_run`` hands over to the caller's loop)
         if pipe._roundtrip_future is future_value:
             pipe._roundtrip_future = None
 
