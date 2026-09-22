@@ -22,7 +22,7 @@ from typing_extensions import Self
 
 from ..exceptions import NotFoundError, NotUniqueError
 from .common import CounterContextManager, serialize_value
-from .registry import Registry
+from .registry import Registry, new_id
 from .shapes import BaseShape, EdgeShape, LabelShape, NodeShape, Point, PortShape
 
 exclude_hidden = CounterContextManager()
@@ -130,18 +130,44 @@ class IDElement(BaseModel, abc.ABC):
     def __eq__(self, other):
         return id(self) == id(other)
 
+    _wire_id: str | None = PrivateAttr(None)
+
     @model_serializer(mode="wrap")
     def serialize_element(
         self, handler: SerializerFunctionWrapHandler, info: SerializationInfo
     ):
         data = handler(self)
-        serialize_value(data, "id", self.get_id(), info)
+        serialize_value(data, "id", self.wire_id(), info)
         return data
 
     def get_id(self) -> str | None:
+        """The element's id: explicit, else the active ``Registry``'s, else ``None``.
+
+        The Registry is seeded with the id this element has already put on the
+        wire (see ``wire_id``), so the id first serialised is the id the index
+        is later keyed by.
+        """
         if self.id is not None:
             return self.id
-        return Registry.get_id(self)
+        return Registry.get_id(self, self._wire_id)
+
+    def wire_id(self) -> str:
+        """The id this element serialises with; never ``None``.
+
+        ``get_id`` when that resolves, otherwise a uuid minted once per object,
+        so repeated dumps agree with each other and with the ``sources`` /
+        ``targets`` of edges that reference this element.  Does not assign
+        ``id``: an element stays id-less until it is indexed.
+        """
+        el_id = self.get_id()
+        if el_id is not None:
+            return el_id
+        return self._own_wire_id()
+
+    def _own_wire_id(self) -> str:
+        if self._wire_id is None:
+            self._wire_id = new_id()
+        return self._wire_id
 
     def _repr_mimebundle_(self, **kwargs):
         from IPython.display import JSON, display
@@ -252,13 +278,13 @@ class Edge(BaseElement):
 
     @computed_field  # type: ignore[prop-decorator]  # Mypy cannot model decorated properties.
     @property
-    def sources(self) -> list[str | None]:
-        return [self.source.get_id()]
+    def sources(self) -> list[str]:
+        return [self.source.wire_id()]
 
     @computed_field  # type: ignore[prop-decorator]
     @property
-    def targets(self) -> list[str | None]:
-        return [self.target.get_id()]
+    def targets(self) -> list[str]:
+        return [self.target.wire_id()]
 
     def points(self):
         u = self.source if isinstance(self.source, Node) else self.source.get_parent()
@@ -283,6 +309,9 @@ class Label(ShapeElement):
 
     def wrap(self, **kwargs) -> list[Label]:
         data = self.model_dump()
+        if self.id is None:
+            # the dump carries this label's wire id; the lines must not share it
+            data.pop("id", None)
         return [
             Label(**{**data, "text": line})
             for line in textwrap.wrap(self.text, **kwargs)
@@ -293,12 +322,25 @@ class Port(HierarchicalElement):
     properties: SerializeAsAny[PortProperties] = Field(default_factory=PortProperties)
 
     def get_id(self) -> str | None:
-        if self.id is None:
-            parent_id = Registry.get_id(self.get_parent())
-            self_id = Registry.get_id(self)
-            if parent_id is not None and self_id is not None:
-                return ".".join([parent_id, self_id])
-        return self.id
+        """``<parent id>.<own id>`` when the own id is Registry-assigned."""
+        if self.id is not None:
+            return self.id
+        self_id = Registry.get_id(self, self._wire_id)
+        if self_id is None:
+            return None
+        return self._compose_id(self.get_parent(), self_id)
+
+    def wire_id(self) -> str:
+        port_id = self.get_id()
+        if port_id is not None:
+            return port_id
+        return self._compose_id(self.get_parent(), self._own_wire_id())
+
+    @staticmethod
+    def _compose_id(parent: Node | None, self_id: str) -> str:
+        if parent is None:
+            return self_id
+        return ".".join([parent.wire_id(), self_id])
 
 
 class Node(HierarchicalElement):
