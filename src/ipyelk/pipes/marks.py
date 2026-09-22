@@ -47,9 +47,41 @@ class MarkIndex(W.DOMWidget):
 
 
 class MarkElementWidget(W.DOMWidget):
-    value = T.Instance(Node, allow_none=True).tag(sync=True, **elk_serialization)
+    """A synced element tree plus the shared index and the pending ``flow``.
+
+    ``value`` is written from both sides: the kernel assigns a new tree, and
+    the browser writes back the measured or laid-out tree (text sizer, elkjs).
+    A browser write must not be re-sent: ipywidgets would otherwise echo the
+    raw JSON to every frontend *and* send a second ``update`` carrying the
+    re-serialised pydantic tree (which differs from the browser JSON by
+    elkjs-internal keys), and each arrival re-renders the diagram.  So
+    ``value`` is tagged ``echo_update=False`` and ``_should_send_property``
+    suppresses the second send while the browser's property lock is held.
+    Kernel-initiated writes have an empty lock and are sent exactly once.
+
+    Known limitation: a second frontend attached to the same kernel used to
+    learn browser-written values through the echo and no longer does.
+    """
+
+    value = T.Instance(Node, allow_none=True).tag(
+        sync=True, echo_update=False, **elk_serialization
+    )
     index = T.Instance(MarkIndex, kw={}).tag(sync=True, **W.widget_serialization)
     flow: tuple[str, ...] = TypedTuple(T.Unicode(), kw={}).tag(sync=True)
+
+    def _should_send_property(self, key, value):
+        """Never re-send a ``value`` the browser just wrote.
+
+        ``Widget.set_state`` holds ``_property_lock`` while trait notifications
+        fire, so ``key in self._property_lock`` means this change *is* the
+        browser's write.  The stock check compares the re-serialised value with
+        the browser JSON and sends when they differ, which they always do for
+        an elkjs-processed tree; the browser already renders its own object,
+        so that send is pure churn.
+        """
+        if key == "value" and key in self._property_lock:
+            return False
+        return super()._should_send_property(key, value)
 
     def persist(self, rebuild_index: bool = False):
         """Fold ``value`` into the shared index.

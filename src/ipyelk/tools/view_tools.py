@@ -20,10 +20,17 @@ class Selection(Tool):
     ids: tuple
     tuple of string ids.
 
+    ``ids`` is written by the browser on every click.  It is tagged
+    ``echo_update=False`` so the kernel does not bounce each browser write back
+    to every frontend (the writing frontend already holds the value).  Known
+    limitation: a *second* frontend attached to the same kernel (two tabs, or
+    JupyterLab plus Voila) used to learn browser-made selections through that
+    echo and no longer does; kernel-initiated writes still reach every frontend.
+
     """
 
     ids = TypedTuple(trait=T.Unicode()).tag(
-        sync=True
+        sync=True, echo_update=False
     )  # list element ids currently selected
 
     def get_index(self) -> MarkIndex:
@@ -49,9 +56,15 @@ class Hover(Tool):
     ids: tuple
     tuple of string ids.
 
+    Like ``Selection.ids``, this is browser-written and tagged
+    ``echo_update=False``: a hover is not bounced back to the frontends, and a
+    second frontend on the same kernel does not see another frontend's hover.
+
     """
 
-    ids = T.Unicode().tag(sync=True)  # list element ids currently hovered
+    ids = T.Unicode().tag(
+        sync=True, echo_update=False
+    )  # list element ids currently hovered
 
 
 class Pan(Tool):
