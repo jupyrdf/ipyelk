@@ -29,7 +29,7 @@ import {
 import { ElkModelRenderer } from '../renderer';
 import { ElkEdge, ElkJunction } from '../sprotty-model';
 
-import { CircularNodeView, validCanvasBounds } from './base';
+import { CircularNodeView, intersectsCanvas, shouldCull } from './base';
 import { coveredRoutePoints, routeEndAngle, symbolReach } from './edge_views_util';
 
 @injectable()
@@ -65,17 +65,10 @@ export class ElkEdgeView extends PolylineEdgeView {
     }
 
     const canvasBounds = model.root.canvasBounds;
-    if (!validCanvasBounds(canvasBounds)) {
-      // only hide if the canvas's size is set
+    if (!shouldCull(canvasBounds)) {
       return true;
     }
-    const ab = getAbsoluteRouteBounds(model, route);
-    return (
-      ab.x <= canvasBounds.width &&
-      ab.x + ab.width >= 0 &&
-      ab.y <= canvasBounds.height &&
-      ab.y + ab.height >= 0
-    );
+    return intersectsCanvas(getAbsoluteRouteBounds(model, route), canvasBounds);
   }
 
   render(edge: Readonly<ElkEdge>, context: ElkModelRenderer): VNode | undefined {

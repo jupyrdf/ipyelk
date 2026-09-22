@@ -4,6 +4,7 @@
  */
 import {
   Action,
+  Bounds,
   HoverFeedbackAction,
   SModelElement,
   SModelRoot,
@@ -41,6 +42,7 @@ import {
 } from './selection_util';
 import createContainer from './sprotty/di-config';
 import { JLModelSource } from './sprotty/diagram-server';
+import { contentExtent } from './sprotty/export_util';
 // import { VNode } from 'snabbdom';
 import { ELK_CSS, ELK_DEBUG, NAME, TAnyELKMessage, VERSION } from './tokens';
 import { NodeExpandTool, NodeSelectTool } from './tools';
@@ -508,6 +510,26 @@ export class ELKViewerView extends DOMWidgetView {
       }
     }
     return elementIds;
+  }
+
+  /**
+   * The rendered diagram as SVG markup, with the model-space size of its
+   * content.
+   *
+   * The whole diagram is in the DOM -- views draw every element, on screen or
+   * not -- so this is a capture, not a re-render. The extent comes from the
+   * model rather than the rendered box, so scrolling or zooming the diagram
+   * cannot change the exported size.
+   *
+   * Returns `null` before Sprotty is initialized, or if the view has no SVG.
+   */
+  exportSvg(): { markup: string; extent: Bounds } | null {
+    const root = this.source?.root;
+    const svg: SVGElement | null = this.el?.querySelector('svg');
+    if (root == null || svg == null) {
+      return null;
+    }
+    return { markup: svg.outerHTML, extent: contentExtent(root) };
   }
 
   handleMessage(content: TAnyELKMessage) {
