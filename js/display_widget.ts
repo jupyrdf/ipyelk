@@ -309,6 +309,10 @@ export class ELKViewerView extends DOMWidgetView {
       // it: re-render when the overlay gains or loses its children
       this.listenTo(overlay, 'change:children', this.rerenderControlOverlay);
     }
+    // swapping the overlay (or clearing it to None) must show the new one and
+    // take the old one off screen; only `change:children` re-rendered before.
+    // A no-op before the first layout (nothing to render yet).
+    this.rerenderControlOverlay();
   }
 
   rerenderControlOverlay() {
