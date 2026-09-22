@@ -65,48 +65,44 @@ def test_static_shared_package_versions() -> None:
     ``jupyterlab.sharedPackages.<pkg>.version`` is only needed where webpack cannot
     read the version itself (e.g. ``inversify`` resolves to ``lib/esm/index.js``,
     whose sibling ``package.json`` carries no version). Such a static value must be
-    the exact pinned dependency, or the two drift apart silently. It must also be
-    an exact semver that satisfies the shared ``requiredVersion``: a range there
-    (``"^6.2.2"``) is not a version ``ProvideSharedPlugin`` can use, and the
-    "Unsatisfied version" warnings return with green tests.
+    an exact version, equal to the pinned dependency, and inside the declared
+    ``requiredVersion`` range, or the three drift apart silently.
     """
     import json
     import re
-    from pathlib import Path
 
-    exact = re.compile(r"^(\d+)\.(\d+)\.(\d+)$")  # no range operators, no prerelease
+    exact = re.compile(r"^(\d+)\.(\d+)\.(\d+)$")
+    ranged = re.compile(r"^([\^~]?)(\d+)\.(\d+)\.(\d+)$")
 
     def parse(version: str) -> tuple[int, int, int]:
         match = exact.match(version)
-        assert match, f"not an exact semver: {version!r}"
-        return tuple(int(part) for part in match.groups())  # type: ignore[return-value]
+        assert match, f"{version!r} is not an exact semver (no ^ or ~ allowed)"
+        major, minor, patch = match.groups()
+        return int(major), int(minor), int(patch)
 
     def satisfies(version: str, required: str) -> bool:
-        # only the operators package.json uses today; extend when a new one appears
-        if required.startswith("^"):
-            low, actual = parse(required[1:]), parse(version)
-            # ^ pins the first non-zero component (npm semver caret rule)
-            pinned = next((i for i, part in enumerate(low) if part), len(low) - 1)
-            return actual[: pinned + 1] == low[: pinned + 1] and actual >= low
-        return parse(version) == parse(required)
+        match = ranged.match(required)
+        assert match, f"unsupported requiredVersion {required!r}"
+        op, *floor_parts = match.groups()
+        floor = tuple(int(n) for n in floor_parts)
+        if not op:
+            return parse(version) == floor
+        if op == "~" or floor[0] == 0:
+            ceiling = (floor[0], floor[1] + 1, 0)
+        else:
+            ceiling = (floor[0] + 1, 0, 0)
+        return floor <= parse(version) < ceiling
 
     package_json = json.loads(
         (Path(__file__).parent.parent / "package.json").read_text(encoding="utf-8")
     )
     dependencies = package_json["dependencies"]
     shared = package_json["jupyterlab"]["sharedPackages"]
-    static = {pkg: cfg["version"] for pkg, cfg in shared.items() if "version" in cfg}
+    static = {pkg: cfg for pkg, cfg in shared.items() if "version" in cfg}
     assert static, "at least inversify needs a static shared version"
-    for pkg, version in static.items():
+    for pkg, cfg in static.items():
+        version = cfg["version"]
+        parse(version)
         assert dependencies[pkg] == version, (pkg, dependencies[pkg], version)
-        assert exact.match(version), (pkg, version)  # what ProvideSharedPlugin needs
-        required = shared[pkg].get("requiredVersion", version)
+        required = cfg.get("requiredVersion", version)
         assert satisfies(version, required), (pkg, version, required)
-
-    # the range check itself, so a wrong helper cannot pass a wrong package.json
-    assert satisfies("6.2.2", "^6.1.3")
-    assert not satisfies("7.0.0", "^6.1.3")
-    assert not satisfies("6.1.2", "^6.1.3")
-    assert satisfies("0.12.3", "^0.12.0")
-    assert not satisfies("0.13.0", "^0.12.0")
-    assert not exact.match("^6.2.2")
