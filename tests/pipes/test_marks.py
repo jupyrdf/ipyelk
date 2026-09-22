@@ -58,3 +58,31 @@ def test_other_traits_keep_default_send_behaviour(monkeypatch):
     # value so the stock lock check suppresses the second update
     assert sent == [("echo_update", ["flow"])]
     assert outlet.flow == ("new", "r")
+
+
+def test_observer_write_during_browser_write_is_sent_once(monkeypatch):
+    """Only the browser's *own* object is suppressed: an observer that reacts
+    to the browser's tree by assigning a new one does so while the property
+    lock is still held, and that tree must reach the frontend (#164 review).
+    """
+    outlet = MarkElementWidget()
+    sent = capture_sends(outlet, monkeypatch)
+    replacement = Node(id="root", children=[Node(id="replaced")])
+
+    def react(change):
+        if change.new is not replacement:
+            outlet.value = replacement
+
+    outlet.observe(react, "value")
+    outlet.set_state({"value": browser_wire()})
+
+    assert sent == [("update", ["value"])], (
+        "the observer's tree, once; not the browser's"
+    )
+    assert outlet.value is replacement
+
+    # the plain browser write is still silent
+    outlet.unobserve(react, "value")
+    sent.clear()
+    outlet.set_state({"value": browser_wire()})
+    assert sent == []

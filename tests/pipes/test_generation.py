@@ -17,7 +17,7 @@ import pytest
 
 from ipyelk import Diagram
 from ipyelk.elements import Node
-from ipyelk.pipes import MarkElementWidget, Pipe, Pipeline, util
+from ipyelk.pipes import MarkElementWidget, Pipe, Pipeline
 from ipyelk.pipes import flows as F
 from ipyelk.pipes.elkjs import ElkJS
 
@@ -246,20 +246,26 @@ async def test_cancel_mid_roundtrip_ignores_the_late_answer():
 
 
 @pytest.mark.asyncio
-async def test_old_frontend_gen_zero_accepted_once_warned(monkeypatch, caplog):
-    """A frontend build that writes only ``value`` is accepted, warned once."""
-    monkeypatch.setitem(util._WARNED, "unversioned", False)
-    pipe, _sends = _elkjs()
-    for _ in range(2):
-        task = asyncio.create_task(pipe.run())
-        await _ticks()
-        with caplog.at_level(logging.WARNING, logger="traitlets"):
-            # the browser's write, without a gen
-            pipe.outlet.set_state({"value": {"id": "unversioned"}})
-            await asyncio.wait_for(task, timeout=2.0)
-    assert pipe.outlet.gen == 0
-    warnings = [r for r in caplog.records if "without a generation" in r.getMessage()]
-    assert len(warnings) == 1
+async def test_old_frontend_gen_zero_accepted_once_warned_per_pipe(caplog):
+    """A frontend build that writes only ``value`` is accepted, warned once per
+    pipe: each diagram that meets such a frontend says so, one time.
+    """
+    for expected_warnings in (1, 2):
+        pipe, _sends = _elkjs()
+        assert pipe._warned_unversioned is False
+        for _ in range(2):
+            task = asyncio.create_task(pipe.run())
+            await _ticks()
+            with caplog.at_level(logging.WARNING, logger="traitlets"):
+                # the browser's write, without a gen
+                pipe.outlet.set_state({"value": {"id": "unversioned"}})
+                await asyncio.wait_for(task, timeout=2.0)
+        assert pipe.outlet.gen == 0
+        assert pipe._warned_unversioned is True
+        warnings = [
+            r for r in caplog.records if "without a generation" in r.getMessage()
+        ]
+        assert len(warnings) == expected_warnings
 
 
 @pytest.mark.asyncio
@@ -356,14 +362,11 @@ async def test_identical_answer_arriving_as_gen_alone_resolves():
 
 
 @pytest.mark.asyncio
-async def test_kernel_write_during_first_roundtrip_is_not_an_answer(
-    monkeypatch, caplog
-):
+async def test_kernel_write_during_first_roundtrip_is_not_an_answer(caplog):
     """While ``outlet.gen`` is still 0 a kernel-side ``value`` write must not
     pass for the browser's (unversioned) answer; a browser ``set_state``
     without ``gen`` still does, with one warning.
     """
-    monkeypatch.setitem(util._WARNED, "unversioned", False)
     pipe, _sends = _elkjs()
     task = asyncio.create_task(pipe.run())
     await _ticks()
@@ -424,3 +427,79 @@ async def test_error_without_a_generation_rejects_the_pending_roundtrip():
         await asyncio.wait_for(task, timeout=2.0)
     assert pipe._roundtrip_future is None
     _error(pipe, None)  # nothing pending: harmless
+
+
+class _Reentrant(Pipe):
+    """Requests itself once more from inside ``run``, without ever awaiting."""
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.runs = 0
+
+    async def run(self):
+        self.runs += 1
+        if self.runs == 1:
+            self.schedule_run()
+        self.outlet.value = self.inlet.value
+
+
+@pytest.mark.asyncio
+async def test_runner_yields_between_runs():
+    """A run that never awaits and requests again from inside must not spin
+    the runner synchronously: the loop turns between runs.
+    """
+    pipe = _Reentrant()
+    task = pipe.schedule_run()
+    seen: list[int] = []
+
+    async def watcher():
+        while not task.done():
+            seen.append(pipe.runs)
+            await asyncio.sleep(0)
+
+    watching = asyncio.create_task(watcher())
+    await asyncio.wait_for(task, timeout=2.0)
+    await watching
+
+    assert pipe.runs == 2
+    assert 1 in seen, "the loop turned between the two runs"
+
+
+@pytest.mark.asyncio
+async def test_late_unwinding_cancelled_roundtrip_keeps_successors_future(
+    monkeypatch,
+):
+    """``cancel()`` plus ``schedule_run()`` in one tick (what ``Diagram`` does
+    on ``source`` replacement): when the cancelled roundtrip unwinds a turn
+    late (``wait_for`` on Python < 3.12), its cleanup must not null the
+    future the successor is already waiting on, or a browser error for the
+    successor's generation finds nothing to reject.
+    """
+    original = asyncio.wait_for
+
+    async def late_wait_for(aw, timeout):
+        try:
+            return await original(aw, timeout)
+        except asyncio.CancelledError:
+            await asyncio.sleep(0)
+            raise
+
+    monkeypatch.setattr(asyncio, "wait_for", late_wait_for)
+    pipe, sends = _elkjs()
+    first = pipe.schedule_run()
+    await _ticks()
+    assert pipe._roundtrip_future is not None
+
+    assert pipe.cancel()
+    successor = pipe.schedule_run()
+    await _ticks()
+    assert first.cancelled()
+    assert [s["gen"] for s in sends] == [1, 2]
+    future = pipe._roundtrip_future
+    assert future is not None, "the successor's future survived"
+    assert not future.done()
+
+    _error(pipe, 2)
+    with pytest.raises(RuntimeError, match="elk exploded"):
+        await original(successor, 2.0)
+    assert pipe._roundtrip_future is None

@@ -201,7 +201,7 @@ class Pipe(W.Widget):
     #: the runner serving the pending requests (see ``schedule_run``); it
     #: resolves after the *trailing* run, so ``await pipe._task`` waits for
     #: every request made while it was alive
-    _task: asyncio.Future | None = None
+    _task: asyncio.Task | None = None
     #: request counters: ``schedule_run`` bumps ``_requested``; the runner
     #: stamps ``_generation`` when it starts a run, so ``_generation <
     #: _requested`` means a newer request is pending
@@ -271,8 +271,22 @@ class Pipe(W.Widget):
         )
 
     async def _serve_requests(self) -> None:
-        """The runner: run until no request newer than the last run is pending."""
+        """The runner: run until no request newer than the last run is pending.
+
+        ``on_error`` and ``status`` (via ``_post_run``) reflect the runner's
+        *final* outcome, not every run: a run that fails while a newer request
+        is pending is logged at WARNING and the newer request is served, so
+        only the trailing run's failure reaches ``on_error``.
+
+        The loop yields between runs: a ``run`` that never really awaits and
+        requests again from inside itself would otherwise spin without the
+        event loop turning.
+        """
+        served = False
         while self._generation < self._requested:
+            if served:
+                await asyncio.sleep(0)
+            served = True
             self._generation = self._requested
             try:
                 await self.run()
@@ -400,6 +414,9 @@ class SyncedPipe(SyncedOutletPipe, SyncedInletPipe):
     #: generation of the last ``run`` request sent to the browser; the answer
     #: carries it back in ``outlet.gen`` (see ``util.browser_roundtrip``)
     _roundtrip_gen: int = 0
+    #: set once this pipe accepted an answer without a generation (an older
+    #: extension build); the acceptance is warned about once per pipe
+    _warned_unversioned: bool = False
 
     def __init__(self, *args, **kwargs):
         self._stale_resync_at: float = 0.0

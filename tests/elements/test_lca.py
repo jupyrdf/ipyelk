@@ -131,6 +131,16 @@ def test_parent_walk_matches_networkx(seed):
     assert not settled.lca_mismatch
 
 
+def mismatch_ids(report) -> dict[str, tuple[str, str | None]]:
+    """``lca_mismatch`` keyed and valued by ids: comparing it by ``Edge`` and
+    ``Node`` objects makes a failing assertion's repr walk the whole tree.
+    """
+    return {
+        edge.id: (old.id, None if new is None else new.id)
+        for edge, (old, new) in report.lca_mismatch.items()
+    }
+
+
 def test_self_loop_owned_by_parent():
     """A self loop -- node to itself, or between two ports of one node -- goes to
     the node's parent.
@@ -151,9 +161,9 @@ def test_self_loop_owned_by_parent():
     with Registry():
         report, _ = assert_matches_networkx(root)
 
-    assert report.lca_mismatch == {
-        to_self: (node, group),
-        between_ports: (node, group),
+    assert mismatch_ids(report) == {
+        "to_self": ("node", "group"),
+        "between_ports": ("node", "group"),
     }, "self loops belong to the parent, and only the misplaced ones are reported"
 
 
@@ -181,10 +191,10 @@ def test_port_endpoints_resolve_to_parents():
     with Registry():
         report, _ = assert_matches_networkx(root)
 
-    assert report.lca_mismatch == {
-        siblings: (root, left),
-        cousins: (left, root),
-        mixed: (root, left),
+    assert mismatch_ids(report) == {
+        "siblings": ("root", "left"),
+        "cousins": ("left", "root"),
+        "mixed": ("root", "left"),
     }
 
 
@@ -209,9 +219,9 @@ def test_orphan_adoption_unchanged():
         report, _ = assert_matches_networkx(root)
 
     assert report.orphans == {stray}, "the topmost ancestor is the orphan"
-    assert report.lca_mismatch == {
+    assert mismatch_ids(report) == {
         # the orphan hangs off the root, so an edge crossing into it stays put
-        within_orphan: (root, stray),
+        "within_orphan": ("root", "stray"),
     }
 
 
