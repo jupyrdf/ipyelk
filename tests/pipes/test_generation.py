@@ -80,6 +80,21 @@ async def _ticks(n: int = 3) -> None:
         await asyncio.sleep(0)
 
 
+async def _until(condition, limit: int = 50) -> None:
+    """Drain loop turns until ``condition()`` holds (at most ``limit``).
+
+    How many turns an ``await`` takes to resolve or to unwind a cancellation
+    differs by Python version (``wait_for`` on < 3.12 goes through extra
+    callbacks and ``_cancel_and_wait``), so asserting after a fixed number of
+    ``_ticks`` asserts 3.12 timing; this waits for the *state* instead and
+    leaves the assertion to the caller.
+    """
+    for _ in range(limit):
+        if condition():
+            return
+        await asyncio.sleep(0)
+
+
 @pytest.mark.asyncio
 async def test_ten_refreshes_one_run(monkeypatch):
     """Ten ``refresh()`` in one tick: one ``run`` message, one view update."""
@@ -162,7 +177,7 @@ async def test_in_flight_roundtrip_is_not_cancelled():
     assert [s["gen"] for s in sends] == [1], "no second request while one is out"
 
     _answer(elk, 1, "answer-for-v1")
-    await _ticks()
+    await _until(lambda: len(sends) == 2)
     assert elk.outlet.value.id == "answer-for-v1", "consumed by run 1"
     assert [s["gen"] for s in sends] == [1, 2], "run 2 starts after run 1 answers"
     assert not first.done()
@@ -492,7 +507,7 @@ async def test_late_unwinding_cancelled_roundtrip_keeps_successors_future(
 
     assert pipe.cancel()
     successor = pipe.schedule_run()
-    await _ticks()
+    await _until(first.done)
     assert first.cancelled()
     assert [s["gen"] for s in sends] == [1, 2]
     future = pipe._roundtrip_future
