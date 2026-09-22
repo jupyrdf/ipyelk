@@ -3,9 +3,44 @@
  * Distributed under the terms of the Modified BSD License.
  */
 import { ElkGraphElement, ElkNode, ElkProperties } from './sprotty/json/elkgraph-json';
+import type { TELKErrorMessage } from './tokens';
 
-export function layoutErrorMessage(error: unknown): { action: 'error'; error: string } {
-  return { action: 'error', error: `${error}` };
+/**
+ * The browser -> kernel report that a `run` request failed. `gen` is the
+ * request's generation (`IRunMessage.gen`): `SyncedPipe` rejects the pending
+ * roundtrip only when it is still waiting for that generation.
+ */
+export function layoutErrorMessage(error: unknown, gen?: number): TELKErrorMessage {
+  const message: TELKErrorMessage = { action: 'error', error: `${error}` };
+  if (gen != null) {
+    message.gen = gen;
+  }
+  return message;
+}
+
+/** the subset of `DOMWidgetModel` that {@link answer} writes through */
+export interface IAnswerOutlet {
+  set(key: any, val?: any, options?: any): unknown;
+  save_changes(): void;
+}
+
+/**
+ * Write a computation's result and the generation it answers to the pipe's
+ * outlet, in one `save_changes`, guaranteeing that BOTH reach the kernel.
+ *
+ * `save_changes` sends Backbone's `changedAttributes()` diff, and Backbone
+ * (the `@jupyter-widgets/base` patch included) drops an attribute that is
+ * deep-equal to what the model already holds. A layout of an unchanged
+ * graph -- the kernel's runner serving two requests over the same inlet --
+ * is deep-equal to the previous answer, so only `gen` would be sent; the
+ * kernel's `wait_for_answer` handles that, but an older kernel observes
+ * `value` alone and would wait out its deadline. Silently clearing `value`
+ * first makes the real set a change again, whatever the kernel watches.
+ */
+export function answer(outlet: IAnswerOutlet, value: unknown, gen: number): void {
+  outlet.set('value', null, { silent: true });
+  outlet.set({ value, gen });
+  outlet.save_changes();
 }
 
 export type TStaleMessage = {
@@ -135,12 +170,16 @@ export type TRunDisposition = 'started' | 'queued' | 'ignored';
  * ignored; a newer generation is queued and started once, when the current
  * computation resolves, and only the newest queued generation survives. A
  * request without a generation (an older kernel) coalesces into at most one
- * trailing run. `start` must never be allowed to wedge the queue: a rejected
- * or throwing `start` is logged and the queue moves on.
+ * trailing run. A re-sent request that lands after its generation was
+ * answered (in transit when the answer left) is ignored too: the queue
+ * remembers the newest generation it completed. `start` must never be
+ * allowed to wedge the queue: a rejected or throwing `start` is logged and
+ * the queue moves on.
  */
 export class RunQueue {
   private inFlight: number | null = null;
   private queued: number | null = null;
+  private completed = 0;
 
   constructor(private readonly start: (gen: number) => Promise<unknown> | unknown) {}
 
@@ -157,6 +196,9 @@ export class RunQueue {
   request(gen?: number | null): TRunDisposition {
     const wanted = gen ?? 0;
     if (this.inFlight == null) {
+      if (wanted > 0 && wanted <= this.completed) {
+        return 'ignored';
+      }
       this.launch(wanted);
       return 'started';
     }
@@ -185,6 +227,7 @@ export class RunQueue {
   }
 
   private finish(): void {
+    this.completed = Math.max(this.completed, this.inFlight ?? 0);
     this.inFlight = null;
     const next = this.queued;
     this.queued = null;

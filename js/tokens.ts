@@ -34,6 +34,18 @@ export interface IRunMessage {
   gen?: number;
 }
 
+// a `type`, not an `interface`: `WidgetModel.send` takes a `JSONValue`
+export type TELKErrorMessage = {
+  action: 'error';
+  error: string;
+  /**
+   * The generation of the `run` request that failed, so the kernel rejects
+   * only the roundtrip still pending for it (a late error from an abandoned
+   * generation is ignored). Absent when the failure is not tied to a request.
+   */
+  gen?: number;
+};
+
 export const ELK_CSS = {
   label: 'elklabel',
   widget_class: 'jp-ElkView',

@@ -73,7 +73,9 @@ class MarkElementWidget(W.DOMWidget):
     #: generation of the ``run`` request the browser answered when it last
     #: wrote ``value`` (written in the same ``save_changes``); ``0`` until a
     #: frontend answers, or forever with an older extension build.  Lets
-    #: ``browser_roundtrip`` tell a fresh answer from one to an abandoned run.
+    #: ``browser_roundtrip`` tell a fresh answer from one to an abandoned run,
+    #: and is the change the kernel sees when the answered ``value`` is
+    #: identical to the previous one (``util.wait_for_answer``).
     gen = T.Int(0).tag(sync=True, echo_update=False)
     index = T.Instance(MarkIndex, kw={}).tag(sync=True, **W.widget_serialization)
 

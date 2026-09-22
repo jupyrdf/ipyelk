@@ -414,7 +414,12 @@ class SyncedPipe(SyncedOutletPipe, SyncedInletPipe):
 
         * ``action: error`` -- the frontend failed to produce an outlet value;
           reject the pending roundtrip future so the kernel stops waiting (and
-          stops re-sending) instead of retrying or timing out.
+          stops re-sending) instead of retrying or timing out.  The report
+          carries the generation of the request that failed (``gen``): a late
+          error from a generation this pipe abandoned (``cancel``) must not
+          kill the roundtrip now pending, so only a matching generation
+          rejects; a report without ``gen`` (an older extension build) always
+          does.
         * ``action: stale`` -- the frontend got a ``run`` request it cannot
           serve because state it needs (inlet/outlet wiring, the inlet value)
           never arrived: widget state sync has no retransmit, and
@@ -429,9 +434,21 @@ class SyncedPipe(SyncedOutletPipe, SyncedInletPipe):
         action = content.get("action")
         if action == "error":
             future = getattr(self, "_roundtrip_future", None)
-            if future is not None and not future.done():
-                future.set_exception(
-                    RuntimeError(str(content.get("error", "browser pipe failed")))
+            if future is None or future.done():
+                return
+            gen = content.get("gen")
+            if gen is not None and gen != self._roundtrip_gen:
+                self.log.debug(
+                    "%s ignoring a browser error for generation %s while "
+                    "waiting for %s: %s",
+                    type(self).__name__,
+                    gen,
+                    self._roundtrip_gen,
+                    content.get("error"),
                 )
+                return
+            future.set_exception(
+                RuntimeError(str(content.get("error", "browser pipe failed")))
+            )
         elif action == "stale":
             resync_stale(self, self.inlet, self.outlet, missing=content.get("missing"))

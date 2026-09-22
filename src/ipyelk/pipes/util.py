@@ -54,17 +54,29 @@ _WARNED = {"unversioned": False}
 
 
 def wait_for_answer(pipe, gen: int, trait: str = "value") -> asyncio.Future:
-    """Return a future that resolves when the browser answers roundtrip ``gen``.
+    """Return a future that resolves (with ``outlet.value``) when the browser
+    answers roundtrip ``gen``.
 
     The frontend writes ``gen`` alongside ``value`` in one ``save_changes``
-    (``js/layout_widget.ts``, ``js/measure_text.ts``), so when the ``trait``
-    observer fires ``outlet.gen`` already carries the answer's generation
-    (``Widget.set_state`` sets every attribute before notifying).  An answer
-    for another generation -- the browser finishing a run that ``cancel``
-    abandoned -- is logged and ignored, and the future stays pending for the
-    right one.  ``gen == 0`` is an older frontend build that does not stamp
-    its answers: accepted, with a one-time warning, so the diagram still
-    renders (stale answers cannot be told apart in that case).
+    (``js/layout_widget_util.ts`` ``answer``), so whichever of the two
+    observers fires first, ``outlet.gen`` already carries the answer's
+    generation (``Widget.set_state`` sets every attribute before notifying).
+    Both traits are observed because the browser's update is a *diff*:
+    Backbone drops an attribute that is deep-equal to what the frontend model
+    holds, so a layout identical to the previous one may arrive as a change
+    of ``gen`` alone (the frontend forces ``value`` into the diff too, but an
+    older extension build does not).
+
+    An answer for another generation -- the browser finishing a run that
+    ``cancel`` abandoned -- is logged and ignored, and the future stays
+    pending for the right one.  ``gen == 0`` is an older frontend build that
+    does not stamp its answers: accepted, with a one-time warning, so the
+    diagram still renders (stale answers cannot be told apart in that case).
+    Only a write that *came from the browser* counts, though: ``set_state``
+    holds ``_property_lock`` while notifying, so ``"value" in
+    outlet._property_lock`` is the browser's write (the idiom
+    ``MarkElementWidget._should_send_property`` uses); a kernel-side
+    assignment to ``outlet.value`` during a roundtrip is not an answer.
     """
     outlet = pipe.outlet
     future: asyncio.Future = asyncio.get_event_loop().create_future()
@@ -73,9 +85,10 @@ def wait_for_answer(pipe, gen: int, trait: str = "value") -> asyncio.Future:
         if future.done():
             return
         answered = outlet.gen
+        from_browser = "value" in outlet._property_lock
         if answered == gen:
-            future.set_result(change.new)
-        elif answered == 0:
+            future.set_result(outlet.value)
+        elif answered == 0 and from_browser:
             if not _WARNED["unversioned"]:
                 _WARNED["unversioned"] = True
 
@@ -85,7 +98,14 @@ def wait_for_answer(pipe, gen: int, trait: str = "value") -> asyncio.Future:
                     "cannot be told from a fresh one",
                     type(pipe).__name__,
                 )
-            future.set_result(change.new)
+            future.set_result(outlet.value)
+        elif answered == 0:
+            pipe.log.debug(
+                "%s ignoring a kernel-side %s write while waiting for generation %s",
+                type(pipe).__name__,
+                change.name,
+                gen,
+            )
         else:
             pipe.log.debug(
                 "%s ignoring browser answer for generation %s while waiting for %s",
@@ -94,8 +114,9 @@ def wait_for_answer(pipe, gen: int, trait: str = "value") -> asyncio.Future:
                 gen,
             )
 
-    future.add_done_callback(lambda _: outlet.unobserve(on_change, trait))
-    outlet.observe(on_change, trait)
+    names = [trait, "gen"]
+    future.add_done_callback(lambda _: outlet.unobserve(on_change, names))
+    outlet.observe(on_change, names)
     return future
 
 
@@ -119,8 +140,9 @@ async def browser_roundtrip(
     build in one cell, render later) would otherwise wait on a message nobody
     received. The request is therefore re-sent with backoff until one of:
 
-    * the outlet changes -- the browser answered; re-sending is idempotent,
-      so retrying converges as soon as a frontend attaches. ``max_delay`` caps
+    * the browser writes the outlet for generation ``g`` (``wait_for_answer``
+      watches ``value`` and ``gen``); re-sending is idempotent, so retrying
+      converges as soon as a frontend attaches. ``max_delay`` caps
       the backoff low: the first request is usually the one that is lost (the
       diagram is not on the page yet), and a frontend that attaches a second
       later should not wait out a ten second gap before anything renders;

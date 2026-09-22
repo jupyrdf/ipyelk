@@ -13,7 +13,6 @@ from time import monotonic
 import pytest
 
 from ipyelk.diagram.viewer import Viewer
-from ipyelk.elements import Node
 from ipyelk.pipes import MarkElementWidget
 from ipyelk.pipes.elkjs import ElkJS
 from ipyelk.pipes.text_sizer import BrowserTextSizer
@@ -53,7 +52,7 @@ async def test_stale_report_resyncs_state_and_keeps_the_roundtrip_alive(cls):
             )
         else:
             # re-synced frontend serves the re-sent request
-            pipe.outlet.value = Node()
+            pipe.outlet.set_state({"value": {"id": "root"}, "gen": 1})
 
     pipe.send = fake_send
 
