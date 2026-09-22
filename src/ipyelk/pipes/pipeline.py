@@ -2,6 +2,7 @@
 # Distributed under the terms of the Modified BSD License.
 from __future__ import annotations
 
+import asyncio
 from datetime import datetime
 
 import ipywidgets as W
@@ -62,6 +63,10 @@ class PipelineStatusView(PipeStatusView):
 class Pipeline(SyncedOutletPipe):
     pipes = T.List(T.Instance(Pipe), kw={}).tag(sync=True, **W.widget_serialization)
 
+    #: what the in-flight run took from ``inlet.flow``; owed back if it does
+    #: not complete (see ``run`` and ``schedule_run``)
+    _taken: tuple[str, ...] = ()
+
     @T.default("status_widget")
     def _default_status_widget(self):
         widget = PipelineStatusView()
@@ -84,9 +89,39 @@ class Pipeline(SyncedOutletPipe):
 
         # self.schedule_run()
 
+    def schedule_run(self, change: T.Bunch | None = None) -> asyncio.Task | None:
+        # ``Pipe.schedule_run`` cancels the in-flight run, but cancellation
+        # unwinds on a later loop turn (``wait_for`` on Python < 3.12 awaits
+        # its inner future first) -- possibly after the successor has already
+        # taken the pending flow and found nothing.  Hand the in-flight run's
+        # tags back now, before the successor exists.
+        self._release_taken()
+        return super().schedule_run(change)
+
+    def _release_taken(self) -> None:
+        taken, self._taken = self._taken, ()
+        if taken:
+            self.inlet.record(*taken)
+
     async def run(self):
         start = datetime.now()
-        self.check_dirty()
+        # take at start: a tag recorded while this run is in flight stays
+        # pending for the next run instead of being erased when this one
+        # completes; only a *successful* run consumes what it took
+        self._taken = taken = self.inlet.take()
+        try:
+            await self._run_pipes(taken)
+        except BaseException:
+            # a failed or cancelled run retries: re-record what it took (unless
+            # ``schedule_run`` already handed it to a successor)
+            if self._taken is taken:
+                self._release_taken()
+            raise
+        self._taken = ()
+        self.status_update(PipeStatus.finished(start_time=start))
+
+    async def _run_pipes(self, flow: tuple[str, ...]) -> None:
+        self.check_dirty(flow)
 
         # Look at enabled pipes
         for i, pipe in enumerate(self.pipes):
@@ -111,14 +146,15 @@ class Pipeline(SyncedOutletPipe):
                 raise err
 
             pipe.status_update(PipeStatus.finished(start_time=pipe_start_time))
-        self.status_update(PipeStatus.finished(start_time=start))
 
-    def check_dirty(self) -> bool:
-        # check pipes and propagate flow to downstream pipes
+    def check_dirty(self, flow: tuple[str, ...] | None = None) -> bool:
+        # check pipes and propagate flow to downstream pipes; ``flow`` (the
+        # run's taken flow) feeds the first pipe, later pipes read what their
+        # predecessor propagated to its outlet
         observes = set()
         reports = set()
-        for pipe in self.pipes:
-            if pipe.check_dirty():
+        for i, pipe in enumerate(self.pipes):
+            if pipe.check_dirty(flow if i == 0 else None):
                 observes |= set(pipe.observes)
                 reports |= set(pipe.reports)
         # pipeline is dirty if flows are added to reports from subpipes

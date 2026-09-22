@@ -258,13 +258,17 @@ class Pipe(W.Widget):
         # do work
         self.outlet.value = self.inlet.value
 
-    def check_dirty(self) -> bool:
+    def check_dirty(self, flow: tuple[str, ...] | None = None) -> bool:
         """Method to test is this pipe should be run given the set of changes.
 
+        :param flow: the changes to test against; defaults to the pending
+            ``inlet.flow``.  A ``Pipeline`` passes the flow it *took* at the
+            start of a run to its first pipe (``MarkElementWidget.take``).
         :return: dirty flag
         :rtype: bool
         """
-        flow = self.inlet.flow
+        if flow is None:
+            flow = self.inlet.flow
 
         if any(any(re.match(f"^{obs}$", f) for f in flow) for obs in self.observes):
             # mark this pipe as dirty so will run
