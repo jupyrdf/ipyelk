@@ -61,7 +61,9 @@ async def test_stale_report_resyncs_state_and_keeps_the_roundtrip_alive(cls):
 
     # a trailing 'outlet' may follow: run() persists the outlet on finish
     assert synced[:3] == ["pipe", "inlet", "outlet"]
-    assert sends == [{"action": "run"}, {"action": "run"}]
+    # both requests carry the same generation: one piece of work, re-sent
+    assert sends == [{"action": "run", "gen": 1}, {"action": "run", "gen": 1}]
+
     assert pipe._roundtrip_future is None
     assert pipe._stale_resync_interval == pytest.approx(2.0)
     pipe.close()

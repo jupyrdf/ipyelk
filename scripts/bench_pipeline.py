@@ -21,8 +21,14 @@ back through the REAL browser->kernel path (``json.loads`` +
 ``Widget.set_state``), so echoes and pydantic rebuilds happen as in a kernel.
 
 Not measurable here: DOM text measurement, sprotty rendering, browser
-``JSON.parse``, transport latency, and the ``browser_roundtrip`` resend loop
-(the stub answers the first request, so ``runs`` is a lower bound).
+``JSON.parse``, transport latency, and -- by default -- the ``browser_roundtrip``
+resend loop (the stub answers the first request, so ``runs`` is a lower bound).
+``--slow-browser SECONDS`` instead routes the layout stage through the real
+``ElkJS.run`` and answers each ``run`` request after that delay, with the
+frontend's in-flight/queue semantics (``js/layout_widget_util.ts``
+``RunQueue``): a delay past the resend interval (0.5 s) shows how many
+layouts the browser performs per refresh (``Layouts`` column).
+
 
 Pipe times exclude the sync work their own outlet assignment triggers, so pipe
 time and "kernel sync" do not double-count.
@@ -210,6 +216,10 @@ class RecordingComm:
 
     def send(self, data=None, metadata=None, buffers=None, **kwargs) -> None:
         RECORDER.record(self.comm_id, data)
+        content = (data or {}).get("content") or {}
+        if BROWSER is not None and content.get("action") == "run":
+            if self.comm_id in BROWSER.pipes:
+                BROWSER.request(self.comm_id, content.get("gen"))
 
     def on_msg(self, callback) -> None:
         """Nothing in the harness speaks back over the custom-message channel."""
@@ -327,15 +337,91 @@ def iter_unsized_labels(el: dict):
             yield from iter_unsized_labels(child)
 
 
-def kernel_receive(outlet, raw: str) -> None:
+def kernel_receive(
+    outlet, raw: str, gen: int | None = None, persist: bool = True
+) -> None:
     """The real browser -> kernel path, as ipywidgets runs it."""
     RECORDER.inbound[0] += 1
     RECORDER.inbound[1] += len(raw)
     with timed("json.loads (comm in)"):
         parsed = json.loads(raw)
+    state = {"value": parsed}
+    if gen is not None:
+        state["gen"] = gen  # a kernel without the trait ignores the key
     with timed("Widget.set_state (inbound)"):
-        outlet.set_state({"value": parsed})
-    outlet.persist()
+        outlet.set_state(state)
+    if persist:
+        outlet.persist()
+
+
+class StubBrowser:
+    """A frontend that answers ``run`` requests after ``delay`` seconds.
+
+    Mirrors ``RunQueue`` in ``js/layout_widget_util.ts``: one layout in flight
+    per pipe, a re-sent request for that generation is ignored, a newer one
+    is queued and started once when the current layout resolves. A request
+    without a generation (an older kernel) coalesces into one trailing run.
+    """
+
+    def __init__(self, delay: float) -> None:
+        self.delay = delay
+        self.pipes: dict[str, object] = {}  # comm_id -> ElkJS pipe
+        self.in_flight: dict[str, int] = {}
+        self.queued: dict[str, int] = {}
+        self.tasks: set[asyncio.Task] = set()
+
+    def request(self, comm_id: str, gen: int | None) -> None:
+        gen = gen or 0
+        current = self.in_flight.get(comm_id)
+        if current is None:
+            self._launch(comm_id, gen)
+            return
+        queued = self.queued.get(comm_id)
+        # versioned: nothing older than the in-flight or queued generation;
+        # unversioned: at most one trailing run
+        duplicate = (gen <= max(current, queued or 0)) if gen else (queued is not None)
+        if duplicate:
+            CALLS["browser stub: duplicate run ignored"] += 1
+        else:
+            self.queued[comm_id] = gen
+
+    def _launch(self, comm_id: str, gen: int) -> None:
+        self.in_flight[comm_id] = gen
+        task = asyncio.get_running_loop().create_task(self._serve(comm_id, gen))
+        self.tasks.add(task)
+        task.add_done_callback(self.tasks.discard)
+
+    async def _serve(self, comm_id: str, gen: int) -> None:
+        assert ELK is not None
+        pipe = self.pipes[comm_id]
+        try:
+            await asyncio.sleep(self.delay)
+            CALLS["browser stub: layouts"] += 1
+            try:
+                with timed("elkjs roundtrip (subprocess)"):
+                    raw = ELK.layout(json.dumps(RECORDER.value_of(pipe.inlet)))
+            except RuntimeError as err:
+                # js/layout_widget.ts reports a failed layout instead of leaving
+                # the kernel to wait out its deadline
+                error = {"action": "error", "error": str(err)}
+                pipe._handle_browser_msg(pipe, error, None)
+                return
+            PROF["elkjs layout (in node)"] += ELK.last["ms_layout"] / 1000
+            PROF["elkjs strip/apply properties"] += ELK.last["ms_other"] / 1000
+            kernel_receive(pipe.outlet, raw, gen=gen or None, persist=False)
+        finally:
+            self.in_flight.pop(comm_id, None)
+            queued = self.queued.pop(comm_id, None)
+            if queued is not None:
+                self._launch(comm_id, queued)
+
+    async def idle(self) -> None:
+        """Wait until every in-flight and queued layout has been answered."""
+        while self.tasks:
+            await asyncio.gather(*self.tasks, return_exceptions=True)
+
+
+BROWSER: StubBrowser | None = None
 
 
 async def stub_text_sizer_run(self) -> None:  # ruff: ignore[unused-async]
@@ -365,6 +451,7 @@ async def stub_elkjs_run(self) -> None:  # ruff: ignore[unused-async]
         raw = ELK.layout(json.dumps(RECORDER.value_of(self.inlet)))
     PROF["elkjs layout (in node)"] += ELK.last["ms_layout"] / 1000
     PROF["elkjs strip/apply properties"] += ELK.last["ms_other"] / 1000
+    CALLS["browser stub: layouts"] += 1
     kernel_receive(self.outlet, raw)
 
 
@@ -378,7 +465,10 @@ async def measure(diagram) -> dict:
     assert task is not None, "no running event loop"
     await task
     await asyncio.sleep(0)  # let Diagram.refresh's done-callback run
+    if BROWSER is not None:
+        await BROWSER.idle()  # a queued duplicate layout lands in this phase
     comm = RECORDER.summarize(start, inbound)
+
     return {
         "wall_s": time.perf_counter() - t0,
         "validation_s": PROF["ValidationPipe.run (excl sync)"],
@@ -390,6 +480,7 @@ async def measure(diagram) -> dict:
         "kernel_receive_s": PROF["Widget.set_state (inbound)"],
         "kernel_sync_breakdown": {label: PROF[label] for label in SYNC_LABELS},
         "labels_measured": CALLS["labels measured"],
+        "layouts": CALLS["browser stub: layouts"],
         "layout_runs": comm["runs"].get("elk", 0),
         "sizer_runs": comm["runs"].get("sizer", 0),
         "comm": comm,
@@ -451,6 +542,8 @@ async def run_case(shape: str, n: int) -> dict:
         sizer.comm.comm_id: "sizer",
         elk.comm.comm_id: "elk",
     })
+    if BROWSER is not None:
+        BROWSER.pipes[elk.comm.comm_id] = elk
     RECORDER.enabled = True
 
     case["first"] = await measure(diagram)
@@ -472,13 +565,17 @@ async def run_case(shape: str, n: int) -> dict:
 
     # burst: ten refresh() calls in one tick after one flow change
     start, inbound = len(RECORDER.log), tuple(RECORDER.inbound)
+    CALLS["browser stub: layouts"] = 0
     pipe.inlet.flow = (F.Node.hidden,)
     tasks = [t for t in (diagram.refresh() for _ in range(BURST)) if t is not None]
     await asyncio.gather(*tasks, return_exceptions=True)
     await asyncio.sleep(0)
+    if BROWSER is not None:
+        await BROWSER.idle()
     burst = RECORDER.summarize(start, inbound)
     case["burst"] = {
         "refresh_calls": BURST,
+        "layouts": CALLS["browser stub: layouts"],
         "layout_runs": burst["runs"].get("elk", 0),
         "sizer_runs": burst["runs"].get("sizer", 0),
         "messages": burst["messages"]["total"],
@@ -503,10 +600,10 @@ def table(header: list[str], rows: list[list[str]]) -> str:
     return "\n".join(f"| {' | '.join(row)} |" for row in (header, align, *rows) if row)
 
 
-BURST_KEYS = ("refresh_calls", "layout_runs", "sizer_runs", "messages")
+BURST_KEYS = ("refresh_calls", "layout_runs", "layouts", "sizer_runs", "messages")
 REFRESH_HEADER = [
     "Graph", "Elements", "Wall", "Validation", "Visibility", "elkjs",
-    "Kernel sync", "Msgs", "update", "echo", "custom", "Bytes", "Runs",
+    "Kernel sync", "Msgs", "update", "echo", "custom", "Bytes", "Runs", "Layouts",
 ]  # fmt: skip
 
 
@@ -530,12 +627,16 @@ def refresh_row(case: dict, key: str) -> list[str] | None:
         *(str(msgs.get(k, 0)) for k in ("total", "update", "echo_update", "custom")),
         fmt_b(data["comm"]["bytes"]["total"]),
         str(data["layout_runs"]),
+        str(data.get("layouts", data["layout_runs"])),
     ]
 
 
 def render(results: dict) -> str:
     cases = results["cases"]
     out = [f"## ipyelk pipeline benchmark: `{results['label']}`"]
+    if results.get("slow_browser"):
+        out[0] += f" (browser answers after {results['slow_browser']} s)"
+
     sections = [
         (
             "Graphs",
@@ -572,7 +673,15 @@ def render(results: dict) -> str:
         ),
         (
             f"Burst: {BURST} `refresh()` calls in one tick",
-            ["Graph", "refresh()", "Layout runs", "Sizer runs", "Msgs", "Bytes"],
+            [
+                "Graph",
+                "refresh()",
+                "Layout runs",
+                "Layouts",
+                "Sizer runs",
+                "Msgs",
+                "Bytes",
+            ],
             [
                 [
                     name(c),
@@ -596,14 +705,19 @@ def render(results: dict) -> str:
 
 
 async def main_async(args) -> dict:
-    global ELK  # ruff: ignore[global-statement]
+    global BROWSER, ELK  # ruff: ignore[global-statement]
     install_patches()
 
     import ipyelk.pipes.elkjs as elkjs_mod
     import ipyelk.pipes.text_sizer as text_sizer_mod
 
     text_sizer_mod.BrowserTextSizer.run = stub_text_sizer_run
-    elkjs_mod.ElkJS.run = stub_elkjs_run
+    if args.slow_browser:
+        # keep the real ElkJS.run (browser_roundtrip + persist); the stub
+        # browser answers the comm messages it sends
+        BROWSER = StubBrowser(args.slow_browser)
+    else:
+        elkjs_mod.ElkJS.run = stub_elkjs_run
 
     ELK = ElkNode()
     results: dict = {
@@ -611,8 +725,10 @@ async def main_async(args) -> dict:
         "seed": SEED,
         "hidden_fraction": HIDDEN_FRACTION,
         "burst": BURST,
+        "slow_browser": args.slow_browser,
         "cases": [],
     }
+
     try:
         for shape in args.shapes:
             for n in args.sizes:
@@ -629,9 +745,23 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--sizes", type=int, nargs="+", default=list(SIZES))
     parser.add_argument("--shapes", nargs="+", default=list(SHAPES), choices=SHAPES)
     parser.add_argument("--out", type=Path, default=ROOT / "build" / "bench")
+    parser.add_argument(
+        "--slow-browser",
+        type=float,
+        default=0.0,
+        metavar="SECONDS",
+        help="answer each layout request after this delay through the real "
+        "ElkJS.run (0: stub answers the first request immediately)",
+    )
+
     args = parser.parse_args(argv)
+    if args.slow_browser:
+        # the stub browser answers the real roundtrip; headless mode would
+        # short-circuit it with an immediate TimeoutError
+        os.environ.pop("IPYELK_NO_BROWSER", None)
 
     results = asyncio.run(main_async(args))
+
     args.out.mkdir(parents=True, exist_ok=True)
     path = args.out / f"{args.label}.json"
     path.write_text(json.dumps(results, indent=2, sort_keys=True), encoding="utf-8")

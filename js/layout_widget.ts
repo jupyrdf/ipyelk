@@ -11,6 +11,7 @@ import { unpack_models as deserialize } from '@jupyter-widgets/base';
 import { DOMWidgetModel } from '@jupyter-widgets/base';
 
 import {
+  RunQueue,
   applyProperties,
   layoutErrorMessage,
   prepareGraphForElk,
@@ -38,6 +39,9 @@ export class ELKLayoutModel extends DOMWidgetModel {
   };
 
   protected _elk: ELK.ELK;
+
+  /** one layout in flight; re-sent requests are ignored, newer ones queued */
+  protected runs = new RunQueue((gen) => this.layout(gen));
 
   layoutUpdated = new Signal<ELKLayoutModel, void>(this);
 
@@ -67,15 +71,20 @@ export class ELKLayoutModel extends DOMWidgetModel {
   }
 
   handleMessage(content: IRunMessage) {
-    // check message and decide if should call `measure`
+    // check message and decide if should call `layout`
     switch (content.action) {
       case 'run':
-        this.layout();
+        this.runs.request(content.gen);
         break;
     }
   }
 
-  async layout() {
+  /**
+   * Lay out the inlet value and write the result to the outlet, stamped with
+   * the request's generation (`gen`, 0 for an unversioned request) in the
+   * same `save_changes` so the kernel can match the answer to its request.
+   */
+  async layout(gen: number = 0) {
     // elkjs chokes on non-string element `properties`, and does not need
     // them -- prepareGraphForElk deep-copies the inlet value and strips them
     // off the copy (never the shared inlet value itself, which must survive
@@ -101,7 +110,7 @@ export class ELKLayoutModel extends DOMWidgetModel {
       return null;
     }
 
-    outlet.set('value', { ...result });
+    outlet.set({ value: { ...result }, gen });
     outlet.save_changes();
     return result;
   }

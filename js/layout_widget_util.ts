@@ -121,3 +121,75 @@ export function prepareGraphForElk(rootNode: ElkNode): {
   const graph: ElkNode = JSON.parse(JSON.stringify(rootNode));
   return { graph, propmap: collectProperties(graph) };
 }
+
+export type TRunDisposition = 'started' | 'queued' | 'ignored';
+
+/**
+ * At most one browser computation in flight per pipe, keyed by the kernel's
+ * roundtrip generation (`IRunMessage.gen`).
+ *
+ * The kernel re-sends `run` with backoff until it is answered
+ * (`browser_roundtrip`), so a layout slower than the resend interval used to
+ * be computed once per resend and the diagram re-rendered on each result. A
+ * request for the in-flight (or an older) generation is the same work and is
+ * ignored; a newer generation is queued and started once, when the current
+ * computation resolves, and only the newest queued generation survives. A
+ * request without a generation (an older kernel) coalesces into at most one
+ * trailing run. `start` must never be allowed to wedge the queue: a rejected
+ * or throwing `start` is logged and the queue moves on.
+ */
+export class RunQueue {
+  private inFlight: number | null = null;
+  private queued: number | null = null;
+
+  constructor(private readonly start: (gen: number) => Promise<unknown> | unknown) {}
+
+  /** the generation being computed, if any */
+  get current(): number | null {
+    return this.inFlight;
+  }
+
+  /** the generation waiting for the current computation, if any */
+  get pending(): number | null {
+    return this.queued;
+  }
+
+  request(gen?: number | null): TRunDisposition {
+    const wanted = gen ?? 0;
+    if (this.inFlight == null) {
+      this.launch(wanted);
+      return 'started';
+    }
+    const duplicate =
+      wanted > 0
+        ? wanted <= Math.max(this.inFlight, this.queued ?? 0)
+        : this.queued != null;
+    if (duplicate) {
+      return 'ignored';
+    }
+    this.queued = wanted;
+    return 'queued';
+  }
+
+  private launch(gen: number): void {
+    this.inFlight = gen;
+    let result: Promise<unknown>;
+    try {
+      result = Promise.resolve(this.start(gen));
+    } catch (error) {
+      result = Promise.reject(error);
+    }
+    result
+      .catch((error) => console.error('ELK run failed:', error))
+      .then(() => this.finish());
+  }
+
+  private finish(): void {
+    this.inFlight = null;
+    const next = this.queued;
+    this.queued = null;
+    if (next != null) {
+      this.launch(next);
+    }
+  }
+}

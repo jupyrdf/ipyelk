@@ -41,7 +41,8 @@ async def test_browser_error_stops_the_roundtrip(cls):
     await browser
 
     # the error rejected the pending roundtrip before any resend
-    assert sends == [{"action": "run"}]
+    assert sends == [{"action": "run", "gen": 1}]
+
     assert pipe._roundtrip_future is None
 
 

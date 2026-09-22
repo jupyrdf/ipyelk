@@ -26,6 +26,12 @@ export interface IELKFitMessage {
 
 export interface IRunMessage {
   action: 'run';
+  /**
+   * The kernel's roundtrip generation for this pipe (`browser_roundtrip`);
+   * the answer is written back as `outlet.gen` with the value. Absent from
+   * older kernels.
+   */
+  gen?: number;
 }
 
 export const ELK_CSS = {
