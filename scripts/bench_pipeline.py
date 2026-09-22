@@ -27,8 +27,26 @@ resend loop (the stub answers the first request, so ``runs`` is a lower bound).
 ``ElkJS.run`` and answers each ``run`` request after that delay, with the
 frontend's in-flight/queue semantics (``js/layout_widget_util.ts``
 ``RunQueue``): a delay past the resend interval (0.5 s) shows how many
-layouts the browser performs per refresh (``Layouts`` column).
+layouts the browser performs per refresh (``Layouts`` column).  Without it the
+``Layout runs`` / ``Layouts`` counts -- the burst row's especially -- are lower
+bounds, not the number of layouts a real browser would perform.
 
+Bytes are reported in both directions: ``k->b`` is everything the kernel sends
+to the frontends (updates, echoes, custom messages), ``b->k`` is what the stub
+browser writes back (the sizing and layout answers, on the real
+``Widget.set_state`` path), and ``total`` is their sum.  Earlier versions of
+this harness printed ``k->b`` alone; ``b->k`` is not always identical between
+two builds, since what the frontend puts in its diff depends on what the kernel
+last sent it.
+
+Each case is measured in isolation: ``reset_case`` closes every widget the case
+built, drops the harness's own references to them, and runs ``gc.collect()``
+before the next case starts.  Before that fix every case leaked its whole
+widget graph (live objects grew from 282k to 848k across one six-case run) and
+per-stage timings drifted with a case's position -- the same case measured
+33 ms of ``VisibilityPipe`` early in a run and 266 ms late in one -- so only
+comparisons between runs at the *same* position were valid.  ``--cases
+SHAPE:N ...`` runs an explicit case list, which is how that is checked.
 
 Pipe times exclude the sync work their own outlet assignment triggers, so pipe
 time and "kernel sync" do not double-count.
@@ -38,6 +56,7 @@ from __future__ import annotations
 
 import argparse
 import asyncio
+import gc
 import json
 import os
 import shutil
@@ -501,6 +520,7 @@ async def measure(diagram) -> dict:
     if BROWSER is not None:
         await BROWSER.idle()  # a queued duplicate layout lands in this phase
     comm = RECORDER.summarize(start, inbound)
+    b2k = comm["browser_to_kernel"]
 
     return {
         "wall_s": time.perf_counter() - t0,
@@ -516,6 +536,12 @@ async def measure(diagram) -> dict:
         "layouts": CALLS["browser stub: layouts"],
         "layout_runs": comm["runs"].get("elk", 0),
         "sizer_runs": comm["runs"].get("sizer", 0),
+        "messages_k2b": comm["messages"]["total"],
+        "messages_b2k": b2k["messages"],
+        "messages_total": comm["messages"]["total"] + b2k["messages"],
+        "bytes_k2b": comm["bytes"]["total"],
+        "bytes_b2k": b2k["bytes"],
+        "bytes_total": comm["bytes"]["total"] + b2k["bytes"],
         "comm": comm,
     }
 
@@ -551,7 +577,55 @@ def hide_incident_edges(pipe, hidden: list) -> int:
     return count
 
 
+def reset_case() -> None:
+    """Close every widget the finished case built and collect it.
+
+    ``Widget._instances`` holds every widget ever opened, and the harness's
+    ``Recorder`` holds the frontend's copy of each one's ``value``, so without
+    this a run accumulated every case's whole widget graph: live objects grew
+    monotonically and later cases paid for earlier ones (see the module
+    docstring).  ``Widget.close_all()`` is enough because nothing in a
+    benchmark outlives its case.
+    """
+    import ipywidgets
+
+    RECORDER.enabled = False
+    if BROWSER is not None:
+        BROWSER.pipes.clear()
+        BROWSER.in_flight.clear()
+        BROWSER.queued.clear()
+        BROWSER.completed.clear()
+    ipywidgets.Widget.close_all()
+    RECORDER.roles.clear()
+    RECORDER.last_state.clear()
+    RECORDER.log.clear()
+    gc.collect()
+
+
 async def run_case(shape: str, n: int) -> dict:
+    """Measure one case in isolation, and bracket it with live-object counts.
+
+    ``measure_case`` does the work in its own frame so that its locals -- the
+    graph, the diagram, the pipes -- are gone before ``reset_case`` runs and
+    the second count is taken; ``live_objects_after`` should come back to
+    ``live_objects_before``, and the next case's ``live_objects_before``
+    should match this one's.
+    """
+    gc.collect()
+    case: dict = {
+        "shape": shape,
+        "n": n,
+        "live_objects_before": len(gc.get_objects()),
+    }
+    try:
+        await measure_case(shape, n, case)
+    finally:
+        reset_case()
+        case["live_objects_after"] = len(gc.get_objects())
+    return case
+
+
+async def measure_case(shape: str, n: int, case: dict) -> None:
     """Build one graph, refresh it, collapse it, then burst it."""
     import bench_graphs
 
@@ -560,7 +634,7 @@ async def run_case(shape: str, n: int) -> dict:
     from ipyelk.pipes import flows as F
 
     root = bench_graphs.GENERATORS[shape](n, seed=SEED)
-    case: dict = {"shape": shape, "n": n, "elements": bench_graphs.count_elements(root)}
+    case["elements"] = bench_graphs.count_elements(root)
     RECORDER.enabled = False  # widget construction traffic is not refresh traffic
     source = ElementLoader().load(root=root)
     diagram = Diagram(source=source)
@@ -597,7 +671,6 @@ async def run_case(shape: str, n: int) -> dict:
         case["collapse_workaround"] = await measure(diagram)
 
     case["burst"] = await burst(diagram)
-    return case
 
 
 async def burst(diagram) -> dict:
@@ -628,6 +701,16 @@ async def burst(diagram) -> dict:
         "messages": summary["messages"]["total"],
         "bytes": summary["bytes"]["total"],
         "browser_to_kernel": summary["browser_to_kernel"],
+        "messages_k2b": summary["messages"]["total"],
+        "messages_b2k": summary["browser_to_kernel"]["messages"],
+        "messages_total": (
+            summary["messages"]["total"] + summary["browser_to_kernel"]["messages"]
+        ),
+        "bytes_k2b": summary["bytes"]["total"],
+        "bytes_b2k": summary["browser_to_kernel"]["bytes"],
+        "bytes_total": (
+            summary["bytes"]["total"] + summary["browser_to_kernel"]["bytes"]
+        ),
     }
 
 
@@ -646,14 +729,28 @@ def table(header: list[str], rows: list[list[str]]) -> str:
     return "\n".join(f"| {' | '.join(row)} |" for row in (header, align, *rows) if row)
 
 
-BURST_KEYS = ("refresh_calls", "layout_runs", "layouts", "sizer_runs", "messages")
+BURST_KEYS = (
+    "refresh_calls", "layout_runs", "layouts", "sizer_runs",
+    "messages_k2b", "messages_b2k",
+)  # fmt: skip
 BURST_HEADER = [
-    "Graph", "refresh()", "Layout runs", "Layouts", "Sizer runs", "Msgs", "Bytes", "Wall",
+    "Graph", "refresh()", "Layout runs", "Layouts", "Sizer runs",
+    "Msgs k->b", "Msgs b->k", "Bytes k->b", "Bytes b->k", "Bytes total", "Wall",
 ]  # fmt: skip
 REFRESH_HEADER = [
     "Graph", "Elements", "Wall", "Validation", "Visibility", "elkjs",
-    "Kernel sync", "Msgs", "update", "echo", "custom", "Bytes", "Runs", "Layouts",
+    "Kernel sync", "Msgs k->b", "update", "echo", "custom", "Msgs b->k",
+    "Bytes k->b", "Bytes b->k", "Bytes total", "Runs", "Layouts",
 ]  # fmt: skip
+
+#: applies to every ``Layout runs`` / ``Layouts`` count printed without
+#: ``--slow-browser``
+RUNS_NOTE = (
+    "Layout-run counts are a **lower bound** without `--slow-browser SECONDS`: "
+    "the stub answers the first `run` request immediately, so the "
+    "`browser_roundtrip` resend loop never fires and the duplicate layouts a "
+    "real, slower browser would perform are not counted."
+)
 
 
 def name(case: dict) -> str:
@@ -674,7 +771,8 @@ def refresh_row(case: dict, key: str) -> list[str] | None:
         ),
         fmt_s(data["kernel_sync_s"]),
         *(str(msgs.get(k, 0)) for k in ("total", "update", "echo_update", "custom")),
-        fmt_b(data["comm"]["bytes"]["total"]),
+        str(data["messages_b2k"]),
+        *(fmt_b(data[k]) for k in ("bytes_k2b", "bytes_b2k", "bytes_total")),
         str(data["layout_runs"]),
         str(data.get("layouts", data["layout_runs"])),
     ]
@@ -686,7 +784,7 @@ def render(results: dict) -> str:
     if results.get("slow_browser"):
         out[0] += f" (browser answers after {results['slow_browser']} s)"
 
-    sections = [
+    sections: list[tuple[str, list[str], list, str]] = [
         (
             "Graphs",
             ["Graph", "Breakdown", "Elements", "Depth", "Laid-out JSON"],
@@ -704,11 +802,13 @@ def render(results: dict) -> str:
                 ]
                 for c in cases
             ],
+            "",
         ),
         (
             "First refresh",
             REFRESH_HEADER,
             [refresh_row(c, "first") for c in cases],
+            "" if results.get("slow_browser") else RUNS_NOTE,
         ),
         (
             f"Second refresh, ~{HIDDEN_FRACTION:.0%} of nodes hidden",
@@ -719,6 +819,7 @@ def render(results: dict) -> str:
                 for key in ("collapse", "collapse_workaround")
                 if (row := refresh_row(c, key))
             ],
+            "",
         ),
         (
             f"Burst: {BURST} `refresh()` calls in one tick",
@@ -727,16 +828,22 @@ def render(results: dict) -> str:
                 [
                     name(c),
                     *(str(c["burst"][k]) for k in BURST_KEYS),
-                    fmt_b(c["burst"]["bytes"]),
+                    *(
+                        fmt_b(c["burst"][k])
+                        for k in ("bytes_k2b", "bytes_b2k", "bytes_total")
+                    ),
                     fmt_s(c["burst"]["wall_s"])
                     + ("".join(f" ({e})" for e in c["burst"]["errors"])),
                 ]
                 for c in cases
             ],
+            "" if results.get("slow_browser") else RUNS_NOTE,
         ),
     ]
-    for title, header, rows in sections:
+    for title, header, rows, note in sections:
         out += ["", f"### {title}", "", table(header, rows)]
+        if note:
+            out += ["", note]
     errors = [
         f"- `{name(c)}`: {c['collapse_error']}"
         for c in cases
@@ -745,6 +852,19 @@ def render(results: dict) -> str:
     if errors:
         out += ["", "Collapse failed (hidden node with visible edges):", "", *errors]
     return "\n".join(out)
+
+
+def parse_cases(args) -> list[tuple[str, int]]:
+    """``--cases flat:1000 nested:500``, else the shapes x sizes product."""
+    if not args.cases:
+        return [(shape, n) for shape in args.shapes for n in args.sizes]
+    cases = []
+    for spec in args.cases:
+        shape, _, size = spec.partition(":")
+        if shape not in SHAPES or not size.isdigit():
+            raise SystemExit(f"bad --cases entry {spec!r}; want SHAPE:N")
+        cases.append((shape, int(size)))
+    return cases
 
 
 async def main_async(args) -> dict:
@@ -773,10 +893,9 @@ async def main_async(args) -> dict:
     }
 
     try:
-        for shape in args.shapes:
-            for n in args.sizes:
-                print(f"[bench] {shape} {n} ...", file=sys.stderr, flush=True)
-                results["cases"].append(await run_case(shape, n))
+        for shape, n in parse_cases(args):
+            print(f"[bench] {shape} {n} ...", file=sys.stderr, flush=True)
+            results["cases"].append(await run_case(shape, n))
     finally:
         ELK.close()
     return results
@@ -787,6 +906,14 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--label", required=True, help="name of this run")
     parser.add_argument("--sizes", type=int, nargs="+", default=list(SIZES))
     parser.add_argument("--shapes", nargs="+", default=list(SHAPES), choices=SHAPES)
+    parser.add_argument(
+        "--cases",
+        nargs="+",
+        metavar="SHAPE:N",
+        help="explicit ordered case list (e.g. flat:1000 nested:500) instead of "
+        "the --shapes x --sizes product; cases are isolated from each other, "
+        "so the same case must measure the same in any position",
+    )
     parser.add_argument("--out", type=Path, default=ROOT / "build" / "bench")
     parser.add_argument(
         "--no-force-value",
@@ -801,7 +928,11 @@ def main(argv: list[str] | None = None) -> int:
         default=0.0,
         metavar="SECONDS",
         help="answer each layout request after this delay through the real "
-        "ElkJS.run (0: stub answers the first request immediately)",
+        "ElkJS.run. With the default 0 the stub answers the first request "
+        "immediately, the browser_roundtrip resend loop never fires, and every "
+        "reported layout-run count -- the burst row's especially -- is a LOWER "
+        "BOUND on what a real browser would perform; a delay past the resend "
+        "interval (0.5 s) measures the real count",
     )
 
     args = parser.parse_args(argv)

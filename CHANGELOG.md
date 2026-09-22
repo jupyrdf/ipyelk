@@ -1,5 +1,61 @@
 # Changelog
 
+## `2.1.3` (unreleased)
+
+### Fixed
+
+- Stop echoing browser-written state back to the frontends: the selection, the hover and
+  the laid-out graph were re-sent to every attached frontend as soon as the browser
+  wrote them, and the graph was then sent a _second_ time as a re-serialized copy, so
+  every layout arrived back twice and the diagram re-rendered on each. Known limitation,
+  documented on the traits: a second frontend attached to the same kernel no longer
+  learns browser-made selections from that echo ([#164], [#161])
+- Keep a refresh that was requested while a run was already in flight: a style change,
+  or a tool that failed after changing the model, recorded itself by overwriting the
+  pipeline's pending flow, and a completing run cleared that flow by overwriting it in
+  turn — so the request was lost and the change never redrawn. Runs now _take_ the
+  pending flow when they start and put it back if they fail or are cancelled ([#164],
+  [#160])
+- Stop throwing away browser work a refresh has already started: a burst of `refresh()`
+  calls cancelled the in-flight run and started another, so the browser went on laying
+  out graphs whose results were discarded, and a cancelled run's answer could be
+  consumed by its successor. Requests are now counted rather than cancelled and one
+  runner serves them on the trailing edge (ten calls in one tick cost one layout), and
+  each roundtrip carries a generation counter, so a re-sent request is recognized as the
+  same work instead of queueing a duplicate layout in the browser and an answer for an
+  abandoned generation is ignored. `Pipe.cancel()` is now the only thing that stops a
+  run, and `pipe._task` is the pipe's current runner rather than "the run this call just
+  scheduled" ([#164], [#161])
+- Stop swapping the browser's laid-out copy into the pipeline's input: it carried
+  nothing that persisting the result does not already merge into the user's own
+  elements, but the next run rebuilt the element index from that copy, so a selection
+  resolved to a copy and a hidden node resolved to the slack port sharing its id
+  ([#164], [#161])
+- Make edge-owner validation linear in the hierarchy instead of quadratic in it:
+  validating 1000 nodes with 3000 root-owned edges fell from 14.4 s to 0.010 s (500
+  nodes / 1500 edges, 3.5 s to 0.005 s; 100 / 300, 0.146 s to 0.001 s), and validation
+  no longer re-reports on its outlet when it changed nothing ([#164], [#161])
+- Settle a browser roundtrip on the event loop that awaits it: with `ipykernel` 7 and a
+  frontend that uses kernel subshells (JupyterLab 4.5+, ipywidgets 8.1.8+), widget
+  messages are handled on a subshell thread with its own loop, so an answer written from
+  there did not wake a run started from a cell until the resend timer fired, and a
+  `refresh()` from a widget callback reused a runner from the other loop and failed
+  silently. Answers are now delivered through the future's own loop, and a refresh from
+  another loop hands the runner over to the caller's loop ([#164])
+
+### Development
+
+- Add `scripts/bench_pipeline.py`, a headless benchmark of `Diagram.refresh()`: it runs
+  the real kernel pipeline and real `elkjs` in `node` with only the two browser stages
+  stubbed, over deterministic graphs from `scripts/bench_graphs.py`, and reports wall
+  and per-stage time, comm messages and bytes in both directions, layout runs, a
+  collapse refresh and a ten-refresh burst ([#164], [#167])
+
+[#160]: https://github.com/jupyrdf/ipyelk/issues/160
+[#161]: https://github.com/jupyrdf/ipyelk/issues/161
+[#164]: https://github.com/jupyrdf/ipyelk/issues/164
+[#167]: https://github.com/jupyrdf/ipyelk/issues/167
+
 ## `2.1.2`
 
 ### Development
