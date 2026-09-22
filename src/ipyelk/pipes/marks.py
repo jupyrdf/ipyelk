@@ -47,9 +47,93 @@ class MarkIndex(W.DOMWidget):
 
 
 class MarkElementWidget(W.DOMWidget):
-    value = T.Instance(Node, allow_none=True).tag(sync=True, **elk_serialization)
+    """A synced element tree plus the shared index and the pending ``flow``.
+
+    ``value`` is written from both sides: the kernel assigns a new tree, and
+    the browser writes back the measured or laid-out tree (text sizer, elkjs).
+    A browser write must not be re-sent: ipywidgets would otherwise echo the
+    raw JSON to every frontend *and* send a second ``update`` carrying the
+    re-serialised pydantic tree (which differs from the browser JSON by
+    elkjs-internal keys), and each arrival re-renders the diagram.  So
+    ``value`` is tagged ``echo_update=False`` and ``_should_send_property``
+    suppresses the second send for the object the browser wrote.  Kernel
+    writes -- including one made by an observer *during* the browser's write
+    -- are sent exactly once.
+
+    Known limitation: a second frontend attached to the same kernel used to
+    learn browser-written values through the echo and no longer does.
+    """
+
+    value = T.Instance(Node, allow_none=True).tag(
+        sync=True, echo_update=False, **elk_serialization
+    )
+    #: generation of the ``run`` request the browser answered when it last
+    #: wrote ``value`` (written in the same ``save_changes``); ``0`` until a
+    #: frontend answers, or forever with an older extension build.  Lets
+    #: ``browser_roundtrip`` tell a fresh answer from one to an abandoned run,
+    #: and is the change the kernel sees when the answered ``value`` is
+    #: identical to the previous one (``util.wait_for_answer``).
+    gen = T.Int(0).tag(sync=True, echo_update=False)
     index = T.Instance(MarkIndex, kw={}).tag(sync=True, **W.widget_serialization)
+
     flow: tuple[str, ...] = TypedTuple(T.Unicode(), kw={}).tag(sync=True)
+
+    #: the tree ``set_state`` last deserialised from the browser (see
+    #: ``set_trait``); the one ``value`` write that must not be re-sent
+    _browser_value: Node | None = None
+
+    def set_trait(self, name, value):
+        # ``Widget.set_state`` deserialises the browser's JSON and assigns it
+        # through here while ``_property_lock`` is held: remember *which*
+        # object that was, so ``_should_send_property`` can tell the browser's
+        # own write from a kernel write made while the lock is still held
+        if name == "value" and name in self._property_lock:
+            self._browser_value = value
+        super().set_trait(name, value)
+
+    def _should_send_property(self, key, value):
+        """Never re-send a ``value`` the browser just wrote.
+
+        ``Widget.set_state`` holds ``_property_lock`` while trait notifications
+        fire.  The stock check compares the re-serialised value with the
+        browser JSON and sends when they differ, which they always do for an
+        elkjs-processed tree; the browser already renders its own object, so
+        that send is pure churn.  Only the browser's object is suppressed,
+        though: an observer reacting to the browser's tree by assigning a
+        *new* tree does so while the lock is still held, and that write must
+        reach the frontend.
+        """
+        if (
+            key == "value"
+            and key in self._property_lock
+            and value is self._browser_value
+        ):
+            return False
+        return super()._should_send_property(key, value)
+
+    def record(self, *tags: str) -> tuple[str, ...]:
+        """Add ``tags`` to the pending ``flow`` (order-preserving union).
+
+        Writers (tools, ``Diagram``) must *record* rather than assign: an
+        assignment overwrites whatever another writer left pending, and a
+        tag that was recorded while a run was in flight would be wiped by
+        that run's completion.
+        """
+        pending = list(self.flow)
+        pending.extend(tag for tag in tags if tag not in pending)
+        if len(pending) != len(self.flow):
+            self.flow = tuple(pending)
+        return self.flow
+
+    def take(self) -> tuple[str, ...]:
+        """Consume the pending ``flow``: return it and leave ``()`` behind.
+
+        A run takes the flow when it *starts*, so anything recorded while it
+        runs stays pending for the next run instead of being erased when
+        this one completes (``Pipeline.run``).
+        """
+        taken, self.flow = self.flow, ()
+        return taken
 
     def persist(self, rebuild_index: bool = False):
         """Fold ``value`` into the shared index.

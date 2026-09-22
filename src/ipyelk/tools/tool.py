@@ -36,7 +36,7 @@ class Tool(W.Widget):
         self._task.add_done_callback(self._finished)
 
         if self.tee:
-            self.tee.inlet.flow = self.reports
+            self.tee.inlet.record(*self.reports)
 
         return self._task
 
