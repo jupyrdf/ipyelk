@@ -296,17 +296,20 @@ class ElementIndex(BaseModel):
         call adopted the orphans with, so an orphan's walk reaches it too.
         Returns ``None`` when the walk runs off the top of the hierarchy, which
         only a self loop on a parentless node can do.
+
+        Ownership trusts the ``_parent`` links (``get_parent``), not
+        ``children`` membership: an element appended to ``children`` without
+        ``set_parent`` (``add_child`` does both) has no parent to walk up
+        through and is reported as unreachable (:class:`NotFoundError`).
         """
-        if isinstance(u, Port):
-            u = u.get_parent()
-        if isinstance(v, Port):
-            v = v.get_parent()
+        a: HierarchicalElement | None = u.get_parent() if isinstance(u, Port) else u
+        b: HierarchicalElement | None = v.get_parent() if isinstance(v, Port) else v
 
-        if u is v:
+        if a is b:
             # self loops need to be owned by their parent
-            return None if u is None else u.get_parent()
+            return None if a is None else a.get_parent()
 
-        def up(node: Node | None) -> Node:
+        def up(node: HierarchicalElement | None) -> Node:
             parent = None if node is None else node.get_parent()
             if parent is None and node is not root and depths.get(id(node)):
                 # an orphan root: `check_edges` hangs it off the hierarchy root
@@ -315,27 +318,34 @@ class ElementIndex(BaseModel):
                 raise NotFoundError(f"Unable to find {node} in the hierarchy")
             return parent
 
-        for endpt in (u, v):
+        for endpt in (a, b):
             if endpt is None or id(endpt) not in depths:
                 raise NotFoundError(f"Unable to find {endpt} in the hierarchy")
 
-        u_depth = depths[id(u)]
-        v_depth = depths[id(v)]
-        while u_depth > v_depth:
-            u = up(u)
-            u_depth -= 1
-        while v_depth > u_depth:
-            v = up(v)
-            v_depth -= 1
-        while u is not v:
-            u = up(u)
-            v = up(v)
-        return u
+        a_depth = depths[id(a)]
+        b_depth = depths[id(b)]
+        while a_depth > b_depth:
+            a = up(a)
+            a_depth -= 1
+        while b_depth > a_depth:
+            b = up(b)
+            b_depth -= 1
+        while a is not b:
+            a = up(a)
+            b = up(b)
+        # ``a is not b`` on entry, so the meeting point came out of ``up``
+        assert isinstance(a, Node)
+        return a
 
     def check_edges(self) -> EdgeReport:
         """Check edges' endpoints for references to nodes outside of the current
         hierarchy as well as which edges should be remapped to the appropriate
         lowest common ancestor.
+
+        Reachability is judged by the ``children`` walk (:meth:`depths`) and
+        ownership by the ``_parent`` links (:meth:`lca_by_parent`), so a child
+        appended to ``children`` without ``set_parent`` (use ``add_child``) is
+        reported as unreachable rather than resolved through the hierarchy.
         """
         orphans: set[Node] = set()
         lca_mismatch: dict[Edge, tuple[Node, Node | None]] = {}

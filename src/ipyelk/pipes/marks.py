@@ -20,10 +20,6 @@ class MarkIndex(W.DOMWidget):
     context = T.Instance(Registry, kw={})
 
     _root: Node | None = None
-    #: the last browser-written tree ``MarkElementWidget.persist`` merged in;
-    #: lets ``ValidationPipe`` recognise that copy if a caller swaps it into
-    #: the inlet (2.1.x ``Diagram.refresh`` did) rather than the user's root
-    merged_from: Node | None = None
 
     def to_id(self, element: BaseElement):
         return element.get_id()
@@ -60,8 +56,9 @@ class MarkElementWidget(W.DOMWidget):
     re-serialised pydantic tree (which differs from the browser JSON by
     elkjs-internal keys), and each arrival re-renders the diagram.  So
     ``value`` is tagged ``echo_update=False`` and ``_should_send_property``
-    suppresses the second send while the browser's property lock is held.
-    Kernel-initiated writes have an empty lock and are sent exactly once.
+    suppresses the second send for the object the browser wrote.  Kernel
+    writes -- including one made by an observer *during* the browser's write
+    -- are sent exactly once.
 
     Known limitation: a second frontend attached to the same kernel used to
     learn browser-written values through the echo and no longer does.
@@ -81,17 +78,36 @@ class MarkElementWidget(W.DOMWidget):
 
     flow: tuple[str, ...] = TypedTuple(T.Unicode(), kw={}).tag(sync=True)
 
+    #: the tree ``set_state`` last deserialised from the browser (see
+    #: ``set_trait``); the one ``value`` write that must not be re-sent
+    _browser_value: Node | None = None
+
+    def set_trait(self, name, value):
+        # ``Widget.set_state`` deserialises the browser's JSON and assigns it
+        # through here while ``_property_lock`` is held: remember *which*
+        # object that was, so ``_should_send_property`` can tell the browser's
+        # own write from a kernel write made while the lock is still held
+        if name == "value" and name in self._property_lock:
+            self._browser_value = value
+        super().set_trait(name, value)
+
     def _should_send_property(self, key, value):
         """Never re-send a ``value`` the browser just wrote.
 
         ``Widget.set_state`` holds ``_property_lock`` while trait notifications
-        fire, so ``key in self._property_lock`` means this change *is* the
-        browser's write.  The stock check compares the re-serialised value with
-        the browser JSON and sends when they differ, which they always do for
-        an elkjs-processed tree; the browser already renders its own object,
-        so that send is pure churn.
+        fire.  The stock check compares the re-serialised value with the
+        browser JSON and sends when they differ, which they always do for an
+        elkjs-processed tree; the browser already renders its own object, so
+        that send is pure churn.  Only the browser's object is suppressed,
+        though: an observer reacting to the browser's tree by assigning a
+        *new* tree does so while the lock is still held, and that write must
+        reach the frontend.
         """
-        if key == "value" and key in self._property_lock:
+        if (
+            key == "value"
+            and key in self._property_lock
+            and value is self._browser_value
+        ):
             return False
         return super()._should_send_property(key, value)
 
@@ -133,7 +149,6 @@ class MarkElementWidget(W.DOMWidget):
             self.build_index()
         elif self.value is not None:
             self.index.elements.update(ElementIndex.from_els(self.value))
-            self.index.merged_from = self.value
         return self
 
     def build_index(self, *, assign_ids: bool = True) -> MarkIndex:
@@ -156,7 +171,6 @@ class MarkElementWidget(W.DOMWidget):
                     if el.id is None:
                         el.id = key
         self.index.elements = index
-        self.index.merged_from = None
         return self.index
 
     def _repr_mimebundle_(self, **kwargs):

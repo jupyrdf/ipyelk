@@ -48,11 +48,6 @@ def wait_for_change(widget, value, timeout: float | None = None):
     return future
 
 
-#: ``unversioned`` is set once a frontend answered without a generation (an
-#: older extension build); the acceptance is logged once per process
-_WARNED = {"unversioned": False}
-
-
 def wait_for_answer(pipe, gen: int, trait: str = "value") -> asyncio.Future:
     """Return a future that resolves (with ``outlet.value``) when the browser
     answers roundtrip ``gen``.
@@ -70,8 +65,10 @@ def wait_for_answer(pipe, gen: int, trait: str = "value") -> asyncio.Future:
     An answer for another generation -- the browser finishing a run that
     ``cancel`` abandoned -- is logged and ignored, and the future stays
     pending for the right one.  ``gen == 0`` is an older frontend build that
-    does not stamp its answers: accepted, with a one-time warning, so the
-    diagram still renders (stale answers cannot be told apart in that case).
+    does not stamp its answers: accepted, with a warning once per pipe
+    (``pipe._warned_unversioned``, so each diagram that meets such a frontend
+    says so once), so the diagram still renders (stale answers cannot be told
+    apart in that case).
     Only a write that *came from the browser* counts, though: ``set_state``
     holds ``_property_lock`` while notifying, so ``"value" in
     outlet._property_lock`` is the browser's write (the idiom
@@ -89,9 +86,8 @@ def wait_for_answer(pipe, gen: int, trait: str = "value") -> asyncio.Future:
         if answered == gen:
             future.set_result(outlet.value)
         elif answered == 0 and from_browser:
-            if not _WARNED["unversioned"]:
-                _WARNED["unversioned"] = True
-
+            if not getattr(pipe, "_warned_unversioned", False):
+                pipe._warned_unversioned = True
                 pipe.log.warning(
                     "The frontend answered a %s run without a generation "
                     "(older extension build?); accepting it, but a stale answer "
@@ -187,7 +183,13 @@ async def browser_roundtrip(
             else:
                 return
     finally:
-        pipe._roundtrip_future = None
+        # only clear our own future: cancellation can unwind a loop turn late
+        # (``wait_for`` on Python < 3.12 awaits its inner future first), by
+        # which time a successor started in the same tick as ``cancel()`` may
+        # already be waiting on *its* future, and a browser error for that
+        # generation must still find it
+        if pipe._roundtrip_future is future_value:
+            pipe._roundtrip_future = None
 
 
 def resync_stale(

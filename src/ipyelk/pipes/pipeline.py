@@ -104,22 +104,39 @@ class Pipeline(SyncedOutletPipe):
         if taken:
             self.inlet.record(*taken)
 
-    async def run(self):
+    async def run(self, flow: tuple[str, ...] | None = None):
+        """Run the dirty pipes for the pending flow.
+
+        The flow is *taken* from the inlet at the start (``MarkElementWidget
+        .take``): a tag recorded while this run is in flight stays pending for
+        the next run instead of being erased when this one completes, and only
+        a successful run consumes what it took.  Because the take consumes the
+        inlet's pending flow, it is served by the first pipeline that runs on
+        that inlet: a source widget should feed one pipeline (two ``Diagram``
+        s sharing a source would starve the second's first pipe).
+
+        ``flow`` is for a pipeline nested as a sub-pipe: the parent passes
+        what it took (the shared inlet has already been consumed) and stays
+        the one that owes it back on failure.
+        """
         start = datetime.now()
-        # take at start: a tag recorded while this run is in flight stays
-        # pending for the next run instead of being erased when this one
-        # completes; only a *successful* run consumes what it took
-        self._taken = taken = self.inlet.take()
+        if flow is None:
+            self._taken = taken = self.inlet.take()
+        else:
+            taken = flow
         try:
             await self._run_pipes(taken)
         except BaseException:
             # a failed, superseded or cancelled run retries: re-record what it
             # took (unless ``cancel`` already handed it to a successor)
-            if self._taken is taken:
+            if flow is None and self._taken is taken:
                 self._release_taken()
             raise
 
-        self._taken = ()
+        if self._taken is taken:
+            # ours to consume; a run that finished late (a pipe that swallowed
+            # its cancellation) must not clear what its successor took
+            self._taken = ()
         self.status_update(PipeStatus.finished(start_time=start))
 
     async def _run_pipes(self, flow: tuple[str, ...]) -> None:
@@ -136,13 +153,7 @@ class Pipeline(SyncedOutletPipe):
             pipe_start_time = datetime.now()
             p_name = f"pipe {i}: {type(pipe)}"
             try:
-                if pipe.status.dirty():
-                    self.status_update(PipeStatus.running(), pipe=pipe)
-                    await pipe.run()
-                else:
-                    pipe.outlet.value = pipe.inlet.value
-            except Superseded:
-                raise  # a nested pipeline gave way; not a stage error
+                await self._run_pipe(i, pipe, flow)
             except Exception as err:
                 self.log.exception(f"Error running {p_name}")
                 self.status_update(
@@ -155,6 +166,18 @@ class Pipeline(SyncedOutletPipe):
                 raise err
 
             pipe.status_update(PipeStatus.finished(start_time=pipe_start_time))
+
+    async def _run_pipe(self, i: int, pipe: Pipe, flow: tuple[str, ...]) -> None:
+        if not pipe.status.dirty():
+            pipe.outlet.value = pipe.inlet.value
+            return
+        self.status_update(PipeStatus.running(), pipe=pipe)
+        if isinstance(pipe, Pipeline):
+            # this run took the flow: a nested pipeline taking again would find
+            # ``()`` (at ``i == 0`` its inlet is ours), so hand it the flow
+            await pipe.run(flow=flow if i == 0 else pipe.inlet.flow)
+        else:
+            await pipe.run()
 
     def check_dirty(self, flow: tuple[str, ...] | None = None) -> bool:
         # check pipes and propagate flow to downstream pipes; ``flow`` (the
