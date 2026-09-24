@@ -15,5 +15,4 @@ ${SCREENS}      ${SCREENS ROOT}${/}examples${/}14_Text_Styling
 14_Text_Styling
     [Tags]    gh:100
     Example Should Restart-and-Run-All    ${TEXT STYLE}
-    Sleep    2s
-    Wait Until Computed Element Styles Are    5x    1s    .elklabel    fontWeight=700
+    Wait Until Computed Element Styles Are    5x    1s    .jp-ElkView text.elklabel    fontWeight=700
