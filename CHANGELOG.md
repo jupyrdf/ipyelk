@@ -1,5 +1,217 @@
 # Changelog
 
+## `3.0.0` (unreleased)
+
+### Breaking changes
+
+- Tools no longer replace the pipe's pending flow when they run. `Tool` merges its
+  `reports` into `tee.inlet.flow` (order preserved, duplicates dropped) through the new
+  `Tool.record_reports()`, so two tools triggered in the same turn -- or a tool
+  triggered while the initial `("new",)` flow is still unconsumed -- keep every writer's
+  pending reports. `ToggleCollapsedTool.run` no longer assigns the flow itself ([#156]).
+- `Viewer.fit()` / `Viewer.center()` now carry the full `SprottyViewer` signatures
+  (`model_ids: str | Sequence[str] | None`, plus the animate/zoom/padding keywords) and
+  are documented no-ops on the generic viewer. `model_ids` accepts one id or any
+  sequence of ids (a `str` is one id, never its characters); `list[str]` still works.
+  The base `Viewer`'s Fit/Center buttons no longer raise `TypeError` when clicked
+  ([#156]).
+- Tool invocation and lifecycle names each have one role ([#156]):
+  - `Tool.trigger()` requests execution (cancels a running request, schedules `run()`,
+    returns the `asyncio.Task`); `Tool.handler` is removed.
+  - `ToolButton.on_click` replaces the `handler` trait; it is called as
+    `on_click(tool)`.
+  - `SetTool`'s `active` observer is the private `_update_active`; it is not an
+    execution entry point.
+  - `Tool.on_start(callback)` replaces `on_run`. It fires when the work actually starts
+    (2.x `on_run` fired after a _successful_ run, despite its name).
+  - `Tool.on_done(callback)` is a registration method (several listeners; the owning
+    `Diagram` registers its refresh there), no longer an assignable single-slot trait.
+    Callbacks receive the tool and fire **only after `run()` completes successfully and
+    its change reports are recorded** -- never on failure, cancellation, or a request
+    rejected by `trigger()`.
+  - Reports are recorded when the work finishes (successfully or not), so partial
+    changes from failed or cancelled work still reach the next refresh; a request
+    superseded by a newer `trigger()` never overwrites the newer request's state.
+  - `trigger()` on a tool without a `run()` (state-only tools such as `Selection`,
+    callback tools such as `ToolButton`) raises `NotImplementedError` before anything is
+    scheduled; nothing is faked.
+  - Every callback receives the emitting object: `Toolbar.on_close` is typed `Callable`
+    and called as `on_close(toolbar)`.
+  - `Diagram.refresh(sender=None)` ignores its argument (it was `change`).
+- `Tool.disabled` replaces the inert, synced `disable` trait (nothing ever read it). It
+  is an execution guard: `trigger()` and `ToolButton` clicks are rejected with
+  `RuntimeError` while the tool is disabled (nothing is scheduled, no callback fires),
+  and every control under `tool.ui` that has a `disabled` trait follows it -- buttons
+  and the buttons inside `SetTool`'s box, but not boxes or progress bars, which have no
+  such trait ([#156]).
+- Unbound tools are a supported state: `PipelineProgressBar.pipe`,
+  `ToggleCollapsedTool.selection` and `SetTool.selection` are `None` until bound (they
+  used to raise `TraitError` on read), so a tool can be constructed first and bound
+  later (`Diagram.register_tool`, assignment, or the progress bar's first `update`).
+  While a dependency listed in the tool's `_dependencies` is `None`,
+  `Tool.missing_dependencies()` names it, the tool's controls are disabled, and
+  `trigger()` raises `RuntimeError` naming the missing dependency ([#156]).
+- `Selection.elements()` stays strict by default (an unknown id raises `NotFoundError`
+  naming it) and gains explicit tolerant resolution: `elements(strict=False)` skips
+  unknown ids and `missing_ids()` reports them, both in `ids` order. Requested ids are
+  never filtered on assignment, so selecting before the first layout keeps working.
+  `get_index()` now builds the index when the pipe's `MarkIndex` has no elements yet (it
+  only checked for a missing `MarkIndex`, which always exists) ([#156]).
+- `Toolbar.order()` and `Toolbar.tool_order()` are annotated as returning tool UIs
+  (`dict[int, list[DOMWidget]]` / `list[DOMWidget]`), which is what they always
+  returned, and document that tools without a `ui` are omitted. `Selection.ids` is
+  documented as the tuple it is; the `01_Linking` example compares it to a tuple (its
+  list comparison was always true), and the `12`/`13` examples drop commented-out
+  references to the long-gone `toolbar.commands` ([#156]).
+- `Hover.ids` is replaced by `Hover.hovered_id: str | None` (default `None`). There is
+  no alias: code that reads or observes `ids` on the hover tool must switch to
+  `hovered_id`. Despite its name, `ids` only ever held one id (a string, never a tuple),
+  so the value shape is unchanged; only the trait name and the `None` state are new.
+  `Selection.ids` is unchanged and still a tuple ([#155]).
+- Leaving an element now clears the hover: `hovered_id` becomes `None` when the pointer
+  leaves the diagram's elements (it previously kept the last hovered id forever).
+  Observers that only expect strings must handle `None` ([#155]).
+- `Viewer.control_overlay` is opt-in and defaults to `None`; assign a `ControlOverlay`
+  (e.g. `view.control_overlay = ControlOverlay()`) before setting its `children`. The
+  browser renders no overlay container for `None` or for an overlay without `children`
+  (previously every selection rendered an empty `<id>_entropy` node), and re-renders
+  when the overlay's `children` change ([#156]).
+- `ipyelk.tools.contol_overlay` (sic) is renamed to `ipyelk.tools.control_overlay`
+  without an alias ([#156]).
+- `Viewer.viewport` (an `ipyelk.tools.Viewport`) replaces the never-written `Zoom` and
+  `Pan` tools and the `Viewer.viewed` trait with real viewport synchronization ([#156]).
+  The browser reports the camera of the **most recently reporting view** as one snapshot
+  -- `view_id`, `origin`, `zoom`, `canvas_size`, `viewed_ids` -- so an observer of any
+  field sees all five updated together. It is not a global viewport: several views of
+  one diagram stay independent and each report names its view. The traits are read-only
+  in the kernel (the browser is the only writer) and `None` until the first report.
+  `viewed_ids` lists the model elements whose bounds touch the visible rectangle, in
+  model order; edges, renderer artifacts and the slack ports/edges that stand in for
+  hidden elements are never listed.
+- `SprottyViewer.set_viewport(*, origin=None, zoom=None, animate=True, view_id=None)`
+  moves the camera (a command, like `fit`/`center`, never a trait): `None` keeps the
+  view's current origin/zoom, `view_id=None` moves every connected view ([#156]).
+- `Viewer.painter` (an `ipyelk.tools.Painter`) is live: temporary, view-only styling
+  ([#156]). `painter.paint(ids, *css_classes)` adds classes to the rendered elements in
+  every connected view without touching `properties.cssClasses` -- a re-layout
+  re-applies them, the ELK/model JSON never changes, and exported SVG shows them.
+  `unpaint(ids, *css_classes)` removes classes (with none given, drops the ids),
+  `clear()` removes everything the painter applied and never a class the model set,
+  `painted_ids`, `elements(strict=True)` and `missing_ids()` mirror `Selection`. Targets
+  are ids (a `str` is one id) or elements (stored as `get_id()`); the synced `styles`
+  trait is `dict[str, tuple[str, ...]]`. The unfinished 2.x placeholders `cssClasses`,
+  `marks` and `name` are removed.
+- Removed names are hard errors for the whole 3.x line, not aliases or warnings:
+  `Tool.handler`, `ToolButton.handler`, `Tool.on_run`, `Tool.disable`, `Hover.ids`,
+  `Viewer.zoom`, `Viewer.pan`, `Viewer.viewed`, `ipyelk.tools.Zoom`, `ipyelk.tools.Pan`,
+  `Painter.cssClasses`, `Painter.marks`, `Painter.name`, and assigning `Tool.on_start`
+  or `Tool.on_done` raise `ipyelk.exceptions.DeprecatedAPIError` (an `AttributeError`,
+  so `hasattr`, `getattr(..., default)` and introspection keep working) on read,
+  assignment, and as constructor keywords, with the reason and the replacement in the
+  message (mechanism: `ipyelk.exceptions.RemovedAPI` / `RegistrationMethod` /
+  `check_removed`). The removed module-level _names_ raise
+  `ipyelk.exceptions.DeprecatedImportError` instead, which is an `ImportError` and not
+  an `AttributeError`, because `from ipyelk.tools import Zoom` would otherwise lose the
+  message to a bare "cannot import name". Importing the misspelled
+  `ipyelk.tools.contol_overlay` module raises it too, naming the new path; it re-exports
+  nothing. Both flavours share the `ipyelk.exceptions.DeprecatedAPI` base, so one
+  `except` catches either.
+
+### Migration
+
+```python
+# 2.x: a Tool subclass that hand-rolled the merge to avoid clobbering the flow
+inlet.flow = tuple(dict.fromkeys((*inlet.flow, *self.reports)))
+# 3.0: the base class does this; drop the hand-rolled merge or call
+self.record_reports()
+
+# 2.x                                   # 3.0
+button.on_click(tool.handler)           button.on_click(tool.trigger)
+await tool.handler()                    await tool.trigger()
+FitTool(handler=lambda: view.fit())     FitTool(on_click=lambda tool: view.fit())
+tool.on_run(callback)                   tool.on_start(callback)   # when work starts
+                                        tool.on_done(callback)    # success only
+tool.on_done = callback                 tool.on_done(callback)    # + remove=True
+toolbar.on_close = lambda: ...          toolbar.on_close = lambda toolbar: ...
+tool.disable = True                     tool.disabled = True   # now actually disables
+# a Tool subclass that did its work synchronously and refreshed by hand:
+inlet.flow = (...); self.on_done()      self.trigger()  # run() may be a no-op
+```
+
+```python
+# 2.x
+hover.ids  # last hovered id, never reset
+# 3.0
+hover.hovered_id  # id under the pointer, or None
+hover.hovered_id = "n1"  # highlight from the kernel
+hover.hovered_id = None  # clear the highlight
+```
+
+```python
+# 2.x: every viewer allocated an overlay, rendered even when empty
+view.control_overlay.children = [button]
+# 3.0: opt in first
+from ipyelk.tools import ControlOverlay  # was ipyelk.tools.contol_overlay
+
+view.control_overlay = ControlOverlay()
+view.control_overlay.children = [button]
+view.control_overlay.children = []  # renders nothing
+```
+
+```python
+# 2.x: placeholders nothing ever wrote
+view.zoom.zoom, view.pan.origin, view.viewed
+# 3.0: the browser's latest report (None until a view reports), one snapshot
+view.viewport.zoom, view.viewport.origin, view.viewport.viewed_ids
+view.viewport.view_id  # which view reported
+view.viewport.observe(callback, "origin")  # every field is already updated
+# move a view (a command, not state)
+view.set_viewport(origin=(0, 0), zoom=1.5)  # every view, animated
+view.set_viewport(zoom=2, animate=False, view_id=view.viewport.view_id)
+```
+
+```python
+# 2.x: Painter(cssClasses=..., marks=..., name=...) painted nothing
+# 3.0: view-only classes per id, applied in every view, never in the model
+view.painter.paint(["n1", "n2"], "highlight")  # or elements
+view.painter.unpaint("n1", "highlight")  # drop a class; unpaint("n1") drops the id
+view.painter.clear()
+view.painter.styles  # {"n2": ("highlight",)}
+```
+
+The removed names (`handler`, `on_run`, `disable`, `Hover.ids`, assigning `on_start` or
+`on_done`, the `contol_overlay` module, `Viewer.zoom`/`pan`/`viewed`,
+`ipyelk.tools.Zoom`/`Pan`, `Painter.cssClasses`/`marks`/`name`) raise
+`DeprecatedAPIError` -- or `DeprecatedImportError` for the module-level names --
+throughout 3.x with the replacement in the message.
+
+### `@jupyrdf/jupyter-elk 3.0.0`
+
+- Write `hovered_id` back on pointer leave, but only when the departed element is still
+  the hovered one, so a stale leave cannot erase a newer enter; never dispatch `null` to
+  sprotty as an element id; re-wiring the hover tool releases the previous tool's
+  listener ([#155]).
+- Skip the control overlay when the viewer's `control_overlay` is `null` or has no
+  `children`, and re-render when its `children` change ([#156]).
+- Report the viewport: every `ELKViewerView` owns a stable `view_id` and, 100 ms after
+  the last `SetViewport`/`Center`/`FitToScreen`/`InitializeCanvasBounds` action (plus
+  sprotty's animation time for an animated move) or re-layout, writes `view_id`,
+  `origin`, `zoom`, `canvas_size` and `viewed_ids` to the kernel's `viewport` tool in
+  one state update. A gather superseded by a newer one is dropped, a snapshot the kernel
+  could not tell from the last write is skipped, and a detached view never reports. The
+  `viewport` custom message applies `SprottyViewer.set_viewport` to the addressed view
+  (or every view) ([#156]).
+- Apply the kernel `painter.styles` at transform time: the ELK -> sprotty transform
+  merges the painted classes after each element's model classes (no duplicates, symbols
+  excluded), so every render -- including re-layouts -- carries them, and a
+  `change:styles` re-renders the same layout through sprotty's model update, which keeps
+  the selection and the camera. `UpdateModelCommand2` now also carries `hoverFeedback`
+  over to the updated element, so a re-render under a resting pointer no longer drops
+  the mouseover ([#156]).
+
+[#155]: https://github.com/jupyrdf/ipyelk/issues/155
+[#156]: https://github.com/jupyrdf/ipyelk/issues/156
+
 ## `2.1.2`
 
 ### Development

@@ -13,7 +13,14 @@ from .view_tools import Selection
 
 
 class ToggleCollapsedTool(Tool):
-    selection = T.Instance(Selection)
+    """Toggle the ``hidden`` state of the selected nodes' children.
+
+    Needs a :py:class:`~ipyelk.tools.Selection`: until ``selection`` is bound the
+    button is disabled and :meth:`~ipyelk.tools.Tool.trigger` raises.
+    """
+
+    selection = T.Instance(Selection, allow_none=True, default_value=None)
+    _dependencies = ("selection",)
 
     @T.default("reports")
     def _default_reports(self):
@@ -22,19 +29,16 @@ class ToggleCollapsedTool(Tool):
     @T.default("ui")
     def _default_ui(self) -> W.DOMWidget:
         btn = W.Button(description="Toggle Collapsed")
-        btn.on_click(self.handler)
+        btn.on_click(self.trigger)
         return btn
 
     async def run(self):
-        should_refresh = False
+        if self.selection is None:  # trigger() rejects this; run() called directly
+            raise RuntimeError("ToggleCollapsedTool is not bound: selection is None")
         for selected in self.selection.elements():
             for element in self.get_related(selected):
                 self.toggle(element)
-                should_refresh = True
-
-        # trigger refresh if needed
-        if should_refresh and self.tee and self.tee.inlet:
-            self.tee.inlet.flow = self.reports
+        # the pending flow is recorded by the base class (``Tool.record_reports``)
 
     def get_related(self, element: BaseElement):
         if isinstance(element, Compartment):

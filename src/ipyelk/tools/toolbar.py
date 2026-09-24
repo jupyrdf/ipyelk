@@ -13,13 +13,21 @@ from .tool import Tool
 
 
 class Toolbar(W.HBox, StyledWidget):
-    """Toolbar for an Elk App"""
+    """Toolbar for an Elk App.
+
+    Shows the ``ui`` of every tool in ``tools`` that has one, grouped by
+    ``priority``; tools without a UI (``Selection``, ``Hover``, ``Viewport``,
+    ``Painter``) hold state only and are not rendered.
+    """
 
     tools = T.List(T.Instance(Tool), kw={})
     close_btn = T.Instance(W.Button)
-    on_close = T.Any(
-        default_value=None
-    )  # holds a callable function to execute when close button is pressed
+    on_close = T.Callable(
+        default_value=None,
+        allow_none=True,
+        help="called as ``on_close(toolbar)`` when the close button is pressed; "
+        "the button is only shown while this is set",
+    )
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -33,7 +41,7 @@ class Toolbar(W.HBox, StyledWidget):
 
         def pressed(*args):
             if callable(self.on_close):
-                self.on_close()
+                self.on_close(self)
 
         btn.on_click(pressed)
         return btn
@@ -54,11 +62,13 @@ class Toolbar(W.HBox, StyledWidget):
         shown = "visible" if self.tools or callable(self.on_close) else "hidden"
         self.layout.visibility = shown
 
-    def tool_order(self) -> list[Tool]:
+    def tool_order(self) -> list[W.DOMWidget]:
+        """The tool UIs in display order: ascending ``priority``, then ``tools`` order."""
         return list(chain(*[values for k, values in sorted(self.order().items())]))
 
-    def order(self) -> dict[int, list[Tool]]:
-        order = defaultdict(list)
+    def order(self) -> dict[int, list[W.DOMWidget]]:
+        """The tool UIs grouped by ``priority``; tools whose ``ui`` is None are omitted."""
+        order: defaultdict[int, list[W.DOMWidget]] = defaultdict(list)
         for tool in self.tools:
             if isinstance(tool.ui, W.DOMWidget):
                 order[tool.priority].append(tool.ui)

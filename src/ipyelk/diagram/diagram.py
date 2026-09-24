@@ -90,7 +90,9 @@ class Diagram(StyledWidget):
         self.children = [self.view, self.toolbar]
 
     def _update_view_sources(self):
-        self.source.flow = (F.New,)
+        # merge, never assign: a rewire must not drop the reports a tool already
+        # recorded on the source (see Tool.record_reports)
+        self.source.flow = tuple(dict.fromkeys((*self.source.flow, F.New)))
         self.pipe.inlet = self.source
         self.view.source = self.pipe.outlet
 
@@ -103,6 +105,7 @@ class Diagram(StyledWidget):
     def _default_tools(self) -> list[Tool]:
         return [
             self.view.selection,
+            self.view.painter,  # state-only, no UI; bound so elements() can resolve
             self.view.fit_tool,
             self.view.center_tool,
             ToggleCollapsedTool(selection=self.view.selection),
@@ -114,11 +117,11 @@ class Diagram(StyledWidget):
         if change and isinstance(change.old, tuple):
             for tool in change.old or []:
                 tool.tee = None
-                tool.on_done = None
+                tool.on_done(self.refresh, remove=True)
 
         for tool in self.tools:
             tool.tee = self.pipe
-            tool.on_done = self.refresh
+            tool.on_done(self.refresh)
 
     @T.default("toolbar")
     def _default_toolbar(self):
@@ -156,11 +159,13 @@ class Diagram(StyledWidget):
         self.tools = tuple([*self.tools, tool])
         return self
 
-    def refresh(self, change: T.Bunch | None = None) -> asyncio.Task | None:
+    def refresh(self, sender: object = None) -> asyncio.Task | None:
         """Create asynchronous refresh task which will update the view given any
         changes.
 
-        Returns ``None`` when no event loop is running (see ``Pipe.schedule_run``).
+        ``sender`` is ignored; it lets ``refresh`` serve as a tool's ``on_done``
+        callback (which receives the tool). Returns ``None`` when no event loop is
+        running (see ``Pipe.schedule_run``).
         """
         self.log.debug("Refreshing diagram")
         task = self.pipe.schedule_run()

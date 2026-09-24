@@ -1,16 +1,15 @@
 # Copyright (c) 2024 ipyelk contributors.
 # Distributed under the terms of the Modified BSD License.
+"""Removed in 3.0: the module was renamed to :mod:`ipyelk.tools.control_overlay`.
 
-import ipywidgets as W
+This guard exists only to turn a stale import into an actionable error; it does
+not forward to the renamed module.
+"""
 
+from ..exceptions import DeprecatedImportError
 
-class ControlOverlay(W.VBox):
-    """Simple Container Widget for rendering element specific jupyterlab widgets"""
-
-    # TODO config to specify on which side of selected element's bounding box to
-    # render the controls
-    # TODO styling for controls
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        # self.children = [W.Button(description="Simple Button")]
+raise DeprecatedImportError(
+    "ipyelk.tools.contol_overlay (misspelled) was removed in ipyelk 3.0; import "
+    "ControlOverlay from ipyelk.tools.control_overlay (or ipyelk.tools). No alias: "
+    "this error is raised throughout 3.x."
+)

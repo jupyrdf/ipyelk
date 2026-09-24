@@ -15,6 +15,7 @@ import {
   SModelElement,
   SModelIndex, // SModelFactory,
   SModelRoot,
+  SetViewportAction,
   Viewport,
 } from 'sprotty-protocol';
 
@@ -26,18 +27,23 @@ import {
   SModelRootImpl,
 } from 'sprotty';
 
-import type { IWidgetManager } from '@jupyter-widgets/base';
+import type { IWidgetManager, WidgetModel } from '@jupyter-widgets/base';
 
 import { ELK_DEBUG } from '../tokens';
 
-import { ElkGraphJsonToSprotty, SSymbolGraph } from './json/elkgraph-to-sprotty';
+import {
+  ElkGraphJsonToSprotty,
+  PainterStyles,
+  SSymbolGraph,
+} from './json/elkgraph-to-sprotty';
 import { SSymbolModelFactory } from './renderer';
 
 @injectable()
 export class JLModelSource extends LocalModelSource {
   elkToSprotty: ElkGraphJsonToSprotty;
   widget_manager: IWidgetManager;
-  control_overlay: any;
+  // The kernel's `Viewer.control_overlay`, or null when opted out.
+  control_overlay: WidgetModel | null;
   /**
    * Ids of selected submitted schema elements. The renderer resolves each id
    * to its rendered instance with `getById`; retaining only this structural
@@ -49,9 +55,14 @@ export class JLModelSource extends LocalModelSource {
   factory: SSymbolModelFactory;
   diagramWidget: any;
 
-  async updateLayout(layout, symbols, idPrefix: string) {
+  async updateLayout(layout, symbols, idPrefix: string, styles: PainterStyles = {}) {
     this.elkToSprotty = new ElkGraphJsonToSprotty();
-    let sGraph: SSymbolGraph = this.elkToSprotty.transform(layout, symbols, idPrefix);
+    let sGraph: SSymbolGraph = this.elkToSprotty.transform(
+      layout,
+      symbols,
+      idPrefix,
+      styles,
+    );
     await this.updateModel(sGraph);
     // TODO this promise resolves before ModelViewer rendering is done. need to hook into postprocessing
   }
@@ -116,6 +127,24 @@ export class JLModelSource extends LocalModelSource {
   resize(bounds: Bounds) {
     let action = InitializeCanvasBoundsAction.create(bounds);
     this.actionDispatcher.dispatch(action);
+  }
+
+  /**
+   * Move the camera: `null` origin/zoom keep the current value.
+   */
+  async setViewport(
+    origin: [number, number] | null,
+    zoom: number | null,
+    animate: boolean,
+  ): Promise<void> {
+    const current = await this.getViewport();
+    const next: Viewport = {
+      scroll: origin == null ? current.scroll : { x: origin[0], y: origin[1] },
+      zoom: zoom == null ? current.zoom : zoom,
+    };
+    await this.actionDispatcher.dispatch(
+      SetViewportAction.create(this.root.id, next, { animate }),
+    );
   }
 
   /**
