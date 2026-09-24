@@ -187,18 +187,6 @@ throughout 3.x with the replacement in the message.
 
 ### `@jupyrdf/jupyter-elk 3.0.0`
 
-- Upgrade ELK.js from `0.9.3` to `0.12.0` ([#140]). `ElkEdge` gains an optional
-  `container` field in the generated schema.
-- Upgrade `sprotty` and `sprotty-protocol` from `1.3.0` to `1.4.0`, which requires
-  `inversify ^6.1.3` (pinned to `6.2.2`) and `reflect-metadata ^0.2.2`. The `inversify`
-  shared module declares its `version` statically: its `lib/esm` entry ships a
-  version-less `package.json`, so webpack module federation would otherwise register it
-  as `0` and warn on every page load; a unit test keeps the static version equal to the
-  dependency pin.
-- Drop the unused `sprotty-elk` dependency: nothing in `js/` ever imported it, `sprotty`
-  and `sprotty-protocol` do not depend on it, and the built extension has no reference
-  to it. Its `elkjs ^0.8.2` range was the only thing that conflicted with ELK.js
-  `0.12.0`, so the `resolutions.elkjs` override goes with it ([#140]).
 - Write `hovered_id` back on pointer leave, but only when the departed element is still
   the hovered one, so a stale leave cannot erase a newer enter; never dispatch `null` to
   sprotty as an element id; re-wiring the hover tool releases the previous tool's
@@ -221,7 +209,6 @@ throughout 3.x with the replacement in the message.
   over to the updated element, so a re-render under a resting pointer no longer drops
   the mouseover ([#156]).
 
-[#140]: https://github.com/jupyrdf/ipyelk/issues/140
 [#155]: https://github.com/jupyrdf/ipyelk/issues/155
 [#156]: https://github.com/jupyrdf/ipyelk/issues/156
 
