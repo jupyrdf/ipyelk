@@ -296,4 +296,4 @@ def test_contributed_models_and_layout_exclusion():
     with exclude_layout:
         assert edge.model_dump()["sections"] is None
         assert "sections" not in edge.model_dump(exclude_none=True)
-        assert edge.model_dump(include={"sources"}) == {"sources": [None]}
+        assert edge.model_dump(include={"sources"}) == {"sources": [root.wire_id()]}

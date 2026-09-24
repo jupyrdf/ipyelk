@@ -2,6 +2,7 @@
 Library     Collections
 Library     XML    WITH NAME    XML
 Library     OperatingSystem
+Library     String
 Resource    ../variables/IPyElk.robot
 Resource    Lab.robot
 
@@ -75,6 +76,72 @@ Exported SVG should be valid XML
     ${path} =    Set Variable    ${OUTPUT DIR}${/}home${/}${file}
     Wait Until Created    ${path}
     RETURN    XML.Parse XML    ${file}
+
+Exported SVG Should Not Depend On The Viewport
+    [Documentation]    An export is the whole diagram, not a picture of the
+    ...    viewport: scroll the diagram out of sight, export again from the
+    ...    kernel, and count what lands in the file.
+    [Arguments]    ${file}    ${nodes}    ${edges}    ${labels}
+    ${path} =    Set Variable    ${OUTPUT DIR}${/}home${/}${file}
+    Scroll Elk Diagram By    ${5000}    ${5000}
+    Remove File    ${path}
+    # re-attaching the viewer asks the browser for a fresh export; the new
+    # padding makes it differ from the file just removed
+    Run IPyElk Code In A New Cell
+    ...    exporter.padding = 40; _v = exporter.viewer; exporter.viewer = None; exporter.viewer = _v
+    Wait Until Created    ${path}    timeout=30s
+    Wait Until Keyword Succeeds
+    ...    10x
+    ...    1s
+    ...    Exported SVG Counts Should Be    ${file}    ${nodes}    ${edges}    ${labels}
+    Capture Page Screenshot    42-exported-while-scrolled.png
+    # leave a whole diagram on screen for whatever runs next
+    Scroll Elk Diagram By    ${-5000}    ${-5000}
+    Elk Counts Should Be    nodes=${nodes}    edges=${edges}    labels=${labels}
+    ...    screen=43-scrolled-back.png
+
+Scroll Elk Diagram By
+    [Documentation]    Scroll the first Elk view's viewport, in diagram coordinates.
+    ...    ``alt``+wheel scrolls Sprotty by the event's deltas; Selenium's own
+    ...    pointer actions cannot drag a diagram beyond the browser viewport.
+    [Arguments]    ${dx}    ${dy}
+    ${js} =    Catenate
+    ...    document.querySelector('${CSS ELK VIEW} ${CSS SPROTTY ROOT}').dispatchEvent(
+    ...    new WheelEvent('wheel', {altKey: true, deltaX: ${dx}, deltaY: ${dy}, bubbles: true}))
+    Execute Javascript    ${js}
+    Sleep    0.5s
+
+Run IPyElk Code In A New Cell
+    [Documentation]    Add a cell at the end of the notebook and run it.
+    ...    ``${code}`` has to be a single line: the cell editor re-indents and
+    ...    closes brackets as it is typed.
+    [Arguments]    ${code}
+    Click Element    ${JLAB CSS NOTEBOOK}
+    Press Keys    None    ESCAPE
+    Press Keys    None    b
+    Press Keys    None    RETURN
+    Press Keys    None    ${code}
+    Press Keys    None    SHIFT+RETURN
+    Wait Until Element Is Visible    ${JLAB XP KERNEL IDLE}    timeout=30s
+    Capture Page Screenshot    41-ran-export-cell.png
+
+Exported SVG Counts Should Be
+    [Arguments]    ${file}    ${nodes}    ${edges}    ${labels}
+    ${svg} =    Get File    ${OUTPUT DIR}${/}home${/}${file}
+    Exported SVG Class Count Should Be    ${svg}    elknode    ${nodes}
+    Exported SVG Class Count Should Be    ${svg}    elkedge    ${edges}
+    Exported SVG Class Count Should Be    ${svg}    elklabel    ${labels}
+    ${viewbox} =    Get Regexp Matches    ${svg}    viewBox="0 0 ([0-9.]+) ([0-9.]+)"    1    2
+    Should Not Be Empty    ${viewbox}    the export should carry a viewBox
+    Should Be True    ${viewbox}[0][0] > 0
+    Should Be True    ${viewbox}[0][1] > 0
+
+Exported SVG Class Count Should Be
+    [Documentation]    Count elements carrying a class as a whole token, so that
+    ...    ``elkedge`` does not also count ``elkedge-start``.
+    [Arguments]    ${svg}    ${css class}    ${expected}
+    ${found} =    Get Regexp Matches    ${svg}    class="[^"]*(?<![-\\w])${css class}(?![-\\w])[^"]*"
+    Length Should Be    ${found}    ${expected}
 
 Custom Elk Selectors Should Exist
     [Arguments]    @{selectors}

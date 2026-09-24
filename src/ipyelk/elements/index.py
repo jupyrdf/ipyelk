@@ -389,11 +389,27 @@ class HierarchicalIndex(ElementIndex):
         return key not in self.elements
 
     def is_null_edge(self, source, target) -> bool:
+        """Whether the edge has no place in the visible projection.
+
+        True when a hidden endpoint projects onto the same visible node as the
+        other endpoint (the edge would loop inside that node), or when a hidden
+        endpoint's nearest visible ancestor is the projection root: ELK's root
+        graph cannot carry ports, so there is no node to hold the slack port
+        and the edge leaves the drawing with the hidden element.  The kernel
+        index keeps the edge; it returns when the element is revealed.
+        """
         source_node, source_hidden = self.get_visible_node(source)
         target_node, target_hidden = self.get_visible_node(target)
-        # if either source or target are hidden check if mapped to same common ancestor
-        if source_hidden or target_hidden:
-            return source_node is target_node
+        if not (source_hidden or target_hidden):
+            return False
+        if source_node is target_node:
+            return True
+        for node, hidden in (
+            (source_node, source_hidden),
+            (target_node, target_hidden),
+        ):
+            if hidden and node.get_parent() is None:
+                return True
         return False
 
     def get_visible_node(self, el_id: str) -> tuple[Node, bool]:
@@ -434,22 +450,34 @@ def iter_visible(
 ) -> Iterator[tuple[BaseElement, bool, BaseElement]]:
     """Iterate over BaseElements hierarchy and track hidden
 
+    Hidden-ness is inherited down the hierarchy only, never across siblings:
+    each element's state is computed from its own ``properties.hidden`` and the
+    ``hidden`` of its container, and the recursion into its sub elements gets
+    that state, while the loop over siblings keeps the container's.
+
     :param el: current element
     :param hidden: containing element is hidden
-    :yield: sub element and hidden state
+    :param last_visible: nearest visible ancestor of the elements in ``els``
+    :yield: sub element, hidden state, and its nearest visible element: itself
+        when visible, its nearest visible ancestor when hidden
     """
     for el in els:
-        hidden = bool(hidden or el.properties.hidden)
-        if not hidden:
-            last_visible = el
-        yield el, hidden, last_visible
+        el_hidden = bool(hidden or el.properties.hidden)
+        el_last_visible = last_visible if el_hidden else el
+        yield el, el_hidden, el_last_visible
         if isinstance(el, Node):
             yield from iter_visible(
-                *el.children, hidden=hidden, last_visible=last_visible
+                *el.children, hidden=el_hidden, last_visible=el_last_visible
             )
-            yield from iter_visible(*el.ports, hidden=hidden, last_visible=last_visible)
-            yield from iter_visible(*el.edges, hidden=hidden, last_visible=last_visible)
-        yield from iter_visible(*el.labels, hidden=hidden, last_visible=last_visible)
+            yield from iter_visible(
+                *el.ports, hidden=el_hidden, last_visible=el_last_visible
+            )
+            yield from iter_visible(
+                *el.edges, hidden=el_hidden, last_visible=el_last_visible
+            )
+        yield from iter_visible(
+            *el.labels, hidden=el_hidden, last_visible=el_last_visible
+        )
 
 
 def iter_edges(*els: Node) -> Iterator[tuple[Node, Edge]]:

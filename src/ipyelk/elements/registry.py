@@ -46,10 +46,17 @@ class Registry(BaseModel):
         return cls.stack
 
     @classmethod
-    def get_id(cls, key) -> str | None:
+    def get_id(cls, key, default: str | None = None) -> str | None:
+        """The active context's id for ``key``; ``None`` with no context.
+
+        ``default`` seeds the context when it has not seen ``key`` yet, so an id
+        already used elsewhere (an element's wire id) becomes the registered one.
+        """
         context = cls.get_context(error_if_none=False)
         if not context:
             return None
+        if default is not None and key not in context.ids:
+            context.ids[key] = default
         return context[key]
 
     def __getitem__(self, key):
