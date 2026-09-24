@@ -90,7 +90,9 @@ class Diagram(StyledWidget):
         self.children = [self.view, self.toolbar]
 
     def _update_view_sources(self):
-        self.source.flow = (F.New,)
+        # merge, never assign: a rewire must not drop the reports a tool already
+        # recorded on the source (see Tool.record_reports)
+        self.source.flow = tuple(dict.fromkeys((*self.source.flow, F.New)))
         self.pipe.inlet = self.source
         self.view.source = self.pipe.outlet
 

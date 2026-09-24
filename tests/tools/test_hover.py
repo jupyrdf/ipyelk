@@ -33,6 +33,7 @@ def test_hovered_id_is_a_single_id_not_a_collection(bad):
 def test_hovered_id_is_synced_and_ids_is_gone():
     hover = Hover()
     assert hover.trait_metadata("hovered_id", "sync") is True
+    assert hover.trait_metadata("hovered_id", "echo_update") is False  # no echo
     assert "ids" not in hover.traits()  # 3.0: removed without an alias
 
 

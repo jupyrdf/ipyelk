@@ -75,7 +75,11 @@ class Hover(Tool):
 
     """
 
-    hovered_id = T.Unicode(default_value=None, allow_none=True).tag(sync=True)
+    # echo_update=False: the browser writes this; do not echo every write back to
+    # every frontend (ipywidgets 8.1 echoes by default)
+    hovered_id = T.Unicode(default_value=None, allow_none=True).tag(
+        sync=True, echo_update=False
+    )
     #: removed name; raises :class:`~ipyelk.exceptions.DeprecatedAPIError` through 3.x
     ids = RemovedAPI(
         "Hover.ids was removed in ipyelk 3.0: despite the plural name it only ever "
@@ -117,19 +121,23 @@ class Viewport(Tool):
 
     """
 
+    # echo_update=False on every trait: the browser is the only writer, so echoing a
+    # report back to every frontend (ipywidgets 8.1 default) is pure traffic
     view_id = T.Unicode(default_value=None, allow_none=True, read_only=True).tag(
-        sync=True
+        sync=True, echo_update=False
     )
     origin = T.Tuple(
         T.Float(), T.Float(), default_value=None, allow_none=True, read_only=True
-    ).tag(sync=True)
-    zoom = T.Float(default_value=None, allow_none=True, read_only=True).tag(sync=True)
+    ).tag(sync=True, echo_update=False)
+    zoom = T.Float(default_value=None, allow_none=True, read_only=True).tag(
+        sync=True, echo_update=False
+    )
     canvas_size = T.Tuple(
         T.Float(), T.Float(), default_value=None, allow_none=True, read_only=True
-    ).tag(sync=True)
+    ).tag(sync=True, echo_update=False)
     viewed_ids = TypedTuple(
         T.Unicode(), default_value=None, allow_none=True, read_only=True
-    ).tag(sync=True)
+    ).tag(sync=True, echo_update=False)
 
 
 class FitTool(ToolButton):

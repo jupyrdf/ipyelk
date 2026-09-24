@@ -104,12 +104,18 @@
 - Removed names are hard errors for the whole 3.x line, not aliases or warnings:
   `Tool.handler`, `ToolButton.handler`, `Tool.on_run`, `Tool.disable`, `Hover.ids`,
   `Viewer.zoom`, `Viewer.pan`, `Viewer.viewed`, `ipyelk.tools.Zoom`, `ipyelk.tools.Pan`,
-  `Painter.cssClasses`, `Painter.marks`, `Painter.name`, and assigning `Tool.on_done`
-  raise `ipyelk.exceptions.DeprecatedAPIError` on read, assignment, and as constructor
-  keywords, with the reason and the replacement in the message (mechanism:
-  `ipyelk.exceptions.RemovedAPI` / `check_removed`; a module-level `__getattr__` for the
-  removed class names). Importing the misspelled `ipyelk.tools.contol_overlay` module
-  raises the same error naming the new path; it re-exports nothing.
+  `Painter.cssClasses`, `Painter.marks`, `Painter.name`, and assigning `Tool.on_start`
+  or `Tool.on_done` raise `ipyelk.exceptions.DeprecatedAPIError` (an `AttributeError`,
+  so `hasattr`, `getattr(..., default)` and introspection keep working) on read,
+  assignment, and as constructor keywords, with the reason and the replacement in the
+  message (mechanism: `ipyelk.exceptions.RemovedAPI` / `RegistrationMethod` /
+  `check_removed`). The removed module-level _names_ raise
+  `ipyelk.exceptions.DeprecatedImportError` instead, which is an `ImportError` and not
+  an `AttributeError`, because `from ipyelk.tools import Zoom` would otherwise lose the
+  message to a bare "cannot import name". Importing the misspelled
+  `ipyelk.tools.contol_overlay` module raises it too, naming the new path; it re-exports
+  nothing. Both flavours share the `ipyelk.exceptions.DeprecatedAPI` base, so one
+  `except` catches either.
 
 ### Migration
 
@@ -173,25 +179,14 @@ view.painter.clear()
 view.painter.styles  # {"n2": ("highlight",)}
 ```
 
-The removed names (`handler`, `on_run`, `disable`, `Hover.ids`, assigning `on_done`, the
-`contol_overlay` module, `Viewer.zoom`/`pan`/`viewed`, `ipyelk.tools.Zoom`/`Pan`,
-`Painter.cssClasses`/`marks`/`name`) raise `DeprecatedAPIError` throughout 3.x with the
-replacement in the message.
+The removed names (`handler`, `on_run`, `disable`, `Hover.ids`, assigning `on_start` or
+`on_done`, the `contol_overlay` module, `Viewer.zoom`/`pan`/`viewed`,
+`ipyelk.tools.Zoom`/`Pan`, `Painter.cssClasses`/`marks`/`name`) raise
+`DeprecatedAPIError` -- or `DeprecatedImportError` for the module-level names --
+throughout 3.x with the replacement in the message.
 
 ### `@jupyrdf/jupyter-elk 3.0.0`
 
-- Upgrade ELK.js from `0.9.3` to `0.12.0` ([#140]). `ElkEdge` gains an optional
-  `container` field in the generated schema.
-- Upgrade `sprotty` and `sprotty-protocol` from `1.3.0` to `1.4.0`, which requires
-  `inversify ^6.1.3` (pinned to `6.2.2`) and `reflect-metadata ^0.2.2`. The `inversify`
-  shared module declares its `version` statically: its `lib/esm` entry ships a
-  version-less `package.json`, so webpack module federation would otherwise register it
-  as `0` and warn on every page load; a unit test keeps the static version equal to the
-  dependency pin.
-- Drop the unused `sprotty-elk` dependency: nothing in `js/` ever imported it, `sprotty`
-  and `sprotty-protocol` do not depend on it, and the built extension has no reference
-  to it. Its `elkjs ^0.8.2` range was the only thing that conflicted with ELK.js
-  `0.12.0`, so the `resolutions.elkjs` override goes with it ([#140]).
 - Write `hovered_id` back on pointer leave, but only when the departed element is still
   the hovered one, so a stale leave cannot erase a newer enter; never dispatch `null` to
   sprotty as an element id; re-wiring the hover tool releases the previous tool's
@@ -214,7 +209,6 @@ replacement in the message.
   over to the updated element, so a re-render under a resting pointer no longer drops
   the mouseover ([#156]).
 
-[#140]: https://github.com/jupyrdf/ipyelk/issues/140
 [#155]: https://github.com/jupyrdf/ipyelk/issues/155
 [#156]: https://github.com/jupyrdf/ipyelk/issues/156
 
@@ -278,6 +272,19 @@ replacement in the message.
   kept dispatching `SelectAction`s between two views until the browser ran out of memory
   (F16)
 - Add a `vitest` unit-test harness (F5)
+- Upgrade ELK.js from `0.9.3` to `0.12.0` ([#140]). `ElkEdge` gains an optional
+  `container` field in the generated schema, and a `vitest` lays out a graph with the
+  real bundle to pin the port, edge-section and `properties` round-trip contract.
+- Upgrade `sprotty` and `sprotty-protocol` from `1.3.0` to `1.4.0`, which requires
+  `inversify ^6.1.3` (pinned to `6.2.2`) and `reflect-metadata ^0.2.2`. The `inversify`
+  shared module declares its `version` statically: its `lib/esm` entry ships a
+  version-less `package.json`, so webpack module federation would otherwise register it
+  as `0` and warn on every page load; a unit test keeps the static version exact, equal
+  to the dependency pin and inside the declared `requiredVersion`.
+- Drop the unused `sprotty-elk` dependency: nothing in `js/` ever imported it, `sprotty`
+  and `sprotty-protocol` do not depend on it, and the built extension has no reference
+  to it. Its `elkjs ^0.8.2` range was the only thing that conflicted with ELK.js
+  `0.12.0`, so the `resolutions.elkjs` override goes with it ([#140]).
 
 ### `ipyelk 2.1.2`
 
@@ -319,6 +326,8 @@ replacement in the message.
   `nbconvert --execute` does) a pipe gives up its roundtrip immediately instead of
   keeping a task alive across cell boundaries re-sending `run` requests for 30 s, which
   wedged kernels on slower CI runners (F15)
+
+[#140]: https://github.com/jupyrdf/ipyelk/issues/140
 
 ## `2.1.1`
 

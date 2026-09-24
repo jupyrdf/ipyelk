@@ -5,12 +5,17 @@
 from __future__ import annotations
 
 import asyncio
+import inspect
+import os
 import warnings
+from pathlib import Path
 
 import pytest
 import traitlets as T
 
-from ipyelk.exceptions import DeprecatedAPIError, RemovedAPI
+import ipyelk.tools
+from ipyelk.elements import Node
+from ipyelk.exceptions import DeprecatedAPI, DeprecatedAPIError, RemovedAPI
 from ipyelk.pipes import Pipe
 from ipyelk.tools import SetTool, Tool, ToolButton
 from ipyelk.tools.toolbar import Toolbar
@@ -93,10 +98,11 @@ async def test_retrigger_supersedes_stale_task_without_clobbering_new_state():
     await asyncio.sleep(0)
     second = tool.trigger()  # cancels ``first``
     assert tool._task is second
-    await asyncio.sleep(0)  # first's cancellation + done callback run here
+    await asyncio.sleep(0)  # first's cancellation lands; second starts
     assert first.cancelled()
-    assert tool._task is second  # stale completion left the new task in place
     assert tool.events == ["start:True", "run", "start:True", "run"]
+    await asyncio.sleep(0)  # _finished(first) runs one loop turn later
+    assert tool._task is second  # stale completion left the new task in place
     assert "done:True" not in tool.events
 
     tool.gate.set()
@@ -104,7 +110,34 @@ async def test_retrigger_supersedes_stale_task_without_clobbering_new_state():
     await asyncio.sleep(0)
     assert tool.events[-1] == "done:True"
     assert tool.events.count("done:True") == 1
+    assert tool._task is None
     assert pipe.inlet.flow == ("pending", "r")
+
+
+@pytest.mark.asyncio
+async def test_stale_success_fires_done_but_leaves_the_new_task_in_place():
+    """A retrigger between the first run finishing and its done-callback running."""
+    tool, pipe = _wired()
+    first = tool.trigger()
+    await asyncio.sleep(0)
+    tool.gate.set()
+    await asyncio.sleep(0)  # first's run() returns: the task is done ...
+    assert first.done()
+    assert not first.cancelled()
+    assert tool.events == ["start:True", "run"]  # ... but _finished(first) has not run
+    tool.gate.clear()
+    second = tool.trigger()  # nothing to cancel; ``first`` is now stale
+    assert tool._task is second
+    await asyncio.sleep(0)  # _finished(first) runs, second starts
+    assert tool.events == ["start:True", "run", "done:True", "start:True", "run"]
+    assert tool._task is second  # the stale success did not clear the new task
+    assert pipe.inlet.flow == ("pending", "r")
+
+    tool.gate.set()
+    await second
+    await asyncio.sleep(0)
+    assert tool.events.count("done:True") == 2  # one done per success
+    assert tool._task is None
 
 
 @pytest.mark.asyncio
@@ -152,10 +185,22 @@ def test_toolbar_on_close_receives_the_toolbar():
         toolbar.on_close = "not callable"
 
 
-def test_set_tool_observer_is_private():
-    assert callable(SetTool._update_active)
+def test_set_tool_active_observer_moves_the_css_classes():
+    n1, n2, n3 = (Node(id=f"n{i}") for i in (1, 2, 3))
+    n3.add_class("keep")
+    tool = SetTool(css_classes=("active-set", "hl"))
+    tool.active = (n1, n2)
+    assert {"active-set", "hl"} <= set(n1.properties.cssClasses.split())
+    assert {"active-set", "hl"} <= set(n2.properties.cssClasses.split())
+    tool.active = (n2, n3)  # n1 departs, n2 stays, n3 enters
+    assert not n1.properties.cssClasses
+    assert {"active-set", "hl"} <= set(n2.properties.cssClasses.split())
+    assert set(n3.properties.cssClasses.split()) == {"keep", "active-set", "hl"}
+    tool.active = ()
+    assert not n2.properties.cssClasses
+    assert n3.properties.cssClasses == "keep"  # only the tool's classes leave
     with pytest.raises(DeprecatedAPIError):
-        _ = SetTool().handler  # the observer no longer shadows the removed name
+        _ = tool.handler  # the observer no longer shadows the removed name
 
 
 # -- removed names: hard errors throughout 3.x ---------------------------------
@@ -183,18 +228,38 @@ def test_on_run_registration_call_raises_and_registers_nothing(cls):
     assert calls == []
 
 
-def test_on_done_assignment_and_constructor_raise_and_register_nothing():
+@pytest.mark.parametrize("name", ["on_start", "on_done"])
+@pytest.mark.parametrize("cls", [Tool, ToolButton, SetTool])
+def test_registration_assignment_and_constructor_raise_and_register_nothing(cls, name):
     calls = []
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
-        with pytest.raises(DeprecatedAPIError, match=r"on_done\(callback\)") as info:
-            Tool().on_done = calls.append
+        with pytest.raises(DeprecatedAPIError, match=rf"{name}\(callback\)") as info:
+            setattr(cls(), name, calls.append)
         assert "3.x" in str(info.value)
-        with pytest.raises(DeprecatedAPIError, match=r"on_done\(callback\)"):
-            Tool(on_done=calls.append)
-    tool = Tool()
+        with pytest.raises(DeprecatedAPIError, match=rf"{name}\(callback\)"):
+            cls(**{name: calls.append})
+    tool = cls()
+    tool._on_start_handlers(tool)
     tool._on_done_handlers(tool)
     assert calls == []
+    # the rejected assignment did not shadow the method on the instance
+    getattr(tool, name)(calls.append)
+    getattr(tool, f"_{name}_handlers")(tool)
+    assert calls == [tool]
+
+
+@pytest.mark.parametrize("name", ["on_start", "on_done"])
+def test_registration_methods_read_like_plain_methods(name):
+    # class-level access is what Sphinx autodoc and ``inspect`` do
+    func = getattr(Tool, name)
+    assert inspect.isfunction(func)
+    assert func.__name__ == name
+    assert "Register a callback" in func.__doc__
+    tool = Tool()
+    assert inspect.ismethod(getattr(tool, name))
+    assert getattr(tool, name).__self__ is tool
+    assert getattr(ToolButton(), name).__func__ is func  # inherited, not copied
 
 
 def test_on_run_assignment_and_constructor_raise():
@@ -227,3 +292,60 @@ def test_removed_names_keep_class_introspection_working():
     assert "3.x" in Tool.on_run.__doc__
     assert {"handler", "on_run", "trigger", "on_start"} <= set(dir(Tool))
     assert "handler" not in Tool.class_trait_names()
+
+
+@pytest.mark.parametrize("cls", [Tool, ToolButton, SetTool])
+def test_removed_names_keep_the_attribute_contract_on_instances(cls):
+    """``DeprecatedAPIError`` is an ``AttributeError``: duck typing keeps working."""
+    tool = cls()
+    for name in ("handler", "on_run", "disable"):
+        assert isinstance(inspect.getattr_static(cls, name), RemovedAPI)
+        assert hasattr(tool, name) is False
+        assert getattr(tool, name, "default") == "default"
+    assert issubclass(DeprecatedAPIError, AttributeError)
+
+
+def test_removed_names_survive_inspect_getmembers():
+    # ipywidgets' own ``Widget.widgets`` static property breaks ``inspect.getmembers``
+    # on any widget instance, so the descriptor contract is checked on a plain class
+    class Owner:
+        gone = RemovedAPI("Owner.gone was removed")
+
+    members = dict(inspect.getmembers(Owner()))
+    assert "gone" not in members
+    assert isinstance(dict(inspect.getmembers(Owner))["gone"], RemovedAPI)
+    with pytest.raises(DeprecatedAPIError, match="removed"):
+        _ = Owner().gone
+
+
+def test_removed_module_names_keep_their_message_through_from_import():
+    """`from ipyelk.tools import Zoom` must show WHY the name went away.
+
+    A module ``__getattr__`` that raises ``AttributeError`` (which
+    ``DeprecatedAPIError`` is, for the sake of ``hasattr`` on instances) has its
+    message thrown away by the interpreter: ``from module import name`` replaces it
+    with a bare ``ImportError("cannot import name ...")``. The module-level
+    tombstones therefore raise ``DeprecatedImportError``, which is not an
+    ``AttributeError``, and both flavours share ``DeprecatedAPI``.
+    """
+    import subprocess
+    import sys
+
+    src = str(Path(ipyelk.__file__).parent.parent)
+    proc = subprocess.run(
+        [sys.executable, "-c", "from ipyelk.tools import Zoom"],
+        capture_output=True,
+        text=True,
+        check=False,
+        env={**os.environ, "PYTHONPATH": src},
+    )
+    assert proc.returncode != 0
+    assert "cannot import name" not in proc.stderr, proc.stderr
+    assert "was removed in ipyelk 3.0" in proc.stderr, proc.stderr
+    assert "viewer.viewport" in proc.stderr, proc.stderr
+
+    # both flavours are catchable through the shared base
+    with pytest.raises(DeprecatedAPI):
+        _ = ipyelk.tools.Zoom
+    with pytest.raises(DeprecatedAPI):
+        _ = Tool().handler

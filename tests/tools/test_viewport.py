@@ -9,7 +9,7 @@ import traitlets as T
 
 import ipyelk.tools
 from ipyelk.diagram import SprottyViewer, Viewer
-from ipyelk.exceptions import DeprecatedAPIError
+from ipyelk.exceptions import DeprecatedAPIError, DeprecatedImportError
 from ipyelk.tools import Viewport
 
 FIELDS = ("view_id", "origin", "zoom", "canvas_size", "viewed_ids")
@@ -26,10 +26,28 @@ def test_defaults_are_none_and_state_only():
     viewport = Viewport()
     assert all(getattr(viewport, name) is None for name in FIELDS)
     assert viewport.ui is None
-    assert type(viewport).run is ipyelk.tools.Tool.run  # no run(): a state-only tool
-    with pytest.raises(NotImplementedError):
+    with pytest.raises(NotImplementedError):  # no run(): a state-only tool
         viewport.trigger()
     assert all(viewport.trait_metadata(name, "sync") is True for name in FIELDS)
+
+
+@pytest.mark.parametrize("name", FIELDS)
+def test_reports_are_synced_but_never_echoed(name):
+    # the browser is the only writer: an echo (ipywidgets 8.1 default) would send
+    # every report, viewed_ids included, back to every connected frontend
+    assert Viewport().trait_metadata(name, "echo_update") is False
+
+
+def test_browser_report_is_not_echoed_back(monkeypatch):
+    import ipywidgets.widgets.widget as widget_module
+
+    monkeypatch.setattr(widget_module, "JUPYTER_WIDGETS_ECHO", True)
+    viewport = Viewport()
+    sent = []
+    monkeypatch.setattr(viewport, "_send", lambda msg, _buffers=None: sent.append(msg))
+    viewport.set_state({**REPORT, "viewed_ids": [f"n{i}" for i in range(1000)]})
+    assert len(viewport.viewed_ids) == 1000
+    assert [msg["method"] for msg in sent] == []  # no ``echo_update``
 
 
 @pytest.mark.parametrize("name", FIELDS)
@@ -135,7 +153,7 @@ def test_zoom_and_pan_classes_are_hard_errors_throughout_3x(name):
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
         # `from ipyelk.tools import Zoom` resolves through the same module __getattr__
-        with pytest.raises(DeprecatedAPIError, match=r"viewer\.viewport") as info:
+        with pytest.raises(DeprecatedImportError, match=r"viewer\.viewport") as info:
             getattr(ipyelk.tools, name)
         assert "3.x" in str(info.value)
         assert "set_viewport" in str(info.value)

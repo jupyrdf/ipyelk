@@ -43,6 +43,10 @@ def test_selection_before_any_value_is_indexed():
         list(sel.elements())
 
 
+def test_ids_is_the_synced_channel_the_browser_writes():
+    assert Selection().trait_metadata("ids", "sync") is True
+
+
 def test_unattached_selection_names_the_problem():
     with pytest.raises(ValueError, match="not attached to a pipe"):
         list(Selection(ids=("n1",)).elements())

@@ -12,7 +12,7 @@ import ipywidgets as W
 import pytest
 
 from ipyelk.diagram import SprottyViewer, Viewer
-from ipyelk.exceptions import DeprecatedAPIError
+from ipyelk.exceptions import DeprecatedImportError
 from ipyelk.tools import ControlOverlay
 
 
@@ -47,14 +47,16 @@ def test_control_overlay_module_renamed_without_alias() -> None:
 
 
 def test_old_contol_overlay_module_is_an_error_only_guard() -> None:
-    """The misspelled module raises ``DeprecatedAPIError`` (3.x) and forwards nothing."""
+    """The misspelled module raises ``DeprecatedImportError`` (3.x), forwarding nothing."""
     sys.modules.pop("ipyelk.tools.contol_overlay", None)
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")  # a warning must not pass for compliance
-        with pytest.raises(DeprecatedAPIError, match=r"ipyelk\.tools\.control_overlay"):
+        with pytest.raises(
+            DeprecatedImportError, match=r"ipyelk\.tools\.control_overlay"
+        ):
             importlib.import_module("ipyelk.tools.contol_overlay")
         assert "ipyelk.tools.contol_overlay" not in sys.modules
-        with pytest.raises(DeprecatedAPIError, match=r"3\.x"):
+        with pytest.raises(DeprecatedImportError, match=r"3\.x"):
             from ipyelk.tools import contol_overlay  # ruff: ignore[unused-import]
     import ipyelk.tools  # the package itself is unaffected
 
