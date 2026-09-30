@@ -5,7 +5,7 @@
 import { WidgetModel, WidgetView } from '@jupyter-widgets/base';
 import { unpack_models as deserialize } from '@jupyter-widgets/base';
 
-import { ELKViewerModel } from './display_widget';
+import { ELKViewerModel, ELKViewerView } from './display_widget';
 import { ELK_DEBUG, NAME, VERSION } from './tokens';
 
 import elkRawCSS from '!!raw-loader!../style/diagram.css';
@@ -111,6 +111,71 @@ export class ELKExporterModel extends WidgetModel {
     }
   }
 
+  /**
+   * Every viewer model this exporter draws from: the linked viewer, and any
+   * viewer among a diagram's children.
+   */
+  viewer_models(): ELKViewerModel[] {
+    const children: WidgetModel[] = this.diagram?.get('children') || [];
+    const models = [this.viewer, ...children.filter(this.is_an_elkmodel)];
+    return models.filter((model) => model != null) as ELKViewerModel[];
+  }
+
+  /**
+   * The first displayed Sprotty viewer view, which can render the complete
+   * diagram whatever its viewport currently shows.
+   */
+  async a_viewer_view(): Promise<ELKViewerView | null> {
+    for (const model of this.viewer_models()) {
+      for (const promise of Object.values(model.views || {})) {
+        const view = (await promise) as WidgetView;
+        if (view instanceof ELKViewerView && view.el) {
+          await view.displayed;
+          return view;
+        }
+      }
+    }
+    return null;
+  }
+
+  /**
+   * The diagram's markup and its size in model coordinates.
+   *
+   * A viewer renders the whole diagram for the export, so scrolling or zooming
+   * the diagram cannot crop what is exported. Without one -- a viewer that
+   * never initialized Sprotty -- fall back to the rendered DOM, which holds
+   * only what that viewport showed.
+   */
+  async capture_svg(): Promise<{
+    markup: string;
+    width: number;
+    height: number;
+  } | null> {
+    const exported = (await this.a_viewer_view())?.exportSvg();
+    if (exported != null) {
+      const { markup, extent } = exported;
+      return { markup, width: extent.width, height: extent.height };
+    }
+
+    const view = await this.a_view();
+    const svg: SVGElement = view?.el?.querySelector('svg');
+    const g: SVGGElement = svg?.querySelector('g');
+    if (svg == null || g == null) {
+      return null;
+    }
+    let scaleFactor = 1.0;
+    const scale = g.attributes['transform']?.value?.match(/scale\((.*?)\)/);
+    if (scale != null) {
+      scaleFactor = parseFloat(scale[1]);
+    }
+    const { width, height } = g.getBoundingClientRect();
+    return {
+      markup: svg.outerHTML,
+      width: width / scaleFactor,
+      height: height / scaleFactor,
+    };
+  }
+
   async a_view(): Promise<WidgetView | null> {
     if (!this.enabled) {
       return;
@@ -150,12 +215,12 @@ export class ELKExporterModel extends WidgetModel {
       return;
     }
     const view = await this.a_view();
-    const svg: SVGElement = view?.el?.querySelector('svg');
-    if (svg == null) {
+    const captured = await this.capture_svg();
+    if (captured == null) {
       this._schedule_update();
       return;
     }
-    const { outerHTML } = svg;
+    const { markup, width, height } = captured;
     const padding = this.get('padding');
     const strip_ids = this.get('strip_ids');
     const add_xml_header = this.get('add_xml_header');
@@ -171,28 +236,16 @@ export class ELKExporterModel extends WidgetModel {
           ${rawStyle}
         ]]>
       </style>`;
-    const g: SVGGElement = svg.querySelector('g');
-    if (g == null) {
-      // bail if not g
-      return;
-    }
-    const transform = g.attributes['transform'].value;
-    let scaleFactor = 1.0;
-    const scale = transform.match(/scale\((.*?)\)/);
-    if (scale != null) {
-      scaleFactor = parseFloat(scale[1]);
-    }
-    const { width, height } = g.getBoundingClientRect();
-
-    let withCSS = outerHTML
+    let withCSS = markup
       .replace(
         /<svg([^>]+)>/,
-        `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${
-          width / scaleFactor + padding
-        } ${height / scaleFactor + padding}" $1>
+        `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${width + padding} ${
+          height + padding
+        }" $1>
           ${style}
         `,
       )
+      // drop the viewport transform: the export is in model coordinates
       .replace(/ transform=".*?"/, '');
 
     if (strip_ids) {
@@ -205,7 +258,7 @@ export class ELKExporterModel extends WidgetModel {
 
     this.set({ value: withCSS });
 
-    this.save_changes(view.callbacks);
+    this.save_changes(view?.callbacks);
   }
 }
 

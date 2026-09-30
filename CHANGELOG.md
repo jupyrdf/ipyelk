@@ -1,5 +1,32 @@
 # Changelog
 
+## `2.1.3` (unreleased)
+
+### Fixed
+
+- Hiding a root-level node with visible edges no longer crashes elkjs: `iter_visible`
+  reported every sibling after a hidden one as hidden and projected a hidden node's
+  slack port onto its preceding sibling (for a hidden first child of the root, onto the
+  root itself, which elkjs rejects). Hidden compound children now project onto the
+  compound, and an edge whose projection would touch the root is dropped from the wire
+  while its `Edge` stays in the index (#161, #169)
+- Never serialise an id as `null`: an id-less element mints a wire id once and keeps it,
+  the index adopts it, and an id the `Registry` mints first becomes the wire id, so
+  edges no longer go on the wire as `sources: [null]` and the id first seen is the id
+  for the object's life. Port ids compose from the parent's id in and out of a
+  `Registry` (was `<uuid>.<uuid>` under `Node(id="N")`), a copied element mints its own
+  wire id instead of sharing the original's, and `Label.wrap` no longer copies a
+  generated id onto every line (#160, #169)
+- Add nested label spacing regardless of the sublabel width: `size_nested_label` parsed
+  `ls.width or 0 + spacing` as `ls.width or (0 + spacing)` (#161, #169)
+- Fix the first-frame culling bug while culling stays off: `validCanvasBounds` was the
+  inverse of its comment, so nothing was culled on a sized canvas and almost everything
+  on the `0x0` canvas before the first `InitializeCanvasBoundsAction`; the guard now
+  skips culling while the canvas size is unknown, behind an explicit `CULLING_ENABLED`
+  constant (turning it on is #170). The SVG exporter sizes its `viewBox` from the
+  model's content extent instead of the live group's bounding rect, which under-sized by
+  the layout's left margin and made the export viewport-dependent (#161, #169)
+
 ## `2.1.2`
 
 ### Development

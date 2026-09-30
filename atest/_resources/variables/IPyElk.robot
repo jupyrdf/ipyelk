@@ -22,6 +22,7 @@ ${NESTING PLOTS}            15_Nesting_Plots
 #
 ${CSS ELK VIEW}             .jp-ElkView
 ${CSS SPROTTY GRAPH}        .sprotty-graph
+${CSS SPROTTY ROOT}         .sprotty-root
 ${CSS ELK NODE}             .elknode
 ${CSS ELK EDGE}             .elkedge
 ${CSS ELK LABEL}            .elklabel

@@ -3,7 +3,7 @@
 import pytest
 
 from ipyelk.elements import Node, NodeProperties, Registry
-from ipyelk.elements.index import ElementIndex, IDReport, VisIndex
+from ipyelk.elements.index import ElementIndex, IDReport, VisIndex, iter_visible
 
 
 def test_id_report_message_interpolates_duplicated_ids():
@@ -52,3 +52,35 @@ def test_vis_index_keeps_registry_generated_ids():
         assert root_id is not None
     assert hidden_id in index.hidden
     assert index.last_visible[hidden_id] == root_id
+
+
+def _compound_with_hidden_middle_child():
+    """``C[x, y(hidden), w]``: the hidden child sits between two visible ones."""
+    root = Node(id="root")
+    compound = root.add_child(Node(id="C"))
+    compound.add_child(Node(id="x"))
+    compound.add_child(Node(id="y", properties=NodeProperties(hidden=True)))
+    compound.add_child(Node(id="w"))
+    return root, compound
+
+
+def test_iter_visible_does_not_leak_hidden_to_siblings():
+    root, compound = _compound_with_hidden_middle_child()
+    x, y, w = compound.children
+    visited = {el.id: (el, hidden, last) for el, hidden, last in iter_visible(root)}
+    assert visited["y"] == (y, True, compound)
+    # `w` follows the hidden sibling: not hidden, and its nearest visible element
+    # is itself, not `x` (the preceding visible sibling)
+    assert visited["w"] == (w, False, w)
+    assert visited["x"] == (x, False, x)
+    assert visited["C"] == (compound, False, compound)
+    assert [el.id for el, hidden, _ in iter_visible(root) if hidden] == ["y"]
+
+
+def test_vis_index_last_visible_is_the_parent():
+    root, _compound = _compound_with_hidden_middle_child()
+    index = VisIndex.from_els(root)
+    assert index.last_visible["y"] == "C"
+    assert "w" not in index.hidden
+    assert "x" not in index.hidden
+    assert set(index.hidden) == {"y"}

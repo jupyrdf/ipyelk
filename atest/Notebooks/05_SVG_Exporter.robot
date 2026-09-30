@@ -17,5 +17,10 @@ ${SCREENS}      ${SCREENS ROOT}${/}examples${/}05_SVG_Exporter
     Example Should Restart-and-Run-All    ${EXPORTER}
     Elk Counts Should Be    &{SIMPLE COUNTS}
     Exported SVG should be valid XML    untitled_example.svg
+    Exported SVG Should Not Depend On The Viewport
+    ...    untitled_example.svg
+    ...    ${SIMPLE NODE COUNT}
+    ...    ${SIMPLE EDGE COUNT}
+    ...    ${SIMPLE LABEL COUNT}
     Linked Elk Output Counts Should Be    &{SIMPLE COUNTS}
     Custom Elk Selectors Should Exist    @{SIMPLE CUSTOM}
