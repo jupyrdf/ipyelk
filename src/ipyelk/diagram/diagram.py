@@ -113,6 +113,7 @@ class Diagram(StyledWidget):
     def _default_tools(self) -> list[Tool]:
         return [
             self.view.selection,
+            self.view.painter,  # state-only, no UI; bound so elements() can resolve
             self.view.fit_tool,
             self.view.center_tool,
             ToggleCollapsedTool(selection=self.view.selection),
@@ -124,11 +125,11 @@ class Diagram(StyledWidget):
         if change and isinstance(change.old, tuple):
             for tool in change.old or []:
                 tool.tee = None
-                tool.on_done = None
+                tool.on_done(self.refresh, remove=True)
 
         for tool in self.tools:
             tool.tee = self.pipe
-            tool.on_done = self.refresh
+            tool.on_done(self.refresh)
 
     @T.default("toolbar")
     def _default_toolbar(self):
@@ -166,14 +167,13 @@ class Diagram(StyledWidget):
         self.tools = tuple([*self.tools, tool])
         return self
 
-    def refresh(self, change: T.Bunch | None = None) -> asyncio.Task | None:
+    def refresh(self, sender: object = None) -> asyncio.Task | None:
         """Create asynchronous refresh task which will update the view given any
         changes.
 
-        One runner serves every refresh requested while it is alive, so the view
-        is updated once, after the trailing run.
-
-        Returns ``None`` when no event loop is running (see ``Pipe.schedule_run``).
+        ``sender`` is ignored; it lets ``refresh`` serve as a tool's ``on_done``
+        callback (which receives the tool). Returns ``None`` when no event loop is
+        running (see ``Pipe.schedule_run``).
         """
         self.log.debug("Refreshing diagram")
         task = self.pipe.schedule_run()
@@ -185,22 +185,14 @@ class Diagram(StyledWidget):
         return task
 
     def _update_view(self, future: asyncio.Future) -> None:
-        """Show the finished layout.
-
-        The inlet keeps the user's own tree: layout results already reached it
-        through ``outlet.persist()``, and swapping in the laid-out copy would drop
-        hidden elements and break identity for selection and tools.
-        """
+        """Show the finished layout without replacing the user's inlet tree."""
         try:
             exception = future.exception()
         except asyncio.CancelledError:
             return
         if exception is not None:
-            # do not propagate a stale/empty layout to the view, but say so:
-            # a silently failed layout looks exactly like a hung diagram
             self.log.warning("Diagram refresh failed: %r", exception)
             return
         layout = self.pipe.outlet.value
-        if self.view.source is None:
-            return
-        self.view.source.value = layout
+        if self.view.source is not None:
+            self.view.source.value = layout

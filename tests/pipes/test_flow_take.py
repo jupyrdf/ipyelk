@@ -128,7 +128,8 @@ async def test_failed_tool_reports_survive_next_completion():
     await asyncio.sleep(0)  # the run starts and takes ``("new",)``
     assert diagram.pipe.inlet.flow == ()
 
-    tool_task = diagram.tools[0].handler()
+    tool_task = diagram.tools[0].trigger()
+    await asyncio.sleep(0)  # the tool starts and records reports in its finally block
     assert "r" in diagram.pipe.inlet.flow
     with pytest.raises(RuntimeError, match="half done"):
         await tool_task
@@ -273,8 +274,8 @@ async def test_nested_pipeline_as_first_sub_pipe_runs():
 
 
 @pytest.mark.asyncio
-async def test_two_tool_handlers_recording_mid_run_both_survive():
-    """``Tool.handler`` records: a second tool's report does not overwrite the
+async def test_two_tool_triggers_recording_mid_run_both_survive():
+    """``Tool.trigger`` records: a second tool's report does not overwrite the
     first's, and neither is erased by the in-flight run's completion.
     """
     parked = _Parked(observes=(F.New,), reports=(F.Layout,))
@@ -287,8 +288,8 @@ async def test_two_tool_handlers_recording_mid_run_both_survive():
     await asyncio.sleep(0)
     assert pipeline.inlet.flow == ()
 
-    await tool_a.handler()
-    await tool_b.handler()
+    await tool_a.trigger()
+    await tool_b.trigger()
     assert pipeline.inlet.flow == ("a", "b")
 
     parked.gate.set()
@@ -316,8 +317,8 @@ async def test_toggle_collapsed_records_alongside_another_tool():
     await asyncio.sleep(0)
     assert pipeline.inlet.flow == ()
 
-    await other.handler()
-    await toggle.run()
+    await other.trigger()
+    await toggle.trigger()
     assert pipeline.inlet.flow == ("r", F.Node.hidden)
     assert root.children[0].children[0].properties.hidden is True
 

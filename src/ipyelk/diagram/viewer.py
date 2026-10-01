@@ -2,13 +2,23 @@
 # Distributed under the terms of the Modified BSD License.
 from __future__ import annotations
 
+from collections.abc import Sequence
+
 import ipywidgets as W
 import traitlets as T
-from ipywidgets.widgets.trait_types import TypedTuple
 
+from ..exceptions import RemovedAPI, check_removed
 from ..pipes import MarkElementWidget
 from ..pipes.util import resync_stale
-from ..tools import CenterTool, ControlOverlay, FitTool, Hover, Pan, Selection, Zoom
+from ..tools import (
+    CenterTool,
+    ControlOverlay,
+    FitTool,
+    Hover,
+    Painter,
+    Selection,
+    Viewport,
+)
 
 
 class Viewer(W.Widget):
@@ -21,12 +31,18 @@ class Viewer(W.Widget):
     :parameter selection: :py:class:`~ipyelk.tools.Selection`
         maintains selected ids and methods to resolve the python elements.
     :parameter hover: :py:class:`~ipyelk.tools.Hover`
-        maintains hovered ids.
-    :parameter zoom: :py:class:`~ipyelk.tools.Zoom`
-    :parameter pan: :py:class:`~ipyelk.tools.Pan`
-    :parameter control_overlay: :py:class:`~ipyelk.tools.ControlOverlay`
+        maintains the hovered id.
+    :parameter viewport: :py:class:`~ipyelk.tools.Viewport`
+        the camera (origin, zoom, canvas size, viewed ids) of the most recently
+        reporting view, written by the browser. Move a view with
+        :py:meth:`~ipyelk.diagram.SprottyViewer.set_viewport`.
+    :parameter painter: :py:class:`~ipyelk.tools.Painter`
+        temporary, view-only CSS classes per element id, applied in every view
+        without touching the model.
+    :parameter control_overlay: :py:class:`~ipyelk.tools.ControlOverlay` or ``None``
         additional jupyterlab widgets that can be rendered on top of the diagram
-        based on the current selected states.
+        based on the current selected states. Opt-in: ``None`` (the default) and
+        an overlay without ``children`` render nothing.
 
     """
 
@@ -36,19 +52,38 @@ class Viewer(W.Widget):
 
     selection = T.Instance(Selection, kw={}).tag(sync=True, **W.widget_serialization)
     hover = T.Instance(Hover, kw={}).tag(sync=True, **W.widget_serialization)
-    zoom = T.Instance(Zoom, kw={}).tag(sync=True, **W.widget_serialization)
-    pan = T.Instance(Pan, kw={}).tag(sync=True, **W.widget_serialization)
-    control_overlay = T.Instance(ControlOverlay, kw={}).tag(
-        sync=True, **W.widget_serialization
-    )
+    viewport = T.Instance(Viewport, kw={}).tag(sync=True, **W.widget_serialization)
+    painter = T.Instance(Painter, kw={}).tag(sync=True, **W.widget_serialization)
+    control_overlay = T.Instance(
+        ControlOverlay, allow_none=True, default_value=None
+    ).tag(sync=True, **W.widget_serialization)
 
-    viewed = TypedTuple(trait=T.Unicode()).tag(
-        sync=True
-    )  # list element ids in the current view bounding box
     fit_tool = T.Instance(FitTool)
     center_tool = T.Instance(CenterTool)
 
+    #: removed names raise :class:`~ipyelk.exceptions.DeprecatedAPIError` through 3.x
+    zoom = RemovedAPI(
+        "Viewer.zoom was removed in ipyelk 3.0: the Zoom tool was a placeholder that "
+        "nothing ever wrote. Read viewer.viewport.zoom (the browser's latest report, "
+        "None until one arrives) and move a view with viewer.set_viewport(zoom=...). "
+        "No alias: this error is raised throughout 3.x."
+    )
+    pan = RemovedAPI(
+        "Viewer.pan was removed in ipyelk 3.0: the Pan tool was a placeholder that "
+        "nothing ever wrote. Read viewer.viewport.origin and viewer.viewport.canvas_size "
+        "(the browser's latest report, None until one arrives) and move a view with "
+        "viewer.set_viewport(origin=(x, y)). No alias: this error is raised throughout "
+        "3.x."
+    )
+    viewed = RemovedAPI(
+        "Viewer.viewed was removed in ipyelk 3.0: nothing ever wrote it. Read "
+        "viewer.viewport.viewed_ids (the ids whose bounds touch the reporting view's "
+        "visible rectangle; None until the browser reports). No alias: this error is "
+        "raised throughout 3.x."
+    )
+
     def __init__(self, *args, **kwargs):
+        check_removed(type(self), kwargs)
         self._stale_resync_at: float = 0.0
         self._stale_resync_interval: float = 0.0
         super().__init__(*args, **kwargs)
@@ -75,14 +110,37 @@ class Viewer(W.Widget):
 
     @T.default("fit_tool")
     def _default_fit_tool(self) -> FitTool:
-        return FitTool(handler=lambda _: self.fit())
+        return FitTool(on_click=lambda *_: self.fit())
 
     @T.default("center_tool")
     def _default_center_tool(self) -> CenterTool:
-        return CenterTool(handler=lambda _: self.center())
+        return CenterTool(on_click=lambda *_: self.center())
 
-    def fit(self):
-        pass
+    def fit(
+        self,
+        model_ids: str | Sequence[str] | None = None,
+        animate: bool | None = None,
+        max_zoom: float | None = None,
+        padding: float | None = None,
+    ) -> None:
+        """Pan/zoom the view to focus on ``model_ids`` (the whole diagram if None).
 
-    def center(self):
-        pass
+        A ``str`` is one id, never a sequence of characters. The generic viewer has
+        no viewport of its own, so this does nothing; subclasses that render
+        (:py:class:`~ipyelk.diagram.SprottyViewer`) implement it with the same
+        signature.
+        """
+
+    def center(
+        self,
+        model_ids: str | Sequence[str] | None = None,
+        animate: bool | None = None,
+        retain_zoom: bool | None = None,
+    ) -> None:
+        """Center the view on ``model_ids`` (the whole diagram if None).
+
+        A ``str`` is one id, never a sequence of characters. The generic viewer has
+        no viewport of its own, so this does nothing; subclasses that render
+        (:py:class:`~ipyelk.diagram.SprottyViewer`) implement it with the same
+        signature.
+        """

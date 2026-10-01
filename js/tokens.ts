@@ -24,6 +24,16 @@ export interface IELKFitMessage {
   padding?: number;
 }
 
+/** `SprottyViewer.set_viewport`: `null` origin/zoom keep the view's value, `null`
+ * view_id addresses every connected view. */
+export interface IELKViewportMessage {
+  action: 'viewport';
+  origin: [number, number] | null;
+  zoom: number | null;
+  animate: boolean;
+  view_id: string | null;
+}
+
 export interface IRunMessage {
   action: 'run';
   /** the kernel's roundtrip generation, echoed back as `outlet.gen`; absent from older kernels */
@@ -44,4 +54,4 @@ export const ELK_CSS = {
   sizer_class: 'jp-ElkSizer',
 };
 
-export type TAnyELKMessage = IELKCenterMessage | IELKFitMessage;
+export type TAnyELKMessage = IELKCenterMessage | IELKFitMessage | IELKViewportMessage;
