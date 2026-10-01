@@ -298,7 +298,11 @@ throughout 3.x with the replacement in the message.
 - Gate CI on the benchmark's deterministic counts: `pixi run bench-check` compares them
   to `scripts/bench_baseline.json` and fails on any change until the baseline is updated
   with `pixi run bench-update` ([#176])
+- Add `ast-grep` structural lint rules for Python and TypeScript (`sgconfig.yml`,
+  `scripts/ast-grep/`), each with test cases, run by `pixi run lint-ast-grep` as part of
+  `pixi run lint` ([#147])
 
+[#147]: https://github.com/jupyrdf/ipyelk/issues/147
 [#160]: https://github.com/jupyrdf/ipyelk/issues/160
 [#161]: https://github.com/jupyrdf/ipyelk/issues/161
 [#164]: https://github.com/jupyrdf/ipyelk/issues/164

@@ -106,6 +106,26 @@ pixi run test
 - Ensure coverage doesn't degrade from the `ALL_PY_COV_FAIL_UNDER` baseline in
   `.github/ci.yml`
 
+### Structural Lint Rules
+
+`pixi run lint-ast-grep` runs [`ast-grep`](https://ast-grep.github.io) with the rules in
+`scripts/ast-grep/rules/`, after checking them against their cases in
+`scripts/ast-grep/rule-tests/`. These catch hazards specific to this code base that
+`ruff`, `mypy` and `tsc` do not.
+
+- Add a rule as `scripts/ast-grep/rules/<id>.yml` with a `message` and a short `note`
+  saying why, and `scripts/ast-grep/rule-tests/<id>-test.yml` with `valid` and `invalid`
+  cases
+- Try a pattern with `pixi run -e lint ast-grep run -l py -p '<pattern>' src`
+- Run only the rule tests with `pixi run -e lint ast-grep test --skip-snapshot-tests`
+- Suppress a finding that is intended with the reason on the line above:
+
+```python
+# may run outside a loop; this is the loop `asyncio.Future()` bound to
+# ast-grep-ignore: py-no-get-event-loop
+loop = asyncio.get_event_loop()
+```
+
 ### Limiting Testing
 
 To run just _some_ acceptance tests, add something like:
