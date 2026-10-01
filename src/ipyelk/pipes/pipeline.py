@@ -16,10 +16,11 @@ class PipelineStatusView(PipeStatusView):
     header = T.Instance(W.HBox, kw={})
     include_exception = T.Bool(default_value=True)
     collapsed = T.Bool(default_value=True)
-    statuses = T.List(T.Instance(W.Widget), default_value=[])
 
     def __init__(self, *args, **kwargs):
-        #: the sub-pipes and their views that ``statuses`` was built for
+        #: one row per sub-pipe, shown below the header when expanded
+        self._rows: list[W.HBox] = []
+        #: the sub-pipes and their views that ``_rows`` was built for
         self._row_key: tuple | None = None
         #: widgets ``update_children`` created; closed when the rows are rebuilt
         self._owned: list[W.Widget] = []
@@ -40,12 +41,12 @@ class PipelineStatusView(PipeStatusView):
 
         return btn
 
-    @T.observe("collapsed", "statuses")
+    @T.observe("collapsed")
     def _update_children(self, change=None):
         self.header.children = [self.toggle_btn, self.html]
         children = [self.header]
         if not self.collapsed:
-            children.extend(self.statuses)
+            children.extend(self._rows)
         self.children = children
 
     def update_children(self, pipe: Pipeline):
@@ -56,7 +57,7 @@ class PipelineStatusView(PipeStatusView):
         if key != self._row_key:
             self._row_key = key
             stale, self._owned = self._owned, []
-            self.statuses = [self._row(i, view) for i, (_, view) in enumerate(key)]
+            self._rows = [self._row(i, view) for i, (_, view) in enumerate(key)]
             for widget in stale:
                 _close(widget)
         self._update_children()

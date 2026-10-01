@@ -79,16 +79,16 @@ async def test_status_rows_are_reused_and_current() -> None:
     view = pipe.status_widget
     assert isinstance(view, PipelineStatusView)
     view.update_children(pipe)
-    rows = list(view.statuses)
+    rows = list(view._rows)
     before = live_widgets()
     for _ in range(100):
         view.update_children(pipe)
     assert live_widgets() == before
-    assert len(view.statuses) == len(pipe.pipes)
-    assert all(new is old for new, old in zip(view.statuses, rows))
+    assert len(view._rows) == len(pipe.pipes)
+    assert all(new is old for new, old in zip(view._rows, rows))
 
     await refresh(diagram)
-    for row, sub in zip(view.statuses, pipe.pipes):
+    for row, sub in zip(view._rows, pipe.pipes):
         html = row.children[1].html.value
         assert f"elk-pipe-disposition-{sub.status.disposition.value}" in html
         assert f'class="elk-pipe-status">{sub.status.state()}<' in html
@@ -99,13 +99,13 @@ def test_status_rows_are_rebuilt_when_pipes_change() -> None:
     pipe = make_diagram().pipe
     view = pipe.status_widget
     view.update_children(pipe)
-    old_rows = list(view.statuses)
+    old_rows = list(view._rows)
     sub_views = [p.status_widget for p in pipe.pipes]
 
     pipe.pipes = pipe.pipes[:-1]
     view.update_children(pipe)
 
-    assert len(view.statuses) == len(pipe.pipes)
+    assert len(view._rows) == len(pipe.pipes)
     for row in old_rows:
         space, _, accessor = row.children
         for widget in (row, space, accessor):
@@ -139,7 +139,7 @@ def test_replaced_views_are_shown() -> None:
     html = W.HTML("summary")
     view.html = html
     view.update_children(pipe)
-    assert view.statuses[0].children[1] is custom
+    assert view._rows[0].children[1] is custom
     assert view.header.children[1] is html
 
 

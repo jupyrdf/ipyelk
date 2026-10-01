@@ -72,6 +72,8 @@
   - `PipeStatus` is no longer an `ipywidgets.Widget`: it is an immutable value with the
     same attributes and constructors, compared by identity, so every new status still
     notifies `status` observers
+  - `PipelineStatusView.statuses` is removed. It held the view's row widgets, was never
+    synced, and is now a private list; the rows still reach the frontend as `children`
 
 ### Development
 
