@@ -3,9 +3,35 @@
  * Distributed under the terms of the Modified BSD License.
  */
 import { ElkGraphElement, ElkNode, ElkProperties } from './sprotty/json/elkgraph-json';
+import type { TELKErrorMessage } from './tokens';
 
-export function layoutErrorMessage(error: unknown): { action: 'error'; error: string } {
-  return { action: 'error', error: `${error}` };
+/** The browser -> kernel report that the `run` request `gen` failed. */
+export function layoutErrorMessage(error: unknown, gen?: number): TELKErrorMessage {
+  const message: TELKErrorMessage = { action: 'error', error: `${error}` };
+  if (gen != null) {
+    message.gen = gen;
+  }
+  return message;
+}
+
+/** the subset of `DOMWidgetModel` that {@link answer} writes through */
+export interface IAnswerOutlet {
+  set(key: any, val?: any, options?: any): unknown;
+  save_changes(): void;
+}
+
+/**
+ * Write a result and the generation it answers to the outlet in one
+ * `save_changes`, so both reach the kernel.
+ *
+ * Backbone only sends changed attributes, so an answer deep-equal to the
+ * previous one would send `gen` alone, which an older kernel never notices.
+ * Silently clearing `value` first makes it a change again.
+ */
+export function answer(outlet: IAnswerOutlet, value: unknown, gen: number): void {
+  outlet.set('value', null, { silent: true });
+  outlet.set({ value, gen });
+  outlet.save_changes();
 }
 
 export type TStaleMessage = {
@@ -120,4 +146,77 @@ export function prepareGraphForElk(rootNode: ElkNode): {
 } {
   const graph: ElkNode = JSON.parse(JSON.stringify(rootNode));
   return { graph, propmap: collectProperties(graph) };
+}
+
+export type TRunDisposition = 'started' | 'queued' | 'ignored';
+
+/**
+ * At most one browser computation in flight per pipe, keyed by the kernel's
+ * roundtrip generation (`IRunMessage.gen`).
+ *
+ * The kernel re-sends `run` until it is answered. A request for the
+ * in-flight, an older or an already completed generation is ignored; a newer
+ * one is queued, and only the newest queued generation survives. A request
+ * without a generation (an older kernel) coalesces into one trailing run. A
+ * failing `start` is logged and never wedges the queue.
+ */
+export class RunQueue {
+  private inFlight: number | null = null;
+  private queued: number | null = null;
+  private completed = 0;
+
+  constructor(private readonly start: (gen: number) => Promise<unknown> | unknown) {}
+
+  /** the generation being computed, if any */
+  get current(): number | null {
+    return this.inFlight;
+  }
+
+  /** the generation waiting for the current computation, if any */
+  get pending(): number | null {
+    return this.queued;
+  }
+
+  request(gen?: number | null): TRunDisposition {
+    const wanted = gen ?? 0;
+    if (this.inFlight == null) {
+      if (wanted > 0 && wanted <= this.completed) {
+        return 'ignored';
+      }
+      this.launch(wanted);
+      return 'started';
+    }
+    const duplicate =
+      wanted > 0
+        ? wanted <= Math.max(this.inFlight, this.queued ?? 0)
+        : this.queued != null;
+    if (duplicate) {
+      return 'ignored';
+    }
+    this.queued = wanted;
+    return 'queued';
+  }
+
+  private launch(gen: number): void {
+    this.inFlight = gen;
+    let result: Promise<unknown>;
+    try {
+      result = Promise.resolve(this.start(gen));
+    } catch (error) {
+      result = Promise.reject(error);
+    }
+    result
+      .catch((error) => console.error('ELK run failed:', error))
+      .then(() => this.finish());
+  }
+
+  private finish(): void {
+    this.completed = Math.max(this.completed, this.inFlight ?? 0);
+    this.inFlight = null;
+    const next = this.queued;
+    this.queued = null;
+    if (next != null) {
+      this.launch(next);
+    }
+  }
 }

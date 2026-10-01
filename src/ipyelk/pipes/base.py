@@ -12,7 +12,15 @@ import traitlets as T
 from ipywidgets.widgets.trait_types import TypedTuple
 
 from .marks import MarkElementWidget
-from .util import resync_stale
+from .util import resync_stale, settle
+
+
+class Superseded(Exception):
+    """A run gave way to a newer request at a stage boundary.
+
+    Raised by ``Pipeline`` between stages, never inside one, and caught by
+    ``Pipe._serve_requests``, which then serves the newer request.
+    """
 
 
 class PipeDisposition(Enum):
@@ -187,7 +195,11 @@ class Pipe(W.Widget):
     reports: tuple[str, ...] = TypedTuple(T.Unicode(), kw={})
     on_progress = T.Callable(default_value=None, allow_none=True)
     on_error = T.Callable(default_value=None, allow_none=True)
-    _task: asyncio.Future | None = None
+    #: the runner serving pending requests; resolves after the trailing run
+    _task: asyncio.Task | None = None
+    #: ``_generation < _requested`` means a newer request is pending
+    _generation: int = 0
+    _requested: int = 0
     status = T.Instance(PipeStatus, kw={})
     status_widget = T.Instance(W.DOMWidget, allow_none=True)
 
@@ -211,26 +223,106 @@ class Pipe(W.Widget):
         return self.status_widget._repr_mimebundle_(**kwargs)
 
     def schedule_run(self, change: T.Bunch | None = None) -> asyncio.Task | None:
-        """Schedule rerunning the pipe on the event loop.
+        """Request a run and return the task that will serve it.
+
+        Requests coalesce on the trailing edge: one runner task serves every
+        request made while it is alive, so ten calls in one tick cost one run and
+        a call made mid-run costs one more run after it. Nothing is cancelled
+        here (see ``cancel``); a ``Pipeline`` gives way at its next stage
+        boundary (``Superseded``).
+
+        A runner on another event loop (a kernel subshell, see ``util.settle``)
+        is handed over to a new runner on the caller's loop, so the returned task
+        is always awaitable by the caller. Pending requests survive the hand-over.
 
         Returns ``None`` (and schedules nothing) when no event loop is running,
         e.g. when a diagram is built in a plain script or a test: there is no
         loop to run the task on, so raising would only crash widget
         construction (``Diagram(source=...)`` refreshes from a trait observer).
+        The request still counts and is served by the next runner.
         """
-        # schedule task on loop
-        if self._task:
-            self._task.cancel()
+        self._requested += 1
+        task = self._task
         try:
             loop = asyncio.get_running_loop()
         except RuntimeError:
+            if task is not None and not task.done():
+                return task
             self.log.debug("No running event loop; not scheduling %s", type(self))
             self._task = None
             return None
-        self._task = loop.create_task(self.run())
+        if task is not None and not task.done():
+            if task.get_loop() is loop:
+                return task
+            self.log.debug(
+                "%s runner lives on another event loop; handing over",
+                type(self).__name__,
+            )
+            self.cancel()
+        self._task = task = loop.create_task(self._serve_requests())
+        task.add_done_callback(self._post_run)
+        return task
 
-        self._task.add_done_callback(self._post_run)
-        return self._task
+    def superseded(self) -> bool:
+        """Whether a newer request arrived while the runner's current run is in
+        flight (a ``Pipeline`` checks this between stages).
+        """
+        task = self._task
+        return (
+            task is not None and not task.done() and self._generation < self._requested
+        )
+
+    async def _serve_requests(self) -> None:
+        """The runner: run until no request newer than the last run is pending.
+
+        ``on_error`` and ``status`` (via ``_post_run``) reflect the runner's
+        *final* outcome, not every run: a run that fails while a newer request
+        is pending is logged at WARNING and the newer request is served, so
+        only the trailing run's failure reaches ``on_error``.
+
+        The loop yields between runs: a ``run`` that never really awaits and
+        requests again from inside itself would otherwise spin without the
+        event loop turning.
+        """
+        served = False
+        while self._generation < self._requested:
+            if served:
+                await asyncio.sleep(0)
+            served = True
+            self._generation = self._requested
+            try:
+                await self.run()
+            except Superseded:
+                self.log.debug("%s gave way to a newer request", type(self).__name__)
+            except Exception:
+                if not self.superseded():
+                    raise
+                self.log.warning(
+                    "%s run failed; serving the newer request",
+                    type(self).__name__,
+                    exc_info=True,
+                )
+
+    def cancel(self) -> bool:
+        """Cancel the runner and drop its pending requests; ``True`` if one was alive.
+
+        The only thing that cancels a run. Use it when the pipe is detached, so
+        an in-flight answer is not persisted into an index nobody views. A task
+        on another loop is cancelled through that loop (see ``util.settle``).
+        """
+        task, self._task = self._task, None
+        if task is None or task.done():
+            return False
+        loop = task.get_loop()
+        try:
+            on_own_loop = asyncio.get_running_loop() is loop
+        except RuntimeError:
+            on_own_loop = False
+        if on_own_loop:
+            task.cancel()
+        else:
+            loop.call_soon_threadsafe(task.cancel)
+        return True
 
     def _post_run(self, future: asyncio.Future):
         try:
@@ -258,13 +350,16 @@ class Pipe(W.Widget):
         # do work
         self.outlet.value = self.inlet.value
 
-    def check_dirty(self) -> bool:
+    def check_dirty(self, flow: tuple[str, ...] | None = None) -> bool:
         """Method to test is this pipe should be run given the set of changes.
 
+        :param flow: the changes to test against; defaults to the pending
+            ``inlet.flow``
         :return: dirty flag
         :rtype: bool
         """
-        flow = self.inlet.flow
+        if flow is None:
+            flow = self.inlet.flow
 
         if any(any(re.match(f"^{obs}$", f) for f in flow) for obs in self.observes):
             # mark this pipe as dirty so will run
@@ -321,6 +416,11 @@ class SyncedOutletPipe(Pipe):
 class SyncedPipe(SyncedOutletPipe, SyncedInletPipe):
     """Both inlet and value are synced with the browser"""
 
+    #: generation of the last ``run`` request sent to the browser
+    _roundtrip_gen: int = 0
+    #: whether an unversioned answer (older extension build) was warned about
+    _warned_unversioned: bool = False
+
     def __init__(self, *args, **kwargs):
         self._stale_resync_at: float = 0.0
         self._stale_resync_interval: float = 0.0
@@ -334,7 +434,9 @@ class SyncedPipe(SyncedOutletPipe, SyncedInletPipe):
 
         * ``action: error`` -- the frontend failed to produce an outlet value;
           reject the pending roundtrip future so the kernel stops waiting (and
-          stops re-sending) instead of retrying or timing out.
+          stops re-sending) instead of retrying or timing out. Only an error for
+          the pending generation (``gen``), or one with no ``gen`` from an older
+          extension build, rejects it.
         * ``action: stale`` -- the frontend got a ``run`` request it cannot
           serve because state it needs (inlet/outlet wiring, the inlet value)
           never arrived: widget state sync has no retransmit, and
@@ -349,9 +451,23 @@ class SyncedPipe(SyncedOutletPipe, SyncedInletPipe):
         action = content.get("action")
         if action == "error":
             future = getattr(self, "_roundtrip_future", None)
-            if future is not None and not future.done():
-                future.set_exception(
-                    RuntimeError(str(content.get("error", "browser pipe failed")))
+            if future is None or future.done():
+                return
+            gen = content.get("gen")
+            if gen is not None and gen != self._roundtrip_gen:
+                self.log.debug(
+                    "%s ignoring a browser error for generation %s while "
+                    "waiting for %s: %s",
+                    type(self).__name__,
+                    gen,
+                    self._roundtrip_gen,
+                    content.get("error"),
                 )
+                return
+            settle(
+                future,
+                "set_exception",
+                RuntimeError(str(content.get("error", "browser pipe failed"))),
+            )
         elif action == "stale":
             resync_stale(self, self.inlet, self.outlet, missing=content.get("missing"))

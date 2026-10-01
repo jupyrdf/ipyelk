@@ -5,7 +5,6 @@ from __future__ import annotations
 from collections import defaultdict
 from collections.abc import Iterator
 
-import networkx as nx
 from pydantic import BaseModel, Field, SerializeAsAny
 
 from ..exceptions import NotFoundError
@@ -253,13 +252,87 @@ class ElementIndex(BaseModel):
             null_ids=null_ids,
         )
 
+    @staticmethod
+    def depths(root: Node, *orphans: Node) -> dict[int, int]:
+        """Depth of every node under ``root``, keyed by ``id()``.
+
+        ``orphans`` (edge endpoints missing from the hierarchy) are treated as
+        children of ``root``, as ``ValidationPipe.fix_orphans`` will make them.
+        Keys are ``id()`` because an un-indexed element may not have an id yet.
+        """
+        depths: dict[int, int] = {id(root): 0}
+        stack: list[tuple[Node, int]] = [(orphan, 1) for orphan in orphans]
+        stack.extend((child, 1) for child in root.children)
+        while stack:
+            node, depth = stack.pop()
+            key = id(node)
+            if key in depths:
+                continue
+            depths[key] = depth
+            stack.extend((child, depth + 1) for child in node.children)
+        return depths
+
+    @staticmethod
+    def lca_by_parent(
+        u: HierarchicalElement,
+        v: HierarchicalElement,
+        depths: dict[int, int],
+        root: Node | None = None,
+    ) -> Node | None:
+        """Lowest common ancestor of two edge endpoints, by walking parents.
+
+        ``O(depth)`` per edge, where ``nx.lowest_common_ancestor`` was
+        ``O(N + E)``. Ports resolve to their node and a self loop to that node's
+        parent. ``depths`` comes from :meth:`depths`, and orphans walk up to
+        ``root``.
+
+        Returns ``None`` only for a self loop on a parentless node. Raises
+        :class:`NotFoundError` for an element with no ``_parent`` link, e.g. one
+        appended to ``children`` without ``add_child``.
+        """
+        a: HierarchicalElement | None = u.get_parent() if isinstance(u, Port) else u
+        b: HierarchicalElement | None = v.get_parent() if isinstance(v, Port) else v
+
+        if a is b:
+            # self loops need to be owned by their parent
+            return None if a is None else a.get_parent()
+
+        def up(node: HierarchicalElement | None) -> Node:
+            parent = None if node is None else node.get_parent()
+            if parent is None and node is not root and depths.get(id(node)):
+                parent = root
+            if parent is None:
+                raise NotFoundError(f"Unable to find {node} in the hierarchy")
+            return parent
+
+        for endpt in (a, b):
+            if endpt is None or id(endpt) not in depths:
+                raise NotFoundError(f"Unable to find {endpt} in the hierarchy")
+
+        a_depth = depths[id(a)]
+        b_depth = depths[id(b)]
+        while a_depth > b_depth:
+            a = up(a)
+            a_depth -= 1
+        while b_depth > a_depth:
+            b = up(b)
+            b_depth -= 1
+        while a is not b:
+            a = up(a)
+            b = up(b)
+        assert isinstance(a, Node)
+        return a
+
     def check_edges(self) -> EdgeReport:
         """Check edges' endpoints for references to nodes outside of the current
         hierarchy as well as which edges should be remapped to the appropriate
         lowest common ancestor.
-        """
-        from ..loaders.nx.nxutils import get_owner
 
+        Reachability is judged by the ``children`` walk (:meth:`depths`) and
+        ownership by the ``_parent`` links (:meth:`lca_by_parent`), so a child
+        appended to ``children`` without ``set_parent`` (use ``add_child``) is
+        reported as unreachable rather than resolved through the hierarchy.
+        """
         orphans: set[Node] = set()
         lca_mismatch: dict[Edge, tuple[Node, Node | None]] = {}
 
@@ -274,18 +347,15 @@ class ElementIndex(BaseModel):
                     assert isinstance(ancestor, Node)
                     orphans.add(ancestor)
 
-        # check
-        hierarchy: nx.DiGraph = nx.DiGraph()
-        hierarchy.add_edges_from(iter_hierarchy(root, types=(HierarchicalElement,)))
-        hierarchy.add_edges_from(
-            iter_hierarchy(*orphans, root=root, types=(HierarchicalElement,))
-        )
-        el_map = HierarchicalIndex.from_els(root, *orphans)
+        depths = self.depths(root, *orphans)
         for el, edge in iter_edges(root, *orphans):
             if edge in lca_mismatch:
                 # skip edge processing if associated with an orphaned node
                 continue
-            owner = get_owner(edge, hierarchy=hierarchy, el_map=el_map)
+            owner = self.lca_by_parent(edge.source, edge.target, depths, root=root)
+            if owner is None:
+                raise NotFoundError("Element with id:None not in index")
+            assert isinstance(owner, Node)
             if el is not owner:
                 lca_mismatch[edge] = (el, owner)
         return EdgeReport(

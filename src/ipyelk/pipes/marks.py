@@ -47,9 +47,71 @@ class MarkIndex(W.DOMWidget):
 
 
 class MarkElementWidget(W.DOMWidget):
-    value = T.Instance(Node, allow_none=True).tag(sync=True, **elk_serialization)
+    """A synced element tree plus the shared index and the pending ``flow``.
+
+    ``value`` is written from both sides. A browser write is never sent back:
+    ``echo_update=False`` stops the echo, and ``_should_send_property`` stops
+    the re-serialised copy. Kernel writes are sent exactly once.
+
+    Known limitation: a second frontend attached to the same kernel used to
+    learn browser-written values through the echo and no longer does.
+    """
+
+    value = T.Instance(Node, allow_none=True).tag(
+        sync=True, echo_update=False, **elk_serialization
+    )
+    #: generation of the ``run`` request the browser last answered; ``0`` with
+    #: an older extension build (see ``util.wait_for_answer``)
+    gen = T.Int(0).tag(sync=True, echo_update=False)
     index = T.Instance(MarkIndex, kw={}).tag(sync=True, **W.widget_serialization)
     flow: tuple[str, ...] = TypedTuple(T.Unicode(), kw={}).tag(sync=True)
+
+    #: the tree ``set_state`` last deserialised from the browser
+    _browser_value: Node | None = None
+
+    def set_trait(self, name, value):
+        """Remember which ``value`` came from the browser (``set_state`` holds
+        ``_property_lock``), for ``_should_send_property``.
+        """
+        if name == "value" and name in self._property_lock:
+            self._browser_value = value
+        super().set_trait(name, value)
+
+    def _should_send_property(self, key, value):
+        """Never re-send a ``value`` the browser just wrote.
+
+        The stock check always sends an elkjs-processed tree, whose
+        re-serialisation differs from the browser JSON. A new tree assigned by
+        an observer while the lock is held is still sent.
+        """
+        if (
+            key == "value"
+            and key in self._property_lock
+            and value is self._browser_value
+        ):
+            return False
+        return super()._should_send_property(key, value)
+
+    def record(self, *tags: str) -> tuple[str, ...]:
+        """Add ``tags`` to the pending ``flow`` (order-preserving union).
+
+        Writers must record rather than assign, which would overwrite what
+        another writer left pending.
+        """
+        pending = list(self.flow)
+        pending.extend(tag for tag in tags if tag not in pending)
+        if len(pending) != len(self.flow):
+            self.flow = tuple(pending)
+        return self.flow
+
+    def take(self) -> tuple[str, ...]:
+        """Consume the pending ``flow``: return it and leave ``()`` behind.
+
+        ``Pipeline.run`` takes at the start, so tags recorded mid-run stay
+        pending for the next run.
+        """
+        taken, self.flow = self.flow, ()
+        return taken
 
     def persist(self, rebuild_index: bool = False):
         """Fold ``value`` into the shared index.

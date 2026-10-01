@@ -17,12 +17,15 @@ ${SCREENS}      ${SCREENS ROOT}${/}examples${/}${NESTING PLOTS}
     Scroll To Last Cell
     BQPlot Figure Count Should Be    ${0}
     ${sel} =    Set Variable    css:[title="expand and center"]
+    # the button is disabled while the toggle runs: wait for disabled, then
+    # enabled, or the wait can return before the kernel has disabled it
     Click Element    ${sel}
-    # the notebook disables the button while the (async) toggle + layout runs
+    Wait Until Element Is Not Enabled    ${sel}    timeout=10s
     Wait Until Element Is Enabled    ${sel}    timeout=30s
     Capture Page Screenshot    11-expanded.png
     BQPlot Figure Count Should Be    ${4}
     Click Element    ${sel}
+    Wait Until Element Is Not Enabled    ${sel}    timeout=10s
     Wait Until Element Is Enabled    ${sel}    timeout=30s
     Capture Page Screenshot    12-collapsed.png
     BQPlot Figure Count Should Be    ${0}

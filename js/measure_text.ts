@@ -7,11 +7,19 @@ import { random } from 'lodash';
 import { DOMWidgetModel, DOMWidgetView } from '@jupyter-widgets/base';
 import { unpack_models as deserialize } from '@jupyter-widgets/base';
 
-import { layoutErrorMessage, staleMessage } from './layout_widget_util';
+import {
+  RunQueue,
+  answer,
+  layoutErrorMessage,
+  staleMessage,
+} from './layout_widget_util';
 import { ElkLabel, ElkNode } from './sprotty/json/elkgraph-json';
 import { ELK_CSS, ELK_DEBUG, IRunMessage, NAME, VERSION } from './tokens';
 
 // import { ElkNode } from './sprotty/sprotty-model';
+
+/** how long `measure` waits for an animation frame before measuring anyway */
+const MEASURE_FALLBACK_MS = 250;
 
 export class ELKTextSizerModel extends DOMWidgetModel {
   static model_name = 'ELKTextSizerModel';
@@ -20,6 +28,9 @@ export class ELKTextSizerModel extends DOMWidgetModel {
     inlet: { deserialize },
     outlet: { deserialize },
   };
+
+  /** one measurement in flight; re-sent requests are ignored, newer ones queued */
+  protected runs = new RunQueue((gen) => this.runMeasure(gen));
 
   defaults() {
     let defaults = {
@@ -89,23 +100,35 @@ export class ELKTextSizerModel extends DOMWidgetModel {
     // check message and decide if should call `measure`
     switch (content.action) {
       case 'run':
-        // Report synchronous failures so the kernel stops retrying instead
-        // of waiting for the roundtrip deadline.
-        try {
-          this.measure();
-        } catch (error) {
-          console.error('ELK text sizer failed:', error);
-          this.send(layoutErrorMessage(error));
-        }
+        this.runs.request(content.gen);
         break;
     }
   }
 
   /**
-   * Method to take a list of texts and build SVG Text Elements to attach to the DOM
-   * @param content message measure request
+   * `measure`, reporting synchronous failures so the kernel stops retrying
+   * instead of waiting for the roundtrip deadline.
    */
-  measure() {
+  protected runMeasure(gen: number): Promise<void> | null {
+    try {
+      return this.measure(gen);
+    } catch (error) {
+      console.error('ELK text sizer failed:', error);
+      this.send(layoutErrorMessage(error, gen));
+      return null;
+    }
+  }
+
+  /**
+   * Method to take a list of texts and build SVG Text Elements to attach to the DOM.
+   *
+   * Measures on the next animation frame, or after `MEASURE_FALLBACK_MS` in a
+   * background tab, which never paints: an unresolved measurement would hold
+   * the `RunQueue` slot and the kernel would wait out its deadline.
+   * @param gen the request's generation, written back with the sizes
+   * @returns a promise resolving once the sizes are written to the outlet
+   */
+  measure(gen: number = 0): Promise<void> | null {
     const rootNode: ElkNode = this.get('inlet')?.get('value');
     let outlet: DOMWidgetModel = this.get('outlet'); // target output
     const stale = staleMessage(this.get('inlet'), rootNode, outlet);
@@ -136,23 +159,36 @@ export class ELKTextSizerModel extends DOMWidgetModel {
     ELK_DEBUG && console.warn('Sized Text');
 
     // Callback to take measurements and remove element from DOM
-    window.requestAnimationFrame(() => {
-      // a throw in this deferred callback is otherwise an unhandled error
-      // nobody correlates with the pipe: report it like the sync path
-      try {
-        this.read_sizes(texts, elements);
-        let output = { ...rootNode };
-        output['out'] = random();
-        outlet.set('value', output);
-        outlet.save_changes();
-      } catch (error) {
-        console.error('ELK text sizer failed:', error);
-        this.send(layoutErrorMessage(error));
-      } finally {
-        if (!ELK_DEBUG && el.parentNode) {
-          document.body.removeChild(el);
+    return new Promise<void>((resolve) => {
+      let done = false;
+      let frame = 0;
+      let timer = 0;
+      const finish = () => {
+        if (done) {
+          return;
         }
-      }
+        done = true;
+        window.cancelAnimationFrame(frame);
+        window.clearTimeout(timer);
+        // a throw in this deferred callback is otherwise an unhandled error
+        // nobody correlates with the pipe: report it like the sync path
+        try {
+          this.read_sizes(texts, elements);
+          let output = { ...rootNode };
+          output['out'] = random();
+          answer(outlet, output, gen);
+        } catch (error) {
+          console.error('ELK text sizer failed:', error);
+          this.send(layoutErrorMessage(error, gen));
+        } finally {
+          if (!ELK_DEBUG && el.parentNode) {
+            document.body.removeChild(el);
+          }
+          resolve();
+        }
+      };
+      frame = window.requestAnimationFrame(finish);
+      timer = window.setTimeout(finish, MEASURE_FALLBACK_MS);
     });
   }
 

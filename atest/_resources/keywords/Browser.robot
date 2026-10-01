@@ -29,3 +29,11 @@ Computed Element Style Should Be
         Set To Dictionary    ${observed}    ${key}=${computed}
     END
     Dictionaries Should Be Equal    ${styles}    ${observed}
+
+Wait Until Element Is Not Enabled
+    [Documentation]    Wait until an element becomes disabled (or read-only).
+    ...    SeleniumLibrary ships `Wait Until Element Is Enabled` but no negative
+    ...    form, and its waits poll every 200ms; this one polls every 50ms, so the
+    ...    keyword's own elapsed time is a usable latency measurement.
+    [Arguments]    ${locator}    ${timeout}=10s
+    Wait Until Keyword Succeeds    ${timeout}    0.05s    Element Should Be Disabled    ${locator}

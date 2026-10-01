@@ -20,10 +20,14 @@ class Selection(Tool):
     ids: tuple
     tuple of string ids.
 
+    ``ids`` is browser-written and tagged ``echo_update=False``, so a second
+    frontend on the same kernel no longer sees another frontend's selection;
+    kernel writes still reach every frontend.
+
     """
 
     ids = TypedTuple(trait=T.Unicode()).tag(
-        sync=True
+        sync=True, echo_update=False
     )  # list element ids currently selected
 
     def get_index(self) -> MarkIndex:
@@ -49,9 +53,13 @@ class Hover(Tool):
     ids: tuple
     tuple of string ids.
 
+    Like ``Selection.ids``, browser-written and tagged ``echo_update=False``.
+
     """
 
-    ids = T.Unicode().tag(sync=True)  # list element ids currently hovered
+    ids = T.Unicode().tag(
+        sync=True, echo_update=False
+    )  # list element ids currently hovered
 
 
 class Pan(Tool):

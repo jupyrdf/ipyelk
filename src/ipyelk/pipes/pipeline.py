@@ -8,7 +8,7 @@ import ipywidgets as W
 import traitlets as T
 
 from ..exceptions import BrokenPipe
-from .base import Pipe, PipeStatus, PipeStatusView, SyncedOutletPipe
+from .base import Pipe, PipeStatus, PipeStatusView, Superseded, SyncedOutletPipe
 
 
 class PipelineStatusView(PipeStatusView):
@@ -62,6 +62,9 @@ class PipelineStatusView(PipeStatusView):
 class Pipeline(SyncedOutletPipe):
     pipes = T.List(T.Instance(Pipe), kw={}).tag(sync=True, **W.widget_serialization)
 
+    #: what the in-flight run took from ``inlet.flow``; re-recorded if it fails
+    _taken: tuple[str, ...] = ()
+
     @T.default("status_widget")
     def _default_status_widget(self):
         widget = PipelineStatusView()
@@ -84,21 +87,58 @@ class Pipeline(SyncedOutletPipe):
 
         # self.schedule_run()
 
-    async def run(self):
+    def cancel(self) -> bool:
+        """Cancel, and re-record the in-flight run's tags now: the cancellation
+        unwinds a loop turn later, after a new runner may already have taken.
+        """
+        cancelled = super().cancel()
+        if cancelled:
+            self._release_taken()
+        return cancelled
+
+    def _release_taken(self) -> None:
+        taken, self._taken = self._taken, ()
+        if taken:
+            self.inlet.record(*taken)
+
+    async def run(self, flow: tuple[str, ...] | None = None):
+        """Run the dirty pipes for the pending flow.
+
+        The flow is taken from the inlet at the start (``MarkElementWidget.take``)
+        and re-recorded unless the run succeeds. A source should therefore feed
+        one pipeline: a second would find the flow already taken.
+
+        ``flow`` is passed by a parent pipeline to a nested one, since the
+        parent already took it.
+        """
         start = datetime.now()
-        self.check_dirty()
+        if flow is None:
+            self._taken = taken = self.inlet.take()
+        else:
+            taken = flow
+        try:
+            await self._run_pipes(taken)
+        except BaseException:
+            if flow is None and self._taken is taken:
+                self._release_taken()
+            raise
+
+        if self._taken is taken:
+            self._taken = ()
+        self.status_update(PipeStatus.finished(start_time=start))
+
+    async def _run_pipes(self, flow: tuple[str, ...]) -> None:
+        self.check_dirty(flow)
 
         # Look at enabled pipes
         for i, pipe in enumerate(self.pipes):
+            if i and self.superseded():
+                raise Superseded(f"superseded before stage {i}")
             # TODO use i and num_steps for reporting processing stage
             pipe_start_time = datetime.now()
             p_name = f"pipe {i}: {type(pipe)}"
             try:
-                if pipe.status.dirty():
-                    self.status_update(PipeStatus.running(), pipe=pipe)
-                    await pipe.run()
-                else:
-                    pipe.outlet.value = pipe.inlet.value
+                await self._run_pipe(i, pipe, flow)
             except Exception as err:
                 self.log.exception(f"Error running {p_name}")
                 self.status_update(
@@ -111,14 +151,23 @@ class Pipeline(SyncedOutletPipe):
                 raise err
 
             pipe.status_update(PipeStatus.finished(start_time=pipe_start_time))
-        self.status_update(PipeStatus.finished(start_time=start))
 
-    def check_dirty(self) -> bool:
+    async def _run_pipe(self, i: int, pipe: Pipe, flow: tuple[str, ...]) -> None:
+        if not pipe.status.dirty():
+            pipe.outlet.value = pipe.inlet.value
+            return
+        self.status_update(PipeStatus.running(), pipe=pipe)
+        if isinstance(pipe, Pipeline):
+            await pipe.run(flow=flow if i == 0 else pipe.inlet.flow)
+        else:
+            await pipe.run()
+
+    def check_dirty(self, flow: tuple[str, ...] | None = None) -> bool:
         # check pipes and propagate flow to downstream pipes
         observes = set()
         reports = set()
-        for pipe in self.pipes:
-            if pipe.check_dirty():
+        for i, pipe in enumerate(self.pipes):
+            if pipe.check_dirty(flow if i == 0 else None):
                 observes |= set(pipe.observes)
                 reports |= set(pipe.reports)
         # pipeline is dirty if flows are added to reports from subpipes

@@ -34,7 +34,7 @@ class ToggleCollapsedTool(Tool):
 
         # trigger refresh if needed
         if should_refresh and self.tee and self.tee.inlet:
-            self.tee.inlet.flow = self.reports
+            self.tee.inlet.record(*self.reports)
 
     def get_related(self, element: BaseElement):
         if isinstance(element, Compartment):

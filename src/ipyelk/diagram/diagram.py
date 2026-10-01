@@ -50,6 +50,8 @@ class Diagram(StyledWidget):
     )
     toolbar = T.Instance(Toolbar, kw={})
     symbols = T.Instance(SymbolSpec, kw={}).tag(sync=True, **symbol_serialization)
+    #: the runner ``refresh`` last registered ``_update_view`` on
+    _refresh_task: asyncio.Future | None = None
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -90,12 +92,20 @@ class Diagram(StyledWidget):
         self.children = [self.view, self.toolbar]
 
     def _update_view_sources(self):
-        self.source.flow = (F.New,)
+        self.source.record(F.New)
         self.pipe.inlet = self.source
         self.view.source = self.pipe.outlet
 
     @T.observe("pipe", "source", "style")
     def _change_pipe(self, change):
+        """Rewire and refresh. A new pipe or source cancels the in-flight run,
+        whose answer would land in an index nobody views; a style change only
+        requests a new run.
+        """
+        if change.name == "pipe" and isinstance(change.old, Pipe):
+            change.old.cancel()
+        elif change.name == "source":
+            self.pipe.cancel()
         self._update_view_sources()
         self.refresh()
 
@@ -160,29 +170,37 @@ class Diagram(StyledWidget):
         """Create asynchronous refresh task which will update the view given any
         changes.
 
+        One runner serves every refresh requested while it is alive, so the view
+        is updated once, after the trailing run.
+
         Returns ``None`` when no event loop is running (see ``Pipe.schedule_run``).
         """
         self.log.debug("Refreshing diagram")
         task = self.pipe.schedule_run()
         if task is None:
             return None
-
-        def update_view(future: asyncio.Task):
-            try:
-                exception = future.exception()
-            except asyncio.CancelledError:
-                return
-            if exception is not None:
-                # do not propagate a stale/empty layout to the view, but say so:
-                # a silently failed layout looks exactly like a hung diagram
-                self.log.warning("Diagram refresh failed: %r", exception)
-                return
-            layout = self.pipe.outlet.value
-            if self.view.source is None:
-                return
-            self.view.source.value = layout
-            self.pipe.inlet.value = layout
-            self.pipe.inlet.flow = tuple()
-
-        task.add_done_callback(update_view)
+        if task is not self._refresh_task:
+            self._refresh_task = task
+            task.add_done_callback(self._update_view)
         return task
+
+    def _update_view(self, future: asyncio.Future) -> None:
+        """Show the finished layout.
+
+        The inlet keeps the user's own tree: layout results already reached it
+        through ``outlet.persist()``, and swapping in the laid-out copy would drop
+        hidden elements and break identity for selection and tools.
+        """
+        try:
+            exception = future.exception()
+        except asyncio.CancelledError:
+            return
+        if exception is not None:
+            # do not propagate a stale/empty layout to the view, but say so:
+            # a silently failed layout looks exactly like a hung diagram
+            self.log.warning("Diagram refresh failed: %r", exception)
+            return
+        layout = self.pipe.outlet.value
+        if self.view.source is None:
+            return
+        self.view.source.value = layout
