@@ -43,9 +43,18 @@ export function getType(type: string | undefined, defaultType: string = ''): str
   return type;
 }
 
-function getClasses(element: ElkGraphElement) {
+/** The kernel `Painter.styles`: element id -> view-only classes (never in the model). */
+export type PainterStyles = Readonly<Record<string, readonly string[]>>;
+
+function getClasses(element: ElkGraphElement, styles: PainterStyles = {}): string[] {
   let classes = (element.properties?.cssClasses || '').trim();
-  return classes ? classes.split(' ') : [];
+  const modelClasses = classes ? classes.split(' ') : [];
+  const painted = element.id == null ? undefined : styles[element.id];
+  if (painted == null || painted.length === 0) {
+    return modelClasses;
+  }
+  /** Model classes precede painted classes; duplicate classes are removed. */
+  return [...new Set([...modelClasses, ...painted])];
 }
 
 export interface SSymbols extends SModelElement {}
@@ -58,6 +67,8 @@ export interface ElkLabelschema extends SLabel {
 }
 
 export class ElkGraphJsonToSprotty {
+  /** Painted classes merged into each model element's `cssClasses`, never symbols. */
+  private styles: PainterStyles = {};
   private nodeIds: Set<string> = new Set();
   private edgeIds: Set<string> = new Set();
   private portIds: Set<string> = new Set();
@@ -70,7 +81,9 @@ export class ElkGraphJsonToSprotty {
     elkGraph: ElkNode,
     symbols: IElkSymbols,
     idPrefix: string,
+    styles: PainterStyles = {},
   ): SSymbolGraph {
+    this.styles = styles;
     let children = [];
     let edges = [];
     if (elkGraph.children) {
@@ -83,7 +96,7 @@ export class ElkGraphJsonToSprotty {
       type: 'graph',
       id: elkGraph.id || 'root',
       children: [...children, ...edges],
-      cssClasses: getClasses(elkGraph),
+      cssClasses: getClasses(elkGraph, this.styles),
       symbols: this.transformSymbols(symbols, idPrefix),
     };
     return sGraph;
@@ -159,7 +172,7 @@ export class ElkGraphJsonToSprotty {
       position: this.pos(elkNode),
       size: this.size(elkNode),
       children: [],
-      cssClasses: getClasses(elkNode),
+      cssClasses: getClasses(elkNode, this.styles),
       properties: elkNode?.properties,
       layoutOptions: elkNode?.layoutOptions,
     } as SNode;
@@ -194,7 +207,7 @@ export class ElkGraphJsonToSprotty {
       position: this.pos(elkPort),
       size: this.size(elkPort),
       children: [],
-      cssClasses: getClasses(elkPort),
+      cssClasses: getClasses(elkPort, this.styles),
       properties: elkPort?.properties,
       layoutOptions: elkPort?.layoutOptions,
     } as SPort;
@@ -214,7 +227,7 @@ export class ElkGraphJsonToSprotty {
       text: elkLabel.text,
       position: this.pos(elkLabel),
       size: this.size(elkLabel),
-      cssClasses: getClasses(elkLabel),
+      cssClasses: getClasses(elkLabel, this.styles),
       labels: [],
       properties: elkLabel?.properties,
       layoutOptions: elkLabel?.layoutOptions,
@@ -237,7 +250,7 @@ export class ElkGraphJsonToSprotty {
       targetId: '',
       routingPoints: [],
       children: [],
-      cssClasses: getClasses(elkEdge),
+      cssClasses: getClasses(elkEdge, this.styles),
       properties: elkEdge?.properties,
       layoutOptions: elkEdge?.layoutOptions,
     } as SEdge;

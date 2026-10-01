@@ -26,7 +26,7 @@ def capture_sends(widget, monkeypatch):
 
 @pytest.mark.parametrize(
     ("cls", "name"),
-    [(Selection, "ids"), (Hover, "ids"), (MarkElementWidget, "value")],
+    [(Selection, "ids"), (Hover, "hovered_id"), (MarkElementWidget, "value")],
 )
 def test_browser_written_traits_are_tagged_echo_off(cls, name):
     widget = cls()
@@ -38,7 +38,7 @@ def test_browser_written_traits_are_tagged_echo_off(cls, name):
     ("cls", "name", "wire"),
     [
         (Selection, "ids", ["n1", "n2"]),
-        (Hover, "ids", "n1"),
+        (Hover, "hovered_id", "n1"),
     ],
 )
 def test_browser_written_traits_do_not_echo(cls, name, wire, monkeypatch):

@@ -170,7 +170,7 @@ async def test_collapse_does_not_remeasure(browser):
 
     diagram.view.selection.ids = ("a",)
     tool = diagram.get_tool(ToggleCollapsedTool)
-    await tool.handler()  # toggles a's children; ``on_done`` refreshes
+    await tool.trigger()  # toggles a's children; ``on_done`` refreshes
     await settle(diagram)
 
     assert diagram.pipe.status.exception is None

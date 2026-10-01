@@ -12,8 +12,16 @@ from .tool import Tool
 
 
 class PipelineProgressBar(Tool):
+    """Progress bar for a pipe; a state-only tool driven by :meth:`update`.
+
+    ``pipe`` is ``None`` until the first :meth:`update` binds it (the
+    :py:class:`~ipyelk.diagram.Diagram` wires ``update`` as its pipeline's
+    ``on_progress`` callback).
+    """
+
     bar = T.Instance(W.FloatProgress, kw={})
-    pipe = T.Instance(Pipe)
+    pipe = T.Instance(Pipe, allow_none=True, default_value=None)
+    _dependencies = ("pipe",)
     priority = T.Int(default_value=100)
     #: delays (s) after a terminal update at which the bar's state is re-sent:
     #: the hide/fill is a fire-and-forget state update with no retransmit, and

@@ -35,6 +35,7 @@ import {
   SParentElementImpl,
   forEachMatch,
   isFadeable,
+  isHoverable,
 } from 'sprotty';
 import { UpdateAnimationData, UpdateModelCommand } from 'sprotty';
 
@@ -42,6 +43,22 @@ import { containsSome } from './smodel-utils';
 
 @injectable()
 export class UpdateModelCommand2 extends UpdateModelCommand {
+  protected updateElement(
+    left: SModelElementImpl,
+    right: SModelElementImpl,
+    animationData: UpdateAnimationData,
+  ): void {
+    super.updateElement(left, right, animationData);
+    /**
+     * Sprotty preserves `selected` and the camera when replacing an element, but
+     * not `hoverFeedback`. Preserve it so a paint, re-layout, or overlay update
+     * under a stationary pointer does not discard the hover state.
+     */
+    if (isHoverable(left) && isHoverable(right)) {
+      right.hoverFeedback = left.hoverFeedback;
+    }
+  }
+
   protected computeAnimation(
     newRoot: SModelRootImpl,
     matchResult: MatchResult,
