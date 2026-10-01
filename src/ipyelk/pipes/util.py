@@ -61,16 +61,11 @@ def settle(future: asyncio.Future, method: str, *args) -> None:
     """Call ``future.<method>(*args)`` (``set_result``/``set_exception``) on
     the loop the future belongs to, from whatever thread this runs on.
 
-    A widget's comm messages are handled on the thread that owns its comm:
-    with ipykernel >= 7 and a frontend that uses kernel subshells (JupyterLab
-    4.5+, ipywidgets 8.1.8+) that is a *subshell* thread with its own event
-    loop, while a runner scheduled from a cell lives on the kernel's main
-    loop.  A future may only be settled from its own loop's thread: from any
-    other, ``set_result`` is not thread-safe and, worse, does not wake the
-    loop, so the runner awaiting it sits until that loop's next timer -- the
-    ``browser_roundtrip`` re-send backoff -- and every answered request is
-    re-sent once.  ``call_soon_threadsafe`` delivers the answer and wakes the
-    loop; a future already settled (cancelled by a timeout) is left alone.
+    With ipykernel >= 7 and kernel subshells (JupyterLab 4.5+, ipywidgets
+    8.1.8+), widget messages arrive on a subshell thread with its own loop,
+    while a runner started from a cell lives on the main loop. Settling a
+    future from another thread neither is safe nor wakes its loop, so it goes
+    through ``call_soon_threadsafe``. A future already done is left alone.
     """
 
     def apply():
@@ -80,7 +75,6 @@ def settle(future: asyncio.Future, method: str, *args) -> None:
     if on_own_loop(future):
         apply()
         return
-    # a closed loop means nobody awaits this future any more
     with contextlib.suppress(RuntimeError):
         future.get_loop().call_soon_threadsafe(apply)
 
@@ -89,28 +83,14 @@ def wait_for_answer(pipe, gen: int, trait: str = "value") -> asyncio.Future:
     """Return a future that resolves (with ``outlet.value``) when the browser
     answers roundtrip ``gen``.
 
-    The frontend writes ``gen`` alongside ``value`` in one ``save_changes``
-    (``js/layout_widget_util.ts`` ``answer``), so whichever of the two
-    observers fires first, ``outlet.gen`` already carries the answer's
-    generation (``Widget.set_state`` sets every attribute before notifying).
-    Both traits are observed because the browser's update is a *diff*:
-    Backbone drops an attribute that is deep-equal to what the frontend model
-    holds, so a layout identical to the previous one may arrive as a change
-    of ``gen`` alone (the frontend forces ``value`` into the diff too, but an
-    older extension build does not).
+    The frontend writes ``gen`` and ``value`` in one ``save_changes``
+    (``answer`` in ``js/layout_widget_util.ts``). Both traits are observed
+    because an answer identical to the previous one may arrive as a change of
+    ``gen`` alone.
 
-    An answer for another generation -- the browser finishing a run that
-    ``cancel`` abandoned -- is logged and ignored, and the future stays
-    pending for the right one.  ``gen == 0`` is an older frontend build that
-    does not stamp its answers: accepted, with a warning once per pipe
-    (``pipe._warned_unversioned``, so each diagram that meets such a frontend
-    says so once), so the diagram still renders (stale answers cannot be told
-    apart in that case).
-    Only a write that *came from the browser* counts, though: ``set_state``
-    holds ``_property_lock`` while notifying, so ``"value" in
-    outlet._property_lock`` is the browser's write (the idiom
-    ``MarkElementWidget._should_send_property`` uses); a kernel-side
-    assignment to ``outlet.value`` during a roundtrip is not an answer.
+    An answer for another generation is ignored. ``gen == 0`` (an older
+    extension build) is accepted, with one warning per pipe, but only when the
+    browser wrote it (``value`` in ``_property_lock``), not the kernel.
     """
     outlet = pipe.outlet
     future: asyncio.Future = asyncio.get_event_loop().create_future()
@@ -220,13 +200,7 @@ async def browser_roundtrip(
             else:
                 return
     finally:
-        # only clear our own future: cancellation can unwind a loop turn late
-        # (``wait_for`` on Python < 3.12 awaits its inner future first), by
-        # which time a successor started in the same tick as ``cancel()`` may
-        # already be waiting on *its* future, and a browser error for that
-        # generation must still find it
-        # (the same holds for a run cancelled from another loop when
-        # ``Pipe.schedule_run`` hands over to the caller's loop)
+        # a successor may already be waiting on its own future
         if pipe._roundtrip_future is future_value:
             pipe._roundtrip_future = None
 

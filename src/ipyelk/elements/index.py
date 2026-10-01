@@ -256,14 +256,9 @@ class ElementIndex(BaseModel):
     def depths(root: Node, *orphans: Node) -> dict[int, int]:
         """Depth of every node under ``root``, keyed by ``id()``.
 
-        ``orphans`` are nodes referenced by an edge but missing from the
-        hierarchy; :meth:`check_edges` reasons about them as children of
-        ``root`` -- which is what ``ValidationPipe.fix_orphans`` goes on to make
-        true -- so they start at depth 1.
-
-        Keys are ``id()`` and not element ids: this map is built and consumed
-        within a single :meth:`check_edges` call, elements are not hashable by
-        value, and an un-indexed element may not have an id yet.
+        ``orphans`` (edge endpoints missing from the hierarchy) are treated as
+        children of ``root``, as ``ValidationPipe.fix_orphans`` will make them.
+        Keys are ``id()`` because an un-indexed element may not have an id yet.
         """
         depths: dict[int, int] = {id(root): 0}
         stack: list[tuple[Node, int]] = [(orphan, 1) for orphan in orphans]
@@ -286,21 +281,14 @@ class ElementIndex(BaseModel):
     ) -> Node | None:
         """Lowest common ancestor of two edge endpoints, by walking parents.
 
-        Equivalent to ``nx.lowest_common_ancestor`` over the node hierarchy, but
-        ``O(depth)`` per edge instead of ``O(N + E)``: ports resolve to their
-        owning node, a self loop resolves to that node's parent, and otherwise
-        the deeper endpoint is raised to the shallower one before both walk up
-        together.
+        ``O(depth)`` per edge, where ``nx.lowest_common_ancestor`` was
+        ``O(N + E)``. Ports resolve to their node and a self loop to that node's
+        parent. ``depths`` comes from :meth:`depths`, and orphans walk up to
+        ``root``.
 
-        ``depths`` comes from :meth:`depths`; ``root`` is the parent the same
-        call adopted the orphans with, so an orphan's walk reaches it too.
-        Returns ``None`` when the walk runs off the top of the hierarchy, which
-        only a self loop on a parentless node can do.
-
-        Ownership trusts the ``_parent`` links (``get_parent``), not
-        ``children`` membership: an element appended to ``children`` without
-        ``set_parent`` (``add_child`` does both) has no parent to walk up
-        through and is reported as unreachable (:class:`NotFoundError`).
+        Returns ``None`` only for a self loop on a parentless node. Raises
+        :class:`NotFoundError` for an element with no ``_parent`` link, e.g. one
+        appended to ``children`` without ``add_child``.
         """
         a: HierarchicalElement | None = u.get_parent() if isinstance(u, Port) else u
         b: HierarchicalElement | None = v.get_parent() if isinstance(v, Port) else v
@@ -312,7 +300,6 @@ class ElementIndex(BaseModel):
         def up(node: HierarchicalElement | None) -> Node:
             parent = None if node is None else node.get_parent()
             if parent is None and node is not root and depths.get(id(node)):
-                # an orphan root: `check_edges` hangs it off the hierarchy root
                 parent = root
             if parent is None:
                 raise NotFoundError(f"Unable to find {node} in the hierarchy")
@@ -333,7 +320,6 @@ class ElementIndex(BaseModel):
         while a is not b:
             a = up(a)
             b = up(b)
-        # ``a is not b`` on entry, so the meeting point came out of ``up``
         assert isinstance(a, Node)
         return a
 
@@ -361,8 +347,6 @@ class ElementIndex(BaseModel):
                     assert isinstance(ancestor, Node)
                     orphans.add(ancestor)
 
-        # check: one walk over the hierarchy pays for every edge's ancestor
-        # lookup below
         depths = self.depths(root, *orphans)
         for el, edge in iter_edges(root, *orphans):
             if edge in lca_mismatch:
@@ -370,9 +354,6 @@ class ElementIndex(BaseModel):
                 continue
             owner = self.lca_by_parent(edge.source, edge.target, depths, root=root)
             if owner is None:
-                # a self loop on a parentless node: the previous implementation
-                # resolved the `None` ancestor through the element map, so it
-                # raised here too
                 raise NotFoundError("Element with id:None not in index")
             assert isinstance(owner, Node)
             if el is not owner:

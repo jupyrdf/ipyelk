@@ -5,11 +5,7 @@
 import { ElkGraphElement, ElkNode, ElkProperties } from './sprotty/json/elkgraph-json';
 import type { TELKErrorMessage } from './tokens';
 
-/**
- * The browser -> kernel report that a `run` request failed. `gen` is the
- * request's generation (`IRunMessage.gen`): `SyncedPipe` rejects the pending
- * roundtrip only when it is still waiting for that generation.
- */
+/** The browser -> kernel report that the `run` request `gen` failed. */
 export function layoutErrorMessage(error: unknown, gen?: number): TELKErrorMessage {
   const message: TELKErrorMessage = { action: 'error', error: `${error}` };
   if (gen != null) {
@@ -25,17 +21,12 @@ export interface IAnswerOutlet {
 }
 
 /**
- * Write a computation's result and the generation it answers to the pipe's
- * outlet, in one `save_changes`, guaranteeing that BOTH reach the kernel.
+ * Write a result and the generation it answers to the outlet in one
+ * `save_changes`, so both reach the kernel.
  *
- * `save_changes` sends Backbone's `changedAttributes()` diff, and Backbone
- * (the `@jupyter-widgets/base` patch included) drops an attribute that is
- * deep-equal to what the model already holds. A layout of an unchanged
- * graph -- the kernel's runner serving two requests over the same inlet --
- * is deep-equal to the previous answer, so only `gen` would be sent; the
- * kernel's `wait_for_answer` handles that, but an older kernel observes
- * `value` alone and would wait out its deadline. Silently clearing `value`
- * first makes the real set a change again, whatever the kernel watches.
+ * Backbone only sends changed attributes, so an answer deep-equal to the
+ * previous one would send `gen` alone, which an older kernel never notices.
+ * Silently clearing `value` first makes it a change again.
  */
 export function answer(outlet: IAnswerOutlet, value: unknown, gen: number): void {
   outlet.set('value', null, { silent: true });
@@ -163,18 +154,11 @@ export type TRunDisposition = 'started' | 'queued' | 'ignored';
  * At most one browser computation in flight per pipe, keyed by the kernel's
  * roundtrip generation (`IRunMessage.gen`).
  *
- * The kernel re-sends `run` with backoff until it is answered
- * (`browser_roundtrip`), so a layout slower than the resend interval used to
- * be computed once per resend and the diagram re-rendered on each result. A
- * request for the in-flight (or an older) generation is the same work and is
- * ignored; a newer generation is queued and started once, when the current
- * computation resolves, and only the newest queued generation survives. A
- * request without a generation (an older kernel) coalesces into at most one
- * trailing run. A re-sent request that lands after its generation was
- * answered (in transit when the answer left) is ignored too: the queue
- * remembers the newest generation it completed. `start` must never be
- * allowed to wedge the queue: a rejected or throwing `start` is logged and
- * the queue moves on.
+ * The kernel re-sends `run` until it is answered. A request for the
+ * in-flight, an older or an already completed generation is ignored; a newer
+ * one is queued, and only the newest queued generation survives. A request
+ * without a generation (an older kernel) coalesces into one trailing run. A
+ * failing `start` is logged and never wedges the queue.
  */
 export class RunQueue {
   private inFlight: number | null = null;

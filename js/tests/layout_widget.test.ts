@@ -159,9 +159,7 @@ describe('staleMessage', () => {
 });
 
 describe('RunQueue', () => {
-  // the browser half of the roundtrip generation: the kernel re-sends `run`
-  // with backoff until answered, so a slow layout must not be computed once
-  // per resend, and a newer request must run once after the current one
+  // one computation per generation, however often the kernel re-sends `run`
   function makeQueue() {
     const started: number[] = [];
     const gates: Record<number, () => void> = {};
@@ -263,9 +261,7 @@ describe('RunQueue', () => {
 });
 
 describe('answer', () => {
-  // the browser half of the roundtrip answer: `save_changes` sends Backbone's
-  // `changedAttributes()` diff, which drops a deep-equal `value`, so a layout
-  // of an unchanged graph would reach the kernel as a change of `gen` alone
+  // a deep-equal `value` must still reach the kernel alongside `gen`
   class Outlet extends Backbone.Model {
     // `@jupyter-widgets/base` WidgetModel.set / save_changes, minus the
     // comm: buffer every set's diff, send the buffer on save_changes

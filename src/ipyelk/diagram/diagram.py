@@ -50,8 +50,7 @@ class Diagram(StyledWidget):
     )
     toolbar = T.Instance(Toolbar, kw={})
     symbols = T.Instance(SymbolSpec, kw={}).tag(sync=True, **symbol_serialization)
-    #: the runner ``refresh`` last registered ``_update_view`` on (one view
-    #: update per runner, however many refreshes it serves)
+    #: the runner ``refresh`` last registered ``_update_view`` on
     _refresh_task: asyncio.Future | None = None
 
     def __init__(self, *args, **kwargs):
@@ -99,10 +98,10 @@ class Diagram(StyledWidget):
 
     @T.observe("pipe", "source", "style")
     def _change_pipe(self, change):
-        # Replacing the pipe or the source detaches whatever run is in flight:
-        # its browser answer would be persisted into an index nobody views
-        # (the pipes are rewired onto the new source's index).  That is the
-        # one place a run is cancelled; a style change only requests a new one.
+        """Rewire and refresh. A new pipe or source cancels the in-flight run,
+        whose answer would land in an index nobody views; a style change only
+        requests a new run.
+        """
         if change.name == "pipe" and isinstance(change.old, Pipe):
             change.old.cancel()
         elif change.name == "source":
@@ -171,6 +170,9 @@ class Diagram(StyledWidget):
         """Create asynchronous refresh task which will update the view given any
         changes.
 
+        One runner serves every refresh requested while it is alive, so the view
+        is updated once, after the trailing run.
+
         Returns ``None`` when no event loop is running (see ``Pipe.schedule_run``).
         """
         self.log.debug("Refreshing diagram")
@@ -178,13 +180,17 @@ class Diagram(StyledWidget):
         if task is None:
             return None
         if task is not self._refresh_task:
-            # one runner serves every refresh requested while it is alive and
-            # resolves after the trailing run, so the view is updated once
             self._refresh_task = task
             task.add_done_callback(self._update_view)
         return task
 
     def _update_view(self, future: asyncio.Future) -> None:
+        """Show the finished layout.
+
+        The inlet keeps the user's own tree: layout results already reached it
+        through ``outlet.persist()``, and swapping in the laid-out copy would drop
+        hidden elements and break identity for selection and tools.
+        """
         try:
             exception = future.exception()
         except asyncio.CancelledError:
@@ -194,12 +200,6 @@ class Diagram(StyledWidget):
             # a silently failed layout looks exactly like a hung diagram
             self.log.warning("Diagram refresh failed: %r", exception)
             return
-        # The inlet keeps the user's own tree: geometry and label sizes
-        # already reached it through ``outlet.persist()`` (shared index),
-        # and swapping in the laid-out copy would drop hidden elements and
-        # break identity for selection and tools on the next ``New`` run.
-        # The flow was taken when the run started (``Pipeline.run``), so
-        # nothing recorded meanwhile is cleared here.
         layout = self.pipe.outlet.value
         if self.view.source is None:
             return

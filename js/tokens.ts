@@ -26,11 +26,7 @@ export interface IELKFitMessage {
 
 export interface IRunMessage {
   action: 'run';
-  /**
-   * The kernel's roundtrip generation for this pipe (`browser_roundtrip`);
-   * the answer is written back as `outlet.gen` with the value. Absent from
-   * older kernels.
-   */
+  /** the kernel's roundtrip generation, echoed back as `outlet.gen`; absent from older kernels */
   gen?: number;
 }
 
@@ -38,11 +34,7 @@ export interface IRunMessage {
 export type TELKErrorMessage = {
   action: 'error';
   error: string;
-  /**
-   * The generation of the `run` request that failed, so the kernel rejects
-   * only the roundtrip still pending for it (a late error from an abandoned
-   * generation is ignored). Absent when the failure is not tied to a request.
-   */
+  /** the generation of the `run` request that failed, if any */
   gen?: number;
 };
 

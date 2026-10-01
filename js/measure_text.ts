@@ -37,7 +37,6 @@ export class ELKTextSizerModel extends DOMWidgetModel {
       ...super.defaults(),
 
       _model_name: ELKTextSizerModel.model_name,
-
       _model_module_version: VERSION,
       _view_module: NAME,
       _view_name: ELKTextSizerView.view_name,
@@ -121,7 +120,11 @@ export class ELKTextSizerModel extends DOMWidgetModel {
   }
 
   /**
-   * Method to take a list of texts and build SVG Text Elements to attach to the DOM
+   * Method to take a list of texts and build SVG Text Elements to attach to the DOM.
+   *
+   * Measures on the next animation frame, or after `MEASURE_FALLBACK_MS` in a
+   * background tab, which never paints: an unresolved measurement would hold
+   * the `RunQueue` slot and the kernel would wait out its deadline.
    * @param gen the request's generation, written back with the sizes
    * @returns a promise resolving once the sizes are written to the outlet
    */
@@ -133,7 +136,6 @@ export class ELKTextSizerModel extends DOMWidgetModel {
       this.send(stale); // unservable: let the kernel re-sync the state
       return null;
     }
-
     ELK_DEBUG && console.log('Root Node:', rootNode);
     let texts: ElkLabel[] = get_labels(rootNode);
 
@@ -174,8 +176,6 @@ export class ELKTextSizerModel extends DOMWidgetModel {
           this.read_sizes(texts, elements);
           let output = { ...rootNode };
           output['out'] = random();
-          // value and generation in one message: the kernel matches the
-          // answer to its request by `gen`
           answer(outlet, output, gen);
         } catch (error) {
           console.error('ELK text sizer failed:', error);
@@ -187,11 +187,6 @@ export class ELKTextSizerModel extends DOMWidgetModel {
           resolve();
         }
       };
-      // measure after a paint when one comes; a background tab never paints
-      // (its animation frames are suspended), and an unresolved measurement
-      // would hold the RunQueue's in-flight slot, so every re-sent request is
-      // ignored and the kernel waits out its deadline. The timer measures
-      // anyway: the layout is computed on demand by getBoundingClientRect.
       frame = window.requestAnimationFrame(finish);
       timer = window.setTimeout(finish, MEASURE_FALLBACK_MS);
     });

@@ -42,9 +42,7 @@ class ValidationPipe(Pipe):
                 self.outlet._notify_trait("value", None, value)
             else:
                 self.outlet.value = value
-            # the outlet index is always rebuilt (it is the downstream
-            # authority and pins assigned ids), but re-reporting on it only
-            # tells us something new when a fix moved or added an element
+            # always rebuild the outlet index; re-report only if a fix changed it
             outlet_index = self.outlet.build_index()
             if fixes:
                 self.get_reports(outlet_index)
@@ -76,11 +74,7 @@ class ValidationPipe(Pipe):
         return errors
 
     def apply_fixes(self, index: MarkIndex) -> tuple[Node, int]:
-        """Apply the enabled fixes and return the root and how many were made.
-
-        The count is what lets :meth:`run` skip re-reporting on an outlet that
-        nothing changed.
-        """
+        """Apply the enabled fixes and return the root and how many were made."""
         root = index.root
         fixes = 0
         if self.id_report.null_ids and self.fix_null_id:

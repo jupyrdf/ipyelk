@@ -18,11 +18,8 @@ from .util import resync_stale, settle
 class Superseded(Exception):
     """A run gave way to a newer request at a stage boundary.
 
-    Raised by ``Pipeline`` between stages when ``Pipe.schedule_run`` was
-    called while the run was in flight; caught by the runner
-    (``Pipe._serve_requests``), which then serves the newer request.  Never
-    raised inside a stage: a browser roundtrip that was sent is always
-    awaited to its answer, error or timeout.
+    Raised by ``Pipeline`` between stages, never inside one, and caught by
+    ``Pipe._serve_requests``, which then serves the newer request.
     """
 
 
@@ -198,17 +195,12 @@ class Pipe(W.Widget):
     reports: tuple[str, ...] = TypedTuple(T.Unicode(), kw={})
     on_progress = T.Callable(default_value=None, allow_none=True)
     on_error = T.Callable(default_value=None, allow_none=True)
-    #: the runner serving the pending requests (see ``schedule_run``); it
-    #: resolves after the *trailing* run, so ``await pipe._task`` waits for
-    #: every request made while it was alive
+    #: the runner serving pending requests; resolves after the trailing run
     _task: asyncio.Task | None = None
-    #: request counters: ``schedule_run`` bumps ``_requested``; the runner
-    #: stamps ``_generation`` when it starts a run, so ``_generation <
-    #: _requested`` means a newer request is pending
+    #: ``_generation < _requested`` means a newer request is pending
     _generation: int = 0
     _requested: int = 0
     status = T.Instance(PipeStatus, kw={})
-
     status_widget = T.Instance(W.DOMWidget, allow_none=True)
 
     def __init__(self, *args, **kwargs):
@@ -233,25 +225,15 @@ class Pipe(W.Widget):
     def schedule_run(self, change: T.Bunch | None = None) -> asyncio.Task | None:
         """Request a run and return the task that will serve it.
 
-        Requests coalesce on the trailing edge: one *runner* task serves every
-        request made while it is alive, running ``run`` again until no newer
-        request is pending, so ten calls in one tick cost one run and a call
-        made mid-run costs one more run *after* the current one.  Nothing is
-        cancelled here -- a browser roundtrip that was sent is always awaited
-        (``cancel`` is the explicit way to stop a run); a ``Pipeline`` instead
-        gives way at its next stage boundary (``Superseded``).
+        Requests coalesce on the trailing edge: one runner task serves every
+        request made while it is alive, so ten calls in one tick cost one run and
+        a call made mid-run costs one more run after it. Nothing is cancelled
+        here (see ``cancel``); a ``Pipeline`` gives way at its next stage
+        boundary (``Superseded``).
 
-        One exception: a runner that lives on *another event loop* is handed
-        over -- cancelled (see ``cancel``) and replaced by a runner on the
-        caller's loop.  With ipykernel >= 7 and a frontend using kernel
-        subshells (JupyterLab 4.5+, ipywidgets 8.1.8+), cells run on the
-        kernel's main loop but every widget message -- a button click, the
-        browser's answers -- is handled on a subshell thread with its own
-        loop.  A refresh scheduled from a cell and then requested again from
-        a widget callback cannot be awaited there (``RuntimeError: ... attached
-        to a different loop``), and the returned task must be awaitable by
-        the caller, so the request is served by a runner the caller can wait
-        for.  The pending requests survive the hand-over (``_requested``).
+        A runner on another event loop (a kernel subshell, see ``util.settle``)
+        is handed over to a new runner on the caller's loop, so the returned task
+        is always awaitable by the caller. Pending requests survive the hand-over.
 
         Returns ``None`` (and schedules nothing) when no event loop is running,
         e.g. when a diagram is built in a plain script or a test: there is no
@@ -315,8 +297,6 @@ class Pipe(W.Widget):
             except Exception:
                 if not self.superseded():
                     raise
-                # the failed run is stale anyway; the newer request may well
-                # succeed (a ``Pipeline`` has already logged the stage error)
                 self.log.warning(
                     "%s run failed; serving the newer request",
                     type(self).__name__,
@@ -326,11 +306,9 @@ class Pipe(W.Widget):
     def cancel(self) -> bool:
         """Cancel the runner and drop its pending requests; ``True`` if one was alive.
 
-        This is the only thing that cancels a run: ``schedule_run`` never does.
-        Use it when the pipe is detached (``Diagram`` replaces its pipe or
-        source) -- an in-flight browser answer would otherwise be persisted
-        into an index nobody views.  The next ``schedule_run`` starts a fresh
-        runner.
+        The only thing that cancels a run. Use it when the pipe is detached, so
+        an in-flight answer is not persisted into an index nobody views. A task
+        on another loop is cancelled through that loop (see ``util.settle``).
         """
         task, self._task = self._task, None
         if task is None or task.done():
@@ -343,9 +321,6 @@ class Pipe(W.Widget):
         if on_own_loop:
             task.cancel()
         else:
-            # a task may only be cancelled from its own loop's thread (see
-            # ``util.settle``): from another, ``cancel`` neither is safe nor
-            # wakes the loop, and the run would linger until its next timer
             loop.call_soon_threadsafe(task.cancel)
         return True
 
@@ -379,8 +354,7 @@ class Pipe(W.Widget):
         """Method to test is this pipe should be run given the set of changes.
 
         :param flow: the changes to test against; defaults to the pending
-            ``inlet.flow``.  A ``Pipeline`` passes the flow it *took* at the
-            start of a run to its first pipe (``MarkElementWidget.take``).
+            ``inlet.flow``
         :return: dirty flag
         :rtype: bool
         """
@@ -442,11 +416,9 @@ class SyncedOutletPipe(Pipe):
 class SyncedPipe(SyncedOutletPipe, SyncedInletPipe):
     """Both inlet and value are synced with the browser"""
 
-    #: generation of the last ``run`` request sent to the browser; the answer
-    #: carries it back in ``outlet.gen`` (see ``util.browser_roundtrip``)
+    #: generation of the last ``run`` request sent to the browser
     _roundtrip_gen: int = 0
-    #: set once this pipe accepted an answer without a generation (an older
-    #: extension build); the acceptance is warned about once per pipe
+    #: whether an unversioned answer (older extension build) was warned about
     _warned_unversioned: bool = False
 
     def __init__(self, *args, **kwargs):
@@ -462,12 +434,9 @@ class SyncedPipe(SyncedOutletPipe, SyncedInletPipe):
 
         * ``action: error`` -- the frontend failed to produce an outlet value;
           reject the pending roundtrip future so the kernel stops waiting (and
-          stops re-sending) instead of retrying or timing out.  The report
-          carries the generation of the request that failed (``gen``): a late
-          error from a generation this pipe abandoned (``cancel``) must not
-          kill the roundtrip now pending, so only a matching generation
-          rejects; a report without ``gen`` (an older extension build) always
-          does.
+          stops re-sending) instead of retrying or timing out. Only an error for
+          the pending generation (``gen``), or one with no ``gen`` from an older
+          extension build, rejects it.
         * ``action: stale`` -- the frontend got a ``run`` request it cannot
           serve because state it needs (inlet/outlet wiring, the inlet value)
           never arrived: widget state sync has no retransmit, and
