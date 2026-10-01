@@ -18,6 +18,12 @@ ENV_NAME = os.environ["PIXI_ENVIRONMENT_NAME"]
 PROCESSES = int(os.environ.get("ATEST_PROCESSES", "4"))
 RETRIES = int(os.environ.get("ATEST_RETRIES", "0"))
 ATTEMPT = int(os.environ.get("ATEST_ATTEMPT", "0"))
+#: seconds pabot waits for one suite's process (one notebook: setup, test and
+#: teardown) before killing it. Robot's `Test Timeout` does not cover teardown,
+#: and a teardown against a browser that died mid-test spends ~10 minutes per
+#: Selenium call on urllib3 retries (seen: 6-hour jobs). A passing notebook
+#: suite takes about a minute; the slowest wait inside one is 5 minutes.
+PROCESS_TIMEOUT = int(os.environ.get("ATEST_PROCESS_TIMEOUT", "600"))
 PLATFORM = platform.system()
 WIN = PLATFORM == "Windows"
 TOTAL_COVERAGE = 0 if WIN else int(os.environ.get("WITH_TOTAL_COVERAGE", "0"))
@@ -108,6 +114,7 @@ def atest(attempt, extra_args):
         # pabot args must come first
         args = [
             *["--processes", PROCESSES],
+            *["--processtimeout", PROCESS_TIMEOUT],
             "--artifactsinsubfolders",
             *["--artifacts", "png,log,svg"],
             *args,

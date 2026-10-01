@@ -104,7 +104,9 @@ class BrowserTextSizer(SyncedPipe, StyledWidget, TextSizer):
         try:
             await browser_roundtrip(self, timeout=self.timeout or None)
         except asyncio.TimeoutError:
-            if not os.environ.get("IPYELK_TESTING"):
+            if not (
+                os.environ.get("IPYELK_TESTING") or os.environ.get("IPYELK_NO_BROWSER")
+            ):
                 raise
             await TextSizer.run(self)
         else:

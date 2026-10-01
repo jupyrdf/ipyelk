@@ -17,6 +17,14 @@ ${SCREENS}      ${SCREENS ROOT}${/}examples${/}03_App
     Example Should Restart-and-Run-All    ${APP}
     Scroll To Cell    6
     Click Elk Tool    Center    1
+    IF    ${TOTAL_COVERAGE}
+        # n1 holds n2: selecting it makes the notebook show its control overlay.
+        # Only where coverage is measured: on the `oldest` frontend (JupyterLab
+        # 4.1.8, ipywidgets 8.0.1) selecting a node runs Firefox out of memory.
+        Select Elk Node    n1
+        Elk Control Overlay Should Show A Button
+        Capture Page Screenshot    11-selected-n1.png
+    END
     Scroll To Cell    9
     Click Elk Tool    Center    2
     Scroll To Cell    12

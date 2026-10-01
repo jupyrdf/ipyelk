@@ -1,5 +1,8 @@
 # Copyright (c) 2024 ipyelk contributors.
 # Distributed under the terms of the Modified BSD License.
+import asyncio
+import os
+
 import traitlets as T
 from ipywidgets.widgets.trait_types import TypedTuple
 
@@ -36,5 +39,13 @@ class ElkJS(SyncedPipe):
         # watch once
         # signal to browser (re-sending until a frontend answers) and wait
         # for done, browser error, or deadline
-        await browser_roundtrip(self, timeout=self.timeout or None)
-        self.outlet.persist()
+        try:
+            await browser_roundtrip(self, timeout=self.timeout or None)
+        except asyncio.TimeoutError:
+            if not os.environ.get("IPYELK_NO_BROWSER"):
+                raise
+            # no frontend (`nbconvert --execute`): nothing can lay the graph
+            # out, so pass it on unlaid-out and let the run succeed
+            self.outlet.value = self.inlet.value
+        else:
+            self.outlet.persist()
