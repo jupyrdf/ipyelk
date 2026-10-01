@@ -13,14 +13,16 @@ from .base import Pipe, PipeStatus, PipeStatusView, Superseded, SyncedOutletPipe
 
 class PipelineStatusView(PipeStatusView):
     toggle_btn = T.Instance(W.Button)
-    header = T.Instance(W.HBox)
+    header = T.Instance(W.HBox, kw={})
     include_exception = T.Bool(default_value=True)
     collapsed = T.Bool(default_value=True)
     statuses = T.List(T.Instance(W.Widget), default_value=[])
-    #: the sub-pipes ``statuses`` was built for
-    _row_pipes: tuple[Pipe, ...] = ()
 
     def __init__(self, *args, **kwargs):
+        #: the sub-pipes and their views that ``statuses`` was built for
+        self._row_key: tuple | None = None
+        #: widgets ``update_children`` created; closed when the rows are rebuilt
+        self._owned: list[W.Widget] = []
         super().__init__(*args, **kwargs)
 
     @T.default("toggle_btn")
@@ -38,43 +40,39 @@ class PipelineStatusView(PipeStatusView):
 
         return btn
 
-    @T.default("header")
-    def _default_header(self):
-        return W.HBox([self.toggle_btn, self.html])
-
     @T.observe("collapsed", "statuses")
     def _update_children(self, change=None):
+        self.header.children = [self.toggle_btn, self.html]
         children = [self.header]
         if not self.collapsed:
             children.extend(self.statuses)
         self.children = children
 
     def update_children(self, pipe: Pipeline):
-        """Build one row per sub-pipe, only when the sub-pipes change."""
-        pipes = tuple(pipe.pipes)
-        if pipes == self._row_pipes:
-            return
-        old_rows = self.statuses
-        self._row_pipes = pipes
-        self.statuses = [
-            W.HBox([
-                W.HTML(value="<pre>  </pre>").add_class("elk-pipe-space"),
-                p.status_widget,
-                W.HTML(value=f'<pre class="elk-pipe-accessor">.pipes[{i}]</pre>'),
-            ])
-            for i, p in enumerate(pipes)
-        ]
-        for row in old_rows:
-            _close_row(row)
+        """Show one row per sub-pipe, rebuilding the rows only when the sub-pipes
+        or their views change.
+        """
+        key = tuple((p, p.status_widget) for p in pipe.pipes)
+        if key != self._row_key:
+            self._row_key = key
+            stale, self._owned = self._owned, []
+            self.statuses = [self._row(i, view) for i, (_, view) in enumerate(key)]
+            for widget in stale:
+                _close(widget)
+        self._update_children()
+
+    def _row(self, i: int, view: W.DOMWidget) -> W.HBox:
+        space = W.HTML(value="<pre>  </pre>").add_class("elk-pipe-space")
+        accessor = W.HTML(value=f'<pre class="elk-pipe-accessor">.pipes[{i}]</pre>')
+        row = W.HBox([space, view, accessor])
+        self._owned += [row, space, accessor]
+        return row
 
 
-def _close_row(row: W.Box) -> None:
-    """Close a status row and the widgets it owns, but not the sub-pipe's view."""
-    space, _status, accessor = row.children
-    for widget in (row, space, accessor):
-        for part in (widget, widget.layout, getattr(widget, "style", None)):
-            if part is not None:
-                part.close()
+def _close(widget: W.Widget) -> None:
+    for part in (widget, widget.layout, getattr(widget, "style", None)):
+        if part is not None:
+            part.close()
 
 
 class Pipeline(SyncedOutletPipe):

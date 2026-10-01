@@ -16,15 +16,15 @@ from ipyelk import Diagram
 from ipyelk.elements import Node
 from ipyelk.pipes import MarkElementWidget
 from ipyelk.pipes.base import PipeStatus, rep_elapsed
-from ipyelk.pipes.pipeline import PipelineStatusView
+from ipyelk.pipes.pipeline import Pipeline, PipelineStatusView
 
 REFRESHES = 10
 
 
 def registry() -> dict:
-    """The live-widget registry (``Widget.widgets`` is deprecated in 8.1)."""
+    """The live-widget registry: ``_instances`` on 8.1+, ``_active_widgets`` on 8.0."""
     instances = getattr(widget_module, "_instances", None)
-    return W.Widget.widgets if instances is None else instances
+    return W.Widget._active_widgets if instances is None else instances
 
 
 def live_widgets() -> int:
@@ -32,9 +32,8 @@ def live_widgets() -> int:
     return len(registry())
 
 
-def live_status_widgets() -> int:
-    gc.collect()
-    return sum(isinstance(w, PipeStatus) for w in list(registry().values()))
+def is_closed(widget: W.Widget) -> bool:
+    return widget.comm is None
 
 
 def make_diagram() -> Diagram:
@@ -68,18 +67,8 @@ async def test_refresh_adds_no_live_widgets(show_view: bool) -> None:
     assert live_widgets() - before == 0
 
 
-@pytest.mark.asyncio
-@pytest.mark.usefixtures("headless")
-async def test_pipe_statuses_are_bounded() -> None:
-    diagram = make_diagram()
-    assert diagram.pipe.status_widget is not None
-    await refresh(diagram)
-    first = live_status_widgets()
-    for _ in range(REFRESHES):
-        await refresh(diagram)
-    after = live_status_widgets()
-    assert after <= len(diagram.pipe.pipes) + 1
-    assert after <= first
+def test_pipe_status_is_not_a_widget() -> None:
+    assert not issubclass(PipeStatus, W.Widget)
 
 
 @pytest.mark.asyncio
@@ -90,11 +79,13 @@ async def test_status_rows_are_reused_and_current() -> None:
     view = pipe.status_widget
     assert isinstance(view, PipelineStatusView)
     view.update_children(pipe)
+    rows = list(view.statuses)
     before = live_widgets()
     for _ in range(100):
         view.update_children(pipe)
     assert live_widgets() == before
     assert len(view.statuses) == len(pipe.pipes)
+    assert all(new is old for new, old in zip(view.statuses, rows))
 
     await refresh(diagram)
     for row, sub in zip(view.statuses, pipe.pipes):
@@ -115,8 +106,41 @@ def test_status_rows_are_rebuilt_when_pipes_change() -> None:
     view.update_children(pipe)
 
     assert len(view.statuses) == len(pipe.pipes)
-    assert all(row.comm is None for row in old_rows)
-    assert all(sub_view.comm is not None for sub_view in sub_views)
+    for row in old_rows:
+        space, _, accessor = row.children
+        for widget in (row, space, accessor):
+            assert is_closed(widget)
+            assert is_closed(widget.layout)
+        assert is_closed(space.style)
+        assert is_closed(accessor.style)
+    assert not any(is_closed(sub_view) for sub_view in sub_views)
+
+
+def test_collapse_toggle_adds_no_live_widgets() -> None:
+    view = make_diagram().pipe.status_widget
+    view.collapsed = False
+    before = live_widgets()
+    for _ in range(50):
+        view.collapsed = not view.collapsed
+    assert live_widgets() == before
+
+
+def test_empty_pipeline_shows_its_header() -> None:
+    view = Pipeline().status_widget
+    assert view.children == (view.header,)
+    assert view.header.children == (view.toggle_btn, view.html)
+
+
+def test_replaced_views_are_shown() -> None:
+    pipe = make_diagram().pipe
+    view = pipe.status_widget
+    custom = W.HTML("custom")
+    pipe.pipes[0].status_widget = custom
+    html = W.HTML("summary")
+    view.html = html
+    view.update_children(pipe)
+    assert view.statuses[0].children[1] is custom
+    assert view.header.children[1] is html
 
 
 def test_new_status_notifies_observers() -> None:

@@ -39,18 +39,23 @@ SLOW_COUNTS = ("layouts", "errors")
 
 
 def gated(label: str, results: dict) -> dict[str, int]:
-    """Flatten one results file to ``{"<label> <shape>:<n> <phase> <count>": value}``."""
+    """Flatten one results file to ``{"<label> <shape>:<n> <phase> <count>": value}``.
+
+    A phase the benchmark could not complete (``None``) counts as ``failed: 1``.
+    """
     names = SLOW_COUNTS if results.get("slow_browser") else COUNTS
     flat = {}
     for case in results["cases"]:
         for phase in PHASES:
-            metrics = case[phase]
-            for name in names:
+            prefix = f"{label} {case['shape']}:{case['n']} {phase}"
+            metrics = case.get(phase)
+            flat[f"{prefix} failed"] = int(metrics is None)
+            for name in names if metrics else ():
                 value = metrics.get(name)
-                if name == "errors":
-                    value = len(value or [])
+                if name == "errors" and value is not None:
+                    value = len(value)
                 if value is not None:
-                    flat[f"{label} {case['shape']}:{case['n']} {phase} {name}"] = value
+                    flat[f"{prefix} {name}"] = value
     return flat
 
 
@@ -60,6 +65,7 @@ def timings(label: str, results: dict) -> list[str]:
         f"| {case[phase]['wall_s'] * 1000:.0f} ms |"
         for case in results["cases"]
         for phase in PHASES
+        if case.get(phase)
     ]
 
 

@@ -64,12 +64,14 @@
   `refresh()` from a widget callback reused a runner from the other loop and failed
   silently. Answers are now delivered through the future's own loop, and a refresh from
   another loop hands the runner over to the caller's loop ([#164])
-- Stop leaking widgets on every refresh: each pipe status change opened a new
-  `PipeStatus` widget, and once the pipeline's status view was shown, rebuilt its rows,
-  and none of the replaced widgets were closed (9 widgets per refresh, 145 with the view
-  shown). `PipeStatus` is now a plain immutable value instead of a widget, and the
-  status view builds its rows once per set of sub-pipes, closing the old rows when the
-  sub-pipes change ([#176])
+- Stop leaking widgets on every refresh. Each pipe status change created a new
+  `PipeStatus` widget, and a displayed pipeline status view rebuilt its rows. Neither
+  closed what it replaced: 9 widgets leaked per refresh, 145 with the view shown. The
+  status view now rebuilds its rows only when the sub-pipes or their views change, and
+  closes the rows it replaces ([#176])
+  - `PipeStatus` is no longer an `ipywidgets.Widget`: it is an immutable value with the
+    same attributes and constructors, compared by identity, so every new status still
+    notifies `status` observers
 
 ### Development
 

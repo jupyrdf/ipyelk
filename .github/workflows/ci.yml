@@ -200,8 +200,6 @@ jobs:
       - run: pixi run u${{ matrix.task }}-pytest
       - if: matrix.task == 'test'
         run: pixi run test-js
-      - if: matrix.task == 'test' && matrix.vm == 'ubuntu-latest'
-        run: pixi run bench-check
       - run: pixi run i${{ matrix.task }}-nbconvert
       - if: matrix.task == 'test' && matrix.vm == 'ubuntu-latest'
         uses: actions/cache@v4
@@ -212,6 +210,8 @@ jobs:
       - env:
           ATEST_ARGS: ${{ matrix.atest-args }}
         run: pixi run a${{ matrix.task }}-robot
+      - if: ${{ !cancelled() && matrix.task == 'test' && matrix.vm == 'ubuntu-latest' }}
+        run: pixi run bench-check
       - if: matrix.task == 'test' && matrix.vm == 'ubuntu-latest'
         run: pixi run report
       - uses: actions/upload-artifact@v4

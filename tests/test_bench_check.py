@@ -14,16 +14,21 @@ bench_check = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(bench_check)
 
 
-def phase(**counts):
-    base = dict.fromkeys(bench_check.COUNTS, 1)
-    base.update(errors=[], wall_s=0.5)
+def phase(name, **counts):
+    """One phase as ``bench_pipeline.py`` writes it: only ``burst`` has ``errors``."""
+    base = dict.fromkeys(set(bench_check.COUNTS) - {"errors"}, 1)
+    base["wall_s"] = 0.5
+    if name == "burst":
+        base["errors"] = []
     base.update(counts)
     return base
 
 
-def results(label="fast", slow=0.0, **counts):
+def results(label="fast", slow=0.0, collapse_failed=False, **counts):
     case = {"shape": "flat", "n": 10}
-    case.update({name: phase(**counts) for name in bench_check.PHASES})
+    case.update({name: phase(name, **counts) for name in bench_check.PHASES})
+    if collapse_failed:
+        case["collapse"] = None
     return {"label": label, "slow_browser": slow, "cases": [case]}
 
 
@@ -62,13 +67,24 @@ def test_errors_fail(run):
     assert run(results(), results(errors=["boom"])) == 1
 
 
+def test_failed_phase_fails_without_a_traceback(run):
+    assert run(results(), results(collapse_failed=True)) == 1
+
+
+def test_only_recorded_errors_are_gated():
+    flat = bench_check.gated("fast", results())
+    assert [key for key in flat if key.endswith(" errors")] == [
+        "fast flat:10 burst errors"
+    ]
+
+
 def test_missing_case_fails(run):
     assert run(results(), results(label="other")) == 1
 
 
 def test_slow_browser_gates_only_layouts_and_errors():
     flat = bench_check.gated("slow", results(slow=0.75, layout_runs=7))
-    assert {key.rsplit(" ", 1)[1] for key in flat} == {"layouts", "errors"}
+    assert {key.rsplit(" ", 1)[1] for key in flat} == {"layouts", "errors", "failed"}
 
 
 def test_compare_labels_direction():
