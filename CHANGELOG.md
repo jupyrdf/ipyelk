@@ -301,6 +301,11 @@ throughout 3.x with the replacement in the message.
 - Add `ast-grep` structural lint rules for Python and TypeScript (`sgconfig.yml`,
   `scripts/ast-grep/`), each with test cases, run by `pixi run lint-ast-grep` as part of
   `pixi run lint`; a suppression must name its rule and still match something ([#147])
+- Lint prose with Vale in the `lint` job: `pixi run lint-vale` checks US English
+  spelling and the `proselint` and `write-good` styles in the root `*.md` files,
+  `docs/`, docstrings and comments in `src/`, and notebook markdown, and fails on any
+  warning or error. It replaces `check-spelling`, which linted the built HTML and never
+  failed ([#181])
 
 [#147]: https://github.com/jupyrdf/ipyelk/issues/147
 [#160]: https://github.com/jupyrdf/ipyelk/issues/160
@@ -308,6 +313,7 @@ throughout 3.x with the replacement in the message.
 [#164]: https://github.com/jupyrdf/ipyelk/issues/164
 [#167]: https://github.com/jupyrdf/ipyelk/issues/167
 [#176]: https://github.com/jupyrdf/ipyelk/issues/176
+[#181]: https://github.com/jupyrdf/ipyelk/issues/181
 
 ## `2.1.2`
 

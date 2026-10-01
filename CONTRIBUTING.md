@@ -134,6 +134,36 @@ accepted as unlikely: `window['eval']`, `Reflect.apply(eval, ...)` and `const e 
 `DOMParser.parseFromString`; `console.log.call`/`.apply`; and an `Instance` nested in
 `T.Tuple(...)` next to a JSON one.
 
+### Prose
+
+[Vale](https://vale.sh) lints the prose in the root `*.md` files, `docs/`, docstrings
+and comments in `src/`, and notebook markdown cells, in US English, with the `proselint`
+and `write-good` styles. Any warning or error fails `pixi run lint`. To run it alone:
+
+```bash
+pixi run lint-vale
+```
+
+Findings in notebooks point at `build/nblint/examples/<notebook>/cell-<n>.md`, the
+markdown of the _n_-th cell.
+
+- Add a project term (a name, an API word) to
+  `scripts/vale/config/vocabularies/IPyElk/accept.txt`, one per line. Entries are
+  case-sensitive regular expressions; prefix `(?i)` to accept any case. Fix real typos
+  instead.
+- Turn a rule off for one passage in markdown, with the reason:
+
+```markdown
+<!-- vale write-good.Illusions = NO -->
+<!-- "that that" is intentional here -->
+
+...
+
+<!-- vale write-good.Illusions = YES -->
+```
+
+- Turn a rule off everywhere in `vale.ini`, with a one-line comment giving the reason.
+
 ### Limiting Testing
 
 To run just _some_ acceptance tests, add something like:
@@ -162,12 +192,12 @@ Timings are written to the job summary but not gated.
 
 ## Building Documentation
 
-To build (and check the spelling and link health) of what _would_ go to
-`ipyelk.readthedocs.org`, we:
+To build (and check the link health) of what _would_ go to `ipyelk.readthedocs.org`, we:
 
 - build with `sphinx` and `myst-nb`
-- check spelling with `vale`
 - check links with `pytest-check-links`
+
+Spelling and prose are checked in the sources by `pixi run lint-vale`.
 
 ```bash
 pixi run check
