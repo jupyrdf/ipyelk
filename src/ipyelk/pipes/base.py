@@ -4,8 +4,10 @@ from __future__ import annotations
 
 import asyncio
 import re
+from dataclasses import dataclass
 from datetime import datetime, timedelta
 from enum import Enum
+from typing import ClassVar
 
 import ipywidgets as W
 import traitlets as T
@@ -30,20 +32,27 @@ class PipeDisposition(Enum):
     error = "error"
 
 
-class PipeStatus(W.Widget):
-    disposition = T.Instance(PipeDisposition, default_value=PipeDisposition.done)
-    elapsed = T.Instance(timedelta, allow_none=True)
-    exception = T.Instance(BaseException, allow_none=True)
-    _task: asyncio.Future | None = None
+@dataclass(frozen=True, eq=False)
+class PipeStatus:
+    """An immutable snapshot of a pipe's disposition.
 
-    STEPS = {
+    A plain value, not a widget, so replacing ``Pipe.status`` opens no comm.
+    Instances compare by identity: assigning a new one always notifies
+    ``status`` observers.
+    """
+
+    disposition: PipeDisposition = PipeDisposition.done
+    elapsed: timedelta | None = None
+    exception: BaseException | None = None
+
+    STEPS: ClassVar[dict[PipeDisposition, float]] = {
         PipeDisposition.waiting: 0,
         PipeDisposition.running: 0.5,
         PipeDisposition.done: 1,
         PipeDisposition.error: 1,
     }
 
-    STATES = {
+    STATES: ClassVar[dict[PipeDisposition, str]] = {
         PipeDisposition.waiting: "",
         PipeDisposition.running: "running",
         PipeDisposition.done: "ok",
@@ -51,23 +60,23 @@ class PipeStatus(W.Widget):
     }
 
     @classmethod
-    def waiting(cls):
-        return PipeStatus(disposition=PipeDisposition.waiting)
+    def waiting(cls) -> PipeStatus:
+        return cls(disposition=PipeDisposition.waiting)
 
     @classmethod
-    def running(cls):
-        return PipeStatus(disposition=PipeDisposition.running)
+    def running(cls) -> PipeStatus:
+        return cls(disposition=PipeDisposition.running)
 
     @classmethod
-    def finished(cls, start_time: datetime | None = None):
-        return PipeStatus(
+    def finished(cls, start_time: datetime | None = None) -> PipeStatus:
+        return cls(
             disposition=PipeDisposition.done,
             elapsed=datetime.now() - start_time if start_time else None,
         )
 
     @classmethod
-    def error(cls, start_time: datetime, exception: BaseException):
-        return PipeStatus(
+    def error(cls, start_time: datetime, exception: BaseException) -> PipeStatus:
+        return cls(
             disposition=PipeDisposition.error,
             elapsed=datetime.now() - start_time,
             exception=exception,

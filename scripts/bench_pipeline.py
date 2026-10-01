@@ -170,6 +170,7 @@ class Recorder:
         self.last_state: dict[str, dict] = {}
         self.enabled = False
         self.inbound = [0, 0]  # messages, bytes
+        self.opens = 0
 
     def record(self, comm_id: str, data: dict | None) -> None:
         data = data or {}
@@ -231,6 +232,8 @@ class RecordingComm:
     def __init__(self, data=None, comm_id=None, **kwargs) -> None:
         self.comm_id = comm_id or uuid.uuid4().hex
         self.kernel = object()  # non-None, so Widget._send actually sends
+        if RECORDER.enabled:
+            RECORDER.opens += 1
         RECORDER.record(self.comm_id, data)
 
     def send(self, data=None, metadata=None, buffers=None, **kwargs) -> None:
@@ -510,6 +513,7 @@ async def stub_elkjs_run(self) -> None:  # ruff: ignore[unused-async]
 async def measure(diagram) -> dict:
     """One refresh, fully awaited, with the timers and comm log reset first."""
     start, inbound = len(RECORDER.log), tuple(RECORDER.inbound)
+    opens = RECORDER.opens
     PROF.clear()
     CALLS.clear()
     t0 = time.perf_counter()
@@ -542,6 +546,7 @@ async def measure(diagram) -> dict:
         "bytes_k2b": comm["bytes"]["total"],
         "bytes_b2k": b2k["bytes"],
         "bytes_total": comm["bytes"]["total"] + b2k["bytes"],
+        "comm_opens": RECORDER.opens - opens,
         "comm": comm,
     }
 
@@ -680,6 +685,7 @@ async def burst(diagram) -> dict:
     from ipyelk.pipes import flows as F
 
     start, inbound = len(RECORDER.log), tuple(RECORDER.inbound)
+    opens = RECORDER.opens
     CALLS["browser stub: layouts"] = 0
     diagram.pipe.inlet.flow = (F.Node.hidden,)
     t0 = time.perf_counter()
@@ -711,6 +717,7 @@ async def burst(diagram) -> dict:
         "bytes_total": (
             summary["bytes"]["total"] + summary["browser_to_kernel"]["bytes"]
         ),
+        "comm_opens": RECORDER.opens - opens,
     }
 
 
@@ -731,15 +738,16 @@ def table(header: list[str], rows: list[list[str]]) -> str:
 
 BURST_KEYS = (
     "refresh_calls", "layout_runs", "layouts", "sizer_runs",
-    "messages_k2b", "messages_b2k",
+    "messages_k2b", "messages_b2k", "comm_opens",
 )  # fmt: skip
 BURST_HEADER = [
     "Graph", "refresh()", "Layout runs", "Layouts", "Sizer runs",
-    "Msgs k->b", "Msgs b->k", "Bytes k->b", "Bytes b->k", "Bytes total", "Wall",
+    "Msgs k->b", "Msgs b->k", "Comm opens", "Bytes k->b", "Bytes b->k", "Bytes total", "Wall",
 ]  # fmt: skip
 REFRESH_HEADER = [
     "Graph", "Elements", "Wall", "Validation", "Visibility", "elkjs",
     "Kernel sync", "Msgs k->b", "update", "echo", "custom", "Msgs b->k",
+    "Comm opens",
     "Bytes k->b", "Bytes b->k", "Bytes total", "Runs", "Layouts",
 ]  # fmt: skip
 
@@ -772,6 +780,7 @@ def refresh_row(case: dict, key: str) -> list[str] | None:
         fmt_s(data["kernel_sync_s"]),
         *(str(msgs.get(k, 0)) for k in ("total", "update", "echo_update", "custom")),
         str(data["messages_b2k"]),
+        str(data.get("comm_opens", "")),
         *(fmt_b(data[k]) for k in ("bytes_k2b", "bytes_b2k", "bytes_total")),
         str(data["layout_runs"]),
         str(data.get("layouts", data["layout_runs"])),

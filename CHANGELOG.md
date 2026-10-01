@@ -64,6 +64,12 @@
   `refresh()` from a widget callback reused a runner from the other loop and failed
   silently. Answers are now delivered through the future's own loop, and a refresh from
   another loop hands the runner over to the caller's loop ([#164])
+- Stop leaking widgets on every refresh: each pipe status change opened a new
+  `PipeStatus` widget, and once the pipeline's status view was shown, rebuilt its rows,
+  and none of the replaced widgets were closed (9 widgets per refresh, 145 with the view
+  shown). `PipeStatus` is now a plain immutable value instead of a widget, and the
+  status view builds its rows once per set of sub-pipes, closing the old rows when the
+  sub-pipes change ([#176])
 
 ### Development
 
@@ -71,12 +77,14 @@
   the real kernel pipeline and real `elkjs` in `node` with only the two browser stages
   stubbed, over deterministic graphs from `scripts/bench_graphs.py`, and reports wall
   and per-stage time, comm messages and bytes in both directions, layout runs, a
-  collapse refresh and a ten-refresh burst ([#164], [#167])
+  collapse refresh and a ten-refresh burst ([#164], [#167]), and the comms opened per
+  refresh ([#176])
 
 [#160]: https://github.com/jupyrdf/ipyelk/issues/160
 [#161]: https://github.com/jupyrdf/ipyelk/issues/161
 [#164]: https://github.com/jupyrdf/ipyelk/issues/164
 [#167]: https://github.com/jupyrdf/ipyelk/issues/167
+[#176]: https://github.com/jupyrdf/ipyelk/issues/176
 
 ## `2.1.2`
 

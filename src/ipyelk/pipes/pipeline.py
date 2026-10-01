@@ -13,9 +13,12 @@ from .base import Pipe, PipeStatus, PipeStatusView, Superseded, SyncedOutletPipe
 
 class PipelineStatusView(PipeStatusView):
     toggle_btn = T.Instance(W.Button)
+    header = T.Instance(W.HBox)
     include_exception = T.Bool(default_value=True)
     collapsed = T.Bool(default_value=True)
     statuses = T.List(T.Instance(W.Widget), default_value=[])
+    #: the sub-pipes ``statuses`` was built for
+    _row_pipes: tuple[Pipe, ...] = ()
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -35,28 +38,43 @@ class PipelineStatusView(PipeStatusView):
 
         return btn
 
+    @T.default("header")
+    def _default_header(self):
+        return W.HBox([self.toggle_btn, self.html])
+
     @T.observe("collapsed", "statuses")
     def _update_children(self, change=None):
-        children = [
-            W.HBox([
-                self.toggle_btn,
-                self.html,
-            ]),
-        ]
+        children = [self.header]
         if not self.collapsed:
             children.extend(self.statuses)
         self.children = children
 
     def update_children(self, pipe: Pipeline):
-        statuses = [p.status_widget for p in pipe.pipes]
+        """Build one row per sub-pipe, only when the sub-pipes change."""
+        pipes = tuple(pipe.pipes)
+        if pipes == self._row_pipes:
+            return
+        old_rows = self.statuses
+        self._row_pipes = pipes
         self.statuses = [
             W.HBox([
                 W.HTML(value="<pre>  </pre>").add_class("elk-pipe-space"),
-                status,
+                p.status_widget,
                 W.HTML(value=f'<pre class="elk-pipe-accessor">.pipes[{i}]</pre>'),
             ])
-            for i, status in enumerate(statuses)
+            for i, p in enumerate(pipes)
         ]
+        for row in old_rows:
+            _close_row(row)
+
+
+def _close_row(row: W.Box) -> None:
+    """Close a status row and the widgets it owns, but not the sub-pipe's view."""
+    space, _status, accessor = row.children
+    for widget in (row, space, accessor):
+        for part in (widget, widget.layout, getattr(widget, "style", None)):
+            if part is not None:
+                part.close()
 
 
 class Pipeline(SyncedOutletPipe):
