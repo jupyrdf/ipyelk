@@ -13,6 +13,8 @@ import json
 from ipyelk.elements import (
     Node,
     NodeProperties,
+    Port,
+    PortProperties,
     VisIndex,
     convert_elkjson,
     exclude_hidden,
@@ -111,4 +113,27 @@ def test_dropped_edge_survives_roundtrip_and_reveal():
         assert SLACK_EDGE not in edge.properties.cssClasses.split()
     assert revealed.edges[0].source.id == "a"
     assert [node.ports for node in revealed.children] == [[], [], []]
+    widget.close()
+
+
+def test_hidden_port_keeps_its_properties_after_a_slack_roundtrip():
+    root = Node(id="root")
+    source = root.add_child(Node(id="source"))
+    hidden_port = source.add_port(
+        Port(id="source.hidden", properties=PortProperties(hidden=True))
+    )
+    target = root.add_child(Node(id="target"))
+    root.add_edge(hidden_port, target).id = "edge"
+    widget = MarkElementWidget(value=root)
+    widget.persist(rebuild_index=True)
+
+    visible = project(root)
+    slack_port = visible.children[0].ports[0]
+    assert "slack-port" in slack_port.properties.cssClasses.split()
+
+    widget.value = visible
+    widget.persist()
+
+    assert hidden_port.properties.hidden is True
+    assert not hidden_port.properties.cssClasses
     widget.close()

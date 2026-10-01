@@ -190,8 +190,11 @@ Elk Counts Should Really Be
 
 Create Linked Elk Output View
     Wait Until Element Is Visible    css:${CSS ELK VIEW}
-    Click Element    css:${CSS ELK VIEW}
-    Open Context Menu    css:${CSS ELK VIEW}
+    # no left click first: it selected the node under the view's centre (see
+    # `Click Elk Tool`); Sprotty ignores the right button, so the menu is safe
+    ${view} =    Get WebElement    css:${CSS ELK VIEW}
+    Execute Javascript    arguments[0].scrollIntoView({block: "center"})    ARGUMENTS    ${view}
+    Open Context Menu    ${view}
     Wait Until Keyword Succeeds    3x    0.5s    Mouse Over    css:${JLAB CSS CREATE OUTPUT}
     Press Keys    None    RETURN
     Wait Until Element Is Visible    css:${JLAB CSS LINKED OUTPUT} ${CSS ELK VIEW} ${CSS ELK NODE}
@@ -239,16 +242,56 @@ Click Elk Tool
     # scrolled off-screen raises MoveTargetOutOfBoundsException; Selenium's own
     # scrolling keywords have the same constraint, so scroll with plain JS.
     Execute Javascript    arguments[0].scrollIntoView({block: "center"})    ARGUMENTS    ${elkApp}
+    # the toolbar shows on `:hover` (style/app.css); no click is needed. The click
+    # that used to follow landed on whatever node the layout put under the app's
+    # centre and selected it, the only thing exercising selection in these suites
+    # (by accident), and selecting a node runs the `oldest` frontend out of memory.
+    # `Select Elk Node` selects on purpose.
     Mouse Over    ${elkApp}
-    Click Element    ${elkApp}
     Sleep    0.3s
     ${tool} =    Get WebElement    ${buttonSelector}
     Log    ${tool}
     Wait Until Element Is Visible    ${tool}
     Click Element    ${tool}
     Sleep    0.3s
-    Click Element    ${JLAB CSS NOTEBOOK}
+    # move the pointer off the app so its toolbar hides again. A click on the
+    # notebook's centre used to do this, but the app was just scrolled to that
+    # very centre, so the click selected a node (see above).
+    Mouse Over    css:.jp-NotebookPanel-toolbar
     Sleep    0.3s
+
+Select Elk Node
+    [Documentation]    Click the label of the node ``${node}`` with the pointer and wait
+    ...    until Sprotty marks the node ``selected``. A label is not selectable, so the
+    ...    click selects the node that owns it, as it does for a person.
+    [Arguments]    ${node}    ${index}=${1}
+    ${label} =    Set Variable
+    ...    xpath:(//div[contains(@class,"jp-ElkApp")])[${index}]//*[contains(@class,"elklabel")][normalize-space()="${node}"]
+    # the first render can still move the diagram: retry until the click lands
+    Wait Until Keyword Succeeds    10x    0.5s    Click Elk Node Label    ${label}
+
+Click Elk Node Label
+    [Arguments]    ${label}
+    ${selected} =    Set Variable
+    ...    ${label}/../preceding-sibling::*[contains(@class,"elknode") and contains(@class,"selected")]
+    # a click on a selected node deselects it, so only click an unselected node
+    ${count} =    SeleniumLibrary.Get Element Count    ${selected}
+    IF    not ${count}
+        ${el} =    Get WebElement    ${label}
+        Execute Javascript    arguments[0].scrollIntoView({block: "center", inline: "center"})    ARGUMENTS    ${el}
+        # `Click Element` rejects an SVG element that a sibling covers: click
+        # at the label's centre with the pointer instead
+        Click Element At Coordinates    ${el}    0    0
+    END
+    Wait Until Page Contains Element    ${selected}    timeout=2s
+
+Elk Control Overlay Should Show A Button
+    [Documentation]    The control overlay is a widget that the kernel shows next to
+    ...    the selected node. It is in the first ``sprotty-overlay`` of the view.
+    [Arguments]    ${index}=${1}
+    ${overlay} =    Set Variable
+    ...    xpath:(//div[contains(@class,"jp-ElkApp")])[${index}]//div[contains(@class,"sprotty-root")]/div[contains(@class,"sprotty-overlay")][1]
+    Wait Until Page Contains Element    ${overlay}/div[contains(@class,"elkcontainer")]//button    timeout=30s
 
 BQPlot Figure Count Should Be
     [Arguments]    ${expected}=${0}

@@ -225,6 +225,13 @@ class ElementIndex(BaseModel):
                 self.elements[key] = e2
             elif type(e1) == type(e2):
                 for field in fields:
+                    # Slack-port styling belongs to a projection, not its hidden source.
+                    if (
+                        field == "properties"
+                        and isinstance(e1, Port)
+                        and "slack-port" in e2.properties.cssClasses.split()
+                    ):
+                        continue
                     if hasattr(e1, field) and hasattr(e2, field):
                         setattr(e1, field, getattr(e2, field))
 

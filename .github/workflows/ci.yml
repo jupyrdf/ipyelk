@@ -209,6 +209,13 @@ jobs:
           key: ${{ env.CACHE_EPOCH }}-${{ hashFiles('yarn.lock') }}-node-modules
       - env:
           ATEST_ARGS: ${{ matrix.atest-args }}
+        # a browser that dies mid-test (Firefox 128 ESR went out of memory after
+        # a kernel restart in 02_Transformer) leaves geckodriver unreachable, and
+        # the teardown then spends ~10 minutes per Selenium call on urllib3
+        # retries; Robot's `Test Timeout` does not cover teardown, so the job ran
+        # to GitHub's 6-hour limit (twice on master). A passing atest step takes
+        # under 15 minutes including retries; fail with artifacts instead.
+        timeout-minutes: 45
         run: pixi run a${{ matrix.task }}-robot
       - if: ${{ !cancelled() && matrix.task == 'test' && matrix.vm == 'ubuntu-latest' }}
         run: pixi run bench-check

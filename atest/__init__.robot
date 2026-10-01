@@ -6,7 +6,10 @@ Suite Setup         Setup Server and Browser
 Suite Teardown      Tear Down Everything
 Test Setup          Maybe Reset Application State
 # a wedged browser or kernel must fail the test, not burn the whole job: the
-# Windows runner spent 40 minutes on one stuck notebook before this
-Test Timeout        15 minutes
+# Windows runner spent 40 minutes on one stuck notebook before this. The
+# longest wait inside a test is 5 minutes (`Wait For All Cells To Run`). This
+# does not cover teardown; `scripts/atest.py` kills the suite's process at
+# 10 minutes for that.
+Test Timeout        8 minutes
 
 Force Tags          os:${os.lower()}
