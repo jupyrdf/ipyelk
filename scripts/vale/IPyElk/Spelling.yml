@@ -1,0 +1,11 @@
+extends: spelling
+message: "Did you really mean '%s'?"
+level: error
+# en_US is found on DICPATH (set by scripts/vale_lint.py)
+dictionaries:
+  - en_US
+# skip RST literals and roles in docstrings
+filters:
+  - '``.+``'
+  - ':[\w:.~]+:`.+`'
+  - '`.+`'
