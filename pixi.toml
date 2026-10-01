@@ -244,6 +244,23 @@ cmd = "pixi run -e dev jlpm test:unit"
 depends-on = ["setup-js"]
 inputs = ["js/**/*.ts", "js/vitest.config.ts", "package.json"]
 
+[feature.tasks-utest.tasks.bench]
+cmd = """
+python scripts/bench_pipeline.py --out build/reports/bench
+  --label fast --cases flat:100 nested:100
+&& python scripts/bench_pipeline.py --out build/reports/bench
+  --label slow-browser --cases flat:20 --slow-browser 0.75
+"""
+depends-on = ["pip-utest", "setup-js"]
+
+[feature.tasks-utest.tasks.bench-check]
+cmd = """python scripts/bench_check.py build/reports/bench/fast.json build/reports/bench/slow-browser.json"""
+depends-on = ["bench"]
+
+[feature.tasks-utest.tasks.bench-update]
+cmd = """python scripts/bench_check.py --update build/reports/bench/fast.json build/reports/bench/slow-browser.json"""
+depends-on = ["bench"]
+
 [feature.tasks-utest-oldest.tasks.pip-utest-oldest]
 cmd = """pixi r -e utest-oldest pip-dist--"""
 inputs = ["dist/*.whl"]

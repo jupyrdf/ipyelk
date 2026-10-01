@@ -79,6 +79,9 @@
   and per-stage time, comm messages and bytes in both directions, layout runs, a
   collapse refresh and a ten-refresh burst ([#164], [#167]), and the comms opened per
   refresh ([#176])
+- Gate CI on the benchmark's deterministic counts: `pixi run bench-check` compares them
+  to `scripts/bench_baseline.json` and fails on any change until the baseline is updated
+  with `pixi run bench-update` ([#176])
 
 [#160]: https://github.com/jupyrdf/ipyelk/issues/160
 [#161]: https://github.com/jupyrdf/ipyelk/issues/161
