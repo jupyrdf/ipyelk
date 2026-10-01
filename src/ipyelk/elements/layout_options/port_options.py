@@ -135,8 +135,8 @@ class PortBorderOffset(LayoutOptionWidget):
     is moved outside of the node, while with a negative offset the port is moved
     towards the inside. An offset of 0 means that the port is placed directly on
     the node border, i.e. if the port side is north, the port's south border
-    touches the nodes's north border; if the port side is east, the port's west
-    border touches the nodes's east border; if the port side is south, the
+    touches the node's north border; if the port side is east, the port's west
+    border touches the node's east border; if the port side is south, the
     port's north border touches the node's south border; if the port side is
     west, the port's east border touches the node's west border.
 
@@ -168,8 +168,8 @@ class PortSpacing(LayoutOptionWidget):
     is moved outside of the node, while with a negative offset the port is moved
     towards the inside. An offset of 0 means that the port is placed directly on
     the node border, i.e. if the port side is north, the port's south border
-    touches the nodes's north border; if the port side is east, the port's west
-    border touches the nodes's east border; if the port side is south, the
+    touches the node's north border; if the port side is east, the port's west
+    border touches the node's east border; if the port side is south, the
     port's north border touches the node's south border; if the port side is
     west, the port's east border touches the node's west border.
 
@@ -338,7 +338,7 @@ class AllowNonFlowPortsToSwitchSides(LayoutOptionWidget):
     on a side that is not part of the currently configured layout flow. For
     instance, given a left-to-right layout direction, north and south ports
     would be considered non-flow ports. Further note that the underlying
-    criterium whether to switch sides or not solely relies on the minimization
+    criterion whether to switch sides or not solely relies on the minimization
     of edge crossings. Hence, edge length and other aesthetics criteria are not
     addressed.
 

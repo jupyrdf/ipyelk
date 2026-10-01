@@ -51,7 +51,7 @@ class MarkElementWidget(W.DOMWidget):
 
     ``value`` is written from both sides. A browser write is never sent back:
     ``echo_update=False`` stops the echo, and ``_should_send_property`` stops
-    the re-serialised copy. Kernel writes are sent exactly once.
+    the re-serialized copy. Kernel writes are sent exactly once.
 
     Known limitation: a second frontend attached to the same kernel used to
     learn browser-written values through the echo and no longer does.
@@ -66,7 +66,7 @@ class MarkElementWidget(W.DOMWidget):
     index = T.Instance(MarkIndex, kw={}).tag(sync=True, **W.widget_serialization)
     flow: tuple[str, ...] = TypedTuple(T.Unicode(), kw={}).tag(sync=True)
 
-    #: the tree ``set_state`` last deserialised from the browser
+    #: the tree ``set_state`` last deserialized from the browser
     _browser_value: Node | None = None
 
     def set_trait(self, name, value):
@@ -81,7 +81,7 @@ class MarkElementWidget(W.DOMWidget):
         """Never re-send a ``value`` the browser just wrote.
 
         The stock check always sends an elkjs-processed tree, whose
-        re-serialisation differs from the browser JSON. A new tree assigned by
+        re-serialization differs from the browser JSON. A new tree assigned by
         an observer while the lock is held is still sent.
         """
         if (

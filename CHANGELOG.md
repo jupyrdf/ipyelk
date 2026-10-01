@@ -63,8 +63,8 @@
   documented as the tuple it is; the `01_Linking` example compares it to a tuple (its
   list comparison was always true), and the `12`/`13` examples drop commented-out
   references to the long-gone `toolbar.commands` ([#156]).
-- `Hover.ids` is replaced by `Hover.hovered_id: str | None` (default `None`). There is
-  no alias: code that reads or observes `ids` on the hover tool must switch to
+- `Hover.ids` is replaced by `Hover.hovered_id: str | None` (default `None`). No alias
+  exists: code that reads or observes `ids` on the hover tool must switch to
   `hovered_id`. Despite its name, `ids` only ever held one id (a string, never a tuple),
   so the value shape is unchanged; only the trait name and the `None` state are new.
   `Selection.ids` is unchanged and still a tuple ([#155]).
@@ -114,7 +114,7 @@
   an `AttributeError`, because `from ipyelk.tools import Zoom` would otherwise lose the
   message to a bare "cannot import name". Importing the misspelled
   `ipyelk.tools.contol_overlay` module raises it too, naming the new path; it re-exports
-  nothing. Both flavours share the `ipyelk.exceptions.DeprecatedAPI` base, so one
+  nothing. Both flavors share the `ipyelk.exceptions.DeprecatedAPI` base, so one
   `except` catches either.
 
 ### Migration
@@ -222,7 +222,7 @@ throughout 3.x with the replacement in the message.
   root itself, which elkjs rejects). Hidden compound children now project onto the
   compound, and an edge whose projection would touch the root is dropped from the wire
   while its `Edge` stays in the index (#161, #169)
-- Never serialise an id as `null`: an id-less element mints a wire id once and keeps it,
+- Never serialize an id as `null`: an id-less element mints a wire id once and keeps it,
   the index adopts it, and an id the `Registry` mints first becomes the wire id, so
   edges no longer go on the wire as `sources: [null]` and the id first seen is the id
   for the object's life. Port ids compose from the parent's id in and out of a
@@ -461,12 +461,12 @@ throughout 3.x with the replacement in the message.
 
 ### `@jupyrdf/jupyter-elk 2.0.0`
 
-- Added control layer to allow jupyterlab widgets to exist on top of the diagram based
+- Added control layer to allow JupyterLab widgets to exist on top of the diagram based
   on current node selection.
-- Adding controllable render delay for jupyterlab widgets used in diagram nodes.
+- Adding controllable render delay for JupyterLab widgets used in diagram nodes.
 - Updated dependencies to `elkjs 0.8.2`.
 - Fixed diagram bounding box issue affecting node visibility ([#94]).
-- Improved test sizing that takes into account css properties ([#97])
+- Improved test sizing that takes into account CSS properties ([#97])
 
 ### `ipyelk 2.0.0`
 

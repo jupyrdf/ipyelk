@@ -94,7 +94,7 @@ else:
     }
 
     def setup(app: Sphinx) -> None:
-        """Customize the sphinx build lifecycle in the inner build environemnt."""
+        """Customize the sphinx build lifecycle in the inner build environment."""
 
         def _md_description(
             self, schema: dict[str, Any], container: nodes.Node | list[nodes.Node]

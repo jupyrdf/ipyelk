@@ -1,8 +1,6 @@
 # Copyright (c) 2024 ipyelk contributors.
 # Distributed under the terms of the Modified BSD License.
 from ...elements import Node, NodeProperties
-
-# from ...diagram.shapes.shapes import Circle, Path, Point
 from ...elements.shapes import Circle, Path, Point
 from ...elements.symbol import EndpointSymbol
 
