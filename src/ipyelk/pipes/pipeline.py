@@ -13,11 +13,17 @@ from .base import Pipe, PipeStatus, PipeStatusView, Superseded, SyncedOutletPipe
 
 class PipelineStatusView(PipeStatusView):
     toggle_btn = T.Instance(W.Button)
+    header = T.Instance(W.HBox, kw={})
     include_exception = T.Bool(default_value=True)
     collapsed = T.Bool(default_value=True)
-    statuses = T.List(T.Instance(W.Widget), default_value=[])
 
     def __init__(self, *args, **kwargs):
+        #: one row per sub-pipe, shown below the header when expanded
+        self._rows: list[W.HBox] = []
+        #: the sub-pipes and their views that ``_rows`` was built for
+        self._row_key: tuple | None = None
+        #: widgets ``update_children`` created; closed when the rows are rebuilt
+        self._owned: list[W.Widget] = []
         super().__init__(*args, **kwargs)
 
     @T.default("toggle_btn")
@@ -35,28 +41,39 @@ class PipelineStatusView(PipeStatusView):
 
         return btn
 
-    @T.observe("collapsed", "statuses")
+    @T.observe("collapsed")
     def _update_children(self, change=None):
-        children = [
-            W.HBox([
-                self.toggle_btn,
-                self.html,
-            ]),
-        ]
+        self.header.children = [self.toggle_btn, self.html]
+        children = [self.header]
         if not self.collapsed:
-            children.extend(self.statuses)
+            children.extend(self._rows)
         self.children = children
 
     def update_children(self, pipe: Pipeline):
-        statuses = [p.status_widget for p in pipe.pipes]
-        self.statuses = [
-            W.HBox([
-                W.HTML(value="<pre>  </pre>").add_class("elk-pipe-space"),
-                status,
-                W.HTML(value=f'<pre class="elk-pipe-accessor">.pipes[{i}]</pre>'),
-            ])
-            for i, status in enumerate(statuses)
-        ]
+        """Show one row per sub-pipe, rebuilding the rows only when the sub-pipes
+        or their views change.
+        """
+        key = tuple((p, p.status_widget) for p in pipe.pipes)
+        if key != self._row_key:
+            self._row_key = key
+            stale, self._owned = self._owned, []
+            self._rows = [self._row(i, view) for i, (_, view) in enumerate(key)]
+            for widget in stale:
+                _close(widget)
+        self._update_children()
+
+    def _row(self, i: int, view: W.DOMWidget) -> W.HBox:
+        space = W.HTML(value="<pre>  </pre>").add_class("elk-pipe-space")
+        accessor = W.HTML(value=f'<pre class="elk-pipe-accessor">.pipes[{i}]</pre>')
+        row = W.HBox([space, view, accessor])
+        self._owned += [row, space, accessor]
+        return row
+
+
+def _close(widget: W.Widget) -> None:
+    for part in (widget, widget.layout, getattr(widget, "style", None)):
+        if part is not None:
+            part.close()
 
 
 class Pipeline(SyncedOutletPipe):

@@ -210,6 +210,8 @@ jobs:
       - env:
           ATEST_ARGS: ${{ matrix.atest-args }}
         run: pixi run a${{ matrix.task }}-robot
+      - if: ${{ !cancelled() && matrix.task == 'test' && matrix.vm == 'ubuntu-latest' }}
+        run: pixi run bench-check
       - if: matrix.task == 'test' && matrix.vm == 'ubuntu-latest'
         run: pixi run report
       - uses: actions/upload-artifact@v4

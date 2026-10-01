@@ -123,6 +123,15 @@ Then run:
 ATEST_ARGS="--exclude NOTsome:tag" pixi run atest-robot
 ```
 
+### Pipeline Benchmark
+
+CI runs `pixi run bench-check`: it benchmarks `Diagram.refresh()` headlessly with
+`scripts/bench_pipeline.py` and compares the deterministic counts (comm opens, messages
+and bytes in both directions, layouts) to `scripts/bench_baseline.json`. Any change
+fails, in either direction. If the change is intended, run `pixi run bench-update` and
+commit the baseline, so the diff shows reviewers what got cheaper or more expensive.
+Timings are written to the job summary but not gated.
+
 ## Building Documentation
 
 To build (and check the spelling and link health) of what _would_ go to

@@ -276,6 +276,16 @@ throughout 3.x with the replacement in the message.
   `refresh()` from a widget callback reused a runner from the other loop and failed
   silently. Answers are now delivered through the future's own loop, and a refresh from
   another loop hands the runner over to the caller's loop ([#164])
+- Stop leaking widgets on every refresh. Each pipe status change created a new
+  `PipeStatus` widget, and a displayed pipeline status view rebuilt its rows. Neither
+  closed what it replaced: 9 widgets leaked per refresh, 145 with the view shown. The
+  status view now rebuilds its rows only when the sub-pipes or their views change, and
+  closes the rows it replaces ([#176])
+  - `PipeStatus` is no longer an `ipywidgets.Widget`: it is an immutable value with the
+    same attributes and constructors, compared by identity, so every new status still
+    notifies `status` observers
+  - `PipelineStatusView.statuses` is removed. It held the view's row widgets, was never
+    synced, and is now a private list; the rows still reach the frontend as `children`
 
 ### Development
 
@@ -283,12 +293,17 @@ throughout 3.x with the replacement in the message.
   the real kernel pipeline and real `elkjs` in `node` with only the two browser stages
   stubbed, over deterministic graphs from `scripts/bench_graphs.py`, and reports wall
   and per-stage time, comm messages and bytes in both directions, layout runs, a
-  collapse refresh and a ten-refresh burst ([#164], [#167])
+  collapse refresh and a ten-refresh burst ([#164], [#167]), and the comms opened per
+  refresh ([#176])
+- Gate CI on the benchmark's deterministic counts: `pixi run bench-check` compares them
+  to `scripts/bench_baseline.json` and fails on any change until the baseline is updated
+  with `pixi run bench-update` ([#176])
 
 [#160]: https://github.com/jupyrdf/ipyelk/issues/160
 [#161]: https://github.com/jupyrdf/ipyelk/issues/161
 [#164]: https://github.com/jupyrdf/ipyelk/issues/164
 [#167]: https://github.com/jupyrdf/ipyelk/issues/167
+[#176]: https://github.com/jupyrdf/ipyelk/issues/176
 
 ## `2.1.2`
 
