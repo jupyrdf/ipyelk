@@ -1,0 +1,20 @@
+id: ts-no-html-injection
+language: tsx
+severity: error
+message: Do not write markup through `innerHTML`/`outerHTML`/`insertAdjacentHTML`
+note: |
+  Labels, tooltips and properties are user data; render them as text nodes. A
+  sink that must take markup is suppressed with the reason it is safe.
+rule:
+  any:
+    - pattern: $EL.innerHTML = $VALUE
+    - pattern: $EL.innerHTML += $VALUE
+    - pattern: $EL.outerHTML = $VALUE
+    - pattern: $EL.insertAdjacentHTML($$$)
+    - pattern: document.write($$$)
+    - kind: pair
+      has:
+        field: key
+        regex: ^['"]?(innerHTML|outerHTML)['"]?$
+    - kind: shorthand_property_identifier
+      regex: ^(innerHTML|outerHTML)$

@@ -210,6 +210,8 @@ export class ElkSVGNodeView extends ElkNodeView {
     let x = node.properties?.shape?.x || 0;
     let y = node.properties?.shape?.y || 0;
     return svg('g', {
+      // an svg shape renders its `use` markup by design
+      // ast-grep-ignore: ts-no-html-injection
       props: { innerHTML: node?.properties?.shape?.use },
       transform: `translate(${x} ${y})`,
     });
@@ -232,6 +234,8 @@ export class ElkCompartmentNodeView extends ElkNodeView {
 @injectable()
 export class ElkForeignObjectNodeView extends ElkNodeView {
   renderMark(node: ElkNode, context: ElkModelRenderer): VNode {
+    // a foreignObject shape renders its `use` markup by design
+    // ast-grep-ignore: ts-no-html-injection
     let contents = html('div', { props: { innerHTML: node?.properties?.shape?.use } });
     return (
       <foreignObject

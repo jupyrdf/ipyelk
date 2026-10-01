@@ -1,0 +1,18 @@
+id: py-no-broad-suppress
+language: python
+severity: error
+message: Suppress specific exceptions, not `Exception`/`BaseException`
+note: |
+  `contextlib.suppress(Exception)` silently swallows every error, like a bare
+  `except: pass`, but ruff's S110/BLE001 do not see it.
+rule:
+  all:
+    - kind: call
+    - has:
+        field: function
+        regex: ^(contextlib\.)?suppress$
+    - has:
+        field: arguments
+        has:
+          kind: identifier
+          regex: ^(Base)?Exception$

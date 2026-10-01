@@ -1,0 +1,12 @@
+id: ts-no-html-injection
+valid:
+  - const markup = svg.outerHTML;
+  - el.textContent = label;
+  - 'ELK_DEBUG && console.warn(element.innerHTML);'
+  - "html('div', { props: { textContent: text } });"
+invalid:
+  - el.innerHTML = label;
+  - el.innerHTML += label;
+  - el.insertAdjacentHTML('beforeend', label);
+  - "html('div', { props: { innerHTML: node.properties.shape.use } });"
+  - 'const props = { innerHTML };'

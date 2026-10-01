@@ -1,0 +1,24 @@
+id: ts-console-needs-elk-debug
+language: tsx
+severity: error
+message: Guard debug logging with `ELK_DEBUG && console.log(...)`
+note: |
+  Debug output must stay out of users' browser consoles; `console.warn` and
+  `console.error` are for real failures and need no guard.
+rule:
+  pattern: console.$METHOD($$$)
+  not:
+    inside:
+      stopBy: end
+      any:
+        - kind: binary_expression
+          has:
+            field: left
+            regex: ^ELK_DEBUG$
+        - kind: if_statement
+          has:
+            field: condition
+            regex: \bELK_DEBUG\b
+constraints:
+  METHOD:
+    regex: ^(log|info|debug|trace|dir|table)$

@@ -1,0 +1,7 @@
+ruleDirs:
+  - scripts/ast-grep/rules
+testConfigs:
+  - testDir: scripts/ast-grep/rule-tests
+# .ts files parse cleanly as TSX, so each TypeScript rule is written once
+languageGlobs:
+  tsx: ['*.ts']

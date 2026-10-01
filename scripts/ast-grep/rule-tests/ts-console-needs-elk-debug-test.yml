@@ -1,0 +1,20 @@
+id: ts-console-needs-elk-debug
+valid:
+  - ELK_DEBUG && console.log('render');
+  - |
+    ELK_DEBUG &&
+      console.info('queued', ids);
+  - |
+    if (ELK_DEBUG) {
+      console.debug('state', state);
+    }
+  - console.warn('ELK failed to report the viewport', err);
+  - console.error(error);
+invalid:
+  - console.log('render');
+  - 'console.info(`${NAME}: skipping patch`);'
+  - |
+    if (ready) {
+      console.debug('state', state);
+    }
+  - DEBUG && console.log('render');

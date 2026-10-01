@@ -1,0 +1,7 @@
+id: ts-no-debugger
+language: tsx
+severity: error
+message: Remove the `debugger` statement
+note: There is no eslint here, and `tsc` and `prettier` accept a leftover `debugger`.
+rule:
+  kind: debugger_statement

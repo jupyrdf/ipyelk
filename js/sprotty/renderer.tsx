@@ -217,6 +217,8 @@ export class ElkModelRenderer extends ModelRenderer {
 
     let props = {};
     if (jlsw.html) {
+      // an html shape renders its `use` markup by design
+      // ast-grep-ignore: ts-no-html-injection
       props = { innerHTML: jlsw.html };
     }
 

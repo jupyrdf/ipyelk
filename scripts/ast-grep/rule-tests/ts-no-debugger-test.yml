@@ -1,0 +1,8 @@
+id: ts-no-debugger
+valid:
+  - const debuggerEnabled = true;
+invalid:
+  - |
+    function f() {
+      debugger;
+    }

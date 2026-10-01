@@ -5126,6 +5126,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/argon2-cffi-25.1.0-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/argon2-cffi-bindings-26.1.0-py314h89acca1_1.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/arrow-1.4.0-pyhcf101f3_0.conda
+      - conda: https://conda.anaconda.org/conda-forge/linux-64/ast-grep-0.45.3-he17df78_0.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/ast-serialize-0.9.0-py311hf77984d_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/asttokens-3.0.2-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/async-lru-2.3.0-pyhcf101f3_0.conda
@@ -5321,6 +5322,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/argon2-cffi-25.1.0-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-64/argon2-cffi-bindings-26.1.0-py314hca6f81c_1.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/arrow-1.4.0-pyhcf101f3_0.conda
+      - conda: https://conda.anaconda.org/conda-forge/osx-64/ast-grep-0.45.3-h45557f5_0.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-64/ast-serialize-0.9.0-py311h2a8a194_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/asttokens-3.0.2-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/async-lru-2.3.0-pyhcf101f3_0.conda
@@ -5517,6 +5519,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/argon2-cffi-25.1.0-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/argon2-cffi-bindings-26.1.0-py314h61c6340_1.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/arrow-1.4.0-pyhcf101f3_0.conda
+      - conda: https://conda.anaconda.org/conda-forge/osx-arm64/ast-grep-0.45.3-hf736c40_0.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/ast-serialize-0.9.0-py311hfcb3ee1_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/asttokens-3.0.2-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/async-lru-2.3.0-pyhcf101f3_0.conda
@@ -5711,6 +5714,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/argon2-cffi-25.1.0-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/argon2-cffi-bindings-26.1.0-py314h5a2d7ad_1.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/arrow-1.4.0-pyhcf101f3_0.conda
+      - conda: https://conda.anaconda.org/conda-forge/win-64/ast-grep-0.45.3-h0a879f1_0.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/ast-serialize-0.9.0-py311h66afae6_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/asttokens-3.0.2-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/async-lru-2.3.0-pyhcf101f3_0.conda
@@ -7576,6 +7580,54 @@ packages:
   license_family: APACHE
   size: 113854
   timestamp: 1760831179410
+- conda: https://conda.anaconda.org/conda-forge/linux-64/ast-grep-0.45.3-he17df78_0.conda
+  sha256: 5f4cdbd6007a44a6f4573a020c5c40a105bada1cea934f9bd1c5fa97cb833066
+  md5: 9cc6be2fa49fdac20ef8ffd41921cf8e
+  depends:
+  - __glibc >=2.17,<3.0.a0
+  - libstdcxx >=15
+  - libgcc >=15
+  constrains:
+  - __glibc >=2.17
+  license: MIT
+  license_family: MIT
+  size: 6468647
+  timestamp: 1788155871904
+- conda: https://conda.anaconda.org/conda-forge/osx-64/ast-grep-0.45.3-h45557f5_0.conda
+  sha256: 72ae9ec08599c8ccf3238ba9ffc19852edfcc5a3d8aed68451b4a70e84934c5a
+  md5: 611151006adbf1d35b78fbbe52090015
+  depends:
+  - __osx >=11.0
+  - libcxx >=21
+  constrains:
+  - __osx >=11.0
+  license: MIT
+  license_family: MIT
+  size: 6679814
+  timestamp: 1788155922560
+- conda: https://conda.anaconda.org/conda-forge/osx-arm64/ast-grep-0.45.3-hf736c40_0.conda
+  sha256: d88a48c9abdc7eb978c157dd3dced6ce5ac4d988fca3dad17d636ff52d612065
+  md5: b1fdc51c387be317b4a81a05e69369d1
+  depends:
+  - libcxx >=21
+  - __osx >=11.0
+  constrains:
+  - __osx >=11.0
+  license: MIT
+  license_family: MIT
+  size: 6401153
+  timestamp: 1788155877607
+- conda: https://conda.anaconda.org/conda-forge/win-64/ast-grep-0.45.3-h0a879f1_0.conda
+  sha256: bd32469e7d0e92b2d370ec6673f106c21275f1561f6f8c2f6d1a5fc6c6813b60
+  md5: 981301c6fd362b25195da64e1782e5d9
+  depends:
+  - vc >=14.3,<15
+  - vc14_runtime >=14.44.35208
+  - ucrt >=10.0.20348.0
+  license: MIT
+  license_family: MIT
+  size: 12753470
+  timestamp: 1788155868
 - conda: https://conda.anaconda.org/conda-forge/linux-64/ast-serialize-0.9.0-py311hf77984d_0.conda
   noarch: python
   sha256: 5b77c2444c8fef0feb1c37e7050c78f7e235c62ffec9ab58b6c4a82566ef32d4

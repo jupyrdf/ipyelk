@@ -1,0 +1,19 @@
+id: ts-no-eval
+language: tsx
+severity: error
+message: Do not evaluate strings as code
+note: |
+  Diagram data comes from the kernel and from users' notebooks; evaluating any
+  of it runs arbitrary script in the JupyterLab page.
+rule:
+  any:
+    - pattern: eval($$$)
+    - pattern: new Function($$$)
+    - pattern: $TIMER($CODE, $$$)
+constraints:
+  TIMER:
+    regex: ^(window\.)?(setTimeout|setInterval)$
+  CODE:
+    any:
+      - kind: string
+      - kind: template_string

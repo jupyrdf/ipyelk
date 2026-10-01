@@ -1,0 +1,11 @@
+id: ts-no-eval
+valid:
+  - setTimeout(finish, 100);
+  - window.setTimeout(() => this.update(), 1000);
+  - const f = new Map();
+  - model.evaluate(x);
+invalid:
+  - eval(code);
+  - const f = new Function('a', 'return a');
+  - setTimeout('update()', 100);
+  - window.setInterval(`tick(${n})`, 10);

@@ -1,0 +1,8 @@
+id: py-no-get-event-loop
+valid:
+  - loop = asyncio.get_running_loop()
+  - future = asyncio.get_running_loop().create_future()
+  - loop = self.get_event_loop()
+invalid:
+  - loop = asyncio.get_event_loop()
+  - future = asyncio.get_event_loop().create_future()

@@ -1,0 +1,18 @@
+id: py-observe-all-traits
+language: python
+severity: error
+message: Pass the trait names to `observe()`
+note: |
+  Without names the handler runs for every trait change, including each synced
+  trait the frontend writes; pass `names=T.All` if that is really intended.
+rule:
+  any:
+    - pattern: $OBJ.observe($HANDLER)
+    - pattern: $OBJ.observe(handler=$HANDLER)
+  not:
+    inside:
+      kind: decorator
+constraints:
+  HANDLER:
+    not:
+      kind: string

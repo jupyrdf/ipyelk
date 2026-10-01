@@ -1,0 +1,12 @@
+id: py-observe-all-traits
+valid:
+  - self.observe(update, "status")
+  - widget.observe(handler, names=["value", "gen"])
+  - widget.observe(handler, T.All)
+  - |
+    @T.observe("value")
+    def _on_value(self, change):
+        pass
+invalid:
+  - self.observe(update)
+  - widget.observe(handler=on_change)

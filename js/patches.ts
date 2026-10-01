@@ -11,6 +11,8 @@ const KEYSTODELETE = ['defineMetadata', 'getOwnMetadata', 'metadata'];
  */
 export async function patchReflectMetadata(): Promise<void> {
   if (Reflect.hasOwnMetadata != null) {
+    // a one-off startup notice, kept visible without ELK_DEBUG
+    // ast-grep-ignore: ts-console-needs-elk-debug
     console.info(`${NAME}: skipping patch of Reflect.metadata`);
     return;
   }

@@ -1,0 +1,19 @@
+id: py-no-broad-suppress
+valid:
+  - |
+    with contextlib.suppress(RuntimeError):
+        pass
+  - |
+    with suppress(asyncio.TimeoutError, KeyError):
+        pass
+  - raise Exception("boom")
+invalid:
+  - |
+    with contextlib.suppress(Exception):
+        pass
+  - |
+    with suppress(BaseException):
+        pass
+  - |
+    with suppress(KeyError, Exception):
+        pass

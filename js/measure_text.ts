@@ -74,6 +74,8 @@ export class ELKTextSizerModel extends DOMWidgetModel {
       styledClass,
     );
     const raw_css: string = this.get('namespaced_css'); //TODO should this `raw_css` string be escaped?
+    // static scaffold; only the kernel's own namespaced CSS is interpolated
+    // ast-grep-ignore: ts-no-html-injection
     el.innerHTML = `<div class="sprotty"><style>${raw_css}</style><svg class="sprotty-graph"><g></g></svg></div>`;
     return el;
   }

@@ -32,6 +32,7 @@ lint = {depends-on = [
   "lint-mypy",
   "lint-robot-dryrun",
   "lint-actionlint",
+  "lint-ast-grep",
   "lint-audit",
 ]}
 test = {depends-on = ["utest-pytest", "itest-nbconvert", "atest-robot"]}
@@ -452,6 +453,16 @@ inputs = ["examples/", "!**/{.ipynb_checkpoints,__pycache__}/"]
 cmd = "actionlint -shellcheck=shellcheck -pyflakes=pyflakes"
 inputs = [".github/workflows"]
 
+[feature.tasks-lint.tasks.lint-ast-grep]
+cmd = """ast-grep test --skip-snapshot-tests
+&& ast-grep scan scripts src tests docs atest examples js"""
+inputs = [
+  "sgconfig.yml",
+  "scripts/ast-grep/",
+  "{scripts,src,tests,docs,atest,examples,js}/**/*.{py,ts,tsx}",
+  "!**/{.ipynb_checkpoints,__pycache__}/",
+]
+
 [feature.tasks-lint.tasks.lint-mypy]
 cmd = "mypy"
 inputs = ["src/**/*.py", "pyproject.toml"]
@@ -566,6 +577,7 @@ nodejs = "22.*"
 
 [feature.deps-lint.dependencies]
 actionlint-with-all = "*"
+ast-grep = ">=0.45"
 mypy = ">=2.3,<3"
 nbconvert-core = "*"
 nbstripout = "*"
