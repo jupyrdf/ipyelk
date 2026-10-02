@@ -88,10 +88,12 @@ cmd = """jupyter labextension list"""
 cmd = """
 export
     NBCONVERT_DIR=$PIXI_PROJECT_ROOT/build/reports/$PIXI_ENVIRONMENT_NAME/nbconvert
+    IPYTHONDIR=$PIXI_PROJECT_ROOT/build/reports/$PIXI_ENVIRONMENT_NAME/ipython
     IPYELK_TESTING=true
     IPYELK_NO_BROWSER=true
-&& rm -rf $NBCONVERT_DIR
-&& mkdir -p $NBCONVERT_DIR
+&& rm -rf $NBCONVERT_DIR $IPYTHONDIR
+&& mkdir -p $NBCONVERT_DIR $IPYTHONDIR/profile_default/startup
+&& cp scripts/nbconvert_kernel_watchdog.py $IPYTHONDIR/profile_default/startup/00-watchdog.py
 && cd examples
 && rm -rf .ipynb_checkpoints/
 && jupyter nbconvert

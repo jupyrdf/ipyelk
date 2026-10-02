@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en"><meta charset="utf-8"><title>Cervidae image review</title>
+<style>
+body{margin:0;font:16px system-ui;background:#f4f5f7;color:#17252d}header{padding:20px 28px;background:white;border-bottom:1px solid #ccd5da}main{display:grid;grid-template-columns:280px 1fr;gap:24px;padding:24px}select,button{padding:9px;font:inherit}#list{width:100%;height:75vh}section{min-width:0}canvas{max-width:100%;background:white;touch-action:none;cursor:crosshair}button{margin:8px 6px 8px 0}#preview{max-height:180px;max-width:100%}p{line-height:1.5}a{color:#17668a}
+</style>
+<header><strong>Cervidae · Image review</strong><br><span id="loaded">Opening the archived photos…</span><br>Drag on the full image to choose a crop. Original pixels stay in the ZIP. Export your choices when finished.</header>
+<main><aside><select id="list" size="25" aria-label="Archived images"></select></aside><section>
+<h2 id="title"></h2><a id="source" target="_blank" rel="noopener">Commons source and attribution</a>
+<p><label>Use as <select id="role"><option value="photo">Deer photo</option><option value="range">Range map</option><option value="omit">Do not use</option></select></label></p>
+<canvas id="canvas" width="900" height="600" style="max-height:55vh;width:auto;height:auto;max-width:100%"></canvas>
+<div><button id="reset">Use whole image</button><button id="next">Save and next</button><button id="export">Export review JSON</button><details><summary>Restore previously exported crop choices (optional)</summary><label>Review JSON <input id="import" type="file" accept="application/json"></label></details></div>
+<p id="status" role="status"></p><h3>Crop preview</h3><img id="preview" alt="Selected crop preview">
+</section></main><script>
+const payload = /* DATA */ null;
+if (!payload) {
+  document.querySelector('#loaded').textContent='Opening the populated editor in build/cervidae-image-review.html…';
+  window.location.replace('../build/cervidae-image-review.html');
+} else {
+document.querySelector('#loaded').textContent=`${payload.images.length} archived images loaded automatically. No photo imports needed.`;
+const records=payload.images, review=payload.review, list=document.querySelector('#list'), canvas=document.querySelector('#canvas'), ctx=canvas.getContext('2d');
+let selected=0, picture=new Image(), crop=[0,0,1,1], start=null;
+for(const [i,r] of records.entries()){const o=new Option(`${r.subject||r.genus} · ${r.kind||'genus'} · ${r.file_title}`,i);list.add(o)}
+function current(){return records[selected]}
+function save(){review[current().archive_name]={file_title:current().file_title,role:document.querySelector('#role').value,crop:[...crop],dimensions:[picture.naturalWidth,picture.naturalHeight]}}
+function draw(){ctx.clearRect(0,0,canvas.width,canvas.height);ctx.drawImage(picture,0,0,canvas.width,canvas.height);ctx.strokeStyle='#f5b800';ctx.lineWidth=3;ctx.strokeRect(crop[0]*canvas.width,crop[1]*canvas.height,crop[2]*canvas.width,crop[3]*canvas.height);const p=document.createElement('canvas');p.width=Math.max(1,Math.round(picture.naturalWidth*crop[2]));p.height=Math.max(1,Math.round(picture.naturalHeight*crop[3]));p.getContext('2d').drawImage(picture,crop[0]*picture.naturalWidth,crop[1]*picture.naturalHeight,p.width,p.height,0,0,p.width,p.height);document.querySelector('#preview').src=p.toDataURL();}
+function load(i){selected=i;list.value=i;const r=current(),v=review[r.archive_name];crop=v?.crop||[0,0,1,1];document.querySelector('#role').value=v?.role||(r.kind==='range'?'range':'photo');document.querySelector('#title').textContent=r.subject||r.genus;document.querySelector('#source').href=r.description_url;picture=new Image();picture.onload=()=>{canvas.height=Math.round(canvas.width*picture.naturalHeight/picture.naturalWidth);draw()};picture.src=r.data;document.querySelector('#status').textContent=`Image ${i+1} of ${records.length}. Export saves choices to a JSON file.`}
+function point(e){const b=canvas.getBoundingClientRect();return [Math.max(0,Math.min(1,(e.clientX-b.left)/b.width)),Math.max(0,Math.min(1,(e.clientY-b.top)/b.height))]}
+canvas.onpointerdown=e=>{start=point(e);canvas.setPointerCapture(e.pointerId)};
+canvas.onpointerup=e=>{if(!start)return;const end=point(e);const c=[Math.min(start[0],end[0]),Math.min(start[1],end[1]),Math.abs(end[0]-start[0]),Math.abs(end[1]-start[1])];start=null;if(c[2]>.005&&c[3]>.005){crop=c;save();draw()}};
+list.onchange=()=>{save();load(Number(list.value))};document.querySelector('#role').onchange=save;
+document.querySelector('#reset').onclick=()=>{crop=[0,0,1,1];save();draw()};
+document.querySelector('#next').onclick=()=>{save();load(Math.min(selected+1,records.length-1))};
+document.querySelector('#export').onclick=()=>{save();const u=URL.createObjectURL(new Blob([JSON.stringify(review,null,2)+'\n'],{type:'application/json'}));const a=document.createElement('a');a.href=u;a.download='cervidae-image-review.json';a.click();setTimeout(()=>URL.revokeObjectURL(u),1000)};
+document.querySelector('#import').onchange=async e=>{try{Object.assign(review,JSON.parse(await e.target.files[0].text()));load(selected)}catch(err){document.querySelector('#status').textContent=String(err)}};
+load(0);
+}
+</script></html>

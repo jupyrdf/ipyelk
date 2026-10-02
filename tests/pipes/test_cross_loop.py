@@ -150,13 +150,16 @@ async def test_schedule_run_from_another_loop_hands_over(subshell):
         assert pipeline._requested == 2, "the request is kept"
         assert pipeline.inlet.flow == (F.New,), "the taken flow is handed back"
         # the cancel crosses to the main loop; let it land before releasing
-        # the gate, so the old run cannot complete instead of being cancelled
+        # the gate, so the old run cannot complete instead of being cancelled.
+        # The new runner must have parked too: ``release`` only opens gates
+        # that exist, and a runner that parks after it waits forever.
         for _ in range(200):
-            if old.done():
+            if old.done() and parked.runs == 2:
                 break
             await asyncio.sleep(0.01)
         assert old.done()
         assert old.cancelled()
+        assert parked.runs == 2, "the new runner parked before release"
         parked.release()
         await asyncio.wait_for(new, timeout=2.0)  # same loop: plain await works
         return new

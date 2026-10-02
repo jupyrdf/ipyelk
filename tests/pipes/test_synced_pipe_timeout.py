@@ -94,10 +94,10 @@ async def test_no_browser_env_skips_the_roundtrip(monkeypatch):
     sent = []
     monkeypatch.setattr(type(pipe), "send", lambda _self, *a, **_kw: sent.append(a))
 
-    with pytest.raises(asyncio.TimeoutError):
-        await asyncio.wait_for(pipe.run(), timeout=1.0)
+    await asyncio.wait_for(pipe.run(), timeout=1.0)
 
     assert sent == [], "nothing should be sent when no frontend can answer"
+    assert pipe.outlet.value is pipe.inlet.value, "the graph passes through unlaid-out"
 
 
 def test_persist_merges_ids_assigned_by_validation_pipe():
