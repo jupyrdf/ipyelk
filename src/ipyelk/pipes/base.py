@@ -257,8 +257,8 @@ class Pipe(W.Widget):
     def close(self):
         """Cancel and close this pipe and the widgets it created.
 
-        A widget it was given, such as an ``inlet`` it was connected to, is
-        left open.
+        An inlet or outlet it was given, such as the source it was connected
+        to, is left open.
         """
         self.cancel()
         owned, self._owned = self._owned, []

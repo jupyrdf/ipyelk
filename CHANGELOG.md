@@ -298,10 +298,13 @@ throughout 3.x with the replacement in the message.
 - Close the old pipeline when `diagram.pipe` is replaced. Only its run was cancelled:
   its sub-pipes, intermediate marks and status views stayed open, and the diagram's
   `style` link kept it alive, so every replacement left 37 widgets behind, 99 with the
-  status view shown. A diagram now owns its pipe: replacing it closes the old pipe and
-  every widget that pipe created, never `diagram.source` or a widget passed in to the
-  pipe. `Pipe.close()` closes what the pipe created (a `Pipeline` also closes its
-  sub-pipes). `style`, the progress bar and the tools now follow the new pipe ([#180])
+  status view shown. A diagram now owns its pipe, so a pipe belongs to one diagram:
+  replacing it closes the old pipe, its sub-pipes and the widgets they created
+  (including a `status_widget` displayed elsewhere), never `diagram.source` or an
+  inlet/outlet passed in. Assigning a closed pipe raises `TraitError`, so swapping back
+  to a replaced pipe needs a new one. `Pipe.close()` closes what the pipe created (a
+  `Pipeline` also closes its sub-pipes). `style` (including nested pipelines' text
+  sizers), the progress bar and the tools now follow the new pipe ([#180])
 
 ### Development
 

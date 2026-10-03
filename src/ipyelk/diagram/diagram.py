@@ -30,8 +30,10 @@ class Diagram(StyledWidget):
     pipe: :py:class:`~ipyelk.pipes.Pipe`
         processing pipe (that may contain sub-pipes). Pipes perform various
         tasks like adding x/y and width/height layouts or calculating text label sizes.
-        The diagram owns its pipe: replacing it closes the old pipe and the
-        widgets that pipe created, but never ``source``.
+        The diagram owns its pipe, so a pipe belongs to one diagram: replacing
+        it closes the old pipe, its sub-pipes and the widgets they created (such
+        as status views), but never ``source`` or an inlet/outlet passed in. A
+        closed pipe cannot be assigned again.
     view: :py:class:`~ipyelk.diagram.viewer.Viewer`
         output view that will render the pipe outlet
     tools: tuple :py:class:`~ipyelk.tools.Tool`
@@ -88,12 +90,23 @@ class Diagram(StyledWidget):
         """Follow ``style`` in the pipe's text sizers and report its progress."""
         from .flow import BrowserTextSizer
 
-        for sub in getattr(pipe, "pipes", ()):
+        pending = list(getattr(pipe, "pipes", ()))
+        while pending:
+            sub = pending.pop(0)
             if isinstance(sub, BrowserTextSizer):
                 self._pipe_links.append(W.dlink((self, "style"), (sub, "style")))
+            pending.extend(getattr(sub, "pipes", ()))
         bars = self._progress_bars()
         if pipe.on_progress is None and bars:
             pipe.on_progress = bars[0].update
+
+    @T.validate("pipe")
+    def _validate_pipe(self, proposal: T.Bunch) -> Pipe:
+        pipe = proposal["value"]
+        if pipe.comm is None:
+            msg = f"{type(pipe).__name__} is closed; assign a new pipe"
+            raise T.TraitError(msg)
+        return pipe
 
     def _unwire_pipe(self, old: Pipe, new: Pipe) -> None:
         """Drop every reference the diagram and its tools hold to ``old``."""

@@ -11,6 +11,7 @@ import weakref
 
 import ipywidgets as W
 import pytest
+import traitlets as T
 from ipywidgets.widgets import widget as widget_module
 
 from ipyelk import Diagram
@@ -24,6 +25,7 @@ from ipyelk.pipes import (
     ValidationPipe,
     VisibilityPipe,
 )
+from ipyelk.pipes.base import PipeStatus
 from ipyelk.tools import PipelineProgressBar
 
 ROUNDS = 10
@@ -163,15 +165,78 @@ async def test_progress_bar_follows_the_new_pipe() -> None:
     assert bar.pipe is old
 
     new = DefaultFlow()
-    await replace(diagram, new)
+    diagram.pipe = new
     assert bar.pipe is new
     assert old.on_progress is None
+    await refresh(diagram)
+    assert bar.pipe is new
+
+
+def test_a_replaced_pipe_is_collected_without_a_refresh() -> None:
+    diagram = Diagram(source=make_source())
+    old = diagram.pipe
+    old.status_update(PipeStatus.running())
+    assert diagram.get_tool(PipelineProgressBar).pipe is old
+    ref = weakref.ref(old)
+    del old
+    diagram.pipe = DefaultFlow()
+    gc.collect()
+    assert ref() is None
+
+
+@pytest.mark.asyncio
+async def test_swapping_back_to_a_replaced_pipe_is_refused_cleanly() -> None:
+    diagram = Diagram(source=make_source())
+    first, second = DefaultFlow(), DefaultFlow()
+    await replace(diagram, first)
+    await replace(diagram, second)
+
+    with pytest.raises(T.TraitError, match="closed"):
+        diagram.pipe = first
+
+    assert diagram.pipe is second
+    assert is_open(second)
+    assert diagram.view.source is second.outlet
+    assert all(tool.tee is second for tool in diagram.tools)
+    await replace(diagram, DefaultFlow())
+
+
+@pytest.mark.asyncio
+async def test_replacing_the_pipe_mid_run_cancels_the_old_run(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.delenv("IPYELK_NO_BROWSER")
+    source = make_source()
+    diagram = Diagram(source=source)
+    old = diagram.pipe
+    sent: list[Pipe] = []
+    for sub in old.pipes:
+        monkeypatch.setattr(sub, "send", lambda _msg, sub=sub: sent.append(sub))
+    source.record("mine")
+    task = diagram.refresh()
+    assert task is not None
+    sizer_ = sizer(old)
+    for _ in range(50):
+        if sent:
+            break
+        await asyncio.sleep(0)
+    assert sent == [sizer_]
+    assert "mine" not in source.flow
+
+    new = DefaultFlow()
+    diagram.pipe = new
+    assert "mine" in source.flow
+    sent.clear()
+    await asyncio.sleep(0.6)
+    assert task.cancelled()
+    assert sent == []
+    new.cancel()
 
 
 @pytest.mark.asyncio
 async def test_a_replaced_user_pipe_is_closed_but_not_what_it_was_given() -> None:
-    """A diagram owns the pipe assigned to it: replacing it closes it, and every
-    widget it created, but never the source or a widget passed in to it.
+    """A diagram owns the pipe assigned to it: replacing it closes it, its
+    sub-pipes and what they created, never the source or an outlet passed in.
     """
     source = make_source()
     diagram = Diagram(source=source)
