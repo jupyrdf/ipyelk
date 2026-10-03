@@ -118,13 +118,16 @@ pixi run test
   cases
 - Try a pattern with `pixi run -e lint ast-grep run -l py -p '<pattern>' src`
 - Run only the rule tests with `pixi run -e lint ast-grep test --skip-snapshot-tests`
-- Suppress a finding that is intended with the reason on the line above:
+- Suppress an intended finding with the rule id, and the reason on the line above; a
+  bare `ast-grep-ignore` or one that no longer matches anything fails the lint:
 
-```python
-# may run outside a loop; this is the loop `asyncio.Future()` bound to
-# ast-grep-ignore: py-no-get-event-loop
-loop = asyncio.get_event_loop()
+```ts
+// a foreignObject shape renders its `use` markup by design
+// ast-grep-ignore: ts-no-html-injection
+let contents = html('div', { props: { innerHTML: node?.properties?.shape?.use } });
 ```
+
+`ast-grep` cannot parse notebooks, so `examples/*.ipynb` are not scanned.
 
 ### Limiting Testing
 
