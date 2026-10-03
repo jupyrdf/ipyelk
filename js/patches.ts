@@ -2,7 +2,7 @@
  * Copyright (c) 2024 ipyelk contributors.
  * Distributed under the terms of the Modified BSD License.
  */
-import { NAME } from './tokens';
+import { ELK_DEBUG, NAME } from './tokens';
 
 const KEYSTODELETE = ['defineMetadata', 'getOwnMetadata', 'metadata'];
 
@@ -11,9 +11,7 @@ const KEYSTODELETE = ['defineMetadata', 'getOwnMetadata', 'metadata'];
  */
 export async function patchReflectMetadata(): Promise<void> {
   if (Reflect.hasOwnMetadata != null) {
-    // a one-off startup notice, kept visible without ELK_DEBUG
-    // ast-grep-ignore: ts-console-needs-elk-debug
-    console.info(`${NAME}: skipping patch of Reflect.metadata`);
+    ELK_DEBUG && console.info(`${NAME}: skipping patch of Reflect.metadata`);
     return;
   }
   if (Reflect.metadata) {
