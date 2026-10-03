@@ -27,9 +27,10 @@ def test_diagram_with_source_builds_without_event_loop():
 
 
 @pytest.mark.asyncio
-async def test_headless_runner_exits_on_the_immediate_timeout(monkeypatch):
-    """``IPYELK_NO_BROWSER``: no request is sent, the run fails at once and the
-    runner exits -- nothing keeps re-sending across cell boundaries.
+async def test_headless_run_passes_the_graph_through(monkeypatch):
+    """``IPYELK_NO_BROWSER``: no request is sent and the run succeeds at once
+    with the graph unlaid-out -- nothing keeps re-sending across cell
+    boundaries, and nothing is logged as a failed refresh.
     """
     monkeypatch.setenv("IPYELK_NO_BROWSER", "true")
     elk = ElkJS(timeout=30.0)
@@ -40,8 +41,8 @@ async def test_headless_runner_exits_on_the_immediate_timeout(monkeypatch):
     pipeline.inlet.record(F.New)
 
     task = pipeline.schedule_run()
-    with pytest.raises(asyncio.TimeoutError):
-        await asyncio.wait_for(task, timeout=1.0)
+    await asyncio.wait_for(task, timeout=1.0)
     assert sent == []
     assert pipeline._task.done()
-    assert F.New in pipeline.inlet.flow, "the failed run handed its flow back"
+    assert pipeline.outlet.value is pipeline.inlet.value
+    assert F.New not in pipeline.inlet.flow, "the run succeeded and took its flow"

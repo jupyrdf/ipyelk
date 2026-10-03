@@ -277,6 +277,9 @@
         "isSymbol": {
           "type": "boolean"
         },
+        "key": {
+          "type": "string"
+        },
         "selectable": {
           "type": "boolean"
         },

@@ -100,10 +100,16 @@ Ensure Sidebar Is Closed
 Open Context Menu for File
     [Arguments]    ${file}
     Ensure File Browser is Open
-    Click Element    css:jp-button[data-command="filebrowser:refresh"]
     ${selector} =    Set Variable    xpath://span[@class='jp-DirListing-itemText']//span\[text() = '${file}']
-    Wait Until Element Is Visible    ${selector}
+    # a loaded runner (macOS, four browsers) can need more than one refresh and
+    # the default 5 s to list a file that was just copied in
+    Wait Until Keyword Succeeds    6x    1s    Refresh File Browser Until Listed    ${selector}
     Open Context Menu    ${selector}
+
+Refresh File Browser Until Listed
+    [Arguments]    ${selector}
+    Click Element    css:jp-button[data-command="filebrowser:refresh"]
+    Wait Until Element Is Visible    ${selector}
 
 Rename Jupyter File
     [Arguments]    ${old}    ${new}

@@ -332,13 +332,26 @@ class Label(ShapeElement):
     properties: SerializeAsAny[LabelProperties] = Field(default_factory=LabelProperties)
 
     def wrap(self, **kwargs) -> list[Label]:
+        """Split text into individually laid-out labels with ``textwrap.wrap``.
+
+        Keyword arguments are forwarded to ``textwrap.wrap``. Wrapped labels inherit
+        this label's attributes and receive derived IDs.
+        """
         data = self.model_dump()
+        lines = textwrap.wrap(self.text, **kwargs)
         if self.id is None:
-            # the dump carries this label's wire id; the lines must not share it
             data.pop("id", None)
+        elif len(lines) > 1:
+            data.pop("id")
         return [
-            Label(**{**data, "text": line})
-            for line in textwrap.wrap(self.text, **kwargs)
+            Label(**{
+                **data,
+                "id": f"{self.id}.{index}"
+                if self.id is not None and len(lines) > 1
+                else self.id,
+                "text": line,
+            })
+            for index, line in enumerate(lines)
         ]
 
 

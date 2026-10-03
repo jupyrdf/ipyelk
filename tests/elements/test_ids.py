@@ -128,6 +128,16 @@ def test_label_wrap_does_not_share_generated_ids():
     widget.close()
 
 
+def test_label_wrap_derives_distinct_explicit_ids():
+    label = Label(id="label", text="one two three four five six")
+
+    lines = label.wrap(width=10)
+
+    assert len(lines) > 1
+    assert [line.id for line in lines] == [f"label.{i}" for i in range(len(lines))]
+    assert len({line.id for line in lines}) == len(lines)
+
+
 def test_copies_mint_their_own_wire_ids():
     """A copy is a new element: it keeps an explicit ``id``, never the wire id."""
     original = Node()
