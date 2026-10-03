@@ -3,6 +3,7 @@
 (.+)\(
 0a1
 2FA
+[\w/<>.-]+\.json
 [Aa]ctivity/flow-chart
 [Aa]dditionalProperties
 [Aa]rgs
@@ -53,7 +54,6 @@ CSS
 (?i)defs
 DOM
 DOMWidget
-(?i)ids
 Eades
 [Ee]\.g\.
 [Ee]dgeNode
@@ -79,8 +79,9 @@ FontAwesome
 [Hh]unspell
 [Hh]yperedges?
 HTML
-html: str
+html: ipywidgets\.HTML
 [HV]Box
+(?i)ids
 [Ii]mportnb
 [Ii]n-browser
 [Ii]ncomingSections
@@ -91,10 +92,13 @@ html: str
 [Ii]pywidgets
 [Ii]sSymbol
 [Ii]terable
+(?i)ipyelk
+IPython
 [Jj]unctionPoints
 [Jj]upyrdf
 (?i)js
 JSON
+(?:json|JSON)\.\w+
 (?i)jupyter
 JupyterLab
 jupyterlab\.[\w.#<>]+
@@ -114,6 +118,7 @@ Miniforge
 [Mm]ypy
 (?i)networkx
 [Nn]amespace
+[Nn]bconvert
 [Nn]pm
 [Nn]x
 NXLoad
@@ -131,10 +136,10 @@ PipeStatusView
 [Pp]ixi
 [Pp]olylines
 [Pp]redator/prey
+[Pp]ytest
 PRs
 (?i)pydantic(?:'s)?
 PyData
-(?i)ipyelk
 (?i)pypi
 [Qq]ueueing
 (?i)reachability
@@ -162,6 +167,7 @@ SPDX-License-Identifier
 [Ss]pacings
 [Ss]tandards-compliant
 [Ss]tartPoint
+[Ss]tderr
 [Ss]tr
 [Ss]ub-pipes
 [Ss]ublabels?(?:'s)?
@@ -180,12 +186,14 @@ ToolButton
 [Tt]wo-factor
 TypeFox
 TypeScript
+# also accepts lowercase ui in prose: Vale.Terms can't be limited to the ``ui`` trait
 (?:UI|ui)s?
 Unobserves
 [Uu]ninstrumented
 [Uu]nloadable
 [Uu]nstamped
 [Uu]nversioned
+[Uu]test
 UUID
 (?i)viewports?
 WebWorker

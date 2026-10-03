@@ -117,7 +117,7 @@ class PipeStatusView(W.VBox):
     ----------
     include_exception: bool
         exception captured
-    html: str
+    html: ipywidgets.HTML
         built status HTML to display
 
     """
