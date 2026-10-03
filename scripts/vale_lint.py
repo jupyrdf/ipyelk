@@ -6,12 +6,18 @@ Vale itself only exits non-zero on errors, so this reads its JSON output.
 Exits 0 when clean, 1 on findings, 2 when Vale (or its input) is broken.
 Notebook markdown is linted from ``build/nblint``: run
 ``python scripts/nblint.py --extract-only examples`` first.
+
+Vale skips a module docstring that follows a ``#`` comment (the license
+header), so module docstrings are also copied, line numbers intact, to
+``build/vale_docstrings`` and reported against their source file.
 """
 
 from __future__ import annotations
 
+import ast
 import json
 import os
+import shutil
 import subprocess
 import sys
 from pathlib import Path
@@ -26,12 +32,9 @@ PATHS = [
     "src",
     "tests",
 ]
+DOCSTRINGS = "build/vale_docstrings"
 SUFFIXES = (".md", ".py")
 GLOB = "--glob=*.{md,py}"
-CANARIES = {
-    ".md": "This sentense is a canary.\n",
-    ".py": '"""This sentense is a canary."""\n',
-}
 CANARY_CHECK = "IPyElk.Spelling"
 ALERT_KEYS = {"Check", "Line", "Message", "Severity", "Span"}
 UTF8 = {"encoding": "utf-8"}
@@ -39,6 +42,27 @@ UTF8 = {"encoding": "utf-8"}
 
 class ValeError(RuntimeError):
     """Vale crashed, or its output can't be trusted."""
+
+
+def module_docstring(source: str) -> str | None:
+    """Return only the module docstring, on its original lines, or ``None``."""
+    body = ast.parse(source).body
+    node = body[0] if body else None
+    if not (
+        isinstance(node, ast.Expr)
+        and isinstance(node.value, ast.Constant)
+        and isinstance(node.value.value, str)
+    ):
+        return None
+    lines = source.splitlines()[node.lineno - 1 : node.end_lineno]
+    return "\n" * (node.lineno - 1) + "\n".join(lines) + "\n"
+
+
+CANARIES = [
+    (".md", "This sentense is a canary.\n"),
+    (".py", '"""This sentense is a canary."""\n'),
+    (".py", module_docstring('# header\n"""This sentense is a canary."""\n')),
+]
 
 
 def dicpath() -> str | None:
@@ -63,6 +87,20 @@ def check_paths(root: Path, paths: list[str]) -> None:
         if not any(p.suffix in SUFFIXES for p in path.rglob("*")):
             msg = f"no {SUFFIXES} files in: {rel}"
             raise ValeError(msg)
+
+
+def write_docstrings(root: Path, paths: list[str]) -> list[str]:
+    """Copy module docstrings for linting; return their folder, if any."""
+    out = root / DOCSTRINGS
+    shutil.rmtree(out, ignore_errors=True)
+    for rel in paths:
+        for py in sorted((root / rel).rglob("*.py")):
+            stub = module_docstring(py.read_text(**UTF8))
+            if stub:
+                dest = out / py.relative_to(root)
+                dest.parent.mkdir(parents=True, exist_ok=True)
+                dest.write_text(stub, **UTF8)
+    return [DOCSTRINGS] if out.exists() else []
 
 
 def parse(stdout: str) -> dict[str, list[dict]]:
@@ -98,31 +136,41 @@ def vale(*args: str, stdin: str | None = None) -> dict[str, list[dict]]:
         check=False,
         **UTF8,
     )
-    if proc.returncode or not proc.stdout.strip():
+    if proc.returncode:
         msg = f"vale exited {proc.returncode}:\n{proc.stdout}\n{proc.stderr}"
+        raise ValeError(msg)
+    if not proc.stdout.strip():
+        msg = f"vale wrote no output:\n{proc.stderr}"
         raise ValeError(msg)
     return parse(proc.stdout)
 
 
 def summarize(alerts: dict[str, list[dict]]) -> list[str]:
-    """Format one line per alert."""
-    return [
-        f"{path}:{a['Line']}:{a['Span'][0]}: {a['Severity']} [{a['Check']}] "
-        f"{a['Message']}"
-        for path, file_alerts in sorted(alerts.items())
+    """Format one line per alert, mapping docstring copies to their source."""
+    prefix = f"{DOCSTRINGS}/"
+    found = {
+        (
+            path.replace("\\", "/").removeprefix(prefix),
+            a["Line"],
+            a["Span"][0],
+            f"{a['Severity']} [{a['Check']}] {a['Message']}",
+        )
+        for path, file_alerts in alerts.items()
         for a in file_alerts
-    ]
+    }
+    return [f"{p}:{line}:{col}: {msg}" for p, line, col, msg in sorted(found)]
 
 
 def lint() -> list[str]:
     """Check the canaries, then lint every path."""
-    for ext, text in CANARIES.items():
+    for ext, text in CANARIES:
         caught = vale(f"--ext={ext}", stdin=text).get(f"stdin{ext}", [])
         if not any(a["Check"] == CANARY_CHECK for a in caught):
-            msg = f"{CANARY_CHECK} missed the {ext} canary"
+            msg = f"{CANARY_CHECK} missed the {ext} canary: {text!r}"
             raise ValeError(msg)
     check_paths(ROOT, PATHS)
-    return summarize(vale(GLOB, *PATHS))
+    docstrings = write_docstrings(ROOT, [p for p in PATHS if (ROOT / p).is_dir()])
+    return summarize(vale(GLOB, *PATHS, *docstrings))
 
 
 def main() -> int:

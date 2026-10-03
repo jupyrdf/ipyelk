@@ -5,7 +5,7 @@
 ``ElementIndex.check_edges`` used to build a ``nx.DiGraph`` of the whole
 hierarchy and call ``nx.lowest_common_ancestor`` once per edge.  These tests pin
 the replacement (``ElementIndex.depths`` plus ``ElementIndex.lca_by_parent``) to
-that behaviour, networkx included.
+that behavior, networkx included.
 """
 
 from __future__ import annotations

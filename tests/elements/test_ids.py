@@ -2,9 +2,9 @@
 # Distributed under the terms of the Modified BSD License.
 """Ids on the wire are never ``null`` and never churn (jupyrdf/ipyelk#169).
 
-An id-less element serialises with a uuid minted once per object (``wire_id``);
+An id-less element serializes with a UUID minted once per object (``wire_id``);
 ``id`` itself stays ``None`` until the element is indexed, and the index's
-``Registry`` adopts the wire id, so the id first serialised is the one the
+``Registry`` adopts the wire id, so the id first serialized is the one the
 element keeps.
 """
 

@@ -148,7 +148,8 @@ pixi run lint-vale
 Findings in notebooks point at `build/nblint/examples/<notebook>/cell-<n>.md`, the
 markdown of the _n_-th cell.
 
-- Fix real typos.
+- Fix real typos. Vale doesn't spell-check hyphenated words (e.g. `re-serialised`
+  passes), so check those by eye.
 - Add a project term (a name, an API word) to
   `scripts/vale/config/vocabularies/IPyElk/accept.txt`, one per line. Entries are
   regular expressions, and `Vale.Terms` also enforces their case: write a lowercase word
