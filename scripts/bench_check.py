@@ -2,10 +2,11 @@
 # Distributed under the terms of the Modified BSD License.
 """Gate ``bench_pipeline.py`` results against a committed baseline.
 
-Only deterministic counts are gated (messages, bytes, comm opens, layouts);
-they must equal the baseline exactly. A count that rises is a regression; a
-count that falls is an improvement that must be locked in with ``--update``,
-so every change to the pipeline's cost shows up as a reviewed baseline diff.
+Only deterministic counts are gated (messages, bytes, comm opens, layouts,
+live widgets left by pipe replacement); they must equal the baseline exactly.
+A count that rises is a regression; a count that falls is an improvement that
+must be locked in with ``--update``, so every change to the pipeline's cost
+shows up as a reviewed baseline diff.
 Timings vary between machines and are reported, never gated.
 
     python scripts/bench_check.py build/reports/bench/*.json
@@ -22,7 +23,7 @@ from pathlib import Path
 
 HERE = Path(__file__).parent
 BASELINE = HERE / "bench_baseline.json"
-PHASES = ("first", "collapse", "burst")
+PHASES = ("first", "collapse", "burst", "replace")
 COUNTS = (
     "comm_opens",
     "messages_k2b",
@@ -33,9 +34,10 @@ COUNTS = (
     "layouts",
     "sizer_runs",
     "errors",
+    "live_widgets_added",
 )
 #: a ``--slow-browser`` run's resend counts depend on timing: gate only these
-SLOW_COUNTS = ("layouts", "errors")
+SLOW_COUNTS = ("layouts", "errors", "live_widgets_added")
 
 
 def gated(label: str, results: dict) -> dict[str, int]:
