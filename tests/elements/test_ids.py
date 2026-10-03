@@ -73,7 +73,7 @@ def test_wire_id_becomes_the_indexed_id():
     port = child.add_port(Port())
     edge = root.add_edge(port, root)
 
-    widget = MarkElementWidget(value=root)  # serialises at construction
+    widget = MarkElementWidget(value=root)  # serializes at construction
     first_wire = widget.get_state()["value"]
     assert first_wire["id"] is not None
     assert root.id is None, "serialising does not assign ids"
@@ -175,7 +175,7 @@ def test_copies_mint_their_own_wire_ids():
 
 
 def test_registry_minted_id_becomes_the_wire_id():
-    """Index first, serialise later: index keys and wire ids agree."""
+    """Index first, serialize later: index keys and wire ids agree."""
     root = Node(children=[Node(ports=[Port()])])
     child = root.children[0]
     port = child.ports[0]

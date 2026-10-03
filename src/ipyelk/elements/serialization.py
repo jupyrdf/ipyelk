@@ -52,7 +52,7 @@ def to_json(model: BaseModel | None, widget: DOMWidget) -> dict | None:
 
     :param defs: dictionary of Symbols
     :param diagram: elk diagram widget
-    :return: json dictionary
+    :return: JSON dictionary
     """
     if model is None:
         return None

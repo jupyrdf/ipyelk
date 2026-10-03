@@ -117,8 +117,8 @@ class PipeStatusView(W.VBox):
     ----------
     include_exception: bool
         exception captured
-    html: string
-        built status html to display
+    html: str
+        built status HTML to display
 
     """
 

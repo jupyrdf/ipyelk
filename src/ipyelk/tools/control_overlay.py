@@ -5,7 +5,7 @@ import ipywidgets as W
 
 
 class ControlOverlay(W.VBox):
-    """Simple Container Widget for rendering element specific jupyterlab widgets"""
+    """Simple Container Widget for rendering element specific JupyterLab widgets"""
 
     # TODO config to specify on which side of selected element's bounding box to
     # render the controls

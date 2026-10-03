@@ -76,7 +76,7 @@ def size_nested_label(label: Label) -> Label:
 
 
 class BrowserTextSizer(SyncedPipe, StyledWidget, TextSizer):
-    """Jupyterlab widget for getting rendered text sizes from the DOM"""
+    """JupyterLab widget for getting rendered text sizes from the DOM"""
 
     _model_name = T.Unicode("ELKTextSizerModel").tag(sync=True)
     _model_module = T.Unicode(EXTENSION_NAME).tag(sync=True)

@@ -349,7 +349,7 @@ class ElementIndex(BaseModel):
         for el, edge in iter_edges(root):
             for endpt in (edge.source, edge.target):
                 if endpt.get_id() not in self.elements:
-                    # get the top ancestor of endpoint and add to the orphan set
+                    # get the top ancestor of endpoint (``endpt``) and add to the orphan set
                     ancestor = get_ancestor(endpt)
                     assert isinstance(ancestor, Node)
                     orphans.add(ancestor)

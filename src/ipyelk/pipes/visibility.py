@@ -37,7 +37,7 @@ class VisibilityPipe(Pipe):
         # generate an index of hidden elements
         vis_index = VisIndex.from_els(root)
 
-        # clear old slack css classes from elements
+        # clear old slack CSS classes from elements
         vis_index.clear_slack(root)
 
         # serialize the elements excluding hidden
