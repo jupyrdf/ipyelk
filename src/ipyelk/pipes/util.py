@@ -37,9 +37,7 @@ def wait_for_change(widget, value, timeout: float | None = None):
     widget.observe(getvalue, value)
 
     if timeout is not None:
-        # may run outside a loop; this is the loop `asyncio.Future()` bound to
-        # ast-grep-ignore: py-no-get-event-loop
-        loop = asyncio.get_event_loop()
+        loop = future.get_loop()
 
         def on_timeout():
             if not future.done():
