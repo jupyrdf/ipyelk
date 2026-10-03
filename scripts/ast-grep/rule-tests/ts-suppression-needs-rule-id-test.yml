@@ -1,0 +1,13 @@
+id: ts-suppression-needs-rule-id
+valid:
+  - |
+    // ast-grep-ignore: ts-no-eval
+    eval(code);
+  - // see the ast-grep docs
+invalid:
+  - |
+    // ast-grep-ignore
+    eval(code);
+  - |
+    /* ast-grep-ignore: */
+    eval(code);

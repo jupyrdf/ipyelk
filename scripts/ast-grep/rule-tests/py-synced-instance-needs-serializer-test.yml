@@ -1,11 +1,18 @@
 id: py-synced-instance-needs-serializer
 valid:
   - pipe = T.Instance(Pipe).tag(sync=True, **W.widget_serialization)
+  - symbols = T.Instance(SymbolSpec, kw={}).tag(sync=True, **symbol_serialization)
   - value = T.Instance(Node).tag(sync=True, to_json=dump, from_json=load)
   - pipe = T.Instance(Pipe)
   - pipe = T.Instance(Pipe).tag(other=True)
+  - pipe = T.Instance(Pipe).tag(sync=False)
+  - pipe = T.Instance(Pipe).tag(no_sync=True)
+  - options = T.Instance(dict).tag(sync=True)
   - raw_css = T.Tuple().tag(sync=True)
 invalid:
   - pipe = T.Instance(Pipe).tag(sync=True)
   - source = T.Instance(Widget, allow_none=True).tag(sync=True, foo=1)
   - pipes = T.List(T.Instance(Pipe), kw={}).tag(sync=True)
+  - pipe = T.Instance(Pipe).tag(sync=True, **extra_metadata)
+  - pipe = T.Instance(Pipe).tag(sync=True, from_json=load)
+  - things = T.Instance(dictlike).tag(sync=True)

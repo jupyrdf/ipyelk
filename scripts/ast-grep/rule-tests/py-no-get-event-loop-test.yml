@@ -3,6 +3,11 @@ valid:
   - loop = asyncio.get_running_loop()
   - future = asyncio.get_running_loop().create_future()
   - loop = self.get_event_loop()
+  - loop = future.get_loop()
 invalid:
   - loop = asyncio.get_event_loop()
   - future = asyncio.get_event_loop().create_future()
+  - loop = get_event_loop()
+  - loop = aio.get_event_loop()
+  - loop = asyncio.events.get_event_loop()
+  - loop = asyncio.get_event_loop_policy().get_event_loop()

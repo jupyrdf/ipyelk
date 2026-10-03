@@ -6,6 +6,12 @@ valid:
   - |
     with suppress(asyncio.TimeoutError, KeyError):
         pass
+  - |
+    with suppress(MyException, ExceptionGroupError):
+        pass
+  - |
+    with other.suppress(Exception):
+        pass
   - raise Exception("boom")
 invalid:
   - |
@@ -16,4 +22,13 @@ invalid:
         pass
   - |
     with suppress(KeyError, Exception):
+        pass
+  - |
+    with suppress((Exception, ValueError)):
+        pass
+  - |
+    with suppress(*(Exception,)):
+        pass
+  - |
+    with contextlib.suppress(builtins.Exception):
         pass

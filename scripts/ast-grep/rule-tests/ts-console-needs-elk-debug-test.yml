@@ -4,17 +4,83 @@ valid:
   - |
     ELK_DEBUG &&
       console.info('queued', ids);
+  - ELK_DEBUG && ready && console.log('render');
+  - ready && ELK_DEBUG && console.log('render');
+  - |
+    const x = ELK_DEBUG ? console.log('render') : null;
+  - ELK_DEBUG && console.log?.('render');
+  - ELK_DEBUG && window.console.time('layout');
   - |
     if (ELK_DEBUG) {
       console.debug('state', state);
     }
+  - |
+    if (ELK_DEBUG) console.group('state');
+  - |
+    function f() {
+      if (!ELK_DEBUG) return;
+      console.log('state', state);
+    }
+  - |
+    function f() {
+      if (!ELK_DEBUG) {
+        return;
+      }
+      if (ready) {
+        console.table(rows);
+      }
+    }
   - console.warn('ELK failed to report the viewport', err);
   - console.error(error);
+  - logger.log('not the console');
 invalid:
+  - |
+    function f() {
+      if (ELK_DEBUG) return;
+      console.log('state');
+    }
   - console.log('render');
   - 'console.info(`${NAME}: skipping patch`);'
+  - console.debug('state');
+  - console.trace();
+  - console.dir(node);
+  - console.dirxml(node);
+  - console.table(rows);
+  - console.count('render');
+  - console.group('render');
+  - console.time('layout');
+  - console.timeEnd('layout');
+  - console.log?.('render');
+  - console?.log('render');
+  - window.console.log('render');
+  - globalThis.console.info('render');
+  - console['log']('render');
+  - DEBUG && console.log('render');
+  - ELK_DEBUG || console.log('render');
+  - "!ELK_DEBUG && console.log('render');"
+  - |
+    const x = ELK_DEBUG ? null : console.log('render');
   - |
     if (ready) {
       console.debug('state', state);
     }
-  - DEBUG && console.log('render');
+  - |
+    if (!ELK_DEBUG) {
+      console.log('state');
+    }
+  - |
+    if (ELK_DEBUG) {
+      render();
+    } else {
+      console.log('state');
+    }
+  - |
+    function f() {
+      if (!ELK_DEBUG) console.warn('off');
+      console.log('state');
+    }
+  - |
+    function f() {
+      console.log('state');
+      if (!ELK_DEBUG) return;
+    }

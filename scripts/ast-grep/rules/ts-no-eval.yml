@@ -5,15 +5,34 @@ message: Do not evaluate strings as code
 note: |
   Diagram data comes from the kernel and from users' notebooks; evaluating any
   of it runs arbitrary script in the JupyterLab page.
-rule:
-  any:
-    - pattern: eval($$$)
-    - pattern: new Function($$$)
-    - pattern: $TIMER($CODE, $$$)
-constraints:
-  TIMER:
-    regex: ^(window\.)?(setTimeout|setInterval)$
-  CODE:
+utils:
+  string-code:
     any:
       - kind: string
       - kind: template_string
+      - kind: binary_expression
+        has:
+          stopBy: end
+          any:
+            - kind: string
+            - kind: template_string
+rule:
+  any:
+    - kind: call_expression
+      has:
+        field: function
+        regex: ^\(?\s*(\d+\s*,\s*)?((window|globalThis|self)\s*\??\.\s*)?(eval|Function)\s*\)?$
+    - kind: new_expression
+      has:
+        field: constructor
+        regex: ^((window|globalThis|self)\s*\??\.\s*)?Function$
+    - kind: call_expression
+      all:
+        - has:
+            field: function
+            regex: ^((window|globalThis|self)\s*\??\.\s*)?(setTimeout|setInterval)$
+        - has:
+            field: arguments
+            has:
+              nthChild: 1
+              matches: string-code

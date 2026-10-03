@@ -1,11 +1,25 @@
 id: ts-no-eval
 valid:
+  - setTimeout(show, 100, 'label');
   - setTimeout(finish, 100);
   - window.setTimeout(() => this.update(), 1000);
+  - setTimeout(() => log('a' + b), 10);
   - const f = new Map();
   - model.evaluate(x);
+  - model.eval(x);
+  - const f = new MyFunction();
+  - isFunction(x);
 invalid:
   - eval(code);
+  - window.eval(code);
+  - globalThis.eval(code);
+  - (0, eval)(code);
   - const f = new Function('a', 'return a');
+  - const f = Function('return 1');
+  - const f = new window.Function('return 1');
   - setTimeout('update()', 100);
+  - setInterval('tick()', 10);
   - window.setInterval(`tick(${n})`, 10);
+  - self.setTimeout('update()', 100);
+  - globalThis.setTimeout('update()', 100);
+  - setTimeout('update(' + n + ')', 100);

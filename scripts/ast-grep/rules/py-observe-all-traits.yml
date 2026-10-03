@@ -3,15 +3,34 @@ language: python
 severity: error
 message: Pass the trait names to `observe()`
 note: |
-  Without names the handler runs for every trait change, including each synced
-  trait the frontend writes; pass `names=T.All` if that is really intended.
+  Without names (or with `names=None`) the handler runs for every trait change,
+  including each synced trait the frontend writes; pass `names=T.All` if that
+  is really intended.
 rule:
-  any:
-    - pattern: $OBJ.observe($HANDLER)
-    - pattern: $OBJ.observe(handler=$HANDLER)
-  not:
-    inside:
-      kind: decorator
+  all:
+    - any:
+        - pattern: $OBJ.observe($HANDLER)
+        - pattern: $OBJ.observe($HANDLER, $$$)
+    - not:
+        inside:
+          kind: decorator
+    - not:
+        has:
+          field: arguments
+          any:
+            - has:
+                nthChild: 2
+                not:
+                  kind: keyword_argument
+            - has:
+                kind: keyword_argument
+                regex: ^names\s*=
+                not:
+                  regex: ^names\s*=\s*None$
+            - has:
+                any:
+                  - kind: list_splat
+                  - kind: dictionary_splat
 constraints:
   HANDLER:
     not:

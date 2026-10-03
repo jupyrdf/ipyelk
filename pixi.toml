@@ -455,7 +455,7 @@ inputs = [".github/workflows"]
 
 [feature.tasks-lint.tasks.lint-ast-grep]
 cmd = """ast-grep test --skip-snapshot-tests
-&& ast-grep scan scripts src tests docs atest examples js"""
+&& ast-grep scan --error=unused-suppression scripts src tests docs atest examples js"""
 inputs = [
   "sgconfig.yml",
   "scripts/ast-grep/",
@@ -577,7 +577,7 @@ nodejs = "22.*"
 
 [feature.deps-lint.dependencies]
 actionlint-with-all = "*"
-ast-grep = ">=0.45"
+ast-grep = ">=0.45,<0.46"
 mypy = ">=2.3,<3"
 nbconvert-core = "*"
 nbstripout = "*"

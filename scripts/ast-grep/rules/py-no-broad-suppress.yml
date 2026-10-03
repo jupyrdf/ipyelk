@@ -4,7 +4,8 @@ severity: error
 message: Suppress specific exceptions, not `Exception`/`BaseException`
 note: |
   `contextlib.suppress(Exception)` silently swallows every error, like a bare
-  `except: pass`, but ruff's S110/BLE001 do not see it.
+  `except: pass`, but ruff's S110/BLE001 do not see it. Only `suppress` and
+  `contextlib.suppress` are recognised, not an aliased import.
 rule:
   all:
     - kind: call
@@ -14,5 +15,6 @@ rule:
     - has:
         field: arguments
         has:
+          stopBy: end
           kind: identifier
           regex: ^(Base)?Exception$

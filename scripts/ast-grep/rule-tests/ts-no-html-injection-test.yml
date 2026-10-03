@@ -2,11 +2,32 @@ id: ts-no-html-injection
 valid:
   - const markup = svg.outerHTML;
   - el.textContent = label;
+  - el.innerText = label;
   - 'ELK_DEBUG && console.warn(element.innerHTML);'
   - "html('div', { props: { textContent: text } });"
+  - "html('div', { props: { innerHTML: undefined } });"
+  - 'const props = { outerHTML: null };'
+  - 'const props = { myInnerHTML: label };'
+  - el.dataset.innerHTMLish = label;
+  - logger.write(label);
+  - el.insertAdjacentText('beforeend', label);
 invalid:
   - el.innerHTML = label;
   - el.innerHTML += label;
+  - el.outerHTML = label;
+  - el.outerHTML += label;
+  - el['innerHTML'] = label;
+  - el["outerHTML"] = label;
   - el.insertAdjacentHTML('beforeend', label);
+  - el?.insertAdjacentHTML('beforeend', label);
+  - el.setHTMLUnsafe(label);
+  - Document.parseHTMLUnsafe(label);
+  - range.createContextualFragment(label);
+  - document.write(label);
+  - document.writeln(label);
+  - window.document.write(label);
   - "html('div', { props: { innerHTML: node.properties.shape.use } });"
+  - "html('div', { props: { outerHTML: label } });"
+  - "html('div', { props: { 'innerHTML': label } });"
   - 'const props = { innerHTML };'
+  - 'const props = { outerHTML };'
