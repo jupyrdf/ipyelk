@@ -12,6 +12,7 @@ import time
 from pathlib import Path
 
 import robot
+import robot.api
 from pabot import pabot
 
 ENV_NAME = os.environ["PIXI_ENVIRONMENT_NAME"]
@@ -133,6 +134,19 @@ def atest(attempt, extra_args):
         return err.code
 
 
+def warn_about_retried(last_attempt, extra_args):
+    """Name the tests that failed before the last attempt, which a green job hides."""
+    for attempt in range(1, last_attempt):
+        output = ATEST_OUT / get_stem(attempt, extra_args) / "output.xml"
+        if not output.exists():
+            continue
+        for test in robot.api.ExecutionResult(output).suite.all_tests:
+            if test.failed:
+                print(
+                    f"::warning title=atest attempt {attempt}::{test.longname} failed"
+                )
+
+
 def attempt_atest_with_retries(*extra_args):
     """Retry the robot tests a number of times"""
     attempt = ATTEMPT
@@ -155,6 +169,7 @@ def attempt_atest_with_retries(*extra_args):
 
     if is_real and not error_count:
         ATEST_CANARY.touch()
+        warn_about_retried(attempt, list(extra_args))
 
     return error_count
 
