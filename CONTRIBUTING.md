@@ -119,7 +119,8 @@ pixi run test
 - Try a pattern with `pixi run -e lint ast-grep run -l py -p '<pattern>' src`
 - Run only the rule tests with `pixi run -e lint ast-grep test --skip-snapshot-tests`
 - Suppress an intended finding with the rule id, and the reason on the line above; a
-  bare `ast-grep-ignore` or one that no longer matches anything fails the lint:
+  bare `ast-grep-ignore` (checked by `scripts/check_suppressions.py`) or one that no
+  longer matches anything fails the lint:
 
 ```ts
 // a foreignObject shape renders its `use` markup by design
@@ -127,7 +128,11 @@ pixi run test
 let contents = html('div', { props: { innerHTML: node?.properties?.shape?.use } });
 ```
 
-`ast-grep` cannot parse notebooks, so `examples/*.ipynb` are not scanned.
+`ast-grep` cannot parse notebooks, so `examples/*.ipynb` are not scanned. Known gaps,
+accepted as unlikely: `window['eval']`, `Reflect.apply(eval, ...)` and `const e = eval`;
+`el['insertAdjacentHTML']`, `contentDocument.write`, `srcdoc` and
+`DOMParser.parseFromString`; `console.log.call`/`.apply`; and an `Instance` nested in
+`T.Tuple(...)` next to a JSON one.
 
 ### Limiting Testing
 
