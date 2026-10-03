@@ -2,6 +2,7 @@
 Resource            ../_resources/keywords/Browser.robot
 Resource            ../_resources/keywords/Lab.robot
 Resource            ../_resources/keywords/IPyElk.robot
+Resource            ../_resources/variables/Server.robot
 Library             Collections
 
 Test Teardown       Clean up after IPyElk Example
@@ -10,42 +11,38 @@ Test Teardown       Clean up after IPyElk Example
 *** Variables ***
 ${SCREENS}              ${SCREENS ROOT}${/}examples${/}04_Interactive
 ${CONVERGE TIMEOUT}     30s
+${PROBE}                interactive_probe.py
 ${XP SLIDER}            //div[contains(@class, "widget-slider")][.//label[text()="{}"]]
-${JS DOM CENSUS}
-...                     const n = {};
-...                     for (const el of document.querySelectorAll(".elknode, .elkedge, .elklabel, .elkport")) {
-...                     const kind = [...el.classList].find((c) => /^elk(node|edge|label|port)$/.test(c));
-...                     const key = kind + (el.closest(".sprotty-hidden") ? ":hidden" : "");
-...                     n[key] = (n[key] || 0) + 1; }
-...                     return JSON.stringify(n);
-# one line, and no ``+``: Press Keys reads it as a chord
-${COUNT CELL}
-...                     from ipyelk.elements import index as _i, Node as _N, Edge as _E, Label as _L, Port as _P;
-...                     _c95 = globals().get("_c95") or (lambda n: (elk.observe(n.append, "source"), n)[1])([]);
-...                     _w = box.children[0].children[0].children; _x = list(_i.iter_elements(elk.source.value));
-...                     print("ELK95", _w[0].value, _w[3].value, sum(isinstance(e, _N) for e in _x) - 1,
-...                     sum(isinstance(e, _E) for e in _x), sum(isinstance(e, _L) for e in _x),
-...                     sum(isinstance(e, _P) for e in _x), len(_c95),
-...                     sum(isinstance(e, _N) for e in _i.iter_elements(elk.view.source.value)) - 1)
+${JS DRAWN EDGE IDS}
+...                     return [...document.querySelectorAll("${CSS ELK VIEW} ${CSS ELK EDGE}")]
+...                     .filter((el) => !el.closest(".sprotty-hidden"))
+...                     .map((el) => el.id.slice(-36)).sort();
 
 
 *** Test Cases ***
 04_Interactive
-    Example Should Restart-and-Run-All    ${INTERACTIVE}
-    # not worth counting anything, as is basically non-deterministic
-
-04_Interactive Converges After Slider Bursts
     [Documentation]    Bursts of slider changes each replace ``elk.source``. Once a
-    ...    burst stops, ``elk.source`` must hold the last requested graph and the
-    ...    diagram must draw it, without touching the collapse toggle, once the
-    ...    only way out of a hang (gh-95).
+    ...    burst stops, ``elk.source`` must hold the graph the sliders ask for, and
+    ...    the diagram must draw that very graph (its edge ids are fresh uuids on
+    ...    every load), without touching the collapse toggle, which was once the
+    ...    only way out of a hang (gh-95). Bursts end on different sliders, so a
+    ...    graph one step behind fails.
+    ...
+    ...    The race is intermittent and CI retries failed tests (``ATEST_RETRIES``),
+    ...    so a first-attempt failure is the signal: ``scripts/atest.py`` keeps each
+    ...    attempt's ``output.xml`` in ``build/reports/atest*/<os>_<attempt>/`` and
+    ...    raises a GitHub warning for each test that failed before the last attempt.
     [Tags]    gh:95
     Example Should Restart-and-Run-All    ${INTERACTIVE}
+    Copy File    ${FIXTURES}${/}${PROBE}    ${OUTPUT DIR}${/}home${/}${PROBE}
+    Run IPyElk Code In A New Cell    _k95 = __import__("interactive_probe").watch(box, elk)
+    ...    screen=00-probe.png
+    Set Test Variable    ${SOURCES SEEN}    ${0}
     Diagram Should Converge    00
-    Burst Sliders And Converge    01    ARROW_RIGHT    8
+    Burst Sliders And Converge    01    ARROW_RIGHT    7    number_of_nodes    ARROW_RIGHT
     Burst Sliders And Converge    02    ARROW_LEFT    15
-    Burst Sliders And Converge    03    ARROW_RIGHT    10
-    Burst Sliders And Converge    04    ARROW_LEFT    6
+    Burst Sliders And Converge    03    ARROW_RIGHT    11    percent_of_edges    ARROW_LEFT
+    Burst Sliders And Converge    04    ARROW_LEFT    6    number_of_nodes    ARROW_LEFT
     Burst Sliders And Converge    05    ARROW_RIGHT    8
 
 
@@ -53,12 +50,13 @@ ${COUNT CELL}
 Burst Sliders And Converge
     [Documentation]    Alternate single steps of ``number_of_nodes`` and ``seed``,
     ...    each a committed change and so a fresh ``make_graph``, as fast as
-    ...    WebDriver allows, then wait for the diagram.
-    [Arguments]    ${round}    ${key}    ${steps}
+    ...    WebDriver allows, then one more ``@{last}`` step, then wait.
+    [Arguments]    ${round}    ${key}    ${steps}    @{last}
     FOR    ${i}    IN RANGE    ${steps}
         Press Slider Keys    number_of_nodes    ${key}
         Press Slider Keys    seed    ARROW_RIGHT
     END
+    IF    ${last}    Press Slider Keys    @{last}
     ${since} =    Evaluate    time.time()    time
     Capture Page Screenshot    ${round}-0-burst.png
     Diagram Should Converge    ${round}    ${since}
@@ -75,55 +73,64 @@ Get Slider Readout
     RETURN    ${text}
 
 Diagram Should Converge
-    [Documentation]    Wait until ``elk.source`` holds the last request and, with the
-    ...    diagram scrolled into view, the DOM draws it. Log the seconds since
-    ...    ``${since}``, e.g. the end of a burst.
+    [Documentation]    Wait until ``elk.source`` holds the graph the browser's sliders
+    ...    ask for, then until the diagram draws it. Log when ``elk.source`` last
+    ...    changed and when the drawing matched, in seconds since ``${since}``.
     [Arguments]    ${round}    ${since}=${None}
     ${since} =    Evaluate    $since or time.time()    time
-    ${nodes ui} =    Get Slider Readout    number_of_nodes
-    ${seed ui} =    Get Slider Readout    seed
+    ${nodes} =    Get Slider Readout    number_of_nodes
+    ${percent} =    Get Slider Readout    percent_of_edges
+    ${seed} =    Get Slider Readout    seed
+    ${asked} =    Set Variable    ${nodes}/${percent}/${seed}
     ${ok}    ${state} =    Run Keyword And Ignore Error
     ...    Wait Until Keyword Succeeds    ${CONVERGE TIMEOUT}    0.5s
-    ...    Kernel Should Hold The Request    ${nodes ui}    ${seed ui}    ${round}
+    ...    Kernel Should Hold The Request    ${asked}
     Execute Javascript    document.querySelector("${CSS ELK VIEW}").scrollIntoView({block: "center"})
     IF    "${ok}" == "PASS"
         ${ok}    ${err} =    Run Keyword And Ignore Error
         ...    Wait Until Keyword Succeeds    ${CONVERGE TIMEOUT}    0.25s
-        ...    Elk Counts Should Really Be    &{state.counts}    screen=${round}-1-counting.png
+        ...    Diagram Should Draw    ${state}[edges]
+        ${held} =    Evaluate    round($state["changed_at"] - ${since}, 2)
+        ${new} =    Evaluate    $state["changes"] - ${SOURCES SEEN}
+        Set Test Variable    ${SOURCES SEEN}    ${state}[changes]
     ELSE
         ${err} =    Set Variable    ${state}
+        ${held} =    Set Variable    ?
+        ${new} =    Set Variable    ?
     END
-    ${took} =    Evaluate    round(time.time() - ${since}, 2)    time
-    Log    round ${round}: ${nodes ui}/${seed ui} ${ok} after ${took}s    console=True
+    ${drawn} =    Evaluate    round(time.time() - ${since}, 2)    time
+    Log    round ${round}: ${asked} ${ok}, ${new} new sources, last at ${held}s, drawn by ${drawn}s
+    ...    console=True
     Capture Page Screenshot    ${round}-2-${ok.lower()}.png
     IF    "${ok}" == "FAIL"
-        ${dom} =    Execute Javascript    ${JS DOM CENSUS}
-        Fail    round ${round}: no convergence within ${CONVERGE TIMEOUT}, drawn ${dom}: ${err}
+        Fail    round ${round}: no convergence on ${asked} within ${CONVERGE TIMEOUT}: ${err}
+    END
+    IF    "${round}" != "00"
+        Should Be True    ${new} > 0    burst ${round} never replaced elk.source
     END
 
 Kernel Should Hold The Request
-    [Documentation]    The kernel's sliders must match the browser's, and
-    ...    ``elk.source`` must hold that graph.
-    [Arguments]    ${nodes ui}    ${seed ui}    ${round}
+    [Arguments]    ${asked}
     ${state} =    Get Kernel State
-    Log    round ${round}: kernel ${state}    console=True
-    Should Be Equal As Strings    ${state.sliders}    ${nodes ui}/${seed ui}
-    ...    kernel sliders lag the browser    values=${TRUE}
-    Should Be Equal As Strings    ${state.counts.nodes}    ${nodes ui}
-    ...    elk.source is not the last requested graph    values=${TRUE}
+    Should Be Equal    ${state}[sliders]    ${asked}    kernel sliders lag the browser    values=${TRUE}
+    Should Be Equal    ${state}[held]    ${state}[requested]
+    ...    elk.source is not the graph ${asked} asks for    values=${TRUE}
     RETURN    ${state}
+
+Diagram Should Draw
+    [Arguments]    ${edges}
+    ${drawn} =    Execute Javascript    ${JS DRAWN EDGE IDS}
+    ${missing} =    Evaluate    len(set($edges) - set($drawn))
+    ${stale} =    Evaluate    len(set($drawn) - set($edges))
+    Should Be True    $drawn == $edges
+    ...    drawn ${drawn.__len__()} edges: ${missing} of elk.source's ${edges.__len__()} missing, ${stale} others
 
 Get Kernel State
     ${token} =    Evaluate    "ELK95x%s" % secrets.token_hex(4)    secrets
-    Run IPyElk Code In A New Cell    ${COUNT CELL.replace("ELK95", "${token}")}
+    Run IPyElk Code In A New Cell    _k95("${token}")    screen=${EMPTY}
     ${xp} =    Set Variable    xpath://*[contains(@class, "jp-OutputArea-output")][contains(., "${token} ")]
     Wait Until Page Contains Element    ${xp}    timeout=30s
     ${out} =    Get Text    ${xp}
-    ${found} =    Get Regexp Matches    ${out}    ${token} (\\d+) (\\d+) (\\d+) (\\d+) (\\d+) (\\d+) (\\d+) (\\d+)
-    ...    1    2    3    4    5    6    7    8
-    Should Not Be Empty    ${found}
-    ${f} =    Set Variable    ${found}[0]
-    &{counts} =    Create Dictionary    nodes=${f}[2]    edges=${f}[3]    labels=${f}[4]    ports=${f}[5]
-    &{state} =    Create Dictionary    sliders=${f}[0]/${f}[1]    sources=${f}[6]    view nodes=${f}[7]
-    ...    counts=${counts}
+    ${state} =    Evaluate    json.loads($out.split(" ", 1)[1])    json
+    Log    ${state}
     RETURN    ${state}
