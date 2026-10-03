@@ -481,7 +481,7 @@ depends-on = ["lint-vale-nb"]
 inputs = [
   "*.md",
   "docs/**/*.{md,py}",
-  "src/**/*.{md,py}",
+  "{scripts,src,tests}/**/*.{md,py}",
   "build/nblint/**/*.md",
   "vale.ini",
   "scripts/vale/",
@@ -490,7 +490,7 @@ inputs = [
 
 [feature.tasks-lint.tasks.lint-vale-nb]
 cmd = "python scripts/nblint.py --extract-only examples"
-inputs = ["examples/*.ipynb", "scripts/nblint.py"]
+inputs = ["examples/**/*.ipynb", "scripts/nblint.py"]
 outputs = ["build/nblint/**/*.md"]
 
 # lite #################################################################################

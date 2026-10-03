@@ -137,8 +137,9 @@ accepted as unlikely: `window['eval']`, `Reflect.apply(eval, ...)` and `const e 
 ### Prose
 
 [Vale](https://vale.sh) lints the prose in the root `*.md` files, `docs/`, docstrings
-and comments in `src/`, and notebook markdown cells, in US English, with the `proselint`
-and `write-good` styles. Any warning or error fails `pixi run lint`. To run it alone:
+and comments in `src/`, `tests/` and `scripts/`, and notebook markdown cells, in US
+English, with the `proselint` and `write-good` styles. Any warning or error fails
+`pixi run lint`. To run it alone:
 
 ```bash
 pixi run lint-vale
@@ -147,21 +148,26 @@ pixi run lint-vale
 Findings in notebooks point at `build/nblint/examples/<notebook>/cell-<n>.md`, the
 markdown of the _n_-th cell.
 
+- Fix real typos.
 - Add a project term (a name, an API word) to
   `scripts/vale/config/vocabularies/IPyElk/accept.txt`, one per line. Entries are
-  case-sensitive regular expressions; prefix `(?i)` to accept any case. Fix real typos
-  instead.
-- Turn a rule off for one passage in markdown, with the reason:
+  regular expressions, and `Vale.Terms` also enforces their case: write a lowercase word
+  as `[Ww]ord` so it may start a sentence, or prefix `(?i)` to accept any case.
+- In markdown, turn a rule off for one passage, with the reason:
 
 ```markdown
-<!-- vale write-good.Illusions = NO -->
-<!-- "that that" is intentional here -->
+<!-- vale proselint.Very = NO -->
+<!-- quoting the upstream docs verbatim -->
 
-...
+It is very fast.
 
-<!-- vale write-good.Illusions = YES -->
+<!-- vale proselint.Very = YES -->
 ```
 
+- In Python, Vale has no inline switch, and it can't skip RST literals for `Vale.Terms`.
+  Add the exact phrase to the vocabulary (e.g. `package\.json` stops `json` in it from
+  being flagged), or turn the rule off for that file in `vale.ini` in a
+  `[path/to/file.py]` section, with a one-line comment giving the reason.
 - Turn a rule off everywhere in `vale.ini`, with a one-line comment giving the reason.
 
 ### Limiting Testing

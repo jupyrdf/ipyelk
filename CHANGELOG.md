@@ -303,9 +303,9 @@ throughout 3.x with the replacement in the message.
   `pixi run lint`; a suppression must name its rule and still match something ([#147])
 - Lint prose with Vale in the `lint` job: `pixi run lint-vale` checks US English
   spelling and the `proselint` and `write-good` styles in the root `*.md` files,
-  `docs/`, docstrings and comments in `src/`, and notebook markdown, and fails on any
-  warning or error. It replaces `check-spelling`, which linted the built HTML and never
-  failed ([#181])
+  `docs/`, docstrings and comments in `src/`, `tests/` and `scripts/`, and notebook
+  markdown, and fails on any warning or error. It replaces `check-spelling`, which
+  linted the built HTML and never failed ([#181])
 
 [#147]: https://github.com/jupyrdf/ipyelk/issues/147
 [#160]: https://github.com/jupyrdf/ipyelk/issues/160
@@ -463,16 +463,19 @@ throughout 3.x with the replacement in the message.
 
 - Support `pydantic >=1,<3`
 
+<!-- vale Vale.Terms = NO -->
+<!-- released notes are kept as written -->
+
 ## `2.0.0`
 
 ### `@jupyrdf/jupyter-elk 2.0.0`
 
-- Added control layer to allow JupyterLab widgets to exist on top of the diagram based
+- Added control layer to allow jupyterlab widgets to exist on top of the diagram based
   on current node selection.
-- Adding controllable render delay for JupyterLab widgets used in diagram nodes.
+- Adding controllable render delay for jupyterlab widgets used in diagram nodes.
 - Updated dependencies to `elkjs 0.8.2`.
 - Fixed diagram bounding box issue affecting node visibility ([#94]).
-- Improved test sizing that takes into account CSS properties ([#97])
+- Improved test sizing that takes into account css properties ([#97])
 
 ### `ipyelk 2.0.0`
 
