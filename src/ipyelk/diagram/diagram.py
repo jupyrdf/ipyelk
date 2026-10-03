@@ -30,6 +30,8 @@ class Diagram(StyledWidget):
     pipe: :py:class:`~ipyelk.pipes.Pipe`
         processing pipe (that may contain sub-pipes). Pipes perform various
         tasks like adding x/y and width/height layouts or calculating text label sizes.
+        The diagram owns its pipe: replacing it closes the old pipe and the
+        widgets that pipe created, but never ``source``.
     view: :py:class:`~ipyelk.diagram.viewer.Viewer`
         output view that will render the pipe outlet
     tools: tuple :py:class:`~ipyelk.tools.Tool`
@@ -54,6 +56,8 @@ class Diagram(StyledWidget):
     _refresh_task: asyncio.Future | None = None
 
     def __init__(self, *args, **kwargs):
+        #: links ``_wire_pipe`` made to the current pipe
+        self._pipe_links: list[T.directional_link] = []
         super().__init__(*args, **kwargs)
         self.add_class("jp-ElkApp")
         self._update_children()
@@ -71,14 +75,40 @@ class Diagram(StyledWidget):
 
     @T.default("pipe")
     def _default_Pipe(self):
-        from .flow import BrowserTextSizer, DefaultFlow
+        from .flow import DefaultFlow
 
-        progress_bar = self.get_tool(PipelineProgressBar)
-        pipeline = DefaultFlow(on_progress=progress_bar.update)
-        for pipe in pipeline.pipes:
-            if isinstance(pipe, BrowserTextSizer):
-                W.dlink((self, "style"), (pipe, "style"))
-        return pipeline
+        pipe = DefaultFlow()
+        self._wire_pipe(pipe)
+        return pipe
+
+    def _progress_bars(self) -> list[PipelineProgressBar]:
+        return [tool for tool in self.tools if isinstance(tool, PipelineProgressBar)]
+
+    def _wire_pipe(self, pipe: Pipe) -> None:
+        """Follow ``style`` in the pipe's text sizers and report its progress."""
+        from .flow import BrowserTextSizer
+
+        for sub in getattr(pipe, "pipes", ()):
+            if isinstance(sub, BrowserTextSizer):
+                self._pipe_links.append(W.dlink((self, "style"), (sub, "style")))
+        bars = self._progress_bars()
+        if pipe.on_progress is None and bars:
+            pipe.on_progress = bars[0].update
+
+    def _unwire_pipe(self, old: Pipe, new: Pipe) -> None:
+        """Drop every reference the diagram and its tools hold to ``old``."""
+        old.cancel()
+        links, self._pipe_links = self._pipe_links, []
+        for link in links:
+            link.unlink()
+        self._refresh_task = None
+        for bar in self._progress_bars():
+            if old.on_progress == bar.update:
+                old.set_trait("on_progress", None)
+            if bar.pipe is old:
+                bar.pipe = new
+        for tool in self.tools:
+            tool.tee = new
 
     @T.observe("view")
     def _update_children(self, change: T.Bunch | None = None):
@@ -99,14 +129,19 @@ class Diagram(StyledWidget):
     @T.observe("pipe", "source", "style")
     def _change_pipe(self, change):
         """Rewire and refresh. A new pipe or source cancels the in-flight run,
-        whose answer would land in an index nobody views; a style change only
-        requests a new run.
+        whose answer would land in an index nobody views, and a replaced pipe
+        is closed; a style change only requests a new run.
         """
-        if change.name == "pipe" and isinstance(change.old, Pipe):
-            change.old.cancel()
+        old = change.old if change.name == "pipe" else None
+        if isinstance(old, Pipe):
+            self._unwire_pipe(old, change.new)
+        if change.name == "pipe":
+            self._wire_pipe(change.new)
         elif change.name == "source":
             self.pipe.cancel()
         self._update_view_sources()
+        if isinstance(old, Pipe):
+            old.close()
         self.refresh()
 
     @T.default("tools")

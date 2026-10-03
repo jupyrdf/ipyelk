@@ -8,6 +8,7 @@ import ipywidgets as W
 import traitlets as T
 
 from ..exceptions import BrokenPipe
+from ..util import close_widget
 from .base import Pipe, PipeStatus, PipeStatusView, Superseded, SyncedOutletPipe
 
 
@@ -59,8 +60,18 @@ class PipelineStatusView(PipeStatusView):
             stale, self._owned = self._owned, []
             self._rows = [self._row(i, view) for i, (_, view) in enumerate(key)]
             for widget in stale:
-                _close(widget)
+                close_widget(widget)
         self._update_children()
+
+    def close(self):
+        for widget in self._owned:
+            close_widget(widget)
+        self._owned = []
+        for name in ("toggle_btn", "header"):
+            widget = self._trait_values.get(name)
+            if widget is not None:
+                close_widget(widget)
+        super().close()
 
     def _row(self, i: int, view: W.DOMWidget) -> W.HBox:
         space = W.HTML(value="<pre>  </pre>").add_class("elk-pipe-space")
@@ -68,12 +79,6 @@ class PipelineStatusView(PipeStatusView):
         row = W.HBox([space, view, accessor])
         self._owned += [row, space, accessor]
         return row
-
-
-def _close(widget: W.Widget) -> None:
-    for part in (widget, widget.layout, getattr(widget, "style", None)):
-        if part is not None:
-            part.close()
 
 
 class Pipeline(SyncedOutletPipe):
@@ -91,7 +96,13 @@ class Pipeline(SyncedOutletPipe):
 
         update()
         self.observe(update, "status")
-        return widget
+        return self._own(widget)
+
+    def close(self):
+        """Close this pipeline, its sub-pipes and the widgets it created."""
+        for pipe in self.pipes:
+            pipe.close()
+        super().close()
 
     @T.observe("pipes", "inlet")
     def _update_pipes(self, change=None):

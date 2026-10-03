@@ -5,6 +5,15 @@ from __future__ import annotations
 from .elements.layout_options.model import strip_none
 
 
+def close_widget(widget) -> None:
+    """Close a widget with its ``layout`` and ``style`` widgets, if it has them."""
+    widget.close()
+    for name in ("layout", "style"):
+        part = widget._trait_values.get(name)
+        if hasattr(part, "close"):
+            part.close()
+
+
 def safely_unobserve(item, handler):
     if hasattr(item, "unobserve"):
         item.unobserve(handler=handler)

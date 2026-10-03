@@ -29,7 +29,7 @@
   "fast flat:100 first sizer_runs": 1,
   "fast flat:100 replace errors": 0,
   "fast flat:100 replace failed": 0,
-  "fast flat:100 replace live_widgets_added": 111,
+  "fast flat:100 replace live_widgets_added": 0,
   "fast nested:100 burst bytes_b2k": 131189,
   "fast nested:100 burst bytes_k2b": 87053,
   "fast nested:100 burst comm_opens": 0,
@@ -60,7 +60,7 @@
   "fast nested:100 first sizer_runs": 1,
   "fast nested:100 replace errors": 0,
   "fast nested:100 replace failed": 0,
-  "fast nested:100 replace live_widgets_added": 111,
+  "fast nested:100 replace live_widgets_added": 0,
   "slow-browser flat:20 burst errors": 0,
   "slow-browser flat:20 burst failed": 0,
   "slow-browser flat:20 burst layouts": 1,
@@ -70,5 +70,5 @@
   "slow-browser flat:20 first layouts": 1,
   "slow-browser flat:20 replace errors": 0,
   "slow-browser flat:20 replace failed": 0,
-  "slow-browser flat:20 replace live_widgets_added": 111
+  "slow-browser flat:20 replace live_widgets_added": 0
 }

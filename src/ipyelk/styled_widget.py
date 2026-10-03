@@ -5,6 +5,8 @@ from __future__ import annotations
 import ipywidgets as W
 import traitlets as T
 
+from .util import close_widget
+
 
 @W.register
 class StyledWidget(W.Box):
@@ -18,6 +20,12 @@ class StyledWidget(W.Box):
         super().__init__(*args, **kwargs)
         self._update_style()
         self.add_class(self._css_class)
+
+    def close(self):
+        css = self._trait_values.get("_css_widget")
+        if css is not None:
+            close_widget(css)
+        super().close()
 
     @T.validate("children")
     def _valid_children(self, proposal):
