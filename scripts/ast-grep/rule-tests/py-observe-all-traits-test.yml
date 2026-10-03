@@ -18,6 +18,8 @@ valid:
     def _on_any(self, change):
         pass
 invalid:
+  - widget.observe(handler, None)
+  - widget.observe(handler, None, 'change')
   - self.observe(update)
   - widget.observe(handler=on_change)
   - widget.observe(handler, names=None)

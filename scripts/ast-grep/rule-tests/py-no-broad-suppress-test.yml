@@ -12,6 +12,15 @@ valid:
   - |
     with other.suppress(Exception):
         pass
+  - |
+    with suppress(get_errors(Exception)):
+        pass
+  - |
+    with suppress(errors.Exception):
+        pass
+  - |
+    with suppress(*(KeyError,)):
+        pass
   - raise Exception("boom")
 invalid:
   - |
@@ -28,6 +37,9 @@ invalid:
         pass
   - |
     with suppress(*(Exception,)):
+        pass
+  - |
+    with suppress(*[KeyError, BaseException]):
         pass
   - |
     with contextlib.suppress(builtins.Exception):

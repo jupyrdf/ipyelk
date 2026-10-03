@@ -21,7 +21,9 @@ rule:
             - has:
                 nthChild: 2
                 not:
-                  kind: keyword_argument
+                  any:
+                    - kind: keyword_argument
+                    - kind: none
             - has:
                 kind: keyword_argument
                 regex: ^names\s*=

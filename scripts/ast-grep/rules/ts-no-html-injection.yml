@@ -6,6 +6,8 @@ note: |
   Labels, tooltips and properties are user data; render them as text nodes. A
   sink that must take markup is suppressed with the reason it is safe.
 utils:
+  inert-value:
+    regex: ^(undefined|null|''|""|``)$
   markup-property:
     regex: ^['"`]?(innerHTML|outerHTML)['"`]?$
   markup-target:
@@ -18,6 +20,8 @@ rule:
   any:
     - kind: assignment_expression
       has: { field: left, matches: markup-target }
+      not:
+        has: { field: right, matches: inert-value }
     - kind: augmented_assignment_expression
       has: { field: left, matches: markup-target }
     - kind: call_expression
@@ -40,8 +44,6 @@ rule:
       all:
         - has: { field: key, matches: markup-property }
         - not:
-            has:
-              field: value
-              regex: ^(undefined|null)$
+            has: { field: value, matches: inert-value }
     - kind: shorthand_property_identifier
       matches: markup-property

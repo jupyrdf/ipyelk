@@ -1,5 +1,8 @@
 id: ts-no-eval
 valid:
+  - setTimeout(x || (() => console.warn('fallback')), 100);
+  - |
+    setTimeout(ready ? run : () => log('later'), 100);
   - setTimeout(show, 100, 'label');
   - setTimeout(finish, 100);
   - window.setTimeout(() => this.update(), 1000);
@@ -10,6 +13,7 @@ valid:
   - const f = new MyFunction();
   - isFunction(x);
 invalid:
+  - setTimeout('a' + b + 'c' + d, 100);
   - eval(code);
   - window.eval(code);
   - globalThis.eval(code);

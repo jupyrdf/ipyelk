@@ -12,10 +12,7 @@ utils:
       - kind: template_string
       - kind: binary_expression
         has:
-          stopBy: end
-          any:
-            - kind: string
-            - kind: template_string
+          matches: string-code
 rule:
   any:
     - kind: call_expression

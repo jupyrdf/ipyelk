@@ -34,6 +34,22 @@ valid:
   - console.error(error);
   - logger.log('not the console');
 invalid:
+  - console.profile('layout');
+  - console.profileEnd('layout');
+  - console.timeStamp('layout');
+  - window?.console.log('render');
+  - |
+    function f() {
+      if (!ELK_DEBUG && ready) return;
+      console.log('state');
+    }
+  - |
+    function f() {
+      if (!ELK_DEBUG) {
+        if (ready) return;
+      }
+      console.log('state');
+    }
   - |
     function f() {
       if (ELK_DEBUG) return;
