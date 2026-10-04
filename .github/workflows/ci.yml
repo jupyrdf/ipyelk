@@ -167,10 +167,8 @@ jobs:
           - { vm: macos-14, task: test }
           - { vm: macos-latest, task: test-oldest }
         include:
-          # the gh-95 slider bursts still hang on macOS now and then (kernel or
-          # page stuck for over a minute): report a skip and a warning there
-          - { vm: macos-14, atest-args: '--skiponfailure gh:95' }
-          - { vm: macos-latest, atest-args: '--skiponfailure gh:95' }
+          - { vm: macos-14, atest-args: '' }
+          - { vm: macos-latest, atest-args: '' }
           - { vm: ubuntu-latest, atest-args: '' }
           - { vm: windows-latest, atest-args: '--exclude ci:skip-win' }
     steps:
@@ -210,7 +208,12 @@ jobs:
             node_modules
           key: ${{ env.CACHE_EPOCH }}-${{ hashFiles('yarn.lock') }}-node-modules
       - env:
-          ATEST_ARGS: ${{ matrix.atest-args }}
+          # the gh-95 slider bursts still hang the kernel or the page now and then
+          # on macOS and the oldest dependencies: there they report a skip and a
+          # warning instead of failing
+          ATEST_ARGS: >-
+            ${{ matrix.atest-args }}
+            ${{ (matrix.task == 'test-oldest' || startsWith(matrix.vm, 'macos')) && '--skiponfailure gh:95' || '' }}
         # a browser that dies mid-test (Firefox 128 ESR went out of memory after
         # a kernel restart in 02_Transformer) leaves geckodriver unreachable, and
         # the teardown then spends ~10 minutes per Selenium call on urllib3
