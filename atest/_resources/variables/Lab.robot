@@ -19,6 +19,8 @@ ${JLAB CSS WINDOW TOGGLE}       css:.jp-NotebookPanel-toolbar [data-command='not
 ${JLAB XP LAST CODE CELL}       ${JLAB XP CODE CELLS}\[last()]
 ${JLAB CSS NB FOOTER}           css:.jp-Notebook-footer
 ${JLAB XP LAST CODE PROMPT}     ${JLAB XP LAST CODE CELL}//*[contains(@class, 'jp-InputArea-prompt')]
+${JLAB XP LAST INPUT PROMPT}
+...                             xpath:(//*[contains(@class, 'jp-NotebookPanel-notebook')]//*[contains(@class, 'jp-InputArea-prompt')])[last()]
 ${JLAB XP STDERR}               xpath://*[@data-mime-type="application/vnd.jupyter.stderr"]
 ${JLAB XP KERNEL IDLE}          xpath://div[contains(@id, 'jp-main-statusbar')]//span[contains(., "Idle")]
 ${JLAB CSS VERSION}             css:.jp-About-version

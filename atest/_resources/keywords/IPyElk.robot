@@ -114,16 +114,20 @@ Scroll Elk Diagram By
 Run IPyElk Code In A New Cell
     [Documentation]    Add a cell at the end of the notebook and run it.
     ...    ``${code}`` has to be a single line: the cell editor re-indents and
-    ...    closes brackets as it is typed.
-    [Arguments]    ${code}
-    Click Element    ${JLAB CSS NOTEBOOK}
+    ...    closes brackets as it is typed. A click on the notebook's centre
+    ...    would select a diagram node (see `Click Elk Tool`): activate the last
+    ...    cell by its prompt instead, so cells also land in order.
+    [Arguments]    ${code}    ${screen}=41-ran-export-cell.png
+    Scroll To Last Cell
+    Click Element    ${JLAB XP LAST INPUT PROMPT}
     Press Keys    None    ESCAPE
     Press Keys    None    b
     Press Keys    None    RETURN
     Press Keys    None    ${code}
-    Press Keys    None    SHIFT+RETURN
+    # run in place: running the last cell and advancing would add an empty cell
+    Press Keys    None    CTRL+RETURN
     Wait Until Element Is Visible    ${JLAB XP KERNEL IDLE}    timeout=30s
-    Capture Page Screenshot    41-ran-export-cell.png
+    IF    $screen    Capture Page Screenshot    ${screen}
 
 Exported SVG Counts Should Be
     [Arguments]    ${file}    ${nodes}    ${edges}    ${labels}
