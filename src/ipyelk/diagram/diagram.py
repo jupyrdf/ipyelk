@@ -44,7 +44,8 @@ class Diagram(StyledWidget):
         refused if any pipe in it is closed, owned by another open diagram, or
         part of the current pipe. Replacing the pipe closes the old pipe, its
         sub-pipes and the widgets they created (such as status views), but
-        never ``source`` or an inlet/outlet passed in.
+        never ``source`` or an inlet/outlet passed in. Changing a pipeline's
+        ``pipes`` after assigning it is not tracked; assign a new pipe instead.
     view: :py:class:`~ipyelk.diagram.viewer.Viewer`
         output view that will render the pipe outlet
     tools: tuple :py:class:`~ipyelk.tools.Tool`
@@ -114,18 +115,19 @@ class Diagram(StyledWidget):
     def _validate_pipe(self, proposal: T.Bunch) -> Pipe:
         pipe = proposal["value"]
         current = self._trait_values.get("pipe")
+        replacing = current is not None and pipe is not current
+        inside = {id(sub) for sub in _iter_pipes(current)} if replacing else set()
         for sub in _iter_pipes(pipe):
             name = type(sub).__name__
             if sub.comm is None:
                 msg = f"{name} is closed; assign a new pipe"
                 raise T.TraitError(msg)
             owner = sub._diagram() if sub._diagram else None
-            if owner is None or owner.comm is None:
-                continue
-            if owner is not self:
+            live = owner is not None and owner.comm is not None
+            if live and owner is not self:
                 msg = f"{name} belongs to another diagram; assign a new pipe"
                 raise T.TraitError(msg)
-            if pipe is not current:
+            if id(sub) in inside or (live and replacing):
                 msg = (
                     f"{name} is part of the current pipe, which is closed when "
                     "replaced; build a new one"

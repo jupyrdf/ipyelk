@@ -411,6 +411,17 @@ async def test_reusing_the_current_pipe_is_refused(reuse: str) -> None:
     assert diagram.view.source.value is not None
 
 
+def test_a_stage_added_to_the_current_pipe_in_place_is_refused() -> None:
+    diagram = Diagram(source=make_source())
+    added = Pipe()
+    diagram.pipe.pipes = [*diagram.pipe.pipes, added]
+    assert added._diagram is None
+    new = Pipeline(pipes=[added])
+    with pytest.raises(T.TraitError, match="part of the current pipe"):
+        diagram.pipe = new
+    assert is_open(added)
+
+
 def test_another_diagrams_sub_pipe_is_refused() -> None:
     first = Diagram(source=make_source())
     second = Diagram(source=make_source())
