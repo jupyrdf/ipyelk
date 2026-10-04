@@ -1,0 +1,39 @@
+id: py-no-broad-suppress
+language: python
+severity: error
+message: Suppress specific exceptions, not `Exception`/`BaseException`
+note: |
+  `contextlib.suppress(Exception)` silently swallows every error, like a bare
+  `except: pass`, but ruff's S110/BLE001 do not see it. Only `suppress` and
+  `contextlib.suppress` are recognised, not an aliased import.
+utils:
+  broad:
+    any:
+      - kind: identifier
+        regex: ^(Base)?Exception$
+      - kind: attribute
+        regex: ^builtins\.(Base)?Exception$
+  broad-group:
+    any:
+      - kind: tuple
+      - kind: list
+      - kind: parenthesized_expression
+    has:
+      matches: broad
+rule:
+  all:
+    - kind: call
+    - has:
+        field: function
+        regex: ^(contextlib\.)?suppress$
+    - has:
+        field: arguments
+        has:
+          any:
+            - matches: broad
+            - matches: broad-group
+            - kind: list_splat
+              has:
+                any:
+                  - matches: broad
+                  - matches: broad-group

@@ -1,0 +1,49 @@
+id: ts-no-html-injection
+language: tsx
+severity: error
+message: Do not parse strings as markup
+note: |
+  Labels, tooltips and properties are user data; render them as text nodes. A
+  sink that must take markup is suppressed with the reason it is safe.
+utils:
+  inert-value:
+    regex: ^(undefined|null|''|""|``)$
+  markup-property:
+    regex: ^['"`]?(innerHTML|outerHTML)['"`]?$
+  markup-target:
+    any:
+      - kind: member_expression
+        has: { field: property, matches: markup-property }
+      - kind: subscript_expression
+        has: { field: index, matches: markup-property }
+rule:
+  any:
+    - kind: assignment_expression
+      has: { field: left, matches: markup-target }
+      not:
+        has: { field: right, matches: inert-value }
+    - kind: augmented_assignment_expression
+      has: { field: left, matches: markup-target }
+    - kind: call_expression
+      has:
+        field: function
+        any:
+          - kind: member_expression
+            has:
+              field: property
+              regex: ^(insertAdjacentHTML|setHTMLUnsafe|parseHTMLUnsafe|createContextualFragment)$
+          - kind: member_expression
+            all:
+              - has:
+                  field: object
+                  regex: ^(([\w$]+\s*\??\.\s*)*document)$
+              - has:
+                  field: property
+                  regex: ^(write|writeln)$
+    - kind: pair
+      all:
+        - has: { field: key, matches: markup-property }
+        - not:
+            has: { field: value, matches: inert-value }
+    - kind: shorthand_property_identifier
+      matches: markup-property

@@ -1,0 +1,13 @@
+id: py-suppression-needs-rule-id
+valid:
+  - |
+    # ast-grep-ignore: py-no-get-event-loop
+    loop = asyncio.get_event_loop()
+  - '# see the ast-grep docs'
+invalid:
+  - |
+    # ast-grep-ignore
+    loop = asyncio.get_event_loop()
+  - |
+    # ast-grep-ignore:
+    loop = asyncio.get_event_loop()

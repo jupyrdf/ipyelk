@@ -1,0 +1,10 @@
+id: ts-suppression-needs-rule-id
+language: tsx
+severity: error
+message: 'Name the rule in `ast-grep-ignore: <rule-id>`'
+note: A bare `ast-grep-ignore` silences every rule on the next line.
+rule:
+  kind: comment
+  regex: ast-grep-ignore
+  not:
+    regex: ast-grep-ignore:\s*[\w-]

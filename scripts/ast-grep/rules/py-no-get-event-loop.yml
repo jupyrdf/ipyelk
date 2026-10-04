@@ -1,0 +1,14 @@
+id: py-no-get-event-loop
+language: python
+severity: error
+message: Use `asyncio.get_running_loop()` instead of `get_event_loop()`
+note: |
+  `get_event_loop()` is deprecated outside a running loop and can silently bind
+  to another thread's loop (kernel subshells). `get_running_loop()` fails loudly.
+rule:
+  any:
+    - pattern: get_event_loop($$$)
+    - all:
+        - pattern: $RECEIVER.get_event_loop($$$)
+        - not:
+            pattern: self.get_event_loop($$$)

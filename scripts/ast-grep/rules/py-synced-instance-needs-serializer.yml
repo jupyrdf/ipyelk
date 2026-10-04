@@ -1,0 +1,33 @@
+id: py-synced-instance-needs-serializer
+language: python
+severity: error
+message: A synced `Instance` trait needs a serializer, e.g. `**W.widget_serialization`
+note: |
+  Widgets and models are not JSON: without a `*_serialization` dict or
+  `to_json`/`from_json` the trait fails only at runtime, the first time it is
+  set to a value.
+files:
+  - src/**/*.py
+rule:
+  pattern: $TRAIT.tag($$$)
+  all:
+    - has:
+        field: arguments
+        has:
+          kind: keyword_argument
+          regex: ^sync\s*=\s*True$
+    - not:
+        has:
+          field: arguments
+          has:
+            any:
+              - kind: dictionary_splat
+                regex: _serialization$
+              - kind: keyword_argument
+                regex: ^to_json\s*=
+constraints:
+  TRAIT:
+    all:
+      - regex: Instance\(
+      - not:
+          regex: Instance\(\s*(dict|list|tuple|str|int|float|bool)\s*[,)]

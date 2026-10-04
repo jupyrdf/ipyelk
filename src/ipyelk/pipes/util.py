@@ -37,7 +37,7 @@ def wait_for_change(widget, value, timeout: float | None = None):
     widget.observe(getvalue, value)
 
     if timeout is not None:
-        loop = asyncio.get_event_loop()
+        loop = future.get_loop()
 
         def on_timeout():
             if not future.done():
@@ -93,7 +93,7 @@ def wait_for_answer(pipe, gen: int, trait: str = "value") -> asyncio.Future:
     browser wrote it (``value`` in ``_property_lock``), not the kernel.
     """
     outlet = pipe.outlet
-    future: asyncio.Future = asyncio.get_event_loop().create_future()
+    future: asyncio.Future = asyncio.get_running_loop().create_future()
 
     def on_change(change):
         if future.done():

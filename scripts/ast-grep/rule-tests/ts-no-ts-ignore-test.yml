@@ -1,0 +1,15 @@
+id: ts-no-ts-ignore
+valid:
+  - |
+    // @ts-expect-error untyped upstream export
+    import x from 'y';
+  - // ignore the ts file
+  - // prefer @ts-expect-error over ts-ignore and ts-nocheck
+  - const s = '@ts-ignore';
+invalid:
+  - |
+    // @ts-ignore
+    import x from 'y';
+  - |
+    /* @ts-nocheck */
+    const a = 1;

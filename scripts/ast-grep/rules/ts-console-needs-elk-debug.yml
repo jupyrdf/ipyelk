@@ -1,0 +1,57 @@
+id: ts-console-needs-elk-debug
+language: tsx
+severity: error
+message: Guard debug logging with `ELK_DEBUG && console.log(...)`
+note: |
+  Debug output must stay out of users' browser consoles. `console.warn` and
+  `console.error` are for real failures and need no guard.
+utils:
+  debug-method:
+    regex: ^['"`]?(log|info|debug|trace|dir|dirxml|table|count|countReset|group|groupCollapsed|groupEnd|time|timeEnd|timeLog|timeStamp|profile|profileEnd)['"`]?$
+  console-object:
+    regex: ^((window|globalThis|self)\s*\??\.\s*)?console$
+  debug-condition:
+    regex: ^\(?\s*([\w.$]+\s*&&\s*)*ELK_DEBUG(\s*&&\s*[\w.$]+)*\s*\)?$
+  debug-branch:
+    any:
+      - inside:
+          field: right
+          kind: binary_expression
+          all:
+            - has: { field: operator, regex: ^&&$ }
+            - has: { field: left, matches: debug-condition }
+      - inside:
+          field: consequence
+          any:
+            - kind: if_statement
+            - kind: ternary_expression
+          has: { field: condition, matches: debug-condition }
+  after-early-return:
+    follows:
+      stopBy: end
+      kind: if_statement
+      all:
+        - has:
+            field: condition
+            regex: ^\(\s*!\s*ELK_DEBUG\s*\)$
+        - has:
+            field: consequence
+            regex: ^(\{\s*)?return\b
+rule:
+  kind: call_expression
+  has:
+    field: function
+    any:
+      - kind: member_expression
+        all:
+          - has: { field: object, matches: console-object }
+          - has: { field: property, matches: debug-method }
+      - kind: subscript_expression
+        all:
+          - has: { field: object, matches: console-object }
+          - has: { field: index, matches: debug-method }
+  not:
+    any:
+      - matches: debug-branch
+      - inside: { stopBy: end, matches: debug-branch }
+      - inside: { stopBy: end, matches: after-early-return }

@@ -1,0 +1,10 @@
+id: ts-no-ts-ignore
+language: tsx
+severity: error
+message: Use `@ts-expect-error` instead of `@ts-ignore`/`@ts-nocheck`
+note: |
+  `@ts-expect-error` fails the build once the error it hides is fixed, so stale
+  suppressions do not pile up.
+rule:
+  kind: comment
+  regex: '@ts-(ignore|nocheck)\b'

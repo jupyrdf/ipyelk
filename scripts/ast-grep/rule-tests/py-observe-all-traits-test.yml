@@ -1,0 +1,26 @@
+id: py-observe-all-traits
+valid:
+  - widget.observe(**kwargs)
+  - self.observe(update, "status")
+  - widget.observe(handler, names=["value", "gen"])
+  - widget.observe(handler, T.All)
+  - widget.observe(handler, names=T.All, type="change")
+  - widget.observe(names="value", handler=handler)
+  - widget.observe(*args)
+  - widget.observe(handler, **kwargs)
+  - on_value = T.observe("value")(handler)
+  - |
+    @T.observe("value")
+    def _on_value(self, change):
+        pass
+  - |
+    @T.observe(T.All)
+    def _on_any(self, change):
+        pass
+invalid:
+  - widget.observe(handler, None)
+  - widget.observe(handler, None, 'change')
+  - self.observe(update)
+  - widget.observe(handler=on_change)
+  - widget.observe(handler, names=None)
+  - widget.observe(handler, type="change")
