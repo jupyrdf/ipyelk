@@ -15,7 +15,9 @@ ${SCREENS}              ${SCREENS ROOT}${/}examples${/}04_Interactive
 ${CONVERGE TIMEOUT}     60s
 ${PROBE}                interactive_probe.py
 ${XP SLIDER}            //div[contains(@class, "widget-slider")][.//label[text()="{}"]]
+# Sprotty only draws edges in view, and the notebook may scroll to a new cell
 ${JS DRAWN EDGE IDS}
+...                     document.querySelector("${CSS ELK VIEW}").scrollIntoView({block: "center"});
 ...                     return [...document.querySelectorAll("${CSS ELK VIEW} ${CSS ELK EDGE}")]
 ...                     .filter((el) => !el.closest(".sprotty-hidden"))
 ...                     .map((el) => el.id.slice(-36)).sort();
@@ -34,7 +36,7 @@ ${JS DRAWN EDGE IDS}
     ...    so a first-attempt failure is the signal: ``scripts/atest.py`` keeps each
     ...    attempt's ``output.xml`` in ``build/reports/atest*/<os>_<attempt>/`` and
     ...    raises a GitHub warning for each test that failed before the last attempt,
-    ...    or was skipped on failure (``macos-latest`` skips this one: see ``ci.yml``).
+    ...    or was skipped on failure (macOS skips this one: see ``ci.yml``).
     [Tags]    gh:95
     Example Should Restart-and-Run-All    ${INTERACTIVE}
     Copy File    ${FIXTURES}${/}${PROBE}    ${OUTPUT DIR}${/}home${/}${PROBE}
@@ -88,7 +90,6 @@ Diagram Should Converge
     ${ok}    ${state} =    Run Keyword And Ignore Error
     ...    Wait Until Keyword Succeeds    ${CONVERGE TIMEOUT}    0.5s
     ...    Kernel Should Hold The Request    ${asked}
-    Execute Javascript    document.querySelector("${CSS ELK VIEW}").scrollIntoView({block: "center"})
     IF    "${ok}" == "PASS"
         ${ok}    ${err} =    Run Keyword And Ignore Error
         ...    Wait Until Keyword Succeeds    ${CONVERGE TIMEOUT}    0.25s
