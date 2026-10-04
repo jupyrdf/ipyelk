@@ -304,10 +304,11 @@ throughout 3.x with the replacement in the message.
   what the pipe created (a `Pipeline` also closes its sub-pipes). `style` (also for a
   text sizer in a nested pipeline), the progress bar and the tools now follow the new
   pipe ([#180])
-  - A pipe belongs to one diagram. Assigning a pipe that another open diagram owns
-    raises `TraitError`: both diagrams used to share its outlet, so one silently showed
-    the other's graph. Closing a diagram releases its pipe for another one. Two diagrams
-    sharing a _source_ is a separate question ([#178])
+  - A pipe belongs to one diagram. Assigning a pipe that another open diagram owns, or a
+    pipeline that nests one, raises `TraitError`: both diagrams used to share its
+    outlet, so one silently showed the other's graph. Closing a diagram releases its
+    pipe for another one. Two diagrams sharing a _source_ is a separate question
+    ([#178])
   - Assigning a closed pipe raises `TraitError`, so swapping back to a replaced pipe
     needs a new one
 

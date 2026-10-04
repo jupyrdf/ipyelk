@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import weakref
-from typing import Type
+from typing import Iterator, Type
 
 import ipywidgets as W
 import traitlets as T
@@ -17,6 +17,15 @@ from ..styled_widget import StyledWidget
 from ..tools import PipelineProgressBar, ToggleCollapsedTool, Tool, Toolbar
 from .sprotty_viewer import SprottyViewer
 from .viewer import Viewer
+
+
+def _iter_pipes(pipe: Pipe) -> Iterator[Pipe]:
+    """Yield ``pipe`` and every pipe nested in it, breadth first."""
+    pending = [pipe]
+    while pending:
+        sub = pending.pop(0)
+        yield sub
+        pending.extend(getattr(sub, "pipes", ()))
 
 
 class Diagram(StyledWidget):
@@ -32,7 +41,8 @@ class Diagram(StyledWidget):
         processing pipe (that may contain sub-pipes). Pipes perform various
         tasks like adding x/y and width/height layouts or calculating text label sizes.
         The diagram owns its pipe: a pipe another open diagram owns, or a
-        closed pipe, is refused. Replacing it closes the old pipe, its
+        closed pipe, is refused, also when nested in the assigned pipe. A
+        sub-pipe belongs to its pipeline and must not be reused elsewhere. Replacing it closes the old pipe, its
         sub-pipes and the widgets they created (such as status views), but
         never ``source`` or an inlet/outlet passed in.
     view: :py:class:`~ipyelk.diagram.viewer.Viewer`
@@ -92,12 +102,9 @@ class Diagram(StyledWidget):
         from .flow import BrowserTextSizer
 
         pipe._diagram = weakref.ref(self)
-        pending = list(getattr(pipe, "pipes", ()))
-        while pending:
-            sub = pending.pop(0)
+        for sub in _iter_pipes(pipe):
             if isinstance(sub, BrowserTextSizer):
                 self._pipe_links.append(W.dlink((self, "style"), (sub, "style")))
-            pending.extend(getattr(sub, "pipes", ()))
         bars = self._progress_bars()
         if pipe.on_progress is None and bars:
             pipe.on_progress = bars[0].update
@@ -105,14 +112,15 @@ class Diagram(StyledWidget):
     @T.validate("pipe")
     def _validate_pipe(self, proposal: T.Bunch) -> Pipe:
         pipe = proposal["value"]
-        name = type(pipe).__name__
-        if pipe.comm is None:
-            msg = f"{name} is closed; assign a new pipe"
-            raise T.TraitError(msg)
-        owner = pipe._diagram() if pipe._diagram else None
-        if owner is not None and owner is not self and owner.comm is not None:
-            msg = f"{name} belongs to another diagram; assign a new pipe"
-            raise T.TraitError(msg)
+        for sub in _iter_pipes(pipe):
+            name = type(sub).__name__
+            if sub.comm is None:
+                msg = f"{name} is closed; assign a new pipe"
+                raise T.TraitError(msg)
+            owner = sub._diagram() if sub._diagram else None
+            if owner is not None and owner is not self and owner.comm is not None:
+                msg = f"{name} belongs to another diagram; assign a new pipe"
+                raise T.TraitError(msg)
         return pipe
 
     def _release_pipe(self, pipe: Pipe) -> None:

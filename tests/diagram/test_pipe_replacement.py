@@ -356,6 +356,27 @@ async def test_a_pipe_another_diagram_owns_is_refused_without_side_effects() -> 
     assert sizer(second.pipe).style == {}
 
 
+@pytest.mark.asyncio
+async def test_a_pipe_another_diagram_owns_is_refused_when_nested() -> None:
+    first = Diagram(source=make_source())
+    await refresh(first)
+    second = Diagram(source=make_source())
+    shared = first.pipe
+    source = make_source()
+    wrapped = Pipeline(pipes=[shared])
+    deeper = Pipeline(pipes=[Pipeline(pipes=[shared])])
+    before = (snapshot(first), snapshot(second))
+
+    with pytest.raises(T.TraitError, match="another diagram"):
+        second.pipe = wrapped
+    with pytest.raises(T.TraitError, match="another diagram"):
+        Diagram(source=source, pipe=deeper)
+
+    assert (snapshot(first), snapshot(second)) == before
+    assert is_open(shared)
+    assert shared._diagram() is first
+
+
 def test_reassigning_a_diagrams_own_pipe_is_a_no_op() -> None:
     pipe = DefaultFlow()
     diagram = Diagram(source=make_source(), pipe=pipe)
