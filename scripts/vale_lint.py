@@ -95,7 +95,13 @@ def write_docstrings(root: Path, paths: list[str]) -> list[str]:
     shutil.rmtree(out, ignore_errors=True)
     for rel in paths:
         for py in sorted((root / rel).rglob("*.py")):
-            stub = module_docstring(py.read_text(**UTF8))
+            try:
+                stub = module_docstring(py.read_text(**UTF8))
+            except (SyntaxError, UnicodeDecodeError) as err:
+                msg = (
+                    f"can't read the module docstring of {py.relative_to(root)}: {err}"
+                )
+                raise ValeError(msg) from err
             if stub:
                 dest = out / py.relative_to(root)
                 dest.parent.mkdir(parents=True, exist_ok=True)

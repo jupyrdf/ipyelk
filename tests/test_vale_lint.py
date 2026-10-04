@@ -134,10 +134,34 @@ def test_missing_or_empty_path_fails(run, tmp_path, paths):
         ('"""Doc."""\n', '"""Doc."""\n'),
         ("# header\nx = 1\n", None),
         ("", None),
+        ("# header\nb'bytes'\n", None),
+        ("1\n", None),
     ],
 )
 def test_module_docstring_keeps_lines(source, expected):
     assert vale_lint.module_docstring(source) == expected
+
+
+@pytest.mark.parametrize("content", [b"def (:\n", b'"""caf\xe9."""\n'])
+def test_unreadable_python_fails(run, tmp_path, content):
+    (tmp_path / "src/bad.py").write_bytes(content)
+    code, out = run("clean")
+    assert code == 2, out
+    assert "src/bad.py" in out.err.replace("\\", "/"), out.err
+
+
+def test_stale_docstring_copies_are_removed(run, tmp_path):
+    stale = tmp_path / vale_lint.DOCSTRINGS / "src/gone.py"
+    stale.parent.mkdir(parents=True)
+    stale.write_text('"""Old."""\n', encoding="utf-8")
+    run("clean")
+    assert not stale.exists()
+
+
+def test_findings_sort_by_line_number():
+    alert = dict(ALERT)
+    alerts = {"a.py": [{**alert, "Line": 10}, {**alert, "Line": 9}]}
+    assert [x.split(":")[1] for x in vale_lint.summarize(alerts)] == ["9", "10"]
 
 
 def test_parse_accepts_real_shape():
