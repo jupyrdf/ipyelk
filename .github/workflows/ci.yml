@@ -210,8 +210,10 @@ jobs:
       - env:
           # 04_Interactive's slider bursts (tag `gh:95`) report a skip and a
           # warning instead of failing where they still hang now and then:
-          # - macOS: the page keeps the previous graph (#95); drop this once the
-          #   fix for sprotty 1.4's FadeAnimation wedging the command stack lands
+          # - macOS: the page keeps the previous graph (#95; exit once the fix
+          #   for sprotty 1.4's FadeAnimation wedging the command stack lands),
+          #   or the kernel stops running cells (#177; exit once understood);
+          #   drop this only when both are met
           # - test-oldest (ubuntu-latest): the kernel stops running cells (#177);
           #   drop this once that stall is understood
           ATEST_ARGS: >-
