@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import asyncio
 import contextlib
+import functools
 import gc
 import weakref
 
@@ -24,11 +25,17 @@ from ipyelk.pipes import (
     Pipe,
     ValidationPipe,
     VisibilityPipe,
+    elkjs,
+    text_sizer,
 )
 from ipyelk.pipes.base import PipeStatus
+from ipyelk.pipes.pipeline import Pipeline
+from ipyelk.pipes.util import browser_roundtrip
 from ipyelk.tools import PipelineProgressBar
 
 ROUNDS = 10
+#: seconds between ``run`` re-sends in the mid-run test
+RESEND = 0.02
 
 pytestmark = pytest.mark.usefixtures("headless")
 
@@ -157,6 +164,20 @@ async def test_style_follows_the_new_pipe_only() -> None:
 
 
 @pytest.mark.asyncio
+async def test_style_reaches_a_nested_pipeline_until_it_is_replaced() -> None:
+    diagram = Diagram(source=make_source())
+    inner = DefaultFlow()
+    await replace(diagram, Pipeline(pipes=[inner]))
+    diagram.style = {" .a": {"fill": "red"}}
+    nested = sizer(inner)
+    assert nested.style == {" .a": {"fill": "red"}}
+
+    await replace(diagram, DefaultFlow())
+    diagram.style = {" .b": {"fill": "blue"}}
+    assert nested.style == {" .a": {"fill": "red"}}
+
+
+@pytest.mark.asyncio
 async def test_progress_bar_follows_the_new_pipe() -> None:
     diagram = Diagram(source=make_source())
     bar = diagram.get_tool(PipelineProgressBar)
@@ -206,6 +227,9 @@ async def test_replacing_the_pipe_mid_run_cancels_the_old_run(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     monkeypatch.delenv("IPYELK_NO_BROWSER")
+    fast = functools.partial(browser_roundtrip, initial_delay=RESEND)
+    monkeypatch.setattr(text_sizer, "browser_roundtrip", fast)
+    monkeypatch.setattr(elkjs, "browser_roundtrip", fast)
     source = make_source()
     diagram = Diagram(source=source)
     old = diagram.pipe
@@ -227,7 +251,7 @@ async def test_replacing_the_pipe_mid_run_cancels_the_old_run(
     diagram.pipe = new
     assert "mine" in source.flow
     sent.clear()
-    await asyncio.sleep(0.6)
+    await asyncio.sleep(3 * RESEND)
     assert task.cancelled()
     assert sent == []
     new.cancel()
