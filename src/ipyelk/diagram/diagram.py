@@ -40,12 +40,11 @@ class Diagram(StyledWidget):
     pipe: :py:class:`~ipyelk.pipes.Pipe`
         processing pipe (that may contain sub-pipes). Pipes perform various
         tasks like adding x/y and width/height layouts or calculating text label sizes.
-        The diagram owns its pipe: a pipe another open diagram owns, or a
-        closed pipe, is refused, also when nested in the assigned pipe, and so
-        is the current pipe nested in a new one. A sub-pipe belongs to its
-        pipeline and must not be reused elsewhere. Replacing the pipe closes
-        the old pipe, its sub-pipes and the widgets they created (such as
-        status views), but never ``source`` or an inlet/outlet passed in.
+        The diagram owns its pipe and every pipe nested in it. A new pipe is
+        refused if any pipe in it is closed, owned by another open diagram, or
+        part of the current pipe. Replacing the pipe closes the old pipe, its
+        sub-pipes and the widgets they created (such as status views), but
+        never ``source`` or an inlet/outlet passed in.
     view: :py:class:`~ipyelk.diagram.viewer.Viewer`
         output view that will render the pipe outlet
     tools: tuple :py:class:`~ipyelk.tools.Tool`
@@ -102,8 +101,9 @@ class Diagram(StyledWidget):
         """Link ``style`` to every text sizer in the pipe and report its progress."""
         from .flow import BrowserTextSizer
 
-        pipe._diagram = weakref.ref(self)
+        owner = weakref.ref(self)
         for sub in _iter_pipes(pipe):
+            sub._diagram = owner
             if isinstance(sub, BrowserTextSizer):
                 self._pipe_links.append(W.dlink((self, "style"), (sub, "style")))
         bars = self._progress_bars()
@@ -116,22 +116,28 @@ class Diagram(StyledWidget):
         current = self._trait_values.get("pipe")
         for sub in _iter_pipes(pipe):
             name = type(sub).__name__
-            if sub is current and sub is not pipe:
-                msg = f"wrap a new {name}; the current pipe is closed when replaced"
-                raise T.TraitError(msg)
             if sub.comm is None:
                 msg = f"{name} is closed; assign a new pipe"
                 raise T.TraitError(msg)
             owner = sub._diagram() if sub._diagram else None
-            if owner is not None and owner is not self and owner.comm is not None:
+            if owner is None or owner.comm is None:
+                continue
+            if owner is not self:
                 msg = f"{name} belongs to another diagram; assign a new pipe"
+                raise T.TraitError(msg)
+            if pipe is not current:
+                msg = (
+                    f"{name} is part of the current pipe, which is closed when "
+                    "replaced; build a new one"
+                )
                 raise T.TraitError(msg)
         return pipe
 
     def _release_pipe(self, pipe: Pipe) -> None:
         """Cancel ``pipe`` and drop the diagram's claim on it and links to it."""
         pipe.cancel()
-        pipe._diagram = None
+        for sub in _iter_pipes(pipe):
+            sub._diagram = None
         links, self._pipe_links = self._pipe_links, []
         for link in links:
             link.unlink()

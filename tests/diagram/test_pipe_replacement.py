@@ -381,21 +381,45 @@ async def test_refusing_a_nested_owned_pipe_has_no_side_effects() -> None:
     assert shared._diagram() is first
 
 
+REUSES = {
+    "wrap": lambda pipe: [pipe],
+    "extend": lambda pipe: [*pipe.pipes, Pipe()],
+    "borrow": lambda pipe: [pipe.pipes[0], DefaultFlow()],
+}
+
+
 @pytest.mark.asyncio
-async def test_wrapping_the_current_pipe_is_refused() -> None:
+@pytest.mark.parametrize("reuse", REUSES)
+async def test_reusing_the_current_pipe_is_refused(reuse: str) -> None:
     diagram = Diagram(source=make_source())
     await refresh(diagram)
     current = diagram.pipe
-    wrapper = Pipeline(pipes=[current])
+    new = Pipeline(pipes=REUSES[reuse](current))
+    # building ``new`` rewired the reused pipes; put them back
     current.inlet = diagram.source
+    current._update_pipes()
     before = snapshot(diagram)
 
-    with pytest.raises(T.TraitError, match="wrap a new DefaultFlow"):
-        diagram.pipe = wrapper
+    with pytest.raises(T.TraitError, match="part of the current pipe"):
+        diagram.pipe = new
 
     assert snapshot(diagram) == before
-    assert is_open(current)
+    assert all(is_open(pipe) for pipe in [current, *current.pipes])
+    diagram.source.record("again")
+    await refresh(diagram)
     assert is_open(diagram.view.source)
+    assert diagram.view.source.value is not None
+
+
+def test_another_diagrams_sub_pipe_is_refused() -> None:
+    first = Diagram(source=make_source())
+    second = Diagram(source=make_source())
+    borrowed = first.pipe.pipes[0]
+    new = Pipeline(pipes=[borrowed])
+    with pytest.raises(T.TraitError, match="another diagram"):
+        second.pipe = new
+    assert is_open(borrowed)
+    assert borrowed._diagram() is first
 
 
 def test_reassigning_a_diagrams_own_pipe_is_a_no_op() -> None:
@@ -407,11 +431,15 @@ def test_reassigning_a_diagrams_own_pipe_is_a_no_op() -> None:
     assert before["owner"] is diagram
 
 
-def test_only_the_top_level_pipe_is_owned() -> None:
+def test_every_nested_pipe_is_owned_until_released() -> None:
     inner = DefaultFlow()
     diagram = Diagram(source=make_source(), pipe=Pipeline(pipes=[inner]))
-    assert inner._diagram is None
+    nested = [inner, *inner.pipes]
+    assert all(pipe._diagram() is diagram for pipe in nested)
     assert sizer(inner).style == diagram.style
+
+    diagram.close()
+    assert all(pipe._diagram is None for pipe in nested)
 
 
 def test_a_pipe_replaced_in_one_diagram_is_closed_for_another() -> None:
