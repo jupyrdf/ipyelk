@@ -134,16 +134,18 @@ def atest(attempt, extra_args):
         return err.code
 
 
-def warn_about_retried(last_attempt, extra_args):
-    """Name the tests that failed before the last attempt, which a green job hides."""
-    for attempt in range(1, last_attempt):
+def warn_about_hidden_failures(last_attempt, extra_args):
+    """Name the tests a green job hides: failed before a retry, or skipped on failure."""
+    for attempt in range(1, last_attempt + 1):
         output = ATEST_OUT / get_stem(attempt, extra_args) / "output.xml"
         if not output.exists():
             continue
         for test in robot.api.ExecutionResult(output).suite.all_tests:
-            if test.failed:
+            if test.failed or test.skipped:
+                why = " ".join(test.message.split("Original failure:")[-1].split())
                 print(
-                    f"::warning title=atest attempt {attempt}::{test.longname} failed"
+                    f"::warning title=atest attempt {attempt}::"
+                    f"{test.longname} {test.status.lower()}: {why[:200]}"
                 )
 
 
@@ -169,7 +171,7 @@ def attempt_atest_with_retries(*extra_args):
 
     if is_real and not error_count:
         ATEST_CANARY.touch()
-        warn_about_retried(attempt, list(extra_args))
+        warn_about_hidden_failures(attempt, list(extra_args))
 
     return error_count
 

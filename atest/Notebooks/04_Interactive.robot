@@ -33,7 +33,8 @@ ${JS DRAWN EDGE IDS}
     ...    The race is intermittent and CI retries failed tests (``ATEST_RETRIES``),
     ...    so a first-attempt failure is the signal: ``scripts/atest.py`` keeps each
     ...    attempt's ``output.xml`` in ``build/reports/atest*/<os>_<attempt>/`` and
-    ...    raises a GitHub warning for each test that failed before the last attempt.
+    ...    raises a GitHub warning for each test that failed before the last attempt,
+    ...    or was skipped on failure (``macos-latest`` skips this one: see ``ci.yml``).
     [Tags]    gh:95
     Example Should Restart-and-Run-All    ${INTERACTIVE}
     Copy File    ${FIXTURES}${/}${PROBE}    ${OUTPUT DIR}${/}home${/}${PROBE}

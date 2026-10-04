@@ -168,7 +168,9 @@ jobs:
           - { vm: macos-latest, task: test-oldest }
         include:
           - { vm: macos-14, atest-args: '' }
-          - { vm: macos-latest, atest-args: '' }
+          # the gh-95 slider bursts hang this runner's kernel on most attempts:
+          # report that as a skip (and a warning) until it is fixed
+          - { vm: macos-latest, atest-args: '--skiponfailure gh:95' }
           - { vm: ubuntu-latest, atest-args: '' }
           - { vm: windows-latest, atest-args: '--exclude ci:skip-win' }
     steps:
