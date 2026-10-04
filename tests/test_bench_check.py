@@ -82,9 +82,14 @@ def test_missing_case_fails(run):
     assert run(results(), results(label="other")) == 1
 
 
-def test_slow_browser_gates_only_layouts_and_errors():
+def test_slow_browser_gates_only_timing_independent_counts():
     flat = bench_check.gated("slow", results(slow=0.75, layout_runs=7))
-    assert {key.rsplit(" ", 1)[1] for key in flat} == {"layouts", "errors", "failed"}
+    assert {key.rsplit(" ", 1)[1] for key in flat} == {
+        "layouts",
+        "errors",
+        "failed",
+        "live_widgets_added",
+    }
 
 
 def test_compare_labels_direction():

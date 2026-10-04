@@ -295,6 +295,23 @@ throughout 3.x with the replacement in the message.
   callback, so the animation never finished and sprotty's command stack waited on it
   forever: every later layout reached the browser and was never drawn ([#95]). Reported
   upstream as [eclipse-sprotty/sprotty#573]; the workaround can go once that is fixed
+- Close the old pipeline when `diagram.pipe` is replaced. Only its run was cancelled:
+  its sub-pipes, intermediate marks and status views stayed open, and the diagram's
+  `style` link kept it alive, so every replacement left 37 widgets behind, 99 with the
+  status view shown. A diagram now owns its pipe: replacing it closes the old pipe, its
+  sub-pipes and the widgets they created (including a `status_widget` displayed
+  elsewhere), never `diagram.source` or an inlet/outlet passed in. `Pipe.close()` closes
+  what the pipe created (a `Pipeline` also closes its sub-pipes). `style` (also for a
+  text sizer in a nested pipeline), the progress bar and the tools now follow the new
+  pipe ([#180])
+  - A pipe belongs to one diagram, with every pipe nested in it. Assigning a pipe that
+    nests a pipe another open diagram owns raises `TraitError`: both diagrams used to
+    share its outlet, so one silently showed the other's graph. Closing a diagram
+    releases its pipes for another one. Two diagrams sharing a _source_ is a separate
+    question ([#178])
+  - A replaced pipe is closed, so assigning a pipe that nests a closed pipe, or any part
+    of the current pipe (wrapping it, or reusing its stages), raises `TraitError` too:
+    build a new pipe instead
 
 ### Development
 
@@ -306,7 +323,8 @@ throughout 3.x with the replacement in the message.
   refresh ([#176])
 - Gate CI on the benchmark's deterministic counts: `pixi run bench-check` compares them
   to `scripts/bench_baseline.json` and fails on any change until the baseline is updated
-  with `pixi run bench-update` ([#176])
+  with `pixi run bench-update` ([#176]), including the live widgets left by replacing
+  `diagram.pipe` ([#180])
 - Add `ast-grep` structural lint rules for Python and TypeScript (`sgconfig.yml`,
   `scripts/ast-grep/`), each with test cases, run by `pixi run lint-ast-grep` as part of
   `pixi run lint`; a suppression must name its rule and still match something ([#147])
@@ -324,6 +342,8 @@ throughout 3.x with the replacement in the message.
 [#164]: https://github.com/jupyrdf/ipyelk/issues/164
 [#167]: https://github.com/jupyrdf/ipyelk/issues/167
 [#176]: https://github.com/jupyrdf/ipyelk/issues/176
+[#178]: https://github.com/jupyrdf/ipyelk/issues/178
+[#180]: https://github.com/jupyrdf/ipyelk/issues/180
 [#181]: https://github.com/jupyrdf/ipyelk/issues/181
 
 ## `2.1.2`

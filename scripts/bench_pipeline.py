@@ -81,6 +81,7 @@ SHAPES = ("flat", "nested")
 SEED = 0
 HIDDEN_FRACTION = 0.07
 BURST = 10
+REPLACEMENTS = 3
 CHAR_WIDTH = 8.0
 LINE_HEIGHT = 14.0
 
@@ -631,7 +632,7 @@ async def run_case(shape: str, n: int) -> dict:
 
 
 async def measure_case(shape: str, n: int, case: dict) -> None:
-    """Build one graph, refresh it, collapse it, then burst it."""
+    """Build one graph, refresh it, collapse it, burst it, then replace its pipe."""
     import bench_graphs
 
     from ipyelk.diagram import Diagram
@@ -677,6 +678,12 @@ async def measure_case(shape: str, n: int, case: dict) -> None:
 
     case["burst"] = await burst(diagram)
 
+    # a fresh pipeline re-sizes every label, and the sizer stub cannot answer
+    # for a tree with hidden nodes (their edges would dangle in its reply)
+    for el in pipe.inlet.index.elements.elements.values():
+        el.properties.hidden = None
+    case["replace"] = await replace(diagram)
+
 
 async def burst(diagram) -> dict:
     """Ten ``refresh()`` calls in one tick after one flow change -- over an
@@ -718,6 +725,52 @@ async def burst(diagram) -> dict:
             summary["bytes"]["total"] + summary["browser_to_kernel"]["bytes"]
         ),
         "comm_opens": RECORDER.opens - opens,
+    }
+
+
+def live_widgets() -> int:
+    """Widgets still registered (open comm): ``_instances`` on 8.1+, else 8.0's."""
+    import ipywidgets
+    import ipywidgets.widgets.widget as widget_mod
+
+    gc.collect()
+    instances = getattr(widget_mod, "_instances", None)
+    if instances is None:
+        instances = ipywidgets.Widget._active_widgets
+    return len(instances)
+
+
+async def replace(diagram) -> dict:
+    """``REPLACEMENTS`` rounds of ``diagram.pipe = DefaultFlow()`` plus a refresh.
+
+    ``live_widgets_added`` is opens minus closes, so a working replacement
+    nets ``0``: the new pipeline's widgets offset the old one's.
+    """
+    from ipyelk.diagram.flow import DefaultFlow
+
+    before = live_widgets()
+    t0 = time.perf_counter()
+    errors = set()
+    for _ in range(REPLACEMENTS):
+        diagram.pipe = DefaultFlow()
+        if BROWSER is not None:
+            elk = diagram.pipe.pipes[-1]
+            BROWSER.pipes[elk.comm.comm_id] = elk
+        task = diagram.refresh()
+        assert task is not None, "no running event loop"
+        try:
+            await task
+        except Exception as err:
+            errors.add(type(err).__name__)
+        await asyncio.sleep(0)
+        if BROWSER is not None:
+            await BROWSER.idle()
+    wall = time.perf_counter() - t0
+    return {
+        "replacements": REPLACEMENTS,
+        "wall_s": wall,
+        "errors": sorted(errors),
+        "live_widgets_added": live_widgets() - before,
     }
 
 
@@ -847,6 +900,21 @@ def render(results: dict) -> str:
                 for c in cases
             ],
             "" if results.get("slow_browser") else RUNS_NOTE,
+        ),
+        (
+            f"Replace: {REPLACEMENTS} rounds of `diagram.pipe = DefaultFlow()` + refresh",
+            ["Graph", "Live widgets added", "Wall"],
+            [
+                [
+                    name(c),
+                    str(c["replace"]["live_widgets_added"]),
+                    fmt_s(c["replace"]["wall_s"])
+                    + ("".join(f" ({e})" for e in c["replace"]["errors"])),
+                ]
+                for c in cases
+                if c.get("replace")
+            ],
+            "",
         ),
     ]
     for title, header, rows, note in sections:

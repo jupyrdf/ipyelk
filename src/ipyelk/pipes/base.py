@@ -4,17 +4,21 @@ from __future__ import annotations
 
 import asyncio
 import re
+import weakref
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 from enum import Enum
-from typing import ClassVar
+from typing import ClassVar, TypeVar
 
 import ipywidgets as W
 import traitlets as T
 from ipywidgets.widgets.trait_types import TypedTuple
 
+from ..util import close_widget
 from .marks import MarkElementWidget
 from .util import resync_stale, settle
+
+AnyWidget = TypeVar("AnyWidget", bound=W.Widget)
 
 
 class Superseded(Exception):
@@ -171,6 +175,12 @@ class PipeStatusView(W.VBox):
         self.html.value = value
         self.update_children(pipe)
 
+    def close(self):
+        html = self._trait_values.get("html")
+        if html is not None:
+            close_widget(html)
+        super().close()
+
 
 class Pipe(W.Widget):
     """A step in the processing pipeline for diagrams.
@@ -198,8 +208,8 @@ class Pipe(W.Widget):
     """
 
     enabled = T.Bool(default_value=True)
-    inlet = T.Instance(MarkElementWidget, kw={})
-    outlet = T.Instance(MarkElementWidget, kw={})
+    inlet = T.Instance(MarkElementWidget)
+    outlet = T.Instance(MarkElementWidget)
     observes: tuple[str, ...] = TypedTuple(T.Unicode(), kw={})
     reports: tuple[str, ...] = TypedTuple(T.Unicode(), kw={})
     on_progress = T.Callable(default_value=None, allow_none=True)
@@ -208,12 +218,33 @@ class Pipe(W.Widget):
     _task: asyncio.Task | None = None
     #: ``_generation < _requested`` means a newer request is pending
     _generation: int = 0
+    #: the diagram that owns this pipe (see ``Diagram.pipe``)
+    _diagram: weakref.ref | None = None
     _requested: int = 0
     status = T.Instance(PipeStatus, kw={})
     status_widget = T.Instance(W.DOMWidget, allow_none=True)
 
     def __init__(self, *args, **kwargs):
+        #: widgets this pipe created, closed with it
+        self._owned: list[W.Widget] = []
         super().__init__(*args, **kwargs)
+
+    def _own(self, widget: AnyWidget) -> AnyWidget:
+        self._owned.append(widget)
+        if isinstance(widget, MarkElementWidget):
+            self._owned.append(widget.index)
+        return widget
+
+    def _new_mark(self) -> MarkElementWidget:
+        return self._own(MarkElementWidget())
+
+    @T.default("inlet")
+    def _default_inlet(self):
+        return self._new_mark()
+
+    @T.default("outlet")
+    def _default_outlet(self):
+        return self._new_mark()
 
     @T.default("status_widget")
     def _default_status_widget(self):
@@ -224,7 +255,22 @@ class Pipe(W.Widget):
 
         update()
         self.observe(update, "status")
-        return widget
+        return self._own(widget)
+
+    def close(self):
+        """Cancel and close this pipe and the widgets it created.
+
+        An inlet or outlet it was given, such as the source it was connected
+        to, is left open.
+        """
+        self.cancel()
+        owned, self._owned = self._owned, []
+        for widget in owned:
+            close_widget(widget)
+        super().close()
+        layout = self._trait_values.get("layout")
+        if layout is not None:
+            layout.close()
 
     def _repr_mimebundle_(self, **kwargs):
         if self.status_widget is None:
@@ -411,15 +457,19 @@ class Pipe(W.Widget):
 
 
 class SyncedInletPipe(Pipe):
-    inlet = T.Instance(MarkElementWidget, kw={}).tag(
-        sync=True, **W.widget_serialization
-    )
+    inlet = T.Instance(MarkElementWidget).tag(sync=True, **W.widget_serialization)
+
+    @T.default("inlet")
+    def _default_inlet(self):
+        return self._new_mark()
 
 
 class SyncedOutletPipe(Pipe):
-    outlet = T.Instance(MarkElementWidget, kw={}).tag(
-        sync=True, **W.widget_serialization
-    )
+    outlet = T.Instance(MarkElementWidget).tag(sync=True, **W.widget_serialization)
+
+    @T.default("outlet")
+    def _default_outlet(self):
+        return self._new_mark()
 
 
 class SyncedPipe(SyncedOutletPipe, SyncedInletPipe):
