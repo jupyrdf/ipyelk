@@ -10,7 +10,9 @@ Test Teardown       Clean up after IPyElk Example
 
 *** Variables ***
 ${SCREENS}              ${SCREENS ROOT}${/}examples${/}04_Interactive
-${CONVERGE TIMEOUT}     30s
+# longer than a pipe's 30s wait for the browser: the macOS runners' kernel can be
+# that far behind a burst, and a timed-out pipe may still recover
+${CONVERGE TIMEOUT}     60s
 ${PROBE}                interactive_probe.py
 ${XP SLIDER}            //div[contains(@class, "widget-slider")][.//label[text()="{}"]]
 ${JS DRAWN EDGE IDS}
@@ -129,7 +131,7 @@ Get Kernel State
     ${token} =    Evaluate    "ELK95x%s" % secrets.token_hex(4)    secrets
     Run IPyElk Code In A New Cell    _k95("${token}")    screen=${EMPTY}
     ${xp} =    Set Variable    xpath://*[contains(@class, "jp-OutputArea-output")][contains(., "${token} ")]
-    Wait Until Page Contains Element    ${xp}    timeout=30s
+    Wait Until Page Contains Element    ${xp}    timeout=${CONVERGE TIMEOUT}
     ${out} =    Get Text    ${xp}
     ${state} =    Evaluate    json.loads($out.split(" ", 1)[1])    json
     Log    ${state}
