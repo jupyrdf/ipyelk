@@ -312,6 +312,10 @@ throughout 3.x with the replacement in the message.
   - A replaced pipe is closed, so assigning a pipe that nests a closed pipe, or any part
     of the current pipe (wrapping it, or reusing its stages), raises `TraitError` too:
     build a new pipe instead
+- Log the routine "fixing N ids" message from `ValidationPipe` at debug level instead of
+  warning. Assigning ids to id-less elements is normal since the id work in 2.1.3, and
+  each warning was written to the kernel's stderr, the output that preceded the
+  intermittent kernel stall in [#177]
 
 ### Development
 
@@ -342,6 +346,7 @@ throughout 3.x with the replacement in the message.
 [#164]: https://github.com/jupyrdf/ipyelk/issues/164
 [#167]: https://github.com/jupyrdf/ipyelk/issues/167
 [#176]: https://github.com/jupyrdf/ipyelk/issues/176
+[#177]: https://github.com/jupyrdf/ipyelk/issues/177
 [#178]: https://github.com/jupyrdf/ipyelk/issues/178
 [#180]: https://github.com/jupyrdf/ipyelk/issues/180
 [#181]: https://github.com/jupyrdf/ipyelk/issues/181

@@ -78,7 +78,7 @@ class ValidationPipe(Pipe):
         root = index.root
         fixes = 0
         if self.id_report.null_ids and self.fix_null_id:
-            self.log.warning(f"fixing {len(self.id_report.null_ids)} ids")
+            self.log.debug(f"fixing {len(self.id_report.null_ids)} ids")
             for el in self.id_report.null_ids:
                 el.id = el.get_id()
                 fixes += 1
