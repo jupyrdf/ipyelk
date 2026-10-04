@@ -102,6 +102,7 @@ it('fades out once, however often the last frame runs', async () => {
   const command = new TestCommand(
     UpdateModelAction.create({ id: 'root', type: 'graph' }),
   );
+  expect(command.animations({ fades: [] }, root, context)).toHaveLength(0);
   const animations = command.animations(data, root, context);
   expect(animations).toHaveLength(1);
   const done = animations[0].start();
