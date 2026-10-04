@@ -310,7 +310,8 @@ throughout 3.x with the replacement in the message.
     pipe for another one. Two diagrams sharing a _source_ is a separate question
     ([#178])
   - Assigning a closed pipe raises `TraitError`, so swapping back to a replaced pipe
-    needs a new one
+    needs a new one. So does nesting the current pipe in a new one, which would close it
+    while the new one runs it
 
 ### Development
 

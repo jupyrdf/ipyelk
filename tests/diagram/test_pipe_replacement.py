@@ -357,7 +357,11 @@ async def test_a_pipe_another_diagram_owns_is_refused_without_side_effects() -> 
 
 
 @pytest.mark.asyncio
-async def test_a_pipe_another_diagram_owns_is_refused_when_nested() -> None:
+async def test_refusing_a_nested_owned_pipe_has_no_side_effects() -> None:
+    """The refusal changes nothing. Building a ``Pipeline`` around a live pipe
+    already rewires that pipe's inlet (as on master), so the snapshot is taken
+    after the wrappers are built.
+    """
     first = Diagram(source=make_source())
     await refresh(first)
     second = Diagram(source=make_source())
@@ -375,6 +379,23 @@ async def test_a_pipe_another_diagram_owns_is_refused_when_nested() -> None:
     assert (snapshot(first), snapshot(second)) == before
     assert is_open(shared)
     assert shared._diagram() is first
+
+
+@pytest.mark.asyncio
+async def test_wrapping_the_current_pipe_is_refused() -> None:
+    diagram = Diagram(source=make_source())
+    await refresh(diagram)
+    current = diagram.pipe
+    wrapper = Pipeline(pipes=[current])
+    current.inlet = diagram.source
+    before = snapshot(diagram)
+
+    with pytest.raises(T.TraitError, match="wrap a new DefaultFlow"):
+        diagram.pipe = wrapper
+
+    assert snapshot(diagram) == before
+    assert is_open(current)
+    assert is_open(diagram.view.source)
 
 
 def test_reassigning_a_diagrams_own_pipe_is_a_no_op() -> None:
