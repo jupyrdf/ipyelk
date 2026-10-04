@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import re
+import weakref
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 from enum import Enum
@@ -217,6 +218,8 @@ class Pipe(W.Widget):
     _task: asyncio.Task | None = None
     #: ``_generation < _requested`` means a newer request is pending
     _generation: int = 0
+    #: the diagram that owns this pipe (see ``Diagram.pipe``)
+    _diagram: weakref.ref | None = None
     _requested: int = 0
     status = T.Instance(PipeStatus, kw={})
     status_widget = T.Instance(W.DOMWidget, allow_none=True)

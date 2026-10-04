@@ -315,3 +315,104 @@ def test_closing_a_pipe_closes_what_it_created_not_its_inlet() -> None:
     assert is_open(source.index)
     assert not any(is_open(widget) for widget in [pipe, *subs, *marks])
     assert not is_open(pipe.status_widget)
+
+
+def snapshot(diagram: Diagram) -> dict:
+    pipe = diagram.pipe
+    return {
+        "pipe": pipe,
+        "open": is_open(pipe),
+        "owner": pipe._diagram() if pipe._diagram else None,
+        "inlet": pipe.inlet,
+        "outlet": pipe.outlet,
+        "view.source": diagram.view.source,
+        "links": list(diagram._pipe_links),
+        "tees": [tool.tee for tool in diagram.tools],
+        "bar": diagram.get_tool(PipelineProgressBar).pipe,
+        "on_progress": pipe.on_progress,
+    }
+
+
+@pytest.mark.asyncio
+async def test_a_pipe_another_diagram_owns_is_refused_without_side_effects() -> None:
+    first = Diagram(source=make_source())
+    await refresh(first)
+    second = Diagram(source=make_source())
+    await refresh(second)
+    shared = first.pipe
+    source = make_source()
+    before = (snapshot(first), snapshot(second))
+    widgets = live_widgets()
+
+    with pytest.raises(T.TraitError, match="another diagram"):
+        second.pipe = shared
+    with pytest.raises(T.TraitError, match="another diagram"):
+        Diagram(source=source, pipe=shared)
+
+    assert (snapshot(first), snapshot(second)) == before
+    assert live_widgets() == widgets
+    first.style = {" .a": {"fill": "red"}}
+    assert sizer(shared).style == first.style
+    assert sizer(second.pipe).style == {}
+
+
+def test_reassigning_a_diagrams_own_pipe_is_a_no_op() -> None:
+    pipe = DefaultFlow()
+    diagram = Diagram(source=make_source(), pipe=pipe)
+    before = snapshot(diagram)
+    diagram.pipe = pipe
+    assert snapshot(diagram) == before
+    assert before["owner"] is diagram
+
+
+def test_only_the_top_level_pipe_is_owned() -> None:
+    inner = DefaultFlow()
+    diagram = Diagram(source=make_source(), pipe=Pipeline(pipes=[inner]))
+    assert inner._diagram is None
+    assert sizer(inner).style == diagram.style
+
+
+def test_a_pipe_replaced_in_one_diagram_is_closed_for_another() -> None:
+    first = Diagram(source=make_source())
+    old = first.pipe
+    first.pipe = DefaultFlow()
+    with pytest.raises(T.TraitError, match="closed"):
+        Diagram(source=make_source(), pipe=old)
+
+
+def test_closing_a_diagram_releases_its_pipe() -> None:
+    """A closed diagram leaves its pipe open for another diagram to take."""
+    first = Diagram(source=make_source())
+    pipe = first.pipe
+    first.style = {" .a": {"fill": "red"}}
+    first.close()
+
+    second = Diagram(source=make_source(), pipe=pipe)
+
+    assert is_open(pipe)
+    assert pipe._diagram() is second
+    assert second.view.source is pipe.outlet
+    assert sizer(pipe).style == second.style == {}
+    assert pipe.on_progress == second.get_tool(PipelineProgressBar).update
+    first.style = {" .b": {"fill": "blue"}}
+    assert sizer(pipe).style == {}
+
+
+def test_a_collected_owner_releases_its_pipe() -> None:
+    """Ownership is a weak reference; an open diagram is never collected (the
+    widget registry holds it), so a stand-in plays the collected owner.
+    """
+
+    class Owner:
+        comm = object()
+
+    owner = Owner()
+    pipe = DefaultFlow()
+    pipe._diagram = weakref.ref(owner)
+    with pytest.raises(T.TraitError, match="another diagram"):
+        Diagram(source=make_source(), pipe=pipe)
+    del owner
+    gc.collect()
+
+    diagram = Diagram(source=make_source(), pipe=pipe)
+    assert pipe._diagram() is diagram

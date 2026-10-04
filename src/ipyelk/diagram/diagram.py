@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import weakref
 from typing import Type
 
 import ipywidgets as W
@@ -30,10 +31,10 @@ class Diagram(StyledWidget):
     pipe: :py:class:`~ipyelk.pipes.Pipe`
         processing pipe (that may contain sub-pipes). Pipes perform various
         tasks like adding x/y and width/height layouts or calculating text label sizes.
-        The diagram owns its pipe, so a pipe belongs to one diagram: replacing
-        it closes the old pipe, its sub-pipes and the widgets they created (such
-        as status views), but never ``source`` or an inlet/outlet passed in. A
-        closed pipe cannot be assigned again.
+        The diagram owns its pipe: a pipe another open diagram owns, or a
+        closed pipe, is refused. Replacing it closes the old pipe, its
+        sub-pipes and the widgets they created (such as status views), but
+        never ``source`` or an inlet/outlet passed in.
     view: :py:class:`~ipyelk.diagram.viewer.Viewer`
         output view that will render the pipe outlet
     tools: tuple :py:class:`~ipyelk.tools.Tool`
@@ -90,6 +91,7 @@ class Diagram(StyledWidget):
         """Link ``style`` to every text sizer in the pipe and report its progress."""
         from .flow import BrowserTextSizer
 
+        pipe._diagram = weakref.ref(self)
         pending = list(getattr(pipe, "pipes", ()))
         while pending:
             sub = pending.pop(0)
@@ -103,25 +105,43 @@ class Diagram(StyledWidget):
     @T.validate("pipe")
     def _validate_pipe(self, proposal: T.Bunch) -> Pipe:
         pipe = proposal["value"]
+        name = type(pipe).__name__
         if pipe.comm is None:
-            msg = f"{type(pipe).__name__} is closed; assign a new pipe"
+            msg = f"{name} is closed; assign a new pipe"
+            raise T.TraitError(msg)
+        owner = pipe._diagram() if pipe._diagram else None
+        if owner is not None and owner is not self and owner.comm is not None:
+            msg = f"{name} belongs to another diagram; assign a new pipe"
             raise T.TraitError(msg)
         return pipe
 
-    def _unwire_pipe(self, old: Pipe, new: Pipe) -> None:
-        """Drop every reference the diagram and its tools hold to ``old``."""
-        old.cancel()
+    def _release_pipe(self, pipe: Pipe) -> None:
+        """Cancel ``pipe`` and drop the diagram's claim on it and links to it."""
+        pipe.cancel()
+        pipe._diagram = None
         links, self._pipe_links = self._pipe_links, []
         for link in links:
             link.unlink()
         self._refresh_task = None
         for bar in self._progress_bars():
-            if old.on_progress == bar.update:
-                old.set_trait("on_progress", None)
+            if pipe.on_progress == bar.update:
+                pipe.set_trait("on_progress", None)
+
+    def _unwire_pipe(self, old: Pipe, new: Pipe) -> None:
+        """Drop every reference the diagram and its tools hold to ``old``."""
+        self._release_pipe(old)
+        for bar in self._progress_bars():
             if bar.pipe is old:
                 bar.pipe = new
         for tool in self.tools:
             tool.tee = new
+
+    def close(self):
+        """Close the diagram and release its pipe, which another diagram may take."""
+        pipe = self._trait_values.get("pipe")
+        if pipe is not None and pipe._diagram and pipe._diagram() is self:
+            self._release_pipe(pipe)
+        super().close()
 
     @T.observe("view")
     def _update_children(self, change: T.Bunch | None = None):
