@@ -293,7 +293,8 @@ throughout 3.x with the replacement in the message.
   15 frames of 1000/60 ms for the 250 ms animation) removed them early, and the real
   last frame removed them again and threw. The throw happened inside an animation-frame
   callback, so the animation never finished and sprotty's command stack waited on it
-  forever: every later layout reached the browser and was never drawn ([#95])
+  forever: every later layout reached the browser and was never drawn ([#95]). Reported
+  upstream as [eclipse-sprotty/sprotty#573]; the workaround can go once that is fixed
 
 ### Development
 
@@ -316,6 +317,7 @@ throughout 3.x with the replacement in the message.
   linted the built HTML and never failed ([#181])
 
 [#95]: https://github.com/jupyrdf/ipyelk/issues/95
+[eclipse-sprotty/sprotty#573]: https://github.com/eclipse-sprotty/sprotty/issues/573
 [#147]: https://github.com/jupyrdf/ipyelk/issues/147
 [#160]: https://github.com/jupyrdf/ipyelk/issues/160
 [#161]: https://github.com/jupyrdf/ipyelk/issues/161

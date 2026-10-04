@@ -43,34 +43,20 @@ import { UpdateAnimationData, UpdateModelCommand } from 'sprotty';
 import { containsSome } from './smodel-utils';
 
 /**
- * A `FadeAnimation` whose last frame may run twice.
- *
- * Sprotty's removes faded-out elements when the EASED time is 1, but `Animation`
- * only stops when the raw time is 1, and `easeInOut` already rounds to 1 within
- * about 1e-8 of the end: a frame landing a hair before the duration (regular
- * timestamps, e.g. 15 frames of 1000/60 ms for 250 ms) removes them, then
- * the real last frame removes them again and `remove` throws. The throw happens
- * in an animation-frame callback, so the animation never settles, sprotty's
- * command stack waits on it forever, and no later model update is drawn (gh-95).
+ * Sprotty 1.4 can run a fade's final `tween(1)` twice (eclipse-sprotty/sprotty#573); the
+ * second removal throws and freezes the command stack (gh-95). Drop this once #573 is fixed.
  */
 export class FadeOnceAnimation extends FadeAnimation {
+  private ended = false;
+
   tween(t: number, context: CommandExecutionContext): SModelRootImpl {
-    for (const { element, type } of this.elementFades) {
-      if (type === 'in') {
-        element.opacity = t;
-      } else if (type === 'out') {
-        element.opacity = 1 - t;
-        if (
-          t === 1 &&
-          this.removeAfterFadeOut &&
-          element instanceof SChildElementImpl &&
-          element.parent.children.includes(element)
-        ) {
-          element.parent.remove(element);
-        }
+    if (t === 1) {
+      if (this.ended) {
+        return this.model;
       }
+      this.ended = true;
     }
-    return this.model;
+    return super.tween(t, context);
   }
 }
 
@@ -81,13 +67,11 @@ export class UpdateModelCommand2 extends UpdateModelCommand {
     root: SModelRootImpl,
     context: CommandExecutionContext,
   ): Animation[] {
-    return super
-      .createAnimations(data, root, context)
-      .map((animation) =>
-        animation instanceof FadeAnimation && !(animation instanceof FadeOnceAnimation)
-          ? new FadeOnceAnimation(root, animation.elementFades, context, true)
-          : animation,
-      );
+    const animations = super.createAnimations({ ...data, fades: [] }, root, context);
+    if (data.fades.length) {
+      animations.unshift(new FadeOnceAnimation(root, data.fades, context, true));
+    }
+    return animations;
   }
 
   protected updateElement(
