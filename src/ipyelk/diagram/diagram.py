@@ -87,7 +87,7 @@ class Diagram(StyledWidget):
         return [tool for tool in self.tools if isinstance(tool, PipelineProgressBar)]
 
     def _wire_pipe(self, pipe: Pipe) -> None:
-        """Follow ``style`` in the pipe's text sizers and report its progress."""
+        """Link ``style`` to every text sizer in the pipe and report its progress."""
         from .flow import BrowserTextSizer
 
         pending = list(getattr(pipe, "pipes", ()))

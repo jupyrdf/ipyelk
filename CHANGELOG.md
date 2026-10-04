@@ -303,8 +303,8 @@ throughout 3.x with the replacement in the message.
   (including a `status_widget` displayed elsewhere), never `diagram.source` or an
   inlet/outlet passed in. Assigning a closed pipe raises `TraitError`, so swapping back
   to a replaced pipe needs a new one. `Pipe.close()` closes what the pipe created (a
-  `Pipeline` also closes its sub-pipes). `style` (including nested pipelines' text
-  sizers), the progress bar and the tools now follow the new pipe ([#180])
+  `Pipeline` also closes its sub-pipes). `style` (also for a text sizer in a nested
+  pipeline), the progress bar and the tools now follow the new pipe ([#180])
 
 ### Development
 
