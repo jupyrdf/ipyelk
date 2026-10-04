@@ -1,4 +1,4 @@
-"""Test configurationb for ``ipyelk``."""
+"""Test configuration for ``ipyelk``."""
 # Copyright (c) 2024 ipyelk contributors.
 # Distributed under the terms of the Modified BSD License.
 

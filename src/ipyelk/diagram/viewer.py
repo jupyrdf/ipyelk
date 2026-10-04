@@ -22,7 +22,7 @@ from ..tools import (
 
 
 class Viewer(W.Widget):
-    """Generic Viewer of ELK Json diagrams. Currently only mainly used by :py:class:`~ipyelk.diagram.SprottyViewer`
+    """Generic Viewer of ELK JSON diagrams. Currently only mainly used by :py:class:`~ipyelk.diagram.SprottyViewer`
 
     Attributes
     ----------
@@ -40,7 +40,7 @@ class Viewer(W.Widget):
         temporary, view-only CSS classes per element id, applied in every view
         without touching the model.
     :parameter control_overlay: :py:class:`~ipyelk.tools.ControlOverlay` or ``None``
-        additional jupyterlab widgets that can be rendered on top of the diagram
+        additional JupyterLab widgets that can be rendered on top of the diagram
         based on the current selected states. Opt-in: ``None`` (the default) and
         an overlay without ``children`` render nothing.
 

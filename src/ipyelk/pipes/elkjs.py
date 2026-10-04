@@ -13,7 +13,7 @@ from .util import browser_roundtrip
 
 
 class ElkJS(SyncedPipe):
-    """Jupyterlab widget for calling `elkjs <https://github.com/kieler/elkjs>`_
+    """JupyterLab widget for calling `elkjs <https://github.com/kieler/elkjs>`_
     layout given a valid elkjson dictionary
     """
 

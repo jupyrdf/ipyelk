@@ -27,9 +27,9 @@ class BrokenPipe(Exception):
 
 
 class DeprecatedAPI(Exception):
-    """Base for the 3.0 tombstones, so one ``except`` catches every flavour.
+    """Base for the 3.0 tombstones, so one ``except`` catches every flavor.
 
-    The flavours differ only in the second base class, which decides how the
+    The flavors differ only in the second base class, which decides how the
     interpreter treats them; the message is the point in both cases.
     """
 

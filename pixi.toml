@@ -34,6 +34,7 @@ lint = {depends-on = [
   "lint-actionlint",
   "lint-ast-grep",
   "lint-audit",
+  "lint-vale",
 ]}
 test = {depends-on = ["utest-pytest", "itest-nbconvert", "atest-robot"]}
 test-oldest = {depends-on = [
@@ -43,7 +44,7 @@ test-oldest = {depends-on = [
 ]}
 test-all = {depends-on = ["test", "test-oldest"]}
 docs = {depends-on = ["docs-lite", "docs-sphinx"]}
-check = {depends-on = ["check-links", "check-spelling"]}
+check = {depends-on = ["check-links"]}
 report = {depends-on = ["report-cov"]}
 release = {depends-on = [
   "fix",
@@ -474,6 +475,24 @@ cmd = "jlpm npm audit"
 inputs = ["yarn.lock"]
 depends-on = ["setup-js"]
 
+[feature.tasks-lint.tasks.lint-vale]
+cmd = "python scripts/vale_lint.py"
+depends-on = ["lint-vale-nb"]
+inputs = [
+  "*.md",
+  "docs/**/*.{md,py}",
+  "{scripts,src,tests}/**/*.{md,py}",
+  "build/nblint/**/*.md",
+  "vale.ini",
+  "scripts/vale/",
+  "scripts/vale_lint.py",
+]
+
+[feature.tasks-lint.tasks.lint-vale-nb]
+cmd = "python scripts/nblint.py --extract-only examples"
+inputs = ["examples/**/*.ipynb", "scripts/nblint.py"]
+outputs = ["build/nblint/**/*.md"]
+
 # lite #################################################################################
 [feature.tasks-lite.tasks.clean-docs-lite]
 cmd = """rm -rf build/.cache/lite lite/.jupyterlite.doit.db"""
@@ -517,27 +536,6 @@ depends-on = ["docs-sphinx"]
 inputs = ["build/docs/.buildinfo"]
 
 # check ################################################################################
-[feature.tasks-check.tasks.check-spelling]
-cmd = """
-rm -rf build/reports/vale.txt
-&& mkdir -p build/reports
-&& (
-  vale
-    build/docs
-    --no-wrap
-    --glob='!**/.ipynb_checkpoints/*'
-    --output scripts/vale/output.tmpl
-  >> build/reports/vale.txt
-  && cat build/reports/vale.txt
-  && python -c "
-v = __import__('pathlib').Path('build/reports/vale.txt').read_text(encoding='utf-8');
-assert v.strip().endswith('0 errors, 0 warnings and 0 suggestions in 0 files.')
-  "
-) || cat build/reports/vale.txt
-"""
-depends-on = ["docs-sphinx"]
-inputs = ["build/docs/**/*.html", "vale.ini", "scripts/vale/", "*.md"]
-
 [feature.tasks-check.tasks.check-links]
 cmd = """
 export JUPYTER_PLATFORM_DIRS=1
@@ -587,6 +585,10 @@ ruff = "*"
 taplo = "*"
 types-jsonschema = "*"
 types-networkx = "*"
+vale = "*"
+vale-spelling-aoo-mozilla-en-dict-us = "*"
+vale-styles-proselint = "*"
+vale-styles-write-good = "*"
 
 [feature.deps-py.dependencies]
 python = ">=3.10"
@@ -680,9 +682,6 @@ sphinx-autobuild = "*"
 coverage = "*"
 pytest-check-links = "*"
 pytest-html = "*"
-vale = "*"
-vale-spelling-aoo-mozilla-en-dict-gb = "*"
-vale-spelling-aoo-mozilla-en-dict-us = "*"
 
 # environments #########################################################################
 [environments]

@@ -63,8 +63,8 @@
   documented as the tuple it is; the `01_Linking` example compares it to a tuple (its
   list comparison was always true), and the `12`/`13` examples drop commented-out
   references to the long-gone `toolbar.commands` ([#156]).
-- `Hover.ids` is replaced by `Hover.hovered_id: str | None` (default `None`). There is
-  no alias: code that reads or observes `ids` on the hover tool must switch to
+- `Hover.ids` is replaced by `Hover.hovered_id: str | None` (default `None`). No alias
+  exists: code that reads or observes `ids` on the hover tool must switch to
   `hovered_id`. Despite its name, `ids` only ever held one id (a string, never a tuple),
   so the value shape is unchanged; only the trait name and the `None` state are new.
   `Selection.ids` is unchanged and still a tuple ([#155]).
@@ -114,7 +114,7 @@
   an `AttributeError`, because `from ipyelk.tools import Zoom` would otherwise lose the
   message to a bare "cannot import name". Importing the misspelled
   `ipyelk.tools.contol_overlay` module raises it too, naming the new path; it re-exports
-  nothing. Both flavours share the `ipyelk.exceptions.DeprecatedAPI` base, so one
+  nothing. Both flavors share the `ipyelk.exceptions.DeprecatedAPI` base, so one
   `except` catches either.
 
 ### Migration
@@ -222,7 +222,7 @@ throughout 3.x with the replacement in the message.
   root itself, which elkjs rejects). Hidden compound children now project onto the
   compound, and an edge whose projection would touch the root is dropped from the wire
   while its `Edge` stays in the index (#161, #169)
-- Never serialise an id as `null`: an id-less element mints a wire id once and keeps it,
+- Never serialize an id as `null`: an id-less element mints a wire id once and keeps it,
   the index adopts it, and an id the `Registry` mints first becomes the wire id, so
   edges no longer go on the wire as `sources: [null]` and the id first seen is the id
   for the object's life. Port ids compose from the parent's id in and out of a
@@ -301,6 +301,11 @@ throughout 3.x with the replacement in the message.
 - Add `ast-grep` structural lint rules for Python and TypeScript (`sgconfig.yml`,
   `scripts/ast-grep/`), each with test cases, run by `pixi run lint-ast-grep` as part of
   `pixi run lint`; a suppression must name its rule and still match something ([#147])
+- Lint prose with Vale in the `lint` job: `pixi run lint-vale` checks US English
+  spelling and the `proselint` and `write-good` styles in the root `*.md` files,
+  `docs/`, docstrings and comments in `src/`, `tests/` and `scripts/`, and notebook
+  markdown, and fails on any warning or error. It replaces `check-spelling`, which
+  linted the built HTML and never failed ([#181])
 
 [#147]: https://github.com/jupyrdf/ipyelk/issues/147
 [#160]: https://github.com/jupyrdf/ipyelk/issues/160
@@ -308,6 +313,7 @@ throughout 3.x with the replacement in the message.
 [#164]: https://github.com/jupyrdf/ipyelk/issues/164
 [#167]: https://github.com/jupyrdf/ipyelk/issues/167
 [#176]: https://github.com/jupyrdf/ipyelk/issues/176
+[#181]: https://github.com/jupyrdf/ipyelk/issues/181
 
 ## `2.1.2`
 
@@ -456,6 +462,9 @@ throughout 3.x with the replacement in the message.
 ### `ipyelk 2.1.0a0`
 
 - Support `pydantic >=1,<3`
+
+<!-- vale Vale.Terms = NO -->
+<!-- released notes are kept as written -->
 
 ## `2.0.0`
 

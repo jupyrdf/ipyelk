@@ -40,7 +40,7 @@ ATEST_CANARY = ATEST_OUT / "robot.ok"
 
 
 def get_stem(attempt, extra_args):
-    """Make a directory stem with the run type, python and os version"""
+    """Make a directory stem with the run type, python and OS version"""
     stem = "_".join([PLATFORM, str(attempt)]).replace(".", "_").lower()
 
     if "--dryrun" in extra_args:

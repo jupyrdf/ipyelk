@@ -1,6 +1,6 @@
 # Copyright (c) 2024 ipyelk contributors.
 # Distributed under the terms of the Modified BSD License.
-"""``MarkElementWidget`` send behaviour (#164)."""
+"""``MarkElementWidget`` send behavior (#164)."""
 
 import pytest
 

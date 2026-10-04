@@ -146,7 +146,7 @@ async def browser_roundtrip(
     ``g`` counts this pipe's roundtrips; the frontend stamps its answer with
     it (``outlet.gen``) so an answer to an earlier, abandoned request is
     never taken for this one (``wait_for_answer``), and so a re-sent request
-    is recognised as the same work and not laid out twice.
+    is recognized as the same work and not laid out twice.
 
     ``Widget.send`` only reaches a frontend that is already attached: a pipe
     that runs before its diagram is displayed (the common notebook flow --

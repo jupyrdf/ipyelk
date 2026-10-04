@@ -14,14 +14,14 @@ class StyledWidget(W.Box):
     _css_widget = T.Instance(W.HTML, kw={"layout": {"display": "None"}})
 
     def __init__(self, *args, **kwargs):
-        """Initialize the widget and add custom styling and css class"""
+        """Initialize the widget and add custom styling and CSS class"""
         super().__init__(*args, **kwargs)
         self._update_style()
         self.add_class(self._css_class)
 
     @T.validate("children")
     def _valid_children(self, proposal):
-        """Ensure incoming children include the css widget for the custom styling"""
+        """Ensure incoming children include the CSS widget for the custom styling"""
         value = proposal["value"]
         if value and self._css_widget not in value:
             value = [self._css_widget] + list(value)
@@ -29,7 +29,7 @@ class StyledWidget(W.Box):
 
     @T.observe("style")
     def _update_style(self, change: T.Bunch | None = None):
-        """Build the custom css to attach to the dom"""
+        """Build the custom CSS to attach to the DOM"""
         style: list[str] = []
         raw_css: list[str] = []
         for cls, attrs in self.style.items():
@@ -42,7 +42,7 @@ class StyledWidget(W.Box):
                 ])
                 raw_css += [f"{cls}{{ {css_attributes} }}"]
             else:
-                # process keyframe css
+                # process keyframe CSS
                 selector = cls
                 attributes = []
                 for key, value in attrs.items():
@@ -58,5 +58,5 @@ class StyledWidget(W.Box):
 
     @property
     def _css_class(self) -> str:
-        """CSS Class to namespace custom css classes"""
+        """CSS Class to namespace custom CSS classes"""
         return f"styled-widget-{id(self)}"

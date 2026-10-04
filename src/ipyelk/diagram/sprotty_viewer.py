@@ -20,7 +20,7 @@ from .viewer import Viewer
 
 
 class SprottyViewer(DOMWidget, Viewer):
-    """Jupyterlab widget for displaying and interacting with views generated
+    """JupyterLab widget for displaying and interacting with views generated
     from ELK JSON.
 
     Setting the instance's `value` traitlet to valid `Eclipse Layout Kernel JSON

@@ -163,7 +163,7 @@ def as_in_hierarchy(
         if node_id in hierarchy:
             return node_id
     else:
-        # should be an identifer to something in the element map
+        # should be an identifier to something in the element map
         el = el_map[parent]
         if isinstance(el, Port):
             parent = el.get_parent()

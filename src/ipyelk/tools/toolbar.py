@@ -48,7 +48,7 @@ class Toolbar(W.HBox, StyledWidget):
 
     @T.observe("on_close")
     def _update_close_callback(self, change: T.Bunch | None = None):
-        """Toggle visiblity of the close button depending on if the `on_close` trait
+        """Toggle visibility of the close button depending on if the `on_close` trait
         is callable
         """
         shown = "visible" if callable(self.on_close) else "hidden"

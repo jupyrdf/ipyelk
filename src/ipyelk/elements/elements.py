@@ -176,9 +176,9 @@ class IDElement(BaseModel, abc.ABC):
         return el_id
 
     def wire_id(self) -> str:
-        """The id this element serialises with; never ``None``.
+        """The id this element serializes with; never ``None``.
 
-        ``get_id`` when that resolves, otherwise a uuid minted once per object,
+        ``get_id`` when that resolves, otherwise a UUID minted once per object,
         so repeated dumps agree with each other and with the ``sources`` /
         ``targets`` of edges that reference this element.  Does not assign
         ``id``: an element stays id-less until it is indexed.

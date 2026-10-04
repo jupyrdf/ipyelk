@@ -1,0 +1,168 @@
+# Copyright (c) 2026 ipyelk contributors.
+# Distributed under the terms of the Modified BSD License.
+import importlib.util
+import json
+import sys
+from pathlib import Path
+
+import pytest
+
+SCRIPT = Path(__file__).parents[1] / "scripts" / "vale_lint.py"
+spec = importlib.util.spec_from_file_location("vale_lint", SCRIPT)
+assert spec
+assert spec.loader
+vale_lint = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(vale_lint)
+
+ALERT = {
+    "Check": "IPyElk.Spelling",
+    "Line": 3,
+    "Message": "Did you really mean 'recieve'?",
+    "Severity": "error",
+    "Span": [5, 11],
+}
+
+FAKE_VALE = """
+import json, os, sys
+mode = os.environ["FAKE_VALE"]
+ext = next((a[6:] for a in sys.argv if a.startswith("--ext=")), None)
+if ext:
+    text = sys.stdin.read()
+    blind = (
+        mode == "blind"
+        or (mode == "blind-py" and ext == ".py" and not text.startswith("\\n"))
+        or (mode == "blind-header" and text.startswith("\\n"))
+    )
+    print(json.dumps({} if blind else {"stdin" + ext: [ALERT]}))
+elif mode == "crash":
+    print("panic: runtime error", file=sys.stderr)
+    sys.exit(2)
+elif mode == "rc-valid":
+    print("{}")
+    sys.exit(1)
+else:
+    copy = "build/vale_docstrings/src/m.py"
+    copied = {copy: [ALERT]} if any(copy.startswith(a) for a in sys.argv[1:]) else {}
+    print({
+        "clean": "{}",
+        "findings": json.dumps({"README.md": [ALERT]}),
+        "docstring": json.dumps(copied),
+        "dup": json.dumps({copy: [ALERT], "src/m.py": [ALERT]}),
+        "empty": "",
+        "partial": '{"src/x.py": [',
+        "shape": json.dumps({"README.md": {"Line": 1}}),
+        "keys": json.dumps({"README.md": [{"Line": 1}]}),
+    }.get(mode, "{}"))
+"""
+
+
+@pytest.fixture
+def run(tmp_path, monkeypatch, capsys):
+    fake = tmp_path / "fake_vale.py"
+    fake.write_text(f"ALERT = {ALERT!r}\n{FAKE_VALE}", encoding="utf-8")
+    (tmp_path / "README.md").write_text("# hi\n", encoding="utf-8")
+    (tmp_path / "src").mkdir()
+    (tmp_path / "src/m.py").write_text('# header\n\n"""Doc."""\n', encoding="utf-8")
+    monkeypatch.setattr(vale_lint, "ROOT", tmp_path)
+    monkeypatch.setattr(vale_lint, "VALE", [sys.executable, str(fake)])
+    monkeypatch.setattr(vale_lint, "PATHS", ["README.md", "src"])
+
+    def run(mode, paths=None):
+        monkeypatch.setenv("FAKE_VALE", mode)
+        if paths is not None:
+            monkeypatch.setattr(vale_lint, "PATHS", paths)
+        code = vale_lint.main()
+        return code, capsys.readouterr()
+
+    return run
+
+
+def test_clean_passes(run):
+    code, out = run("clean")
+    assert code == 0, out
+    assert "vale: 0 warning(s) or error(s)" in out.out
+
+
+def test_findings_fail_with_path_and_line(run):
+    code, out = run("findings")
+    assert code == 1, out
+    assert "README.md:3:5: error [IPyElk.Spelling]" in out.out
+
+
+@pytest.mark.parametrize("mode", ["docstring", "dup"])
+def test_module_docstring_copy_reports_source_once(run, tmp_path, mode):
+    code, out = run(mode)
+    assert code == 1, out
+    assert out.out.count("src/m.py:3:5: error") == 1, out.out
+    assert "vale_docstrings" not in out.out
+    copy = tmp_path / vale_lint.DOCSTRINGS / "src/m.py"
+    assert copy.read_text(encoding="utf-8") == '\n\n"""Doc."""\n'
+
+
+@pytest.mark.parametrize(
+    ("mode", "message"),
+    [
+        ("crash", "panic: runtime error"),
+        ("rc-valid", "vale exited 1"),
+        ("empty", "vale wrote no output"),
+        ("partial", "not JSON"),
+        ("shape", "not {path"),
+        ("keys", "not {path"),
+        ("blind", "missed the .md canary"),
+        ("blind-py", "missed the .py canary"),
+        ("blind-header", "missed the .py canary: '\\n"),
+    ],
+)
+def test_broken_vale_fails(run, mode, message):
+    code, out = run(mode)
+    assert code == 2, out
+    assert message in out.err, out.err
+
+
+@pytest.mark.parametrize("paths", [["nope"], ["empty_dir"]])
+def test_missing_or_empty_path_fails(run, tmp_path, paths):
+    (tmp_path / "empty_dir").mkdir()
+    code, out = run("clean", paths)
+    assert code == 2, out
+    assert paths[0] in out.err
+
+
+@pytest.mark.parametrize(
+    ("source", "expected"),
+    [
+        ('# header\n"""Doc\n\nmore."""\nx = 1\n', '\n"""Doc\n\nmore."""\n'),
+        ('"""Doc."""\n', '"""Doc."""\n'),
+        ("# header\nx = 1\n", None),
+        ("", None),
+        ("# header\nb'bytes'\n", None),
+        ("1\n", None),
+    ],
+)
+def test_module_docstring_keeps_lines(source, expected):
+    assert vale_lint.module_docstring(source) == expected
+
+
+@pytest.mark.parametrize("content", [b"def (:\n", b'"""caf\xe9."""\n'])
+def test_unreadable_python_fails(run, tmp_path, content):
+    (tmp_path / "src/bad.py").write_bytes(content)
+    code, out = run("clean")
+    assert code == 2, out
+    assert "src/bad.py" in out.err.replace("\\", "/"), out.err
+
+
+def test_stale_docstring_copies_are_removed(run, tmp_path):
+    stale = tmp_path / vale_lint.DOCSTRINGS / "src/gone.py"
+    stale.parent.mkdir(parents=True)
+    stale.write_text('"""Old."""\n', encoding="utf-8")
+    run("clean")
+    assert not stale.exists()
+
+
+def test_findings_sort_by_line_number():
+    alert = dict(ALERT)
+    alerts = {"a.py": [{**alert, "Line": 10}, {**alert, "Line": 9}]}
+    assert [x.split(":")[1] for x in vale_lint.summarize(alerts)] == ["9", "10"]
+
+
+def test_parse_accepts_real_shape():
+    assert vale_lint.parse(json.dumps({"a.md": [ALERT]})) == {"a.md": [ALERT]}

@@ -87,8 +87,8 @@ def handle_one_nb(ipynb: Path, *, fix: bool = False, write: bool = False) -> int
     return error_count
 
 
-def nblint(roots: list[Path], fix: bool = False) -> int:
-    """Make the cells pretty."""
+def nblint(roots: list[Path], fix: bool = False, extract_only: bool = False) -> int:
+    """Make the cells pretty, or only extract them for prose linting."""
     shutil.rmtree(CELL_MD, ignore_errors=True)
     error_count = 0
     all_ipynb = []
@@ -101,6 +101,8 @@ def nblint(roots: list[Path], fix: bool = False) -> int:
 
     print("fixing" if fix else "checking", len(all_ipynb), "notebooks...")
     error_count += sum(handle_one_nb(path, fix=fix) for path in all_ipynb)
+    if extract_only:
+        return error_count
     if not error_count:
         error_count += call(PRETTIER)
     if not error_count:
@@ -114,6 +116,7 @@ def get_parser() -> ArgumentParser:
     """Build a CLI parser."""
     parser = ArgumentParser()
     parser.add_argument("--fix", action="store_true")
+    parser.add_argument("--extract-only", action="store_true")
     parser.add_argument("roots", nargs="+", type=Path)
     return parser
 

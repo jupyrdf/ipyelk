@@ -326,7 +326,7 @@ def test_removed_module_names_keep_their_message_through_from_import():
     message thrown away by the interpreter: ``from module import name`` replaces it
     with a bare ``ImportError("cannot import name ...")``. The module-level
     tombstones therefore raise ``DeprecatedImportError``, which is not an
-    ``AttributeError``, and both flavours share ``DeprecatedAPI``.
+    ``AttributeError``, and both flavors share ``DeprecatedAPI``.
     """
     import subprocess
     import sys
@@ -344,7 +344,7 @@ def test_removed_module_names_keep_their_message_through_from_import():
     assert "was removed in ipyelk 3.0" in proc.stderr, proc.stderr
     assert "viewer.viewport" in proc.stderr, proc.stderr
 
-    # both flavours are catchable through the shared base
+    # both flavors are catchable through the shared base
     with pytest.raises(DeprecatedAPI):
         _ = ipyelk.tools.Zoom
     with pytest.raises(DeprecatedAPI):

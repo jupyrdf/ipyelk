@@ -134,6 +134,44 @@ accepted as unlikely: `window['eval']`, `Reflect.apply(eval, ...)` and `const e 
 `DOMParser.parseFromString`; `console.log.call`/`.apply`; and an `Instance` nested in
 `T.Tuple(...)` next to a JSON one.
 
+### Prose
+
+[Vale](https://vale.sh) lints the prose in the root `*.md` files, `docs/`, docstrings
+and comments in `src/`, `tests/` and `scripts/`, and notebook markdown cells, in US
+English, with the `proselint` and `write-good` styles. Any warning or error fails
+`pixi run lint`. To run it alone:
+
+```bash
+pixi run lint-vale
+```
+
+Findings in notebooks point at `build/nblint/examples/<notebook>/cell-<n>.md`, the
+markdown of the _n_-th cell.
+
+- Fix real typos. Vale doesn't spell-check hyphenated words (e.g. `re-serialised`
+  passes), so check those by eye.
+- Add a project term (a name, an API word) to
+  `scripts/vale/config/vocabularies/IPyElk/accept.txt`, one per line. Entries are
+  regular expressions, and `Vale.Terms` also enforces their case: write a lowercase word
+  as `[Ww]ord` so it may start a sentence, or prefix `(?i)` to accept any case.
+- In markdown, turn a rule off for one passage, with the reason:
+
+```markdown
+<!-- vale proselint.Very = NO -->
+<!-- quoting the upstream docs verbatim -->
+
+It is very fast.
+
+<!-- vale proselint.Very = YES -->
+```
+
+- In Python, Vale has no inline switch, and it can't skip RST literals for `Vale.Terms`.
+  Add the exact phrase to the vocabulary (e.g. `package\.json` stops `json` in it from
+  being flagged), or turn the rule off for that file in `vale.ini` in a `[**/file.py]`
+  section (the `**/` also covers the module docstring's copy under
+  `build/vale_docstrings/`), with a one-line comment giving the reason.
+- Turn a rule off everywhere in `vale.ini`, with a one-line comment giving the reason.
+
 ### Limiting Testing
 
 To run just _some_ acceptance tests, add something like:
@@ -162,12 +200,12 @@ Timings are written to the job summary but not gated.
 
 ## Building Documentation
 
-To build (and check the spelling and link health) of what _would_ go to
-`ipyelk.readthedocs.org`, we:
+To build (and check the link health) of what _would_ go to `ipyelk.readthedocs.org`, we:
 
 - build with `sphinx` and `myst-nb`
-- check spelling with `vale`
 - check links with `pytest-check-links`
+
+Spelling and prose are checked in the sources by `pixi run lint-vale`.
 
 ```bash
 pixi run check

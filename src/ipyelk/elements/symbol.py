@@ -55,7 +55,7 @@ class SymbolSpec(BaseModel):
         """Test is key is an identifier for a symbol in the library and returns
         that key
 
-        :param key: potential symbol identifer
+        :param key: potential symbol identifier
         :return: symbol identifier
         """
         if key not in self.library:

@@ -18,4 +18,4 @@ def test_toolbar_orders_uis_by_priority_and_skips_state_only_tools():
         early.ui,
         late.ui,
         toolbar.close_btn,
-    ]  # [0]: css
+    ]  # [0]: CSS

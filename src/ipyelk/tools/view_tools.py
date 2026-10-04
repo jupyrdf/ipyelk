@@ -23,7 +23,7 @@ class Selection(Tool):
     Attributes
     ----------
     ids: tuple
-    tuple of string ids currently selected.
+    A tuple of string ids currently selected.
 
     """
 

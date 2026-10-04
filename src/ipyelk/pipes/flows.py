@@ -47,6 +47,6 @@ class Port:
 AnySize = ".*.size"
 AnyHidden = ".*.hidden"
 ColorCSS = ".*.cssClasses-colors"
-Anythinglayout = "((?!.*cssClasses-colors).)*"  # exclude matches on css color
+Anythinglayout = "((?!.*cssClasses-colors).)*"  # exclude matches on CSS color
 Layout = "layout"
 New = "new"
