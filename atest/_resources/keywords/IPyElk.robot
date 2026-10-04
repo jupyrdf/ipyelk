@@ -124,7 +124,8 @@ Run IPyElk Code In A New Cell
     Press Keys    None    b
     Press Keys    None    RETURN
     Press Keys    None    ${code}
-    Press Keys    None    SHIFT+RETURN
+    # run in place: running the last cell and advancing would add an empty cell
+    Press Keys    None    CTRL+RETURN
     Wait Until Element Is Visible    ${JLAB XP KERNEL IDLE}    timeout=30s
     IF    $screen    Capture Page Screenshot    ${screen}
 

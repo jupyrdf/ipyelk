@@ -15,12 +15,21 @@ ${SCREENS}              ${SCREENS ROOT}${/}examples${/}04_Interactive
 ${CONVERGE TIMEOUT}     60s
 ${PROBE}                interactive_probe.py
 ${XP SLIDER}            //div[contains(@class, "widget-slider")][.//label[text()="{}"]]
-# Sprotty only draws edges in view, and the notebook may scroll to a new cell
+# JupyterLab may scroll the view away to show a new cell, and stops updating
+# outputs it has moved off-screen
 ${JS DRAWN EDGE IDS}
 ...                     document.querySelector("${CSS ELK VIEW}").scrollIntoView({block: "center"});
 ...                     return [...document.querySelectorAll("${CSS ELK VIEW} ${CSS ELK EDGE}")]
 ...                     .filter((el) => !el.closest(".sprotty-hidden"))
 ...                     .map((el) => el.id.slice(-36)).sort();
+# tells a kernel that stopped running cells from a page that stopped drawing
+${JS STALL}
+...                     const cell = [...document.querySelectorAll(".jp-CodeCell")]
+...                     .find((c) => c.querySelector(".jp-InputArea-editor")?.textContent.includes(arguments[0]));
+...                     const prompt = cell?.querySelector(".jp-InputArea-prompt")?.textContent.trim();
+...                     const pipe = document.querySelector(".elk-pipe-status")?.closest("pre");
+...                     const status = pipe ? [...pipe.children].map((el) => el.textContent.trim()).filter(Boolean).join(" ") : "missing";
+...                     return "prompt " + (prompt ?? "missing") + ", pipe " + JSON.stringify(status);
 
 
 *** Test Cases ***
@@ -36,17 +45,18 @@ ${JS DRAWN EDGE IDS}
     ...    so a first-attempt failure is the signal: ``scripts/atest.py`` keeps each
     ...    attempt's ``output.xml`` in ``build/reports/atest*/<os>_<attempt>/`` and
     ...    raises a GitHub warning for each test that failed before the last attempt
-    ...    or was skipped on failure, as ``ci.yml`` has this one do on macOS and in
-    ...    the ``oldest`` jobs.
-    [Tags]    gh:95
+    ...    or was skipped on failure. ``ci.yml`` skips failures tagged ``gh:95`` on
+    ...    some jobs; the tag is only set once the notebook has run, so the notebook
+    ...    itself still gates everywhere.
     Example Should Restart-and-Run-All    ${INTERACTIVE}
+    Set Tags    gh:95
     Copy File    ${FIXTURES}${/}${PROBE}    ${OUTPUT DIR}${/}home${/}${PROBE}
     Run IPyElk Code In A New Cell    _k95 = __import__("interactive_probe").watch(box, elk)
     ...    screen=00-probe.png
     Set Test Variable    ${SOURCES SEEN}    ${0}
     Diagram Should Converge    00
     Burst Sliders And Converge    01    ARROW_RIGHT    7    number_of_nodes    ARROW_RIGHT
-    Burst Sliders And Converge    02    ARROW_LEFT    15
+    Burst Sliders And Converge    02    ARROW_LEFT    14    number_of_nodes    ARROW_LEFT
     Burst Sliders And Converge    03    ARROW_RIGHT    11    percent_of_edges    ARROW_LEFT
     Burst Sliders And Converge    04    ARROW_LEFT    6    number_of_nodes    ARROW_LEFT
     Burst Sliders And Converge    05    ARROW_RIGHT    8
@@ -108,6 +118,7 @@ Diagram Should Converge
     ...    console=True
     Capture Page Screenshot    ${round}-2-${ok.lower()}.png
     IF    "${ok}" == "FAIL"
+        ${err} =    Evaluate    $err.split("The last error was: ")[-1]
         Fail    round ${round}: no convergence on ${asked} within ${CONVERGE TIMEOUT}: ${err}
     END
     IF    "${round}" != "00"
@@ -134,7 +145,12 @@ Get Kernel State
     ${token} =    Evaluate    "ELK95x%s" % secrets.token_hex(4)    secrets
     Run IPyElk Code In A New Cell    _k95("${token}")    screen=${EMPTY}
     ${xp} =    Set Variable    xpath://*[contains(@class, "jp-OutputArea-output")][contains(., "${token} ")]
-    Wait Until Page Contains Element    ${xp}    timeout=${CONVERGE TIMEOUT}
+    ${shown} =    Run Keyword And Return Status
+    ...    Wait Until Page Contains Element    ${xp}    timeout=${CONVERGE TIMEOUT}
+    IF    not ${shown}
+        ${stall} =    Execute Javascript    ${JS STALL}    ARGUMENTS    ${token}
+        Fail    no answer to ${token} within ${CONVERGE TIMEOUT}: ${stall}
+    END
     ${out} =    Get Text    ${xp}
     ${state} =    Evaluate    json.loads($out.split(" ", 1)[1])    json
     Log    ${state}

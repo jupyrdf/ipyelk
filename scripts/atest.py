@@ -145,7 +145,7 @@ def warn_about_hidden_failures(last_attempt, extra_args):
                 why = " ".join(test.message.split("Original failure:")[-1].split())
                 print(
                     f"::warning title=atest attempt {attempt}::"
-                    f"{test.longname} {test.status.lower()}: {why[:200]}"
+                    f"{test.longname} {test.status.lower()}: {why[:300]}"
                 )
 
 
