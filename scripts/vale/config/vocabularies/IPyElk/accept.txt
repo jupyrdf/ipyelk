@@ -186,7 +186,6 @@ ToolButton
 [Tt]wo-factor
 TypeFox
 TypeScript
-# also accepts lowercase ui in prose: Vale.Terms can't be limited to the ``ui`` trait
 (?:UI|ui)s?
 Unobserves
 [Uu]ninstrumented

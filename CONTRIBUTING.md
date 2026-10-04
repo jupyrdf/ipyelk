@@ -167,8 +167,9 @@ It is very fast.
 
 - In Python, Vale has no inline switch, and it can't skip RST literals for `Vale.Terms`.
   Add the exact phrase to the vocabulary (e.g. `package\.json` stops `json` in it from
-  being flagged), or turn the rule off for that file in `vale.ini` in a
-  `[path/to/file.py]` section, with a one-line comment giving the reason.
+  being flagged), or turn the rule off for that file in `vale.ini` in a `[**/file.py]`
+  section (the `**/` also covers the module docstring's copy under
+  `build/vale_docstrings/`), with a one-line comment giving the reason.
 - Turn a rule off everywhere in `vale.ini`, with a one-line comment giving the reason.
 
 ### Limiting Testing
