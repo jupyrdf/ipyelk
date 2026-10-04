@@ -27,6 +27,7 @@ import {
   Animation,
   CommandExecutionContext,
   CompoundAnimation,
+  FadeAnimation,
   MatchResult,
   ResolvedElementFade,
   SChildElementImpl,
@@ -41,8 +42,38 @@ import { UpdateAnimationData, UpdateModelCommand } from 'sprotty';
 
 import { containsSome } from './smodel-utils';
 
+/**
+ * Sprotty 1.4 can run a fade's final `tween(1)` twice (eclipse-sprotty/sprotty#573); the
+ * second removal throws and freezes the command stack (gh-95). Drop this once #573 is fixed.
+ */
+export class FadeOnceAnimation extends FadeAnimation {
+  private ended = false;
+
+  tween(t: number, context: CommandExecutionContext): SModelRootImpl {
+    if (t === 1) {
+      if (this.ended) {
+        return this.model;
+      }
+      this.ended = true;
+    }
+    return super.tween(t, context);
+  }
+}
+
 @injectable()
 export class UpdateModelCommand2 extends UpdateModelCommand {
+  protected createAnimations(
+    data: UpdateAnimationData,
+    root: SModelRootImpl,
+    context: CommandExecutionContext,
+  ): Animation[] {
+    const animations = super.createAnimations({ ...data, fades: [] }, root, context);
+    if (data.fades.length) {
+      animations.unshift(new FadeOnceAnimation(root, data.fades, context, true));
+    }
+    return animations;
+  }
+
   protected updateElement(
     left: SModelElementImpl,
     right: SModelElementImpl,
