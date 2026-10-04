@@ -286,6 +286,14 @@ throughout 3.x with the replacement in the message.
     notifies `status` observers
   - `PipelineStatusView.statuses` is removed. It held the view's row widgets, was never
     synced, and is now a private list; the rows still reach the frontend as `children`
+- Stop a diagram from freezing for good on an update that removes elements. Sprotty's
+  fade-out removed the faded elements when the _eased_ animation time reached 1, which
+  `easeInOut` rounds to within 1e-8 of the end, while the animation only stops at the
+  _raw_ time 1. A frame landing a hair before the end (evenly spaced frame timestamps,
+  15 frames of 1000/60 ms for the 250 ms animation) removed them early, and the real
+  last frame removed them again and threw. The throw happened inside an animation-frame
+  callback, so the animation never finished and sprotty's command stack waited on it
+  forever: every later layout reached the browser and was never drawn ([#95])
 
 ### Development
 
@@ -307,6 +315,7 @@ throughout 3.x with the replacement in the message.
   markdown, and fails on any warning or error. It replaces `check-spelling`, which
   linted the built HTML and never failed ([#181])
 
+[#95]: https://github.com/jupyrdf/ipyelk/issues/95
 [#147]: https://github.com/jupyrdf/ipyelk/issues/147
 [#160]: https://github.com/jupyrdf/ipyelk/issues/160
 [#161]: https://github.com/jupyrdf/ipyelk/issues/161
