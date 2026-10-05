@@ -142,7 +142,9 @@ def test_slack_port_keeps_hidden_elements_id_and_object():
 def test_slack_port_does_not_overwrite_hidden_port_geometry():
     root = Node(id="r")
     source = root.add_child(Node(id="source"))
-    child = root.add_child(Node(id="child", properties=NodeProperties(hidden=True)))
+    # the hidden port projects onto ``group``, its nearest visible ancestor
+    group = root.add_child(Node(id="group"))
+    child = group.add_child(Node(id="child", properties=NodeProperties(hidden=True)))
     anchor = child.add_port(
         Port(
             id="child.in",
