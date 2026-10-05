@@ -116,6 +116,33 @@
   `ipyelk.tools.contol_overlay` module raises it too, naming the new path; it re-exports
   nothing. Both flavors share the `ipyelk.exceptions.DeprecatedAPI` base, so one
   `except` catches either.
+- Layout options are checked against the options that the bundled `elkjs` knows, and the
+  option classes that ELK ignored without an error now take effect, so **layouts can
+  change** ([#29]):
+  - `EdgeSpacing`, `EdgeNodeSpacing`, `EdgeLabelSpacing`, `EdgeEdgeLayerSpacing` and
+    `EdgeNodeLayerSpacing` use the `spacing.edgeEdge`, `spacing.edgeNode`,
+    `spacing.edgeLabel`, `layered.spacing.edgeEdgeBetweenLayers` and
+    `layered.spacing.edgeNodeBetweenLayers` ids (they used `elk.edge.*` ids that do not
+    exist). Record nodes set `EdgeNodeSpacing(spacing=0)`, which now applies.
+  - `LayoutPartitioning` uses `partitioning.activate` (was `partitioning.active`).
+  - `ConsiderModelOrder` uses `layered.considerModelOrder.strategy` (was
+    `layered.considerModelOrder`), applies only to parents, and offers `PREFER_NODES`.
+  - `ContentAlignment` loses the tab character at the start of its id.
+  - `PortAlignmentEast`, `PortAlignmentWest`, `PortAlignmentNorth` and
+    `PortAlignmentSouth` subclass `PortAlignment`, so they have a value, a control and
+    apply to nodes.
+  - `LabelPortHorizontalSpacing` and `LabelPortVerticalSpacing` replace
+    `LabelPortSpacing`, because ELK has no `spacing.labelPort` option.
+    `LabelPortSpacing` still works, emits a `DeprecationWarning` and sets the horizontal
+    spacing.
+  - The `LayoutAlgorithm` choices no longer offer Draw2D
+    (`org.eclipse.elk.conn.gmf.layouter.Draw2D`) and `Draw2DLayout` is removed: `elkjs`
+    does not have it, and a layout with it failed.
+- `layoutOptions` on elements is typed `LayoutOptions` (`dict[str, str]`, from
+  `ipyelk.elements`), like the ELK JSON schema. Validation writes `bool` values as
+  `"true"` or `"false"` and numbers as strings, and raises `ValidationError` for any
+  other value or a key that is not a string. `OptionsWidget.value` only accepts string
+  keys and values ([#31]).
 
 ### Migration
 
@@ -185,6 +212,27 @@ The removed names (`handler`, `on_run`, `disable`, `Hover.ids`, assigning `on_st
 `DeprecatedAPIError` -- or `DeprecatedImportError` for the module-level names --
 throughout 3.x with the replacement in the message.
 
+### Added
+
+- An opt-in check for layout option keys that ELK ignores without an error. ELK takes a
+  full option id, or the end of one that starts after a dot (`elk.direction`,
+  `spacing.nodeNode`). `ipyelk.schema.unknown_layout_options(keys)` returns the keys
+  that end no id or more than one: `direction` also ends `layered.priority.direction`.
+  `ValidationPipe(check_layout_options=True)` writes them per element id to
+  `layout_options_report` and emits a `UserWarning`. The check is off by default. Refs
+  [#115].
+
+### Development
+
+- `src/ipyelk/schema/elk-catalog.json` lists the layout options, algorithms and
+  categories of the bundled `elkjs`. `pixi run build-py-elk-catalog` writes it. A
+  `vitest` checks it against the installed `elkjs`, and a unit test checks the option
+  classes against it ([#29]).
+- CI regenerates `elkschema.json` and `elk-catalog.json` and fails if they differ from
+  the committed files. `build-py-schema` also reruns when
+  `js/sprotty/json/elkgraph-json.ts` changes, and `jlpm schema` passes the real path of
+  `elkschema.ts` ([#187]).
+
 ### `@jupyrdf/jupyter-elk 3.0.0`
 
 - Write `hovered_id` back on pointer leave, but only when the departed element is still
@@ -209,8 +257,12 @@ throughout 3.x with the replacement in the message.
   over to the updated element, so a re-render under a resting pointer no longer drops
   the mouseover ([#156]).
 
+[#29]: https://github.com/jupyrdf/ipyelk/issues/29
+[#31]: https://github.com/jupyrdf/ipyelk/issues/31
+[#115]: https://github.com/jupyrdf/ipyelk/issues/115
 [#155]: https://github.com/jupyrdf/ipyelk/issues/155
 [#156]: https://github.com/jupyrdf/ipyelk/issues/156
+[#187]: https://github.com/jupyrdf/ipyelk/issues/187
 
 ## `2.1.3` (unreleased)
 
