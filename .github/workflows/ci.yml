@@ -47,10 +47,14 @@ jobs:
           key: ${{ env.CACHE_EPOCH }}-${{ hashFiles('package.json') }}-jlpm-core-meta
       - run: pixi run setup-js
       - run: touch node_modules/.cached-in-ci
-      - name: check the committed schema matches the TypeScript
+      # the schema and the ELK option catalog are generated, but committed:
+      # fail if either differs from what the TypeScript and elkjs give
+      - name: check the committed schema and ELK option catalog match their sources
         run: |
           pixi run -e build jlpm schema
-          git diff --exit-code src/ipyelk/schema/elkschema.json
+          pixi run -e build node scripts/elk_catalog.mjs
+          pixi run -e build jlpm prettier --write src/ipyelk/schema/elk-catalog.json
+          git diff --exit-code src/ipyelk/schema/
       - run: pixi run dist
       - uses: actions/upload-artifact@v4
         with:
