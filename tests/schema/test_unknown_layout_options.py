@@ -56,7 +56,8 @@ def graph() -> Node:
 
 def test_check_is_off_by_default() -> None:
     with warnings.catch_warnings():
-        warnings.simplefilter("error")
+        # the check warns with UserWarning; other categories keep pytest's filters
+        warnings.simplefilter("error", UserWarning)
         pipe = run_pipe(graph())
     assert not pipe.check_layout_options
     assert pipe.layout_options_report == {}
@@ -74,6 +75,7 @@ def test_check_reports_and_warns() -> None:
 def test_check_is_quiet_when_every_key_is_known() -> None:
     root = Node(id="root", layoutOptions={"elk.direction": "DOWN"})
     with warnings.catch_warnings():
-        warnings.simplefilter("error")
+        # the check warns with UserWarning; other categories keep pytest's filters
+        warnings.simplefilter("error", UserWarning)
         pipe = run_pipe(root, check_layout_options=True)
     assert pipe.layout_options_report == {}
