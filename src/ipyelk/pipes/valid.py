@@ -1,9 +1,12 @@
 # Copyright (c) 2024 ipyelk contributors.
 # Distributed under the terms of the Modified BSD License.
+import warnings
+
 import traitlets as T
 from ipywidgets.widgets.trait_types import TypedTuple
 
 from ..elements import EdgeReport, IDReport, Node
+from ..schema.catalog import unknown_layout_options
 from . import flows as F
 from .base import Pipe
 from .marks import MarkIndex
@@ -24,6 +27,10 @@ class ValidationPipe(Pipe):
     id_report = T.Instance(IDReport, kw={})
     edge_report = T.Instance(EdgeReport, kw={})
     schema_report = T.Dict(kw={})
+    #: opt in to report layout option keys that ELK ignores (off by default)
+    check_layout_options = T.Bool(default_value=False)
+    #: element id to the layout option keys ELK does not resolve to one option
+    layout_options_report = T.Dict(kw={})
     errors = T.Dict(kw={})
 
     async def run(self) -> None:
@@ -49,11 +56,30 @@ class ValidationPipe(Pipe):
                 self.errors = self.collect_errors()
                 if self.errors:
                     raise ValueError("Outlet value is not valid")
+            if self.check_layout_options:
+                self.report_layout_options(outlet_index)
 
     def get_reports(self, index: MarkIndex):
         if index.elements is None:
             raise ValueError("Mark index has no elements")
         self.edge_report, self.id_report = index.elements.get_reports()
+
+    def report_layout_options(self, index: MarkIndex) -> None:
+        """Warn about layout option keys that ELK would ignore without an error."""
+        if index.elements is None:
+            raise ValueError("Mark index has no elements")
+        report = {}
+        for el_id, el in index.elements.items():
+            unknown = unknown_layout_options(el.layoutOptions)
+            if unknown:
+                report[el_id] = unknown
+        self.layout_options_report = report
+        if report:
+            warnings.warn(
+                f"ELK does not resolve these layout options to one option: {report}",
+                UserWarning,
+                stacklevel=2,
+            )
 
     def collect_errors(self) -> dict:
         errors: dict[str, object] = {}
