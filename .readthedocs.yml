@@ -6,6 +6,9 @@ build:
     python: mambaforge-latest
   jobs:
     pre_build:
+      # the JupyterLite demo ships examples/, including LFS-tracked data
+      - git lfs install --local
+      - git lfs pull
       - pixi install --environment=build
       - pixi install --environment=lite
       - pixi install --environment=docs
