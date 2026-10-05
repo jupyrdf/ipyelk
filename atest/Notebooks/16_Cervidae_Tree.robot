@@ -35,13 +35,19 @@ Fit Cervidae Tree
     # once, before the first toggle click.
     ${app} =    Get WebElement    css:.jp-ElkApp
     Execute Javascript    arguments[0].scrollIntoView({block: "center"})    ARGUMENTS    ${app}
+    # A click right after the scroll can miss the button and leave the camera
+    # unmoved (3 of 10 local runs): click Fit again until the toggles are in view.
+    Wait Until Keyword Succeeds    5x    0.5s    Click Fit Until Cervidae Toggles Are In View    ${app}
+
+Click Fit Until Cervidae Toggles Are In View
+    [Arguments]    ${app}
     # the toolbar shows on hover; a click on the app's centre would select the
     # node under it, and selecting a node runs the `oldest` frontend out of memory
     Mouse Over    ${app}
     ${fit} =    Set Variable    css:.jp-ElkToolbar button[title="Fit the tree in the viewport"]
     Wait Until Element Is Visible    ${fit}
     Click Element    ${fit}
-    Wait Until Keyword Succeeds    10x    0.5s    Cervidae Toggles Should Be In View
+    Wait Until Keyword Succeeds    6x    0.5s    Cervidae Toggles Should Be In View
 
 Cervidae Toggles Should Be In View
     ${shown} =    Execute Javascript
