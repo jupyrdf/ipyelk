@@ -41,7 +41,7 @@ Fit Cervidae Tree
 
 Click Fit Until Cervidae Toggles Are In View
     [Arguments]    ${app}
-    # the toolbar shows on hover; a click on the app's centre would select the
+    # the toolbar shows on hover; a click on the app's center would select the
     # node under it, and selecting a node runs the `oldest` frontend out of memory
     Mouse Over    ${app}
     ${fit} =    Set Variable    css:.jp-ElkToolbar button[title="Fit the tree in the viewport"]
@@ -85,9 +85,9 @@ Click Cervidae Toggle
     [Arguments]    ${locator}
     ${el} =    Get WebElement    ${locator}
     Execute Javascript    arguments[0].scrollIntoView({block: "center", inline: "center"})    ARGUMENTS    ${el}
-    # The -/+ glyph covers the circle's centre, so `Click Element` reports the
+    # The -/+ glyph covers the circle's center, so `Click Element` reports the
     # circle as obscured. Wait until the Fit camera stops and the circle or its
-    # glyph is on top at the centre, then click there with the pointer.
+    # glyph is on top at the center, then click there with the pointer.
     ${ready} =    Execute Async Javascript
     ...    const [el, done] = arguments, box = () => JSON.stringify(el.getBoundingClientRect()), before = box();
     ...    setTimeout(() => {
