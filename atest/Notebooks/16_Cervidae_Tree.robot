@@ -20,10 +20,10 @@ Cervidae Tree Renders Its Frozen Snapshot
     Page Should Contain Element    css:.jp-ElkToolbar button
     Fit Cervidae Tree
     Click Cervidae Junction    Odocoileini
-    Elk Counts Should Be    nodes=${76}    edges=${75}    labels=${56}    ports=${152}
+    Fitted Counts Should Be    nodes=${76}    edges=${75}    ports=${152}
     Page Should Contain Element    css:[id$="Odocoileini.__toggle"] circle
     Click Cervidae Junction    Odocoileini
-    Elk Counts Should Be    nodes=${109}    edges=${108}    labels=${82}    ports=${218}
+    Fitted Counts Should Be    nodes=${109}    edges=${108}    ports=${218}
     Capture Page Screenshot    11-cervidae-tree.png
 
 
@@ -48,6 +48,23 @@ Click Fit Until Cervidae Toggles Are In View
     Wait Until Element Is Visible    ${fit}
     Click Element    ${fit}
     Wait Until Keyword Succeeds    6x    0.5s    Cervidae Toggles Should Be In View
+
+Fitted Counts Should Be
+    [Arguments]    ${nodes}    ${edges}    ${ports}
+    # Fit zooms out to about 0.2, where the renderer skips a label unless
+    # zoom * label height > 3: whether labels render depends on font metrics
+    # (none rendered on Windows with the oldest JupyterLab), so do not count them.
+    Wait Until Keyword Succeeds    30x    1s
+    ...    Fitted Counts Should Really Be    ${nodes}    ${edges}    ${ports}
+
+Fitted Counts Should Really Be
+    [Arguments]    ${nodes}    ${edges}    ${ports}
+    ${found nodes} =    Get Elk Node Count
+    ${found edges} =    Get Elk Edge Count
+    ${found ports} =    Get Elk Port Count
+    Should Be Equal As Strings
+    ...    nodes:${found nodes} edges:${found edges} ports:${found ports}
+    ...    nodes:${nodes} edges:${edges} ports:${ports}
 
 Cervidae Toggles Should Be In View
     ${shown} =    Execute Javascript
