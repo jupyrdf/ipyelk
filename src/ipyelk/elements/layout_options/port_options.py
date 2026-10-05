@@ -2,6 +2,8 @@
 # Distributed under the terms of the Modified BSD License.
 from __future__ import annotations
 
+import warnings
+
 import ipywidgets as W
 import traitlets as T
 
@@ -366,21 +368,55 @@ class AllowNonFlowPortsToSwitchSides(LayoutOptionWidget):
             self.value = "false"
 
 
-class LabelPortSpacing(SpacingOptionWidget):
-    """Spacing to be preserved between labels and the ports they are associated
-    with. Note that the placement of a label is influenced by the
+class LabelPortHorizontalSpacing(SpacingOptionWidget):
+    """Horizontal spacing to be preserved between labels and the ports they are
+    associated with. Note that the placement of a label is influenced by the
     'portlabels.placement' option.
 
-    https://www.eclipse.org/elk/reference/options/org-eclipse-elk-spacing-labelPort.html
+    https://www.eclipse.org/elk/reference/options/org-eclipse-elk-spacing-labelPortHorizontal.html
     """
 
-    identifier = "org.eclipse.elk.spacing.labelPort"
+    identifier = "org.eclipse.elk.spacing.labelPortHorizontal"
     metadata_provider = "core.options.CoreOptions"
     applies_to = ["parents"]
     group = "spacing"
 
     spacing = T.Float(default_value=1, min=0)
-    _slider_description: str = "Label Port Spacing"
+    _slider_description: str = "Label Port Horizontal Spacing"
+
+
+class LabelPortVerticalSpacing(SpacingOptionWidget):
+    """Vertical spacing to be preserved between labels and the ports they are
+    associated with. Note that the placement of a label is influenced by the
+    'portlabels.placement' option.
+
+    https://www.eclipse.org/elk/reference/options/org-eclipse-elk-spacing-labelPortVertical.html
+    """
+
+    identifier = "org.eclipse.elk.spacing.labelPortVertical"
+    metadata_provider = "core.options.CoreOptions"
+    applies_to = ["parents"]
+    group = "spacing"
+
+    spacing = T.Float(default_value=1, min=0)
+    _slider_description: str = "Label Port Vertical Spacing"
+
+
+class LabelPortSpacing(LabelPortHorizontalSpacing):
+    """Deprecated: use ``LabelPortHorizontalSpacing`` or
+    ``LabelPortVerticalSpacing``.
+
+    ELK has no ``spacing.labelPort`` option, so this sets the horizontal one.
+    """
+
+    def __init__(self, *args, **kwargs):
+        warnings.warn(
+            "LabelPortSpacing is deprecated: ELK has no `spacing.labelPort` "
+            "option. Use LabelPortHorizontalSpacing or LabelPortVerticalSpacing.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        super().__init__(*args, **kwargs)
 
 
 class PortAlignment(LayoutOptionWidget):
@@ -406,7 +442,7 @@ class PortAlignment(LayoutOptionWidget):
         return [dropdown]
 
 
-class PortAlignmentEast(LayoutOptionWidget):
+class PortAlignmentEast(PortAlignment):
     """Defines how ports on the eastern side are placed, overriding the node's
     general port alignment.
 
@@ -416,7 +452,7 @@ class PortAlignmentEast(LayoutOptionWidget):
     identifier = "org.eclipse.elk.portAlignment.east"
 
 
-class PortAlignmentWest(LayoutOptionWidget):
+class PortAlignmentWest(PortAlignment):
     """Defines how ports on the western side are placed, overriding the node's
     general port alignment.
 
@@ -426,7 +462,7 @@ class PortAlignmentWest(LayoutOptionWidget):
     identifier = "org.eclipse.elk.portAlignment.west"
 
 
-class PortAlignmentNorth(LayoutOptionWidget):
+class PortAlignmentNorth(PortAlignment):
     """Defines how ports on the northern side are placed, overriding the node's
     general port alignment.
 
@@ -436,7 +472,7 @@ class PortAlignmentNorth(LayoutOptionWidget):
     identifier = "org.eclipse.elk.portAlignment.north"
 
 
-class PortAlignmentSouth(LayoutOptionWidget):
+class PortAlignmentSouth(PortAlignment):
     """Defines how ports on the southern side are placed, overriding the node's
     general port alignment.
 
