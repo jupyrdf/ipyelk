@@ -374,6 +374,12 @@ throughout 3.x with the replacement in the message.
 - Fail CI when the committed `elkschema.json` differs from what `jlpm schema` generates,
   and rebuild it when `elkgraph-json.ts` changes ([#187])
 
+### Documentation
+
+- Document the shape API: a docstring for each class in `ipyelk.elements.shapes`, and a
+  _Shapes_ page in the API reference with one table row for each shape ([#66])
+
+[#66]: https://github.com/jupyrdf/ipyelk/issues/66
 [#95]: https://github.com/jupyrdf/ipyelk/issues/95
 [eclipse-sprotty/sprotty#573]: https://github.com/eclipse-sprotty/sprotty/issues/573
 [#147]: https://github.com/jupyrdf/ipyelk/issues/147

@@ -152,7 +152,7 @@ REPLite
 [Rr]ecurses
 [Rr]elocking
 [Rr]enderable
-[Rr]enderer(?:'s)?
+[Rr]enderer(?:s|'s)?
 [Rr]eobserving
 [Rr]epr
 [Rr]etransmit
