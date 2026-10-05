@@ -1,7 +1,8 @@
 """Build an offline image review/crop page from the frozen Cervidae archive.
 
-Run with the dev Python, then open build/cervidae-image-review.html. Export the
-review JSON, then embed it with --import-review PATH. Originals are unchanged.
+Run it in the ``dev`` environment, then open the HTML page it writes to ``build/``.
+Export the review JSON, then embed it with ``--import-review PATH``. Originals are
+unchanged.
 """
 
 import argparse

@@ -156,7 +156,7 @@ def table_text(cell: Tag) -> str:
 
 
 def ecology_fields(ecology: str) -> dict[str, str]:
-    """Split the source's labelled ecology column into displayable fields."""
+    """Split the source's labeled ecology column into displayable fields."""
     fields = {"size": "", "habitat": "", "diet": ""}
     boundaries = list(re.finditer(r"(Size|Habitat|Diet)\s*:\s*", ecology))
     for index, match in enumerate(boundaries):

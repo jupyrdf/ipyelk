@@ -39,6 +39,7 @@ BSD-3-Clause
 [Cc]onfig
 [Cc]oroutines?
 [Cc]ssClasses
+[Cc]ervid(?:s|ae)
 (?i)changelog
 (?i)ci
 ControlOverlay
@@ -196,8 +197,10 @@ Unobserves
 UUID
 (?i)viewports?
 WebWorker
+[Ww]ikimedia
 [Ww]ebpack
 [Ww]hitespace
 [Ww]idget's
 [Ww]idth/height
+[Ww]ikitext
 [Xx]/y
