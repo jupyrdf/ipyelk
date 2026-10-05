@@ -4,6 +4,7 @@
 [tasks]
 build = {depends-on = [
   "build-py-schema",
+  "build-py-elk-catalog",
   "build-js-lib",
   "build-js-ext",
   "build-js-ext-cov",
@@ -119,8 +120,18 @@ outputs = ["yarn.lock", "node_modules/.yarn-state.yml"]
 [feature.tasks-build.tasks.build-py-schema]
 cmd = "jlpm schema"
 depends-on = ["setup-js"]
-inputs = ["js/sprotty/json/elkschema.ts", "node_modules/.yarn-state.yml"]
+inputs = [
+  "js/sprotty/json/{elkschema,elkgraph-json}.ts",
+  "node_modules/.yarn-state.yml",
+]
 outputs = ["src/ipyelk/schema/elkschema.json"]
+
+[feature.tasks-build.tasks.build-py-elk-catalog]
+cmd = """node scripts/elk_catalog.mjs
+&& jlpm prettier --write src/ipyelk/schema/elk-catalog.json"""
+depends-on = ["setup-js"]
+inputs = ["scripts/elk_catalog.mjs", "node_modules/.yarn-state.yml"]
+outputs = ["src/ipyelk/schema/elk-catalog.json"]
 
 [feature.tasks-build.tasks.build-js-lib]
 cmd = "jlpm build:ts --force"
@@ -178,7 +189,7 @@ outputs = ["dist/*.tgz"]
 cmd = "pyproject-build . --no-isolation --verbose"
 inputs = ["{README.md,LICENSE,pyproject.toml}", "src/", "tests/", "!**/__pycache__"]
 outputs = ["dist/*.{whl,tar.gz}"]
-depends-on = ["build-py-schema", "build-js-ext"]
+depends-on = ["build-py-schema", "build-py-elk-catalog", "build-js-ext"]
 
 [feature.tasks-build.tasks.dist-check-twine]
 cmd = """twine check --strict ./dist/ipyelk-*"""
@@ -246,7 +257,14 @@ outputs = [
 [feature.tasks-utest.tasks.test-js]
 cmd = "pixi run -e dev jlpm test:unit"
 depends-on = ["setup-js"]
-inputs = ["js/**/*.ts", "js/vitest.config.ts", "package.json"]
+inputs = [
+  "js/**/*.ts",
+  "js/vitest.config.ts",
+  "package.json",
+  "node_modules/.yarn-state.yml",
+  "scripts/elk_catalog.mjs",
+  "src/ipyelk/schema/elk-catalog.json",
+]
 
 [feature.tasks-utest.tasks.bench]
 cmd = """
