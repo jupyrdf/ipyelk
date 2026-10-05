@@ -1,11 +1,27 @@
 # Copyright (c) 2024 ipyelk contributors.
 # Distributed under the terms of the Modified BSD License.
 from collections import namedtuple
+from typing import Annotated
 
-from pydantic import SerializationInfo
+from pydantic import BeforeValidator, SerializationInfo
+from typing_extensions import TypeAlias
 
 Sentinel = namedtuple("Sentinel", [])
 EMPTY_SENTINEL = Sentinel
+
+
+def elk_option_value(value: object) -> object:
+    """Write a ``bool`` or a number as the string ELK reads, keep anything else."""
+    if isinstance(value, bool):
+        return "true" if value else "false"
+    if isinstance(value, (int, float)):
+        return str(value)
+    return value
+
+
+#: ELK layout options: option ids to values, both strings. Validation (on pydantic
+#: elements) writes ``bool`` and number values as strings and rejects other types.
+LayoutOptions: TypeAlias = dict[str, Annotated[str, BeforeValidator(elk_option_value)]]
 
 
 def serialize_value(data: dict, key: str, value, info: SerializationInfo) -> None:
