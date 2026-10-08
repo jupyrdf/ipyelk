@@ -11,10 +11,14 @@ element keeps.
 import asyncio
 import copy
 import json
+import threading
+from typing import Any
 
 import pytest
+from pydantic import ConfigDict
 
 from ipyelk.elements import ElementIndex, Label, Node, Port, Registry
+from ipyelk.elements.elements import ElementMetadata
 from ipyelk.pipes import MarkElementWidget, ValidationPipe
 
 
@@ -128,35 +132,58 @@ def test_label_wrap_does_not_share_generated_ids():
     widget.close()
 
 
+TEXT = "one two three four five six"
+
+
 def index_labels(*children: Node) -> MarkElementWidget:
+    """Index ``children`` under a root; every label must be indexed under its id."""
     widget = MarkElementWidget(value=Node(id="root", children=list(children)))
     widget.persist(rebuild_index=True)
-    assert not widget.index.elements.check_ids().duplicated
+    elements = widget.index.elements
+    assert not elements.check_ids()
+    stack = [label for child in children for label in child.labels]
+    while stack:
+        label = stack.pop()
+        assert elements[label.id] is label
+        stack.extend(label.labels)
     return widget
 
 
 def test_label_wrap_derives_distinct_explicit_ids():
-    label = Label(id="label", text="one two three four five six")
-
-    lines = label.wrap(width=10)
+    lines = Label(id="label", text=TEXT).wrap(width=10)
 
     expected = [f"label#{i}" for i in range(len(lines))]
     assert len(lines) > 1
-    assert [line.wire_id() for line in lines] == expected
+    assert [line.id for line in lines] == expected
     widget = index_labels(Node(id="n", labels=lines))
     assert [line.id for line in lines] == expected
     widget.close()
+
+
+def test_label_wrap_keeps_a_single_line_id():
+    (line,) = Label(id="L", text="short").wrap(width=10)
+    assert line.id == "L"
+    assert not line.derived_id
+
+
+def test_label_wrap_shares_metadata():
+    class Meta(ElementMetadata):
+        model_config = ConfigDict(arbitrary_types_allowed=True)
+        lock: Any = None
+
+    lock = threading.Lock()  # cannot be deep-copied
+    label = Label(id="L", text=TEXT, metadata=Meta(lock=lock))
+
+    lines = label.wrap(width=10)
+
+    assert [line.metadata.lock for line in lines] == [lock] * len(lines)
 
 
 @pytest.mark.parametrize("label_id", [None, "L"])
 def test_label_wrap_gives_each_line_its_own_sub_label_ids(label_id):
     generated = Label(text="g")
     generated.model_dump()
-    label = Label(
-        id=label_id,
-        text="one two three four five six",
-        labels=[Label(id="sub", text="s"), generated],
-    )
+    label = Label(id=label_id, text=TEXT, labels=[Label(id="sub", text="s"), generated])
 
     lines = label.wrap(width=10)
     widget = index_labels(Node(id="n", labels=lines))
@@ -170,25 +197,52 @@ def test_label_wrap_gives_each_line_its_own_sub_label_ids(label_id):
     widget.close()
 
 
-def test_label_wrap_ids_never_collide():
-    """Derived ids yield to existing ones, including the port separator ``.``."""
-    text = "one two three four five six"
+@pytest.mark.parametrize("taken_first", [True, False], ids=["before", "after"])
+def test_label_wrap_ids_never_collide(taken_first):
+    """Derived ids give way to existing ones, wherever those are in the tree."""
     taken = Node(id="L#1")
     dotted = Node(id="L.1")
     port = Port(id="n.0")
-    lines = Label(id="L", text=text).wrap(width=10)
-    n_lines = Label(id="n", text=text).wrap(width=10)
+    lines = Label(id="L", text=TEXT).wrap(width=10)
+    n_lines = Label(id="n", text=TEXT).wrap(width=10)
     node = Node(id="n", ports=[port], labels=lines + n_lines)
+    nodes = [taken, dotted, node] if taken_first else [node, dotted, taken]
 
-    widget = index_labels(taken, dotted, node)
+    widget = index_labels(*nodes)
 
     elements = widget.index.elements
     assert elements["L#1"] is taken
     assert elements["L.1"] is dotted
     assert elements["n.0"] is port
+    assert taken.id == "L#1"
+    assert lines[0].id == "L#0"
     assert lines[1].id not in {"L#1", "L.1", "n.0"}
-    assert len({line.id for line in lines + n_lines}) == len(lines + n_lines)
-    assert all(elements[line.id] is line for line in lines + n_lines)
+    widget.close()
+
+
+def test_same_label_wrapped_twice_gets_distinct_ids():
+    label = Label(id="L", text=TEXT)
+    first, second = label.wrap(width=10), label.wrap(width=10)
+
+    widget = index_labels(Node(id="a", labels=first), Node(id="b", labels=second))
+
+    assert len({line.id for line in first + second}) == len(first + second)
+    widget.close()
+
+
+def test_wrapped_labels_merge_and_validate_without_a_rebuild():
+    node = Node(id="n")
+    widget = MarkElementWidget(value=Node(id="root", children=[node]))
+    widget.persist(rebuild_index=True)
+    node.labels = Label(id="L", text=TEXT).wrap(width=10)
+
+    widget.persist()
+
+    assert all(widget.index.elements[line.id] is line for line in node.labels)
+    pipe = ValidationPipe(fix_null_id=False)
+    pipe.inlet = widget
+    asyncio.run(pipe.run())
+    assert pipe.errors == {}
     widget.close()
 
 

@@ -334,10 +334,12 @@ throughout 3.x with the replacement in the message.
     and properties. The slack port that stands in for it in the layout used to overwrite
     them with its own 5×5 geometry, permanently. Any other port, including one that
     moved to another node, still takes its layout from the browser.
-  - Each line of a wrapped label gets its own ids, and so do its sub-labels. An explicit
-    id `L` becomes `L#0`, `L#1`, … (`sub` becomes `sub#0`, …), and indexing replaces
-    such an id when another element already uses it. Before, every line had the same id
-    (`L`, or one generated id) and the same sub-label ids.
+  - Each line of a wrapped label gets its own ids, and so do its sub-labels. The lines of
+    a label with id `L` get the ids `L#0`, `L#1`, … (sub-label `sub` gets `sub#0`, …).
+    If another element already uses one of these derived ids, indexing gives that line
+    a fresh id; ids you set yourself never change. Before, every line had the same id
+    (`L`, or one generated id) and the same sub-label ids. A wrapped line shares its
+    label's `metadata`.
   - The ELK JSON schema accepts the slack-port `key` and `hidden` properties, so a
     projection validates after a collapse and an expand.
 

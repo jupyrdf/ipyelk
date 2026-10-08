@@ -65,7 +65,10 @@ def test_schema_accepts_hidden_after_collapse_and_expand():
     ElkSchemaValidator.validate(wire)
 
 
-@pytest.mark.parametrize("properties", [{"hidden": "yes"}, {"unknown": True}])
-def test_schema_rejects_bad_properties(properties):
-    with pytest.raises(jsonschema.ValidationError):
+@pytest.mark.parametrize(
+    ("properties", "message"),
+    [({"hidden": "yes"}, "not of type 'boolean'"), ({"unknown": True}, "unexpected")],
+)
+def test_schema_rejects_bad_properties(properties, message):
+    with pytest.raises(jsonschema.ValidationError, match=message):
         ElkSchemaValidator.validate({"id": "root", "properties": properties})

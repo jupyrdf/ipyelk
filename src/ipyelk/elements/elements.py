@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import abc
 import textwrap
-from collections.abc import Iterator
 from typing import Type, TypeVar, cast, get_args
 
 from pydantic import (
@@ -135,6 +134,7 @@ class IDElement(BaseModel, abc.ABC):
         return id(self) == id(other)
 
     _wire_id: str | None = PrivateAttr(None)
+    _derived_id: bool = PrivateAttr(False)
 
     def __copy__(self):
         return self._as_new_object(super().__copy__())
@@ -150,6 +150,7 @@ class IDElement(BaseModel, abc.ABC):
         would put two elements with one id on the wire.
         """
         copied._wire_id = None
+        copied._derived_id = False
         return copied
 
     @model_serializer(mode="wrap")
@@ -194,11 +195,10 @@ class IDElement(BaseModel, abc.ABC):
             self._wire_id = new_id()
         return self._wire_id
 
-    def _reissue_id(self) -> str | None:
-        """Replace an id-less element's wire id that another element already uses."""
-        Registry.forget(self)
-        self._wire_id = None
-        return self.get_id()
+    @property
+    def derived_id(self) -> bool:
+        """Whether ``id`` was derived (``Label.wrap``) and may be replaced on a clash."""
+        return self._derived_id
 
     def _repr_mimebundle_(self, **kwargs):
         from IPython.display import JSON, display
@@ -341,28 +341,31 @@ class Label(ShapeElement):
     def wrap(self, **kwargs) -> list[Label]:
         """Split text into individually laid-out labels with ``textwrap.wrap``.
 
-        Keyword arguments are forwarded to ``textwrap.wrap``. Each line is a copy
-        of this label and its sub-labels. With several lines, an explicit id ``L``
-        becomes the wire id ``L#<line>``, which an index replaces if another
-        element already uses it.
+        Keyword arguments are forwarded to ``textwrap.wrap``. Each line copies this
+        label and its sub-labels (``metadata`` is shared). With several lines, an
+        explicit id ``L`` becomes ``L#<line>``; indexing replaces such a derived id
+        if another element already uses it.
         """
         lines = textwrap.wrap(self.text, **kwargs)
-        copies = [self.model_copy(update={"text": line}, deep=True) for line in lines]
-        if len(copies) > 1:
-            for index, copy in enumerate(copies):
-                for label in copy._iter_labels():
-                    label._derive_id(f"#{index}")
-        return copies
+        suffix = len(lines) > 1
+        return [
+            self._copy_line(f"#{index}" if suffix else "", text=line)
+            for index, line in enumerate(lines)
+        ]
 
-    def _iter_labels(self) -> Iterator[Label]:
-        yield self
-        for label in self.labels:
-            yield from label._iter_labels()
-
-    def _derive_id(self, suffix: str):
-        if self.id is not None:
-            self._wire_id = f"{self.id}{suffix}"
-            self.id = None
+    def _copy_line(self, suffix: str, **update) -> Label:
+        copy = self.model_copy(
+            update={
+                **update,
+                "labels": [label._copy_line(suffix) for label in self.labels],
+                "layoutOptions": dict(self.layoutOptions),
+                "properties": self.properties.model_copy(deep=True),
+            }
+        )
+        if suffix and self.id is not None:
+            copy.id = f"{self.id}{suffix}"
+        copy._derived_id = self._derived_id or bool(suffix and self.id is not None)
+        return copy
 
 
 class Port(HierarchicalElement):

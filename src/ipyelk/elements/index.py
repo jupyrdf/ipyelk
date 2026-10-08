@@ -10,6 +10,7 @@ from pydantic import BaseModel, Field, SerializeAsAny
 from ..exceptions import NotFoundError
 from .common import EMPTY_SENTINEL
 from .elements import BaseElement, Edge, HierarchicalElement, Label, Node, Port
+from .registry import new_id
 
 
 def _missing_id(el: BaseElement, what: str = "element") -> ValueError:
@@ -103,10 +104,10 @@ class VisIndex(BaseModel):
         return len(self.hidden)
 
     @classmethod
-    def is_slack_port(cls, port: Port) -> bool:
-        """Whether ``port`` carries the default ``slack_port_style``."""
+    def is_slack_port(cls, el: BaseElement) -> bool:
+        """Whether ``el`` is a port with the default ``slack_port_style``."""
         style = cls.model_fields["slack_port_style"].get_default()
-        return style <= set(port.properties.cssClasses.split())
+        return isinstance(el, Port) and style <= set(el.properties.cssClasses.split())
 
     def port_factory(self, **kwargs) -> Port:
         port = Port(**kwargs)
@@ -155,21 +156,18 @@ class ElementIndex(BaseModel):
     def from_els(cls, *els: BaseElement) -> ElementIndex:
         """Index ``els`` and their descendants by id.
 
-        An id-less element whose id is already used by another element (e.g. a
-        derived ``Label.wrap`` id) gets a fresh one; explicit ids never change.
+        A derived id (``Label.wrap``) that another element already uses is
+        replaced with a fresh one; any other id is kept.
         """
         found = list(iter_elements(*els))
-        explicit = {el.id: el for el in found if el.id is not None}
+        given = {el.id: el for el in found if el.id is not None and not el.derived_id}
         elements: dict[str, SerializeAsAny[BaseElement]] = {}
         for el in found:
             el_id = el.get_id()
             if el_id is None:
                 raise _missing_id(el)
-            if el.id is None:
-                owner = elements.get(el_id, explicit.get(el_id))
-                if owner is not None and owner is not el:
-                    el_id = el._reissue_id()
-                    assert el_id is not None
+            if el.derived_id and elements.get(el_id, given.get(el_id, el)) is not el:
+                el_id = el.id = new_id()
             elements[el_id] = el
         return cls(
             elements=elements,
@@ -225,8 +223,9 @@ class ElementIndex(BaseModel):
         what keeps `hidden` elements -- stripped from every serialized value by
         `Node.model_dump` -- alive across browser roundtrips); unknown ids are added,
         so elements that only exist in a value coming back from the browser
-        become addressable without discarding the index. A slack port updates
-        nothing: its id belongs to a hidden element, its geometry to the projection.
+        become addressable without discarding the index. A port that is hidden
+        (or under a hidden node), or comes back as a slack port, is not updated:
+        what comes back under its id is the projection's stand-in.
         """
         fields = [
             "properties",
@@ -243,8 +242,9 @@ class ElementIndex(BaseModel):
             if e1 is None:
                 self.elements[key] = e2
             elif type(e1) == type(e2):
-                # A slack port only borrows the id of the hidden element it stands for.
-                if isinstance(e2, Port) and VisIndex.is_slack_port(e2):
+                if isinstance(e1, Port) and (
+                    is_hidden(e1) or VisIndex.is_slack_port(e2)
+                ):
                     continue
                 for field in fields:
                     if hasattr(e1, field) and hasattr(e2, field):
@@ -520,6 +520,16 @@ class HierarchicalIndex(ElementIndex):
             element = element._parent
         assert isinstance(element, Node)
         return element, hidden
+
+
+def is_hidden(el: HierarchicalElement) -> bool:
+    """Whether ``el`` or any of its ancestors is hidden."""
+    node: HierarchicalElement | None = el
+    while node is not None:
+        if node.properties.hidden:
+            return True
+        node = node.get_parent()
+    return False
 
 
 def iter_elements(*els: BaseElement) -> Iterator[BaseElement]:
