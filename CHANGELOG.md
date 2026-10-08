@@ -339,7 +339,7 @@ throughout 3.x with the replacement in the message.
 - The nbconvert kernel watchdog writes its stack dump to the kernel's real stderr, not
   to the descriptor ipykernel captures, where the dump woke the capture thread and made
   it look busy. A second dump lists the pending `asyncio` tasks of the kernel's event
-  loops, with their await chains, and whether the shell lock is held ([#177])
+  loops, with their await chains, and whether the shell locks are held ([#177])
 
 [#95]: https://github.com/jupyrdf/ipyelk/issues/95
 [eclipse-sprotty/sprotty#573]: https://github.com/eclipse-sprotty/sprotty/issues/573

@@ -21,8 +21,9 @@ of the original descriptor instead. Windows has no such pipe, and
 ``sys.__stderr__`` is the real stderr there.
 
 A second, Python-level dump follows a second later: the pending ``asyncio`` tasks
-of the kernel's event loops and whether the shell lock is held. It needs the GIL,
-so if it never appears, something is holding the GIL.
+of the kernel's event loops and whether the shell locks are held. It needs the
+GIL, so if it never appears, something is likely holding the GIL. It is skipped
+when the GIL is disabled, where walking another thread's coroutines is unsafe.
 """
 
 
@@ -32,8 +33,11 @@ def _ipyelk_kernel_watchdog():
     import os
     import sys
     import threading
+    import traceback
 
     from IPython import get_ipython
+
+    max_tasks = 50
 
     def await_chain(coro):
         for _ in range(30):
@@ -45,25 +49,42 @@ def _ipyelk_kernel_watchdog():
             if coro is None:
                 return
 
+    def dump_lock(out, name, lock):
+        if lock is not None:
+            waiters = len(getattr(lock, "_waiters", None) or ())
+            out.write(f"{name}: locked={lock.locked()} waiters={waiters}\n")
+
     def dump_loop(out, name, owner):
         loop = getattr(getattr(owner, "io_loop", owner), "asyncio_loop", None)
         if loop is None:
             return
-        tasks = asyncio.all_tasks(loop)
+        tasks = list(asyncio.all_tasks(loop))
         out.write(f"\n{name}: {len(tasks)} pending task(s)\n")
-        for task in tasks:
+        for task in tasks[:max_tasks]:
             out.write(f"{task!r}\n")
             out.writelines(await_chain(task.get_coro()))
+        if len(tasks) > max_tasks:
+            out.write(f"... {len(tasks) - max_tasks} more\n")
+
+    def safely(dump, out, name, obj):
+        try:
+            dump(out, name, obj)
+        except Exception:
+            traceback.print_exc(file=out)
 
     def dump_asyncio(fd, kernel):
         with open(fd, "w", encoding="utf-8", errors="replace", closefd=False) as out:
             out.write("\n--- ipyelk kernel watchdog: asyncio state ---\n")
-            lock = getattr(kernel, "_main_asyncio_lock", None)
-            if lock is not None:
-                waiters = len(getattr(lock, "_waiters", None) or ())
-                out.write(f"shell lock: locked={lock.locked()} waiters={waiters}\n")
-            for name in ["io_loop", "shell_channel_thread", "control_thread"]:
-                dump_loop(out, name, getattr(kernel, name, None))
+            shell = getattr(kernel, "shell_channel_thread", None)
+            sections = [
+                (dump_lock, "shell lock", getattr(kernel, "_main_asyncio_lock", None)),
+                (dump_lock, "shell channel lock", getattr(shell, "asyncio_lock", None)),
+                (dump_loop, "io_loop", getattr(kernel, "io_loop", None)),
+                (dump_loop, "shell_channel_thread", shell),
+                (dump_loop, "control_thread", getattr(kernel, "control_thread", None)),
+            ]
+            for dump, name, obj in sections:
+                safely(dump, out, name, obj)
             out.write("--- end asyncio state ---\n")
 
     timeout = float(os.environ.get("IPYELK_KERNEL_WATCHDOG", "900"))
@@ -71,7 +92,7 @@ def _ipyelk_kernel_watchdog():
     fd = os.dup(sys.__stderr__.fileno() if fd is None else fd)
     faulthandler.dump_traceback_later(timeout, repeat=False, file=fd)
     kernel = getattr(get_ipython(), "kernel", None)
-    if kernel is not None:
+    if kernel is not None and getattr(sys, "_is_gil_enabled", lambda: True)():
         timer = threading.Timer(timeout + 1, dump_asyncio, (fd, kernel))
         timer.daemon = True
         timer.start()
