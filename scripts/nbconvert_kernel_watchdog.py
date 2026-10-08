@@ -70,6 +70,7 @@ def _ipyelk_kernel_watchdog():
         try:
             dump(out, name, obj)
         except Exception:
+            out.write(f"{name}: failed\n")
             traceback.print_exc(file=out)
 
     def dump_asyncio(fd, kernel):
