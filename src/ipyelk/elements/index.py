@@ -102,6 +102,12 @@ class VisIndex(BaseModel):
     def __len__(self):
         return len(self.hidden)
 
+    @classmethod
+    def is_slack_port(cls, port: Port) -> bool:
+        """Whether ``port`` carries the default ``slack_port_style``."""
+        style = cls.model_fields["slack_port_style"].get_default()
+        return style <= set(port.properties.cssClasses.split())
+
     def port_factory(self, **kwargs) -> Port:
         port = Port(**kwargs)
         if port.width is None:
@@ -207,7 +213,8 @@ class ElementIndex(BaseModel):
         what keeps `hidden` elements -- stripped from every serialized value by
         `Node.model_dump` -- alive across browser roundtrips); unknown ids are added,
         so elements that only exist in a value coming back from the browser
-        (e.g. slack ports) become addressable without discarding the index.
+        become addressable without discarding the index. A slack port updates
+        nothing: its id belongs to a hidden element, its geometry to the projection.
         """
         fields = [
             "properties",
@@ -224,25 +231,10 @@ class ElementIndex(BaseModel):
             if e1 is None:
                 self.elements[key] = e2
             elif type(e1) == type(e2):
-                # A collapsed view projects hidden ports onto a visible ancestor.
-                # They reuse the original id but their geometry/options belong to
-                # that ancestor, not to the hidden port restored on expansion.
-                if isinstance(e1, Port) and isinstance(e2, Port):
-                    parent1, parent2 = e1.get_parent(), e2.get_parent()
-                    if (
-                        parent1 is not None
-                        and parent2 is not None
-                        and parent1.get_id() != parent2.get_id()
-                    ):
-                        continue
+                # A slack port only borrows the id of the hidden element it stands for.
+                if isinstance(e2, Port) and VisIndex.is_slack_port(e2):
+                    continue
                 for field in fields:
-                    # Slack-port styling belongs to a projection, not its hidden source.
-                    if (
-                        field == "properties"
-                        and isinstance(e1, Port)
-                        and "slack-port" in e2.properties.cssClasses.split()
-                    ):
-                        continue
                     if hasattr(e1, field) and hasattr(e2, field):
                         setattr(e1, field, getattr(e2, field))
 
