@@ -332,6 +332,16 @@ def install_patches() -> None:
     from ipyelk.pipes import ValidationPipe, VisibilityPipe, marks
 
     comm.create_comm = lambda *_args, **kwargs: RecordingComm(**kwargs)
+    if hasattr(widget_mod, "Comm"):
+        # ipywidgets 8.0 builds an ``ipykernel.comm.Comm`` itself, and its
+        # ``comm`` trait only accepts that type
+        from ipykernel.comm import Comm
+
+        widget_mod.Comm = type(
+            "RecordingKernelComm",
+            (RecordingComm, Comm),
+            {"kernel": None, "comm_id": None},
+        )
 
     meta = marks.MarkElementWidget.value.metadata
     meta["to_json"] = _timed(meta["to_json"], "to_json (pydantic dump)")

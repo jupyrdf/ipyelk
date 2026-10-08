@@ -207,7 +207,7 @@ jobs:
       - if: matrix.task == 'test'
         run: pixi run test-js
       - run: pixi run i${{ matrix.task }}-nbconvert
-      - if: matrix.task == 'test' && matrix.vm == 'ubuntu-latest'
+      - if: matrix.vm == 'ubuntu-latest'
         uses: actions/cache@v4
         with:
           path: |
@@ -235,6 +235,8 @@ jobs:
         run: pixi run a${{ matrix.task }}-robot
       - if: ${{ !cancelled() && matrix.task == 'test' && matrix.vm == 'ubuntu-latest' }}
         run: pixi run bench-check
+      - if: ${{ !cancelled() && matrix.task == 'test-oldest' && matrix.vm == 'ubuntu-latest' }}
+        run: pixi run bench-check-oldest
       - if: matrix.task == 'test' && matrix.vm == 'ubuntu-latest'
         run: pixi run report
       - uses: actions/upload-artifact@v4

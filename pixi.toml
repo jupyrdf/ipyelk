@@ -287,6 +287,19 @@ inputs = [
 ]
 outputs = ["build/reports/utest-oldest/{pytest.html,pytest.xunit.xml}"]
 
+[feature.tasks-utest-oldest.tasks.bench-oldest]
+cmd = """
+python scripts/bench_pipeline.py --out build/reports/bench-oldest
+  --label fast --cases flat:100 nested:100
+&& python scripts/bench_pipeline.py --out build/reports/bench-oldest
+  --label slow-browser --cases flat:20 --slow-browser 0.75
+"""
+depends-on = ["pip-utest-oldest", "setup-js"]
+
+[feature.tasks-utest-oldest.tasks.bench-check-oldest]
+cmd = """python scripts/bench_check.py build/reports/bench-oldest/fast.json build/reports/bench-oldest/slow-browser.json"""
+depends-on = ["bench-oldest"]
+
 # integration test #####################################################################
 [feature.tasks-itest.tasks.pip-itest]
 cmd = """pixi r -e itest pip-editable--"""

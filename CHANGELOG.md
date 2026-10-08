@@ -328,6 +328,10 @@ throughout 3.x with the replacement in the message.
   to `scripts/bench_baseline.json` and fails on any change until the baseline is updated
   with `pixi run bench-update` ([#176]), including the live widgets left by replacing
   `diagram.pipe` ([#180])
+- Run the benchmark on the oldest supported ipywidgets too: on 8.0.1 it crashed in its
+  first refresh, because ipywidgets 8.0 opens an `ipykernel` comm directly and the
+  harness never saw a message. `pixi run bench-check-oldest` gates it against the same
+  baseline in the `test-oldest (ubuntu-latest)` job ([#191])
 - Add `ast-grep` structural lint rules for Python and TypeScript (`sgconfig.yml`,
   `scripts/ast-grep/`), each with test cases, run by `pixi run lint-ast-grep` as part of
   `pixi run lint`; a suppression must name its rule and still match something ([#147])
@@ -348,6 +352,7 @@ throughout 3.x with the replacement in the message.
 [#178]: https://github.com/jupyrdf/ipyelk/issues/178
 [#180]: https://github.com/jupyrdf/ipyelk/issues/180
 [#181]: https://github.com/jupyrdf/ipyelk/issues/181
+[#191]: https://github.com/jupyrdf/ipyelk/issues/191
 
 ## `2.1.2`
 
