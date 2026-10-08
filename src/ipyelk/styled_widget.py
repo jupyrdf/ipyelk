@@ -5,7 +5,7 @@ from __future__ import annotations
 import ipywidgets as W
 import traitlets as T
 
-from .util import close_widget
+from .util import close_own_layout, close_widget, own_layout
 
 
 @W.register
@@ -18,6 +18,7 @@ class StyledWidget(W.Box):
     def __init__(self, *args, **kwargs):
         """Initialize the widget and add custom styling and CSS class"""
         super().__init__(*args, **kwargs)
+        self._own_layout = own_layout(self, kwargs)
         self._update_style()
         self.add_class(self._css_class)
 
@@ -26,9 +27,7 @@ class StyledWidget(W.Box):
         if css is not None:
             close_widget(css)
         super().close()
-        layout = self._trait_values.get("layout")
-        if layout is not None:
-            layout.close()
+        close_own_layout(self)
 
     @T.validate("children")
     def _valid_children(self, proposal):

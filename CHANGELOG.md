@@ -315,16 +315,17 @@ throughout 3.x with the replacement in the message.
     `Pipeline` is wired. Adding another open diagram's stage to an assigned pipeline
     was accepted, so the stage ran in both, and `Pipeline(pipes=[...])` rewired a live
     diagram's stage before anything could refuse it. Both now raise `TraitError` and
-    change nothing. A stage added in place belongs to the diagram (and gets its
-    `style`); a stage removed in place is released, not closed ([#191])
+    change nothing, as does a `pipes` list with a closed stage or a stage listed twice
+    (it was wired into a cycle). A stage added in place belongs to the diagram (and
+    gets its `style`); a stage removed in place is released, not closed ([#191])
 - Close what a diagram owns when the diagram is closed. `Diagram.close()` only released
   its pipe, so the pipe tree, the view, the tools and the toolbar stayed open: every
   closed diagram left 68 widgets behind, 130 with the status view shown. It now closes
   them with their layout and style widgets and drops its links to them, and leaves
-  `diagram.source`, an inlet or outlet passed to a pipe, and the viewer's
-  `control_overlay` open. A closed diagram's pipe is closed, so another diagram can no
-  longer take it. `Tool.close()` also closes the tool's `ui`, and `Viewer.close()` its
-  tools ([#191])
+  open `diagram.source`, an inlet or outlet passed to a pipe, the viewer's
+  `control_overlay`, and a `layout` or tool `ui` passed in. A closed diagram's pipe is
+  closed, so another diagram can no longer take it. `Tool.close()` also closes the
+  `ui` the tool built, and `Viewer.close()` its tools ([#191])
 - Log the routine "fixing N ids" message from `ValidationPipe` at debug level instead of
   warning: assigning ids to id-less elements is the normal path (`fix_null_id=True`), so
   every diagram built from id-less elements logged it

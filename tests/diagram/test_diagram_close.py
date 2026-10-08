@@ -7,9 +7,11 @@ from __future__ import annotations
 import gc
 import weakref
 
+import ipywidgets as W
 import pytest
 
 from ipyelk import Diagram
+from ipyelk.diagram import SprottyViewer
 from ipyelk.diagram.flow import DefaultFlow
 from ipyelk.pipes import (
     BrowserTextSizer,
@@ -19,7 +21,7 @@ from ipyelk.pipes import (
     VisibilityPipe,
 )
 from ipyelk.pipes.pipeline import Pipeline
-from ipyelk.tools import SetTool
+from ipyelk.tools import ControlOverlay, SetTool, Tool
 from ipyelk.util import close_widget
 
 from .test_pipe_replacement import ROUNDS, is_open, live_widgets, make_source, refresh
@@ -99,3 +101,38 @@ async def test_a_closed_diagram_is_collected() -> None:
     del diagram
     gc.collect()
     assert [ref() for ref in refs] == [None, None, None]
+
+
+def test_close_keeps_widgets_passed_in() -> None:
+    slider, layout, view_layout = W.IntSlider(), W.Layout(), W.Layout()
+    overlay = ControlOverlay(children=[W.Button()])
+    view = SprottyViewer(layout=view_layout, control_overlay=overlay)
+    tool = Tool(ui=W.HBox([slider]))
+    diagram = Diagram(source=make_source(), layout=layout, view=view)
+    diagram.register_tool(tool)
+    built = SetTool()
+    diagram.register_tool(built)
+    built_ui = [built.ui, *built.ui.children]
+
+    diagram.close()
+
+    assert not is_open(view)
+    assert not is_open(tool)
+    assert not any(is_open(widget) for widget in built_ui)
+    for widget in (slider, tool.ui, layout, view_layout, overlay, *overlay.children):
+        assert is_open(widget), widget
+
+
+def test_a_closed_diagram_drops_its_links_and_callbacks() -> None:
+    diagram = Diagram(source=make_source())
+    toolbar, view, tools = diagram.toolbar, diagram.view, diagram.tools
+    diagram.close()
+
+    assert all(
+        diagram.refresh not in tool._on_done_handlers.callbacks for tool in tools
+    )
+    diagram.tools = ()
+    assert toolbar.tools == list(tools)
+    symbols = view.symbols
+    diagram.symbols = type(symbols)()
+    assert view.symbols is symbols

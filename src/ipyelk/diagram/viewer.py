@@ -19,6 +19,7 @@ from ..tools import (
     Selection,
     Viewport,
 )
+from ..util import close_own_layout, own_layout
 
 
 class Viewer(W.Widget):
@@ -87,6 +88,7 @@ class Viewer(W.Widget):
         self._stale_resync_at: float = 0.0
         self._stale_resync_interval: float = 0.0
         super().__init__(*args, **kwargs)
+        self._own_layout = own_layout(self, kwargs)
         self.on_msg(self._handle_browser_msg)
 
     def _handle_browser_msg(
@@ -118,9 +120,7 @@ class Viewer(W.Widget):
             if tool is not None:
                 tool.close()
         super().close()
-        layout = self._trait_values.get("layout")
-        if layout is not None:
-            layout.close()
+        close_own_layout(self)
 
     @T.observe("source")
     def _reset_stale_throttle(self, change: T.Bunch | None = None):

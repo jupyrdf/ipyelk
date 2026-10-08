@@ -4,6 +4,8 @@
 
 from __future__ import annotations
 
+import asyncio
+
 import pytest
 import traitlets as T
 
@@ -73,6 +75,69 @@ def test_adding_a_closed_stage_is_refused() -> None:
     with pytest.raises(T.TraitError, match="closed"):
         diagram.pipe.pipes = [*diagram.pipe.pipes, closed]
     assert wiring(diagram) == before
+
+
+def test_a_listed_twice_or_closed_stage_is_refused() -> None:
+    diagram = Diagram(source=make_source())
+    before = wiring(diagram)
+    stage = diagram.pipe.pipes[0]
+    with pytest.raises(T.TraitError, match="listed twice"):
+        diagram.pipe.pipes = [*diagram.pipe.pipes, stage]
+    fresh = Pipe()
+    with pytest.raises(T.TraitError, match="listed twice"):
+        Pipeline(pipes=[fresh, fresh])
+    closed = Pipe()
+    closed.close()
+    with pytest.raises(T.TraitError, match="closed"):
+        Pipeline(pipes=[closed])
+    assert wiring(diagram) == before
+    assert is_open(fresh)
+
+
+@pytest.mark.asyncio
+async def test_changes_under_held_notifications_keep_owned_stages() -> None:
+    """``Widget.set_state`` holds notifications too."""
+    diagram = Diagram(source=make_source())
+    await refresh(diagram)
+    stages = list(diagram.pipe.pipes)
+    added = Pipe()
+
+    with diagram.pipe.hold_trait_notifications():
+        diagram.pipe.pipes = [*stages, added]
+    diagram.pipe.set_state({
+        "pipes": [f"IPY_MODEL_{p.model_id}" for p in [*stages, added][::-1]]
+    })
+    diagram.pipe.pipes = stages
+
+    assert all(owner(p) is diagram for p in stages)
+    assert added._diagram is None
+    other = Diagram(source=make_source())
+    with (
+        pytest.raises(T.TraitError, match="another diagram"),
+        other.pipe.hold_trait_notifications(),
+    ):
+        other.pipe.pipes = [*other.pipe.pipes, stages[0]]
+    assert owner(stages[0]) is diagram
+
+
+@pytest.mark.asyncio
+async def test_a_stage_removed_mid_run_is_cancelled() -> None:
+    diagram = Diagram(source=make_source())
+    gate = asyncio.Event()
+
+    class Slow(Pipe):
+        async def run(self):
+            await gate.wait()
+
+    slow = Slow()
+    diagram.pipe.pipes = [*diagram.pipe.pipes, slow]
+    task = slow.schedule_run()
+    assert task is not None
+    await asyncio.sleep(0)
+
+    diagram.pipe.pipes = diagram.pipe.pipes[:-1]
+    await asyncio.sleep(0)
+    assert task.cancelled()
 
 
 def test_moving_a_nested_stage_is_refused() -> None:
