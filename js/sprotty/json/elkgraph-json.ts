@@ -26,6 +26,7 @@ export interface Shape {
 export interface ElkProperties {
   cssClasses?: string;
   key?: string;
+  hidden?: boolean;
   shape?: Shape;
   isSymbol?: boolean;
   selectable?: boolean;
