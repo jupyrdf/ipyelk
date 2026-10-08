@@ -1,9 +1,11 @@
 # Copyright (c) 2026 ipyelk contributors.
 # Distributed under the terms of the Modified BSD License.
 import networkx as nx
+import pytest
 
-from ipyelk.elements import Edge, Port, index
+from ipyelk.elements import Edge, Node, Port, index
 from ipyelk.loaders import NXLoader
+from ipyelk.loaders.nx.nxutils import get_endpoint
 
 
 def test_nx_port_ids_prefixed_by_node_id():
@@ -34,3 +36,12 @@ def test_nx_port_ids_prefixed_by_node_id():
             assert mark.index.elements.get(port.id) is port
     finally:
         mark.close()
+
+
+def test_port_key_of_a_foreign_element_names_the_key():
+    """The message interpolates ``port_key``; the map here is a plain ``dict``."""
+    source, other = Node(id="a"), Node(id="b")
+    with pytest.raises(ValueError, match="consistent with the edge") as excinfo:
+        get_endpoint({"b": other}, source, "b")
+    assert str(excinfo.value).startswith("Given `port_key:b` maps to")
+    assert "{" not in str(excinfo.value)

@@ -70,9 +70,8 @@ def get_endpoint(
             el = el_map.get(port_key)  # port_key was a global id
             if isinstance(el, Port) and el._parent is pt:
                 return el
-            # TODO a new exception type?
             raise ValueError(
-                "Given `port_key:{port_key}`} maps to an global element "
+                f"Given `port_key:{port_key}` maps to an global element "
                 "that isn't consistent with the edge."
             ) from e
 
