@@ -9,6 +9,7 @@ import ipywidgets as W
 import traitlets as T
 
 if TYPE_CHECKING:
+    from ..common import LayoutOptions
     from .model import ElkGraphElement
 
 
@@ -75,7 +76,8 @@ class SpacingOptionWidget(LayoutOptionWidget):
 class OptionsWidget(W.Accordion, LayoutOptionWidget):
     identifier = T.Any()
     options: Any = T.List()
-    value: Any = T.Dict()
+    #: the ``LayoutOptions`` of every option that has a value
+    value: T.Dict[str, str] = T.Dict(key_trait=T.Unicode(), value_trait=T.Unicode())
 
     @T.observe("options")
     def _update_options(self, change: T.Bunch | None = None) -> None:
@@ -101,7 +103,7 @@ class OptionsWidget(W.Accordion, LayoutOptionWidget):
         return self.options
 
     def _update_value(self, change: T.Bunch | None = None):
-        value = {}
+        value: LayoutOptions = {}
         for option in self.options:
             if option.value is not None:
                 value[option.identifier] = option.value

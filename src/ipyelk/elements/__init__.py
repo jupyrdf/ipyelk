@@ -1,6 +1,6 @@
 # Copyright (c) 2024 ipyelk contributors.
 # Distributed under the terms of the Modified BSD License.
-from .common import EMPTY_SENTINEL
+from .common import EMPTY_SENTINEL, LayoutOptions
 from .elements import (
     BaseElement,
     Edge,
@@ -53,6 +53,7 @@ __all__ = [
     "Label",
     "LabelProperties",
     "LabelShape",
+    "LayoutOptions",
     "Mark",
     "MarkFactory",
     "Node",

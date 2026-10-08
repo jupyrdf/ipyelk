@@ -18,14 +18,6 @@ class Algorithm:
     title: ClassVar[str]
 
 
-class Draw2DLayout(Algorithm):
-    """https://www.eclipse.org/elk/reference/algorithms/org-eclipse-elk-conn-gmf-layouter-Draw2D.html"""
-
-    identifier = "org.eclipse.elk.conn.gmf.layouter.Draw2D"
-    metadata_provider = "GmfMetaDataProvider"
-    title = "Draw2D Layout"
-
-
 class ELKBox(Algorithm):
     """https://www.eclipse.org/elk/reference/algorithms/org-eclipse-elk-box.html"""
 

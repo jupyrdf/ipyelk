@@ -21,7 +21,7 @@ from pydantic import (
 from typing_extensions import Self
 
 from ..exceptions import NotFoundError, NotUniqueError
-from .common import CounterContextManager, serialize_value
+from .common import CounterContextManager, LayoutOptions, serialize_value
 from .registry import Registry, new_id
 from .shapes import BaseShape, EdgeShape, LabelShape, NodeShape, Point, PortShape
 
@@ -201,7 +201,7 @@ class IDElement(BaseModel, abc.ABC):
 
 class BaseElement(IDElement, abc.ABC):
     labels: list[SerializeAsAny[Label]] = Field(default_factory=list)
-    layoutOptions: dict = Field(default_factory=dict)
+    layoutOptions: LayoutOptions = Field(default_factory=dict)
     metadata: ElementMetadata = Field(default_factory=ElementMetadata, exclude=True)
     properties: SerializeAsAny[BaseProperties] = Field(default_factory=BaseProperties)
 
