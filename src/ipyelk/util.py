@@ -14,6 +14,27 @@ def close_widget(widget) -> None:
             part.close()
 
 
+def own_layout(widget, kwargs: dict):
+    """The ``layout`` a widget built for itself, unless one was passed in."""
+    layout = widget._trait_values.get("layout")
+    given = kwargs.get("layout")
+    return None if given is layout and hasattr(given, "close") else layout
+
+
+def close_own_layout(widget) -> None:
+    """Close the ``layout`` recorded by ``own_layout``, if it is still in use."""
+    layout = getattr(widget, "_own_layout", None)
+    if layout is not None and widget._trait_values.get("layout") is layout:
+        layout.close()
+
+
+def close_tree(widget) -> None:
+    """Close ``widget`` and its ``children``, with their layout and style widgets."""
+    for child in getattr(widget, "children", ()):
+        close_tree(child)
+    close_widget(widget)
+
+
 def safely_unobserve(item, handler):
     if hasattr(item, "unobserve"):
         item.unobserve(handler=handler)

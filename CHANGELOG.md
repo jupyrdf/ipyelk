@@ -306,12 +306,26 @@ throughout 3.x with the replacement in the message.
   pipe ([#180])
   - A pipe belongs to one diagram, with every pipe nested in it. Assigning a pipe that
     nests a pipe another open diagram owns raises `TraitError`: both diagrams used to
-    share its outlet, so one silently showed the other's graph. Closing a diagram
-    releases its pipes for another one. Two diagrams sharing a _source_ is a separate
-    question ([#178])
+    share its outlet, so one silently showed the other's graph. Two diagrams sharing a
+    _source_ is a separate question ([#178])
   - A replaced pipe is closed, so assigning a pipe that nests a closed pipe, or any part
     of the current pipe (wrapping it, or reusing its stages), raises `TraitError` too:
     build a new pipe instead
+  - The rule also holds when a pipeline's `pipes` changes in place, and before a
+    `Pipeline` is wired. Adding another open diagram's stage to an assigned pipeline
+    was accepted, so the stage ran in both, and `Pipeline(pipes=[...])` rewired a live
+    diagram's stage before anything could refuse it. Both now raise `TraitError` and
+    change nothing, as does a `pipes` list with a closed stage or a stage listed twice
+    (it was wired into a cycle). A stage added in place belongs to the diagram (and
+    gets its `style`); a stage removed in place is released, not closed ([#191])
+- Close what a diagram owns when the diagram is closed. `Diagram.close()` only released
+  its pipe, so the pipe tree, the view, the tools and the toolbar stayed open: every
+  closed diagram left 68 widgets behind, 130 with the status view shown. It now closes
+  them with their layout and style widgets and drops its links to them, and leaves
+  open `diagram.source`, an inlet or outlet passed to a pipe, the viewer's
+  `control_overlay`, and a `layout` or tool `ui` passed in. A closed diagram's pipe is
+  closed, so another diagram can no longer take it. `Tool.close()` also closes the
+  `ui` the tool built, and `Viewer.close()` its tools ([#191])
 - Log the routine "fixing N ids" message from `ValidationPipe` at debug level instead of
   warning: assigning ids to id-less elements is the normal path (`fix_null_id=True`), so
   every diagram built from id-less elements logged it
@@ -327,7 +341,11 @@ throughout 3.x with the replacement in the message.
 - Gate CI on the benchmark's deterministic counts: `pixi run bench-check` compares them
   to `scripts/bench_baseline.json` and fails on any change until the baseline is updated
   with `pixi run bench-update` ([#176]), including the live widgets left by replacing
-  `diagram.pipe` ([#180])
+  `diagram.pipe` ([#180]) and by closing a diagram ([#191])
+- Run the benchmark on the oldest supported ipywidgets too: on 8.0.1 it crashed in its
+  first refresh, because ipywidgets 8.0 opens an `ipykernel` comm directly and the
+  harness never saw a message. `pixi run bench-check-oldest` gates it against the same
+  baseline in the `test-oldest (ubuntu-latest)` job ([#191])
 - Add `ast-grep` structural lint rules for Python and TypeScript (`sgconfig.yml`,
   `scripts/ast-grep/`), each with test cases, run by `pixi run lint-ast-grep` as part of
   `pixi run lint`; a suppression must name its rule and still match something ([#147])
@@ -353,6 +371,7 @@ throughout 3.x with the replacement in the message.
 [#178]: https://github.com/jupyrdf/ipyelk/issues/178
 [#180]: https://github.com/jupyrdf/ipyelk/issues/180
 [#181]: https://github.com/jupyrdf/ipyelk/issues/181
+[#191]: https://github.com/jupyrdf/ipyelk/issues/191
 
 ## `2.1.2`
 

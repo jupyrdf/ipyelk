@@ -10,6 +10,7 @@ import traitlets as T
 from ..exceptions import BrokenPipe
 from ..util import close_widget
 from .base import Pipe, PipeStatus, PipeStatusView, Superseded, SyncedOutletPipe
+from .util import iter_pipes
 
 
 class PipelineStatusView(PipeStatusView):
@@ -86,6 +87,8 @@ class Pipeline(SyncedOutletPipe):
 
     #: what the in-flight run took from ``inlet.flow``; re-recorded if it fails
     _taken: tuple[str, ...] = ()
+    #: the stages ``pipes`` last accepted; the trait may already hold a proposal
+    _stages: tuple[Pipe, ...] = ()
 
     @T.default("status_widget")
     def _default_status_widget(self):
@@ -104,8 +107,52 @@ class Pipeline(SyncedOutletPipe):
             pipe.close()
         super().close()
 
+    @T.validate("pipes")
+    def _validate_pipes(self, proposal: T.Bunch) -> list[Pipe]:
+        """Refuse a closed stage, a stage listed twice, or a new stage that is
+        part of an open diagram's pipe.
+        """
+        pipes = proposal["value"]
+        kept = {id(pipe) for pipe in self._stages}
+        seen: set[int] = set()
+        for stage in pipes:
+            if id(stage) in seen:
+                msg = f"{type(stage).__name__} is listed twice; use a new pipe"
+            else:
+                msg = None if id(stage) in kept else self._refusal(stage)
+            seen.add(id(stage))
+            if msg:
+                if self.comm is None:
+                    # or collecting a half-built pipeline would close them
+                    self._trait_values.pop("pipes", None)
+                raise T.TraitError(msg)
+        self._stages = tuple(pipes)
+        return pipes
+
+    def _refusal(self, stage: Pipe) -> str | None:
+        owner = self._owner()
+        for sub in iter_pipes(stage):
+            name = type(sub).__name__
+            if sub.comm is None:
+                return f"{name} is closed; use a new pipe"
+            other = sub._owner()
+            if other is None:
+                continue
+            if other is owner:
+                return f"{name} is part of the current pipe; use a new pipe"
+            where = "an open diagram" if owner is None else "another diagram"
+            return f"{name} belongs to {where}; use a new pipe"
+        return None
+
+    @T.observe("pipes")
+    def _restage(self, change: T.Bunch) -> None:
+        owner = self._owner()
+        if owner is not None:
+            owner._restage(change.old or [], change.new)
+
     @T.observe("pipes", "inlet")
     def _update_pipes(self, change=None):
+        self._stages = tuple(self.pipes)
         prev = self.inlet
         for pipe in self.pipes:
             pipe.inlet = prev

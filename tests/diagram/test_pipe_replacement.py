@@ -357,26 +357,22 @@ async def test_a_pipe_another_diagram_owns_is_refused_without_side_effects() -> 
 
 
 @pytest.mark.asyncio
-async def test_refusing_a_nested_owned_pipe_has_no_side_effects() -> None:
-    """The refusal changes nothing. Building a ``Pipeline`` around a live pipe
-    already rewires that pipe's inlet (as on master), so the snapshot is taken
-    after the wrappers are built.
-    """
+async def test_wrapping_an_owned_pipe_is_refused_before_it_is_rewired() -> None:
     first = Diagram(source=make_source())
     await refresh(first)
     second = Diagram(source=make_source())
     shared = first.pipe
-    source = make_source()
-    wrapped = Pipeline(pipes=[shared])
-    deeper = Pipeline(pipes=[Pipeline(pipes=[shared])])
+    inner = Pipeline()
     before = (snapshot(first), snapshot(second))
+    widgets = live_widgets()
 
-    with pytest.raises(T.TraitError, match="another diagram"):
-        second.pipe = wrapped
-    with pytest.raises(T.TraitError, match="another diagram"):
-        Diagram(source=source, pipe=deeper)
+    with pytest.raises(T.TraitError, match="open diagram"):
+        Pipeline(pipes=[shared])
+    with pytest.raises(T.TraitError, match="open diagram"):
+        inner.pipes = [shared]
 
     assert (snapshot(first), snapshot(second)) == before
+    assert live_widgets() == widgets
     assert is_open(shared)
     assert shared._diagram() is first
 
@@ -394,14 +390,10 @@ async def test_reusing_the_current_pipe_is_refused(reuse: str) -> None:
     diagram = Diagram(source=make_source())
     await refresh(diagram)
     current = diagram.pipe
-    new = Pipeline(pipes=REUSES[reuse](current))
-    # building ``new`` rewired the reused pipes; put them back
-    current.inlet = diagram.source
-    current._update_pipes()
     before = snapshot(diagram)
 
-    with pytest.raises(T.TraitError, match="part of the current pipe"):
-        diagram.pipe = new
+    with pytest.raises(T.TraitError, match="open diagram"):
+        Pipeline(pipes=REUSES[reuse](current))
 
     assert snapshot(diagram) == before
     assert all(is_open(pipe) for pipe in [current, *current.pipes])
@@ -411,14 +403,15 @@ async def test_reusing_the_current_pipe_is_refused(reuse: str) -> None:
     assert diagram.view.source.value is not None
 
 
-def test_a_stage_added_to_the_current_pipe_in_place_is_refused() -> None:
+def test_a_stage_added_to_the_current_pipe_in_place_is_owned() -> None:
     diagram = Diagram(source=make_source())
     added = Pipe()
     diagram.pipe.pipes = [*diagram.pipe.pipes, added]
-    assert added._diagram is None
-    new = Pipeline(pipes=[added])
+    assert added._diagram() is diagram
+    with pytest.raises(T.TraitError, match="open diagram"):
+        Pipeline(pipes=[added])
     with pytest.raises(T.TraitError, match="part of the current pipe"):
-        diagram.pipe = new
+        diagram.pipe = added
     assert is_open(added)
 
 
@@ -426,9 +419,10 @@ def test_another_diagrams_sub_pipe_is_refused() -> None:
     first = Diagram(source=make_source())
     second = Diagram(source=make_source())
     borrowed = first.pipe.pipes[0]
-    new = Pipeline(pipes=[borrowed])
     with pytest.raises(T.TraitError, match="another diagram"):
-        second.pipe = new
+        second.pipe = borrowed
+    with pytest.raises(T.TraitError, match="another diagram"):
+        second.pipe.pipes = [*second.pipe.pipes, borrowed]
     assert is_open(borrowed)
     assert borrowed._diagram() is first
 
@@ -461,22 +455,19 @@ def test_a_pipe_replaced_in_one_diagram_is_closed_for_another() -> None:
         Diagram(source=make_source(), pipe=old)
 
 
-def test_closing_a_diagram_releases_its_pipe() -> None:
-    """A closed diagram leaves its pipe open for another diagram to take."""
+def test_closing_a_diagram_closes_its_pipe() -> None:
     first = Diagram(source=make_source())
     pipe = first.pipe
     first.style = {" .a": {"fill": "red"}}
     first.close()
 
-    second = Diagram(source=make_source(), pipe=pipe)
-
-    assert is_open(pipe)
-    assert pipe._diagram() is second
-    assert second.view.source is pipe.outlet
-    assert sizer(pipe).style == second.style == {}
-    assert pipe.on_progress == second.get_tool(PipelineProgressBar).update
+    assert not is_open(pipe)
+    assert pipe.on_progress is None
+    assert first._pipe_links == []
+    with pytest.raises(T.TraitError, match="closed"):
+        Diagram(source=make_source(), pipe=pipe)
     first.style = {" .b": {"fill": "blue"}}
-    assert sizer(pipe).style == {}
+    assert sizer(pipe).style == {" .a": {"fill": "red"}}
 
 
 def test_a_collected_owner_releases_its_pipe() -> None:

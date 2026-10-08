@@ -6,13 +6,22 @@ import asyncio
 import contextlib
 import os
 from time import monotonic
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Iterator
 
 if TYPE_CHECKING:
     import ipywidgets as W
 
     from ..diagram.viewer import Viewer
-    from .base import SyncedPipe
+    from .base import Pipe, SyncedPipe
+
+
+def iter_pipes(pipe: Pipe) -> Iterator[Pipe]:
+    """Yield ``pipe`` and every pipe nested in it, breadth first."""
+    pending = [pipe]
+    while pending:
+        sub = pending.pop(0)
+        yield sub
+        pending.extend(getattr(sub, "pipes", ()))
 
 
 def wait_for_change(widget, value, timeout: float | None = None):
