@@ -10,6 +10,7 @@ import traitlets as T
 from ..exceptions import BrokenPipe
 from ..util import close_widget
 from .base import Pipe, PipeStatus, PipeStatusView, Superseded, SyncedOutletPipe
+from .util import iter_pipes
 
 
 class PipelineStatusView(PipeStatusView):
@@ -103,6 +104,46 @@ class Pipeline(SyncedOutletPipe):
         for pipe in self.pipes:
             pipe.close()
         super().close()
+
+    @T.validate("pipes")
+    def _validate_pipes(self, proposal: T.Bunch) -> list[Pipe]:
+        """Refuse a new stage that is part of an open diagram's pipe, or, once
+        this pipeline belongs to a diagram, a closed one.
+        """
+        pipes = proposal["value"]
+        # while constructing, ``pipes`` already holds the proposed value
+        constructing = self._cross_validation_lock
+        held = () if constructing else self._trait_values.get("pipes", ())
+        kept = {id(pipe) for pipe in held}
+        for stage in pipes:
+            msg = None if id(stage) in kept else self._refusal(stage)
+            if msg:
+                if constructing:
+                    # or collecting the half-built pipeline would close them
+                    self._trait_values.pop("pipes", None)
+                raise T.TraitError(msg)
+        return pipes
+
+    def _refusal(self, stage: Pipe) -> str | None:
+        owner = self._owner()
+        for sub in iter_pipes(stage):
+            name = type(sub).__name__
+            if owner is not None and sub.comm is None:
+                return f"{name} is closed; use a new pipe"
+            other = sub._owner()
+            if other is None:
+                continue
+            if other is owner:
+                return f"{name} is part of the current pipe; use a new pipe"
+            where = "an open diagram" if owner is None else "another diagram"
+            return f"{name} belongs to {where}; use a new pipe"
+        return None
+
+    @T.observe("pipes")
+    def _restage(self, change: T.Bunch) -> None:
+        owner = self._owner()
+        if owner is not None:
+            owner._restage(change.old or [], change.new)
 
     @T.observe("pipes", "inlet")
     def _update_pipes(self, change=None):

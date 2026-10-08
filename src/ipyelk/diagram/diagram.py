@@ -32,13 +32,13 @@ class Diagram(StyledWidget):
     pipe: :py:class:`~ipyelk.pipes.Pipe`
         processing pipe (that may contain sub-pipes). Pipes perform various
         tasks like adding x/y and width/height layouts or calculating text label sizes.
-        The diagram owns its pipe and every pipe nested in it. A new pipe is
-        refused if any pipe in it is closed, owned by another open diagram, or
-        part of the current pipe. Replacing the pipe or closing the diagram
-        closes the pipe, its sub-pipes and the widgets they created (such as
-        status views), but never ``source`` or an inlet/outlet passed in.
-        Changing a pipeline's ``pipes`` after assigning it is not tracked;
-        assign a new pipe instead.
+        The diagram owns its pipe and every pipe nested in it. A new pipe, or
+        a stage added to a pipeline's ``pipes``, is refused if any pipe in it
+        is closed, owned by another open diagram, or part of the current pipe.
+        A stage removed from ``pipes`` is released, not closed. Replacing the
+        pipe or closing the diagram closes the pipe, its sub-pipes and the
+        widgets they created (such as status views), but never ``source`` or
+        an inlet/outlet passed in.
     view: :py:class:`~ipyelk.diagram.viewer.Viewer`
         output view that will render the pipe outlet; closed with the diagram
     tools: tuple :py:class:`~ipyelk.tools.Tool`
@@ -94,7 +94,7 @@ class Diagram(StyledWidget):
         return [tool for tool in self.tools if isinstance(tool, PipelineProgressBar)]
 
     def _claim(self, pipes: Iterable[Pipe]) -> None:
-        """Own ``pipes`` and every pipe nested in them; link ``style`` to text sizers."""
+        """Own ``pipes`` and their sub-pipes; link ``style`` to each text sizer."""
         from .flow import BrowserTextSizer
 
         owner = weakref.ref(self)
@@ -106,7 +106,7 @@ class Diagram(StyledWidget):
                     self._pipe_links.append((sub, link))
 
     def _unclaim(self, pipes: Iterable[Pipe]) -> None:
-        """Cancel ``pipes`` and their sub-pipes, and drop the claim and links to them."""
+        """Cancel ``pipes`` and their sub-pipes; drop the claim and links to them."""
         subs = {id(sub): sub for pipe in pipes for sub in iter_pipes(pipe)}
         for sub in subs.values():
             sub.cancel()
@@ -119,8 +119,15 @@ class Diagram(StyledWidget):
                 keep.append((sub, link))
         self._pipe_links = keep
 
+    def _restage(self, old: list[Pipe], new: list[Pipe]) -> None:
+        """Release the stages a pipeline dropped and claim the ones it gained."""
+        before = {id(sub) for pipe in old for sub in iter_pipes(pipe)}
+        after = {id(sub) for pipe in new for sub in iter_pipes(pipe)}
+        self._unclaim(pipe for pipe in old if id(pipe) not in after)
+        self._claim(pipe for pipe in new if id(pipe) not in before)
+
     def _wire_pipe(self, pipe: Pipe) -> None:
-        """Own the pipe, link ``style`` to its text sizers and report its progress."""
+        """Own the pipe, link ``style`` to its text sizer and report its progress."""
         self._claim([pipe])
         bars = self._progress_bars()
         if pipe.on_progress is None and bars:

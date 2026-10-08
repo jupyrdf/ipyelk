@@ -105,8 +105,15 @@ class Viewer(W.Widget):
             resync_stale(self, self.source, missing=content.get("missing"))
 
     def close(self):
-        """Close the viewer and its tools; ``source`` and ``control_overlay`` stay open."""
-        for name in ("selection", "hover", "viewport", "painter", "fit_tool", "center_tool"):
+        """Close the viewer and its tools, not ``source`` or ``control_overlay``."""
+        for name in (
+            "selection",
+            "hover",
+            "viewport",
+            "painter",
+            "fit_tool",
+            "center_tool",
+        ):
             tool = self._trait_values.get(name)
             if tool is not None:
                 tool.close()

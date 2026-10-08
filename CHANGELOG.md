@@ -311,10 +311,16 @@ throughout 3.x with the replacement in the message.
   - A replaced pipe is closed, so assigning a pipe that nests a closed pipe, or any part
     of the current pipe (wrapping it, or reusing its stages), raises `TraitError` too:
     build a new pipe instead
+  - The rule also holds when a pipeline's `pipes` changes in place, and before a
+    `Pipeline` is wired. Adding another open diagram's stage to an assigned pipeline
+    was accepted, so the stage ran in both, and `Pipeline(pipes=[...])` rewired a live
+    diagram's stage before anything could refuse it. Both now raise `TraitError` and
+    change nothing. A stage added in place belongs to the diagram (and gets its
+    `style`); a stage removed in place is released, not closed ([#191])
 - Close what a diagram owns when the diagram is closed. `Diagram.close()` only released
   its pipe, so the pipe tree, the view, the tools and the toolbar stayed open: every
   closed diagram left 68 widgets behind, 130 with the status view shown. It now closes
-  them with their layout and style widgets and unlinks them, and leaves
+  them with their layout and style widgets and drops its links to them, and leaves
   `diagram.source`, an inlet or outlet passed to a pipe, and the viewer's
   `control_overlay` open. A closed diagram's pipe is closed, so another diagram can no
   longer take it. `Tool.close()` also closes the tool's `ui`, and `Viewer.close()` its

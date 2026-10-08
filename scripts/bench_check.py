@@ -3,7 +3,8 @@
 """Gate ``bench_pipeline.py`` results against a committed baseline.
 
 Only deterministic counts are gated (messages, bytes, comm opens, layouts,
-live widgets left by replacing a pipe or closing a diagram); they must equal the baseline exactly.
+live widgets left by replacing a pipe or closing a diagram); they must equal the
+baseline exactly.
 A count that rises is a regression; a count that falls is an improvement that
 must be locked in with ``--update``, so every change to the pipeline's cost
 shows up as a reviewed baseline diff.
