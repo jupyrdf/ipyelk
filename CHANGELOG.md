@@ -312,6 +312,9 @@ throughout 3.x with the replacement in the message.
   - A replaced pipe is closed, so assigning a pipe that nests a closed pipe, or any part
     of the current pipe (wrapping it, or reusing its stages), raises `TraitError` too:
     build a new pipe instead
+- Log the routine "fixing N ids" message from `ValidationPipe` at debug level instead of
+  warning: assigning ids to id-less elements is the normal path (`fix_null_id=True`), so
+  every diagram built from id-less elements logged it
 
 ### Development
 

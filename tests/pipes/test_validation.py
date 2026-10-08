@@ -9,6 +9,7 @@ where assigned ids get pinned.
 """
 
 import asyncio
+import logging
 
 import pytest
 
@@ -103,3 +104,18 @@ def test_orphan_adoption_counts_as_a_fix(counted_reports):
     assert len(counted_reports) == 2
     assert pipe.errors == {}
     assert stray in root.children
+
+
+def test_routine_id_fixes_log_at_debug(caplog):
+    """Assigning ids to id-less elements is the normal path, so it is not a warning."""
+    root = Node()
+    root.add_child(Node())
+    pipe = ValidationPipe()
+    pipe.inlet = MarkElementWidget(value=root)
+
+    with caplog.at_level(logging.DEBUG, logger="traitlets"):
+        asyncio.run(pipe.run())
+
+    fixes = [r for r in caplog.records if "fixing" in r.getMessage()]
+    assert fixes, "the id fix is still logged"
+    assert all(r.levelno == logging.DEBUG for r in fixes)
