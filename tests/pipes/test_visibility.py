@@ -204,8 +204,9 @@ def test_projected_port_keeps_its_geometry(hide_port):
     widget.close()
 
 
-def test_hidden_port_ignores_a_custom_slack_style():
-    widget, root, port, _ = nested_port(hide_port=True)
+@pytest.mark.parametrize("hide_port", [True, False], ids=["hidden", "on-hidden-node"])
+def test_hidden_port_ignores_a_custom_slack_style(hide_port):
+    widget, root, port, _ = nested_port(hide_port)
     vis_index = VisIndex.from_els(root)
     vis_index.slack_port_style = {"my-slack"}
 

@@ -150,7 +150,6 @@ class IDElement(BaseModel, abc.ABC):
         would put two elements with one id on the wire.
         """
         copied._wire_id = None
-        copied._derived_id = False
         return copied
 
     @model_serializer(mode="wrap")
@@ -364,7 +363,7 @@ class Label(ShapeElement):
         )
         if suffix and self.id is not None:
             copy.id = f"{self.id}{suffix}"
-        copy._derived_id = self._derived_id or bool(suffix and self.id is not None)
+            copy._derived_id = True
         return copy
 
 

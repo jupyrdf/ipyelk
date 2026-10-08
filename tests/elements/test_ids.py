@@ -220,6 +220,28 @@ def test_label_wrap_ids_never_collide(taken_first):
     widget.close()
 
 
+def test_copied_lines_leave_the_original_ids_alone():
+    node = Node(id="n", labels=Label(id="L", text=TEXT).wrap(width=10))
+    copied = node.model_copy(deep=True)
+    copied.id = "m"
+    original = [line.id for line in node.labels]
+
+    widget = index_labels(node, copied)
+
+    assert [line.id for line in node.labels] == original
+    widget.close()
+
+
+def test_wrapped_lines_style_independently():
+    lines = Label(id="L", text=TEXT, layoutOptions={"k": "v"}).wrap(width=10)
+
+    lines[0].add_class("first")
+    lines[0].layoutOptions["k"] = "first"
+
+    assert [line.properties.cssClasses for line in lines[1:]] == [""] * 2
+    assert [line.layoutOptions for line in lines[1:]] == [{"k": "v"}] * 2
+
+
 def test_same_label_wrapped_twice_gets_distinct_ids():
     label = Label(id="L", text=TEXT)
     first, second = label.wrap(width=10), label.wrap(width=10)

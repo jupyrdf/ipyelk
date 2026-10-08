@@ -538,7 +538,7 @@ def iter_elements(*els: BaseElement) -> Iterator[BaseElement]:
     :param el: current element
     :yield: sub element
     """
-    for el in set(els):
+    for el in dict.fromkeys(els):
         yield el
         if isinstance(el, Node):
             yield from iter_elements(*el.children)
@@ -589,7 +589,7 @@ def iter_edges(*els: Node) -> Iterator[tuple[Node, Edge]]:
     :param el: current element
     :yield: owning Node, Edge
     """
-    for el in set(els):
+    for el in dict.fromkeys(els):
         for edge in el.edges:
             yield el, edge
         yield from iter_edges(*el.children)
