@@ -336,6 +336,10 @@ throughout 3.x with the replacement in the message.
   `docs/`, docstrings and comments in `src/`, `tests/` and `scripts/`, and notebook
   markdown, and fails on any warning or error. It replaces `check-spelling`, which
   linted the built HTML and never failed ([#181])
+- The nbconvert kernel watchdog writes its stack dump to the kernel's real stderr, not
+  to the descriptor ipykernel captures, where the dump woke the capture thread and made
+  it look busy. A second dump lists the pending `asyncio` tasks of the kernel's event
+  loops, with their await chains, and whether the shell locks are held ([#177])
 
 [#95]: https://github.com/jupyrdf/ipyelk/issues/95
 [eclipse-sprotty/sprotty#573]: https://github.com/eclipse-sprotty/sprotty/issues/573
@@ -345,6 +349,7 @@ throughout 3.x with the replacement in the message.
 [#164]: https://github.com/jupyrdf/ipyelk/issues/164
 [#167]: https://github.com/jupyrdf/ipyelk/issues/167
 [#176]: https://github.com/jupyrdf/ipyelk/issues/176
+[#177]: https://github.com/jupyrdf/ipyelk/issues/177
 [#178]: https://github.com/jupyrdf/ipyelk/issues/178
 [#180]: https://github.com/jupyrdf/ipyelk/issues/180
 [#181]: https://github.com/jupyrdf/ipyelk/issues/181
