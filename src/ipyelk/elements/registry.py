@@ -59,6 +59,13 @@ class Registry(BaseModel):
             context.ids[key] = default
         return context[key]
 
+    @classmethod
+    def forget(cls, key):
+        """Drop the active context's id for ``key``; the next ``get_id`` mints one."""
+        context = cls.get_context(error_if_none=False)
+        if context:
+            context.ids.pop(key, None)
+
     def __getitem__(self, key):
         return self.ids[key]
 

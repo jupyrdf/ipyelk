@@ -128,14 +128,68 @@ def test_label_wrap_does_not_share_generated_ids():
     widget.close()
 
 
+def index_labels(*children: Node) -> MarkElementWidget:
+    widget = MarkElementWidget(value=Node(id="root", children=list(children)))
+    widget.persist(rebuild_index=True)
+    assert not widget.index.elements.check_ids().duplicated
+    return widget
+
+
 def test_label_wrap_derives_distinct_explicit_ids():
     label = Label(id="label", text="one two three four five six")
 
     lines = label.wrap(width=10)
 
+    expected = [f"label#{i}" for i in range(len(lines))]
     assert len(lines) > 1
-    assert [line.id for line in lines] == [f"label.{i}" for i in range(len(lines))]
-    assert len({line.id for line in lines}) == len(lines)
+    assert [line.wire_id() for line in lines] == expected
+    widget = index_labels(Node(id="n", labels=lines))
+    assert [line.id for line in lines] == expected
+    widget.close()
+
+
+@pytest.mark.parametrize("label_id", [None, "L"])
+def test_label_wrap_gives_each_line_its_own_sub_label_ids(label_id):
+    generated = Label(text="g")
+    generated.model_dump()
+    label = Label(
+        id=label_id,
+        text="one two three four five six",
+        labels=[Label(id="sub", text="s"), generated],
+    )
+
+    lines = label.wrap(width=10)
+    widget = index_labels(Node(id="n", labels=lines))
+
+    assert len(lines) > 1
+    explicit = [line.labels[0].id for line in lines]
+    assert explicit == [f"sub#{i}" for i in range(len(lines))]
+    ids = {sub.id for line in lines for sub in line.labels}
+    assert len(ids) == 2 * len(lines)
+    assert generated.wire_id() not in ids
+    widget.close()
+
+
+def test_label_wrap_ids_never_collide():
+    """Derived ids yield to existing ones, including the port separator ``.``."""
+    text = "one two three four five six"
+    taken = Node(id="L#1")
+    dotted = Node(id="L.1")
+    port = Port(id="n.0")
+    lines = Label(id="L", text=text).wrap(width=10)
+    n_lines = Label(id="n", text=text).wrap(width=10)
+    node = Node(id="n", ports=[port], labels=lines + n_lines)
+
+    widget = index_labels(taken, dotted, node)
+
+    elements = widget.index.elements
+    assert elements["L#1"] is taken
+    assert elements["L.1"] is dotted
+    assert elements["n.0"] is port
+    assert lines[1].id not in {"L#1", "L.1", "n.0"}
+    assert len({line.id for line in lines + n_lines}) == len(lines + n_lines)
+    assert all(elements[line.id] is line for line in lines + n_lines)
+    widget.close()
 
 
 def test_copies_mint_their_own_wire_ids():

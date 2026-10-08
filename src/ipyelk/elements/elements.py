@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import abc
 import textwrap
+from collections.abc import Iterator
 from typing import Type, TypeVar, cast, get_args
 
 from pydantic import (
@@ -193,6 +194,12 @@ class IDElement(BaseModel, abc.ABC):
             self._wire_id = new_id()
         return self._wire_id
 
+    def _reissue_id(self) -> str | None:
+        """Replace an id-less element's wire id that another element already uses."""
+        Registry.forget(self)
+        self._wire_id = None
+        return self.get_id()
+
     def _repr_mimebundle_(self, **kwargs):
         from IPython.display import JSON, display
 
@@ -334,25 +341,28 @@ class Label(ShapeElement):
     def wrap(self, **kwargs) -> list[Label]:
         """Split text into individually laid-out labels with ``textwrap.wrap``.
 
-        Keyword arguments are forwarded to ``textwrap.wrap``. Wrapped labels inherit
-        this label's attributes and receive derived IDs.
+        Keyword arguments are forwarded to ``textwrap.wrap``. Each line is a copy
+        of this label and its sub-labels. With several lines, an explicit id ``L``
+        becomes the wire id ``L#<line>``, which an index replaces if another
+        element already uses it.
         """
-        data = self.model_dump()
         lines = textwrap.wrap(self.text, **kwargs)
-        if self.id is None:
-            data.pop("id", None)
-        elif len(lines) > 1:
-            data.pop("id")
-        return [
-            Label(**{
-                **data,
-                "id": f"{self.id}.{index}"
-                if self.id is not None and len(lines) > 1
-                else self.id,
-                "text": line,
-            })
-            for index, line in enumerate(lines)
-        ]
+        copies = [self.model_copy(update={"text": line}, deep=True) for line in lines]
+        if len(copies) > 1:
+            for index, copy in enumerate(copies):
+                for label in copy._iter_labels():
+                    label._derive_id(f"#{index}")
+        return copies
+
+    def _iter_labels(self) -> Iterator[Label]:
+        yield self
+        for label in self.labels:
+            yield from label._iter_labels()
+
+    def _derive_id(self, suffix: str):
+        if self.id is not None:
+            self._wire_id = f"{self.id}{suffix}"
+            self.id = None
 
 
 class Port(HierarchicalElement):

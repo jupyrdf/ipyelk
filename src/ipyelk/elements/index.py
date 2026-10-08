@@ -153,11 +153,23 @@ class ElementIndex(BaseModel):
 
     @classmethod
     def from_els(cls, *els: BaseElement) -> ElementIndex:
+        """Index ``els`` and their descendants by id.
+
+        An id-less element whose id is already used by another element (e.g. a
+        derived ``Label.wrap`` id) gets a fresh one; explicit ids never change.
+        """
+        found = list(iter_elements(*els))
+        explicit = {el.id: el for el in found if el.id is not None}
         elements: dict[str, SerializeAsAny[BaseElement]] = {}
-        for el in iter_elements(*els):
+        for el in found:
             el_id = el.get_id()
             if el_id is None:
                 raise _missing_id(el)
+            if el.id is None:
+                owner = elements.get(el_id, explicit.get(el_id))
+                if owner is not None and owner is not el:
+                    el_id = el._reissue_id()
+                    assert el_id is not None
             elements[el_id] = el
         return cls(
             elements=elements,
