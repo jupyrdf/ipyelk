@@ -64,3 +64,16 @@ def test_register_tool_binds_the_selection():
     assert bar.pipe is None
     bar.update(diagram.pipe)
     assert bar.pipe is diagram.pipe
+
+
+def test_register_tool_binds_a_progress_bar_to_the_pipe():
+    diagram = Diagram(tools=())
+    bar = PipelineProgressBar()
+    diagram.register_tool(bar)
+    assert bar.pipe is diagram.pipe
+    assert bar.missing_dependencies() == ()
+    assert diagram.pipe.on_progress == bar.update  # the free slot reports to it
+    other = PipelineProgressBar()
+    diagram.register_tool(other)
+    assert other.pipe is diagram.pipe
+    assert diagram.pipe.on_progress == bar.update  # a taken slot is kept

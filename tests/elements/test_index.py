@@ -11,6 +11,7 @@ from ipyelk.elements.index import (
     iter_elements,
     iter_visible,
 )
+from ipyelk.exceptions import NotFoundError, NotUniqueError
 
 
 def test_id_report_message_interpolates_duplicated_ids():
@@ -103,3 +104,17 @@ def test_iteration_follows_child_order():
     nodes = [el.id for el in iter_elements(root) if isinstance(el, Node)]
     assert nodes[1:] == [c.id for c in children]
     assert [owner.id for owner, _ in iter_edges(root)] == [c.id for c in children]
+
+
+def test_root_without_a_parentless_node_is_not_found():
+    root = Node(id="root", children=[Node(id="child")])
+    index = ElementIndex.from_els(root)
+    index.elements.pop("root")  # leaves only `child`, whose parent is `root`
+    with pytest.raises(NotFoundError, match="no root"):
+        index.root()
+
+
+def test_root_of_several_parentless_nodes_is_not_unique():
+    index = ElementIndex.from_els(Node(id="a"), Node(id="b"))
+    with pytest.raises(NotUniqueError, match="2 roots"):
+        index.root()

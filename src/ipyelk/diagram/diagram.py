@@ -278,12 +278,18 @@ class Diagram(StyledWidget):
         :type tool: Tool
         :return: current Diagram instance
         """
-        # TODO inject dependencies smarter...
-        traits = tool.trait_names()
-        if "diagram" in traits:
-            tool.diagram = self
-        if "selection" in traits:
-            tool.selection = self.view.selection
+        bindings = {
+            "diagram": self,
+            "selection": self.view.selection,
+            "pipe": self.pipe,
+        }
+        # the declared dependencies, plus a `diagram` or `selection` trait (user tools)
+        user = {"diagram", "selection"}.intersection(tool.trait_names())
+        names = {*tool._dependencies, *user}
+        for name in names & bindings.keys():
+            setattr(tool, name, bindings[name])
+        if isinstance(tool, PipelineProgressBar) and self.pipe.on_progress is None:
+            self.pipe.on_progress = tool.update
         self.tools = tuple([*self.tools, tool])
         return self
 
