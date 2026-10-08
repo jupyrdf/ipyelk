@@ -327,7 +327,7 @@ throughout 3.x with the replacement in the message.
 - Gate CI on the benchmark's deterministic counts: `pixi run bench-check` compares them
   to `scripts/bench_baseline.json` and fails on any change until the baseline is updated
   with `pixi run bench-update` ([#176]), including the live widgets left by replacing
-  `diagram.pipe` ([#180])
+  `diagram.pipe` ([#180]) and by closing a diagram ([#191])
 - Run the benchmark on the oldest supported ipywidgets too: on 8.0.1 it crashed in its
   first refresh, because ipywidgets 8.0 opens an `ipykernel` comm directly and the
   harness never saw a message. `pixi run bench-check-oldest` gates it against the same

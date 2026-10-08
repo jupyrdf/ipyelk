@@ -82,6 +82,7 @@ SEED = 0
 HIDDEN_FRACTION = 0.07
 BURST = 10
 REPLACEMENTS = 3
+CLOSES = 3
 CHAR_WIDTH = 8.0
 LINE_HEIGHT = 14.0
 
@@ -642,7 +643,9 @@ async def run_case(shape: str, n: int) -> dict:
 
 
 async def measure_case(shape: str, n: int, case: dict) -> None:
-    """Build one graph, refresh it, collapse it, burst it, then replace its pipe."""
+    """Build one graph, refresh it, collapse it, burst it, replace its pipe, then
+    build and close more diagrams of it.
+    """
     import bench_graphs
 
     from ipyelk.diagram import Diagram
@@ -693,6 +696,7 @@ async def measure_case(shape: str, n: int, case: dict) -> None:
     for el in pipe.inlet.index.elements.elements.values():
         el.properties.hidden = None
     case["replace"] = await replace(diagram)
+    case["close"] = await close(root)
 
 
 async def burst(diagram) -> dict:
@@ -781,6 +785,56 @@ async def replace(diagram) -> dict:
         "wall_s": wall,
         "errors": sorted(errors),
         "live_widgets_added": live_widgets() - before,
+    }
+
+
+async def close(root) -> dict:
+    """``CLOSES`` rounds of building a diagram of ``root``, refreshing and closing it.
+
+    The harness closes each round's source, which the diagram must leave open,
+    so a diagram that closes what it owns nets ``0`` in ``live_widgets_added``.
+    """
+    from ipyelk.diagram import Diagram
+    from ipyelk.loaders import ElementLoader
+    from ipyelk.util import close_widget
+
+    errors: set[str] = set()
+    loader = ElementLoader()
+
+    async def round_trip() -> None:
+        source = loader.load(root=root)
+        diagram = Diagram(source=source)
+        if BROWSER is not None:
+            elk = diagram.pipe.pipes[-1]
+            BROWSER.pipes[elk.comm.comm_id] = elk
+        task = diagram.refresh()
+        assert task is not None, "no running event loop"
+        try:
+            await task
+        except Exception as err:
+            errors.add(type(err).__name__)
+        await asyncio.sleep(0)
+        if BROWSER is not None:
+            await BROWSER.idle()
+        diagram.close()
+        if source.comm is None:
+            errors.add("source closed")
+        close_widget(source)
+        close_widget(source.index)
+
+    await round_trip()  # warm-up
+    before = live_widgets()
+    t0 = time.perf_counter()
+    for _ in range(CLOSES):
+        await round_trip()
+    wall = time.perf_counter() - t0
+    added = live_widgets() - before
+    loader.close()
+    return {
+        "closes": CLOSES,
+        "wall_s": wall,
+        "errors": sorted(errors),
+        "live_widgets_added": added,
     }
 
 
@@ -923,6 +977,21 @@ def render(results: dict) -> str:
                 ]
                 for c in cases
                 if c.get("replace")
+            ],
+            "",
+        ),
+        (
+            f"Close: {CLOSES} rounds of build, refresh and `diagram.close()`",
+            ["Graph", "Live widgets added", "Wall"],
+            [
+                [
+                    name(c),
+                    str(c["close"]["live_widgets_added"]),
+                    fmt_s(c["close"]["wall_s"])
+                    + ("".join(f" ({e})" for e in c["close"]["errors"])),
+                ]
+                for c in cases
+                if c.get("close")
             ],
             "",
         ),
