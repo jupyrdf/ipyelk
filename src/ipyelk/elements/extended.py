@@ -101,18 +101,16 @@ class Record(Node):
         self, handler: SerializerFunctionWrapHandler, info: SerializationInfo
     ):
         # TODO need ability to resize the min width based on label/child max width
+        # the strings the option widgets would make: a widget built on every dump
+        # is never closed
+        constraints = "NODE_LABELS PORTS PORT_LABELS MINIMUM_SIZE"
+        minimum = f"({int(self.width)}, {int(self.min_height)})"
+        size = {
+            opt.NodeSizeConstraints.identifier: constraints,
+            opt.NodeSizeMinimum.identifier: minimum,
+        }
         for child in self.children:
-            child.layoutOptions = merge(
-                opt.OptionsWidget(
-                    options=[
-                        opt.NodeSizeConstraints(),
-                        opt.NodeSizeMinimum(
-                            width=int(self.width), height=self.min_height
-                        ),
-                    ]
-                ).value,
-                child.layoutOptions,
-            )
+            child.layoutOptions = merge(size, child.layoutOptions)
         return super().serialize_element(handler, info)
 
 
