@@ -55,7 +55,7 @@ in the extension's source and automatically rebuild the extension and applicatio
 - Run:
 
 ```bash
-pixi run watch
+pixi run watch-js
 ```
 
 - Open a tab with the provided URL in a standards-compliant browser of choice
@@ -104,7 +104,7 @@ pixi run test
   - Potentially add some unit `./tests`
   - Add appropriate Robot Framework in `./atest`
 - Ensure coverage doesn't degrade from the `ALL_PY_COV_FAIL_UNDER` baseline in
-  `.github/ci.yml`
+  `.github/workflows/ci.yml`
 
 ### Structural Lint Rules
 
