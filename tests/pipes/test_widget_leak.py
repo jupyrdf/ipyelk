@@ -13,7 +13,7 @@ import pytest
 from ipywidgets.widgets import widget as widget_module
 
 from ipyelk import Diagram
-from ipyelk.elements import Node
+from ipyelk.elements import Compartment, Node, Record
 from ipyelk.pipes import MarkElementWidget
 from ipyelk.pipes.base import PipeStatus, rep_elapsed
 from ipyelk.pipes.pipeline import Pipeline, PipelineStatusView
@@ -67,6 +67,18 @@ async def test_refresh_adds_no_live_widgets(show_view: bool) -> None:
     assert live_widgets() - before == 0
 
 
+def test_record_dump_adds_no_live_widgets() -> None:
+    """``Record`` sets its children's size options as strings, not widgets."""
+    record = Record(children=[Compartment(), Compartment()])
+    before = live_widgets()
+    record.model_dump()
+    record.model_dump_json()
+    assert live_widgets() == before
+    assert record.children[0].layoutOptions["org.eclipse.elk.nodeSize.minimum"] == (
+        "(80, 20)"
+    )
+
+
 def test_pipe_status_is_not_a_widget() -> None:
     assert not issubclass(PipeStatus, W.Widget)
 
@@ -85,10 +97,10 @@ async def test_status_rows_are_reused_and_current() -> None:
         view.update_children(pipe)
     assert live_widgets() == before
     assert len(view._rows) == len(pipe.pipes)
-    assert all(new is old for new, old in zip(view._rows, rows))
+    assert all(new is old for new, old in zip(view._rows, rows, strict=True))
 
     await refresh(diagram)
-    for row, sub in zip(view._rows, pipe.pipes):
+    for row, sub in zip(view._rows, pipe.pipes, strict=True):
         html = row.children[1].html.value
         assert f"elk-pipe-disposition-{sub.status.disposition.value}" in html
         assert f'class="elk-pipe-status">{sub.status.state()}<' in html

@@ -98,7 +98,7 @@ testpaths = ["tests"]
 # ruff #################################################################################
 [tool.ruff]
 preview = true
-target-version = "py39"
+target-version = "py310"
 include = ["{scripts,src,tests,docs,atest,examples}/**/*.{py,ipynb}"]
 cache-dir = "build/.cache/ruff"
 
@@ -110,7 +110,7 @@ select = ["ALL"]
 flake8-copyright.notice-rgx = '(?i)Copyright \(c\) ipyelk contributors'
 isort.known-first-party = ["ipyelk"]
 ignore = [
-  # TOOD: #121 fix these on a follow-on PR
+  # TODO: #121 fix these on a follow-on PR
   "A002",
   "A005",
   "ANN001",
@@ -151,7 +151,6 @@ ignore = [
   "EM101",
   "EM102",
   "ERA001",
-  "F822",
   "F841",
   "FA100",
   "FBT002",
