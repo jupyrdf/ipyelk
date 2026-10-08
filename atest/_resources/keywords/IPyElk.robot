@@ -163,7 +163,7 @@ Elk Counts Should Be
     ...    ${n}=${1}
     ...    ${screen}=20-counted.png
     Wait Until Keyword Succeeds
-    ...    5x
+    ...    30x
     ...    1s
     ...    Elk Counts Should Really Be
     ...    nodes=${nodes}
@@ -201,7 +201,7 @@ Create Linked Elk Output View
     Open Context Menu    ${view}
     Wait Until Keyword Succeeds    3x    0.5s    Mouse Over    css:${JLAB CSS CREATE OUTPUT}
     Press Keys    None    RETURN
-    Wait Until Element Is Visible    css:${JLAB CSS LINKED OUTPUT} ${CSS ELK VIEW} ${CSS ELK NODE}
+    Wait Until Element Is Visible    css:${JLAB CSS LINKED OUTPUT} ${CSS ELK VIEW} ${CSS ELK NODE}    timeout=30s
 
 Linked Elk Output Counts Should Be
     [Arguments]

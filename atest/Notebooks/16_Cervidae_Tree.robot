@@ -1,0 +1,100 @@
+*** Settings ***
+Resource            ../_resources/keywords/Browser.robot
+Resource            ../_resources/keywords/Lab.robot
+Resource            ../_resources/keywords/IPyElk.robot
+
+Test Teardown       Clean up after IPyElk Example
+
+
+*** Variables ***
+${SCREENS}      ${SCREENS ROOT}${/}examples${/}${CERVIDAE TREE}
+
+
+*** Test Cases ***
+Cervidae Tree Renders Its Frozen Snapshot
+    Create Directory    ${OUTPUT DIR}${/}home${/}data
+    Copy File    ${IPYELK_EXAMPLES}${/}data${/}cervidae-tree.zip    ${OUTPUT DIR}${/}home${/}data${/}cervidae-tree.zip
+    Example Should Restart-and-Run-All    ${CERVIDAE TREE}    timeout=600s
+    Elk Counts Should Be    nodes=${109}    edges=${108}    labels=${82}    ports=${218}
+    Page Should Contain Element    css:.cervidae-card
+    Page Should Contain Element    css:.jp-ElkToolbar button
+    Fit Cervidae Tree
+    Click Cervidae Junction    Odocoileini
+    Fitted Counts Should Be    nodes=${76}    edges=${75}    ports=${152}
+    Page Should Contain Element    css:[id$="Odocoileini.__toggle"] circle
+    Click Cervidae Junction    Odocoileini
+    Fitted Counts Should Be    nodes=${109}    edges=${108}    ports=${218}
+    Capture Page Screenshot    11-cervidae-tree.png
+
+
+*** Keywords ***
+Fit Cervidae Tree
+    # The notebook helper scrolls back to the first cell. SVG panning is not
+    # document scrolling: fit the graph before trying to click a distant node.
+    # Fit zooms to the selection, and a toggle click selects its taxon, so fit
+    # once, before the first toggle click.
+    ${app} =    Get WebElement    css:.jp-ElkApp
+    Execute Javascript    arguments[0].scrollIntoView({block: "center"})    ARGUMENTS    ${app}
+    # A click right after the scroll can miss the button and leave the camera
+    # unmoved (3 of 10 local runs): click Fit again until the toggles are in view.
+    Wait Until Keyword Succeeds    5x    0.5s    Click Fit Until Cervidae Toggles Are In View    ${app}
+
+Click Fit Until Cervidae Toggles Are In View
+    [Arguments]    ${app}
+    # the toolbar shows on hover; a click on the app's center would select the
+    # node under it, and selecting a node runs the `oldest` frontend out of memory
+    Mouse Over    ${app}
+    ${fit} =    Set Variable    css:.jp-ElkToolbar button[title="Fit the tree in the viewport"]
+    Wait Until Element Is Visible    ${fit}
+    Click Element    ${fit}
+    Wait Until Keyword Succeeds    6x    0.5s    Cervidae Toggles Should Be In View
+
+Fitted Counts Should Be
+    [Arguments]    ${nodes}    ${edges}    ${ports}
+    # Fit zooms out to about 0.2, where the renderer skips a label unless
+    # zoom * label height > 3: whether labels render depends on font metrics
+    # (none rendered on Windows with the oldest JupyterLab), so do not count them.
+    Wait Until Keyword Succeeds    30x    1s
+    ...    Fitted Counts Should Really Be    ${nodes}    ${edges}    ${ports}
+
+Fitted Counts Should Really Be
+    [Arguments]    ${nodes}    ${edges}    ${ports}
+    ${found nodes} =    Get Elk Node Count
+    ${found edges} =    Get Elk Edge Count
+    ${found ports} =    Get Elk Port Count
+    Should Be Equal As Strings
+    ...    nodes:${found nodes} edges:${found edges} ports:${found ports}
+    ...    nodes:${nodes} edges:${edges} ports:${ports}
+
+Cervidae Toggles Should Be In View
+    ${shown} =    Execute Javascript
+    ...    const svg = document.querySelector('.jp-ElkView svg.sprotty-graph'), view = svg.getBoundingClientRect();
+    ...    return [...svg.querySelectorAll('.taxonomy-toggle')].every((toggle) => {
+    ...    const r = toggle.getBoundingClientRect();
+    ...    return r.left >= view.left && r.top >= view.top && r.right <= view.right && r.bottom <= view.bottom;
+    ...    });
+    Should Be True    ${shown}
+
+Click Cervidae Junction
+    [Arguments]    ${parent}
+    # Fit and re-layout move the SVG camera; retry until the toggle is clicked.
+    Wait Until Keyword Succeeds    10x    0.5s
+    ...    Click Cervidae Toggle    css:.jp-ElkView [id$="${parent}.__toggle"] circle
+
+Click Cervidae Toggle
+    [Arguments]    ${locator}
+    ${el} =    Get WebElement    ${locator}
+    Execute Javascript    arguments[0].scrollIntoView({block: "center", inline: "center"})    ARGUMENTS    ${el}
+    # The -/+ glyph covers the circle's center, so `Click Element` reports the
+    # circle as obscured. Wait until the Fit camera stops and the circle or its
+    # glyph is on top at the center, then click there with the pointer.
+    ${ready} =    Execute Async Javascript
+    ...    const [el, done] = arguments, box = () => JSON.stringify(el.getBoundingClientRect()), before = box();
+    ...    setTimeout(() => {
+    ...    const r = el.getBoundingClientRect();
+    ...    const hit = document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2);
+    ...    done(box() === before && el.parentNode.contains(hit));
+    ...    }, 300);
+    ...    ARGUMENTS    ${el}
+    Should Be True    ${ready}
+    Click Element At Coordinates    ${el}    0    0
