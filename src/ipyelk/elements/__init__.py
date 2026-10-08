@@ -32,7 +32,7 @@ from .index import (
 from .mark_factory import Mark, MarkFactory
 from .registry import Registry
 from .serialization import convert_elkjson, elk_serialization, symbol_serialization
-from .shapes import EdgeShape, LabelShape, NodeShape, PortShape
+from .shapes import EdgeShape, ElementShape, LabelShape, NodeShape, PortShape
 from .symbol import EndpointSymbol, Symbol, SymbolSpec
 
 __all__ = [
@@ -67,7 +67,6 @@ __all__ = [
     "Symbol",
     "SymbolSpec",
     "VisIndex",
-    "check_ids",
     "convert_elkjson",
     "elk_serialization",
     "exclude_hidden",

@@ -90,7 +90,7 @@ class MarkFactory(BaseModel):
                 assert endpts[0] is not None
                 assert endpts[1] is not None
                 nx_u, nx_v = map(lambda n: Mark(element=n, context=context), endpts)
-                for nx_pt, pt in zip([nx_u, nx_v], endpts):
+                for nx_pt, pt in zip([nx_u, nx_v], endpts, strict=True):
                     if nx_pt not in g:
                         if follow_edges:
                             self._add(pt, g, tree, follow_edges=follow_edges)
