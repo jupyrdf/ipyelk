@@ -209,7 +209,6 @@ class Pipeline(SyncedOutletPipe):
         for i, pipe in enumerate(self.pipes):
             if i and self.superseded():
                 raise Superseded(f"superseded before stage {i}")
-            # TODO use i and num_steps for reporting processing stage
             pipe_start_time = datetime.now()
             p_name = f"pipe {i}: {type(pipe)}"
             try:

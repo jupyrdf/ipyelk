@@ -487,7 +487,6 @@ class Node(HierarchicalElement):
         # common ancestor of the two endpoints the actual proper owner of the
         # edge may be calculated later
         edge = cls(source=source, target=target)
-        # TODO uniqueness of edge?
         self.edges.append(edge)
         return edge
 

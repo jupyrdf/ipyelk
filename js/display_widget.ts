@@ -52,7 +52,7 @@ import { contentExtent } from './sprotty/export_util';
 import { PainterStyles } from './sprotty/json/elkgraph-to-sprotty';
 // import { VNode } from 'snabbdom';
 import { ELK_CSS, ELK_DEBUG, NAME, TAnyELKMessage, VERSION } from './tokens';
-import { NodeExpandTool, NodeSelectTool } from './tools';
+import { NodeSelectTool } from './tools';
 import {
   FeedbackActionDispatcher,
   IFeedbackActionDispatcher,
@@ -246,7 +246,6 @@ export class ELKViewerView extends DOMWidgetView {
     this.model.on('change:selection', this.updateSelectedTool, this);
     this.model.on('change:hover', this.updateHoverTool, this);
     this.model.on('change:painter', this.updatePainterTool, this);
-    this.model.on('change:interaction', this.interaction_mode_changed, this);
     this.model.on('msg:custom', this.handleMessage, this);
     this.model.on('change:symbols', this.diagramLayout, this);
     this.model.on('change:control_overlay', this.updateControlOverlay, this);
@@ -276,7 +275,6 @@ export class ELKViewerView extends DOMWidgetView {
     // Register Tools
     // this.toolManager.registerDefaultTools(
     container.resolve(NodeSelectTool).enable();
-    container.resolve(NodeExpandTool).enable();
     // );
     // this.toolManager.enableDefaultTools();
 
@@ -626,10 +624,6 @@ export class ELKViewerView extends DOMWidgetView {
     const painter: WidgetModel | null = this.model.get('painter');
     const styles: PainterStyles | undefined = painter?.get('styles');
     return styles == null ? {} : styles;
-  }
-
-  async interaction_mode_changed() {
-    // let interaction = this.model.get('interaction');
   }
 
   async diagramLayout() {
