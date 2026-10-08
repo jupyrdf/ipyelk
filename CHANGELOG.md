@@ -306,12 +306,19 @@ throughout 3.x with the replacement in the message.
   pipe ([#180])
   - A pipe belongs to one diagram, with every pipe nested in it. Assigning a pipe that
     nests a pipe another open diagram owns raises `TraitError`: both diagrams used to
-    share its outlet, so one silently showed the other's graph. Closing a diagram
-    releases its pipes for another one. Two diagrams sharing a _source_ is a separate
-    question ([#178])
+    share its outlet, so one silently showed the other's graph. Two diagrams sharing a
+    _source_ is a separate question ([#178])
   - A replaced pipe is closed, so assigning a pipe that nests a closed pipe, or any part
     of the current pipe (wrapping it, or reusing its stages), raises `TraitError` too:
     build a new pipe instead
+- Close what a diagram owns when the diagram is closed. `Diagram.close()` only released
+  its pipe, so the pipe tree, the view, the tools and the toolbar stayed open: every
+  closed diagram left 68 widgets behind, 130 with the status view shown. It now closes
+  them with their layout and style widgets and unlinks them, and leaves
+  `diagram.source`, an inlet or outlet passed to a pipe, and the viewer's
+  `control_overlay` open. A closed diagram's pipe is closed, so another diagram can no
+  longer take it. `Tool.close()` also closes the tool's `ui`, and `Viewer.close()` its
+  tools ([#191])
 - Log the routine "fixing N ids" message from `ValidationPipe` at debug level instead of
   warning: assigning ids to id-less elements is the normal path (`fix_null_id=True`), so
   every diagram built from id-less elements logged it

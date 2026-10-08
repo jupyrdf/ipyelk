@@ -104,6 +104,17 @@ class Viewer(W.Widget):
         if isinstance(content, dict) and content.get("action") == "stale":
             resync_stale(self, self.source, missing=content.get("missing"))
 
+    def close(self):
+        """Close the viewer and its tools; ``source`` and ``control_overlay`` stay open."""
+        for name in ("selection", "hover", "viewport", "painter", "fit_tool", "center_tool"):
+            tool = self._trait_values.get(name)
+            if tool is not None:
+                tool.close()
+        super().close()
+        layout = self._trait_values.get("layout")
+        if layout is not None:
+            layout.close()
+
     @T.observe("source")
     def _reset_stale_throttle(self, change: T.Bunch | None = None):
         self._stale_resync_interval = 0.0

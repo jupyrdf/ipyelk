@@ -9,6 +9,7 @@ import ipywidgets as W
 import traitlets as T
 
 from ..styled_widget import StyledWidget
+from ..util import close_widget
 from .tool import Tool
 
 
@@ -45,6 +46,12 @@ class Toolbar(W.HBox, StyledWidget):
 
         btn.on_click(pressed)
         return btn
+
+    def close(self):
+        btn = self._trait_values.get("close_btn")
+        if btn is not None:
+            close_widget(btn)
+        super().close()
 
     @T.observe("on_close")
     def _update_close_callback(self, change: T.Bunch | None = None):

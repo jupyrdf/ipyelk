@@ -16,6 +16,7 @@ from ..exceptions import (
     registration_method,
 )
 from ..pipes import Pipe
+from ..util import close_tree
 
 _REGISTRATION_ASSIGNED = (
     "Tool.{name} is a registration method in ipyelk 3.0, not an assignable "
@@ -112,6 +113,13 @@ class Tool(W.Widget):
         super().__init__(**kwargs)
         if self._dependencies:
             self.observe(self._update_controls, list(self._dependencies))
+
+    def close(self):
+        """Close the tool and its ``ui``."""
+        ui = self._trait_values.get("ui")
+        if ui is not None:
+            close_tree(ui)
+        super().close()
 
     def trigger(self, *_: object) -> asyncio.Task:
         """Request execution: schedule :meth:`run` and return its task.

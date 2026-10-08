@@ -229,6 +229,11 @@ class Pipe(W.Widget):
         self._owned: list[W.Widget] = []
         super().__init__(*args, **kwargs)
 
+    def _owner(self) -> W.Widget | None:
+        """The open diagram that owns this pipe, if any."""
+        owner = self._diagram() if self._diagram else None
+        return owner if owner is not None and owner.comm is not None else None
+
     def _own(self, widget: AnyWidget) -> AnyWidget:
         self._owned.append(widget)
         if isinstance(widget, MarkElementWidget):

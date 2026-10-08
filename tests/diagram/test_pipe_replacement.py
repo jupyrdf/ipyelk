@@ -461,22 +461,19 @@ def test_a_pipe_replaced_in_one_diagram_is_closed_for_another() -> None:
         Diagram(source=make_source(), pipe=old)
 
 
-def test_closing_a_diagram_releases_its_pipe() -> None:
-    """A closed diagram leaves its pipe open for another diagram to take."""
+def test_closing_a_diagram_closes_its_pipe() -> None:
     first = Diagram(source=make_source())
     pipe = first.pipe
     first.style = {" .a": {"fill": "red"}}
     first.close()
 
-    second = Diagram(source=make_source(), pipe=pipe)
-
-    assert is_open(pipe)
-    assert pipe._diagram() is second
-    assert second.view.source is pipe.outlet
-    assert sizer(pipe).style == second.style == {}
-    assert pipe.on_progress == second.get_tool(PipelineProgressBar).update
+    assert not is_open(pipe)
+    assert pipe.on_progress is None
+    assert first._pipe_links == []
+    with pytest.raises(T.TraitError, match="closed"):
+        Diagram(source=make_source(), pipe=pipe)
     first.style = {" .b": {"fill": "blue"}}
-    assert sizer(pipe).style == {}
+    assert sizer(pipe).style == {" .a": {"fill": "red"}}
 
 
 def test_a_collected_owner_releases_its_pipe() -> None:

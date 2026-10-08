@@ -26,6 +26,9 @@ class StyledWidget(W.Box):
         if css is not None:
             close_widget(css)
         super().close()
+        layout = self._trait_values.get("layout")
+        if layout is not None:
+            layout.close()
 
     @T.validate("children")
     def _valid_children(self, proposal):

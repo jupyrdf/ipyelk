@@ -14,6 +14,13 @@ def close_widget(widget) -> None:
             part.close()
 
 
+def close_tree(widget) -> None:
+    """Close ``widget`` and its ``children``, with their layout and style widgets."""
+    for child in getattr(widget, "children", ()):
+        close_tree(child)
+    close_widget(widget)
+
+
 def safely_unobserve(item, handler):
     if hasattr(item, "unobserve"):
         item.unobserve(handler=handler)

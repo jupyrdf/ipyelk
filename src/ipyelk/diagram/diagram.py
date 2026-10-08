@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import weakref
-from typing import Iterator, Type
+from typing import Iterable, Type
 
 import ipywidgets as W
 import traitlets as T
@@ -13,19 +13,11 @@ from ..elements import SymbolSpec, symbol_serialization
 from ..exceptions import NotFoundError, NotUniqueError
 from ..pipes import MarkElementWidget, Pipe
 from ..pipes import flows as F
+from ..pipes.util import iter_pipes
 from ..styled_widget import StyledWidget
 from ..tools import PipelineProgressBar, ToggleCollapsedTool, Tool, Toolbar
 from .sprotty_viewer import SprottyViewer
 from .viewer import Viewer
-
-
-def _iter_pipes(pipe: Pipe) -> Iterator[Pipe]:
-    """Yield ``pipe`` and every pipe nested in it, breadth first."""
-    pending = [pipe]
-    while pending:
-        sub = pending.pop(0)
-        yield sub
-        pending.extend(getattr(sub, "pipes", ()))
 
 
 class Diagram(StyledWidget):
@@ -42,15 +34,16 @@ class Diagram(StyledWidget):
         tasks like adding x/y and width/height layouts or calculating text label sizes.
         The diagram owns its pipe and every pipe nested in it. A new pipe is
         refused if any pipe in it is closed, owned by another open diagram, or
-        part of the current pipe. Replacing the pipe closes the old pipe, its
-        sub-pipes and the widgets they created (such as status views), but
-        never ``source`` or an inlet/outlet passed in. Changing a pipeline's
-        ``pipes`` after assigning it is not tracked; assign a new pipe instead.
+        part of the current pipe. Replacing the pipe or closing the diagram
+        closes the pipe, its sub-pipes and the widgets they created (such as
+        status views), but never ``source`` or an inlet/outlet passed in.
+        Changing a pipeline's ``pipes`` after assigning it is not tracked;
+        assign a new pipe instead.
     view: :py:class:`~ipyelk.diagram.viewer.Viewer`
-        output view that will render the pipe outlet
+        output view that will render the pipe outlet; closed with the diagram
     tools: tuple :py:class:`~ipyelk.tools.Tool`
         list of tools that a user of the diagram might use to manipulate the
-        state of the diagram.
+        state of the diagram; closed with the diagram.
     symbols: :py:class:`~ipyelk.elements.SymbolSpec`
         additional shape definitions that can be used in rendering the diagram.
         For example unique arrow head shapes or custom node shapes.
@@ -70,8 +63,10 @@ class Diagram(StyledWidget):
     _refresh_task: asyncio.Future | None = None
 
     def __init__(self, *args, **kwargs):
-        #: links ``_wire_pipe`` made to the current pipe
-        self._pipe_links: list[T.directional_link] = []
+        #: ``(pipe, link)`` for each link ``_claim`` made to a pipe in the tree
+        self._pipe_links: list[tuple[Pipe, T.directional_link]] = []
+        #: links to the default view and toolbar
+        self._links: list[T.link] = []
         super().__init__(*args, **kwargs)
         self.add_class("jp-ElkApp")
         self._update_children()
@@ -84,7 +79,7 @@ class Diagram(StyledWidget):
     @T.default("view")
     def _default_view(self):
         view = SprottyViewer(symbols=self.symbols)
-        T.link((self, "symbols"), (view, "symbols"))
+        self._links.append(T.link((self, "symbols"), (view, "symbols")))
         return view
 
     @T.default("pipe")
@@ -98,15 +93,35 @@ class Diagram(StyledWidget):
     def _progress_bars(self) -> list[PipelineProgressBar]:
         return [tool for tool in self.tools if isinstance(tool, PipelineProgressBar)]
 
-    def _wire_pipe(self, pipe: Pipe) -> None:
-        """Link ``style`` to every text sizer in the pipe and report its progress."""
+    def _claim(self, pipes: Iterable[Pipe]) -> None:
+        """Own ``pipes`` and every pipe nested in them; link ``style`` to text sizers."""
         from .flow import BrowserTextSizer
 
         owner = weakref.ref(self)
-        for sub in _iter_pipes(pipe):
-            sub._diagram = owner
-            if isinstance(sub, BrowserTextSizer):
-                self._pipe_links.append(W.dlink((self, "style"), (sub, "style")))
+        for pipe in pipes:
+            for sub in iter_pipes(pipe):
+                sub._diagram = owner
+                if isinstance(sub, BrowserTextSizer):
+                    link = W.dlink((self, "style"), (sub, "style"))
+                    self._pipe_links.append((sub, link))
+
+    def _unclaim(self, pipes: Iterable[Pipe]) -> None:
+        """Cancel ``pipes`` and their sub-pipes, and drop the claim and links to them."""
+        subs = {id(sub): sub for pipe in pipes for sub in iter_pipes(pipe)}
+        for sub in subs.values():
+            sub.cancel()
+            sub._diagram = None
+        keep = []
+        for sub, link in self._pipe_links:
+            if id(sub) in subs:
+                link.unlink()
+            else:
+                keep.append((sub, link))
+        self._pipe_links = keep
+
+    def _wire_pipe(self, pipe: Pipe) -> None:
+        """Own the pipe, link ``style`` to its text sizers and report its progress."""
+        self._claim([pipe])
         bars = self._progress_bars()
         if pipe.on_progress is None and bars:
             pipe.on_progress = bars[0].update
@@ -116,14 +131,14 @@ class Diagram(StyledWidget):
         pipe = proposal["value"]
         current = self._trait_values.get("pipe")
         replacing = current is not None and pipe is not current
-        inside = {id(sub) for sub in _iter_pipes(current)} if replacing else set()
-        for sub in _iter_pipes(pipe):
+        inside = {id(sub) for sub in iter_pipes(current)} if replacing else set()
+        for sub in iter_pipes(pipe):
             name = type(sub).__name__
             if sub.comm is None:
                 msg = f"{name} is closed; assign a new pipe"
                 raise T.TraitError(msg)
-            owner = sub._diagram() if sub._diagram else None
-            live = owner is not None and owner.comm is not None
+            owner = sub._owner()
+            live = owner is not None
             if live and owner is not self:
                 msg = f"{name} belongs to another diagram; assign a new pipe"
                 raise T.TraitError(msg)
@@ -137,12 +152,7 @@ class Diagram(StyledWidget):
 
     def _release_pipe(self, pipe: Pipe) -> None:
         """Cancel ``pipe`` and drop the diagram's claim on it and links to it."""
-        pipe.cancel()
-        for sub in _iter_pipes(pipe):
-            sub._diagram = None
-        links, self._pipe_links = self._pipe_links, []
-        for link in links:
-            link.unlink()
+        self._unclaim([pipe])
         self._refresh_task = None
         for bar in self._progress_bars():
             if pipe.on_progress == bar.update:
@@ -158,10 +168,24 @@ class Diagram(StyledWidget):
             tool.tee = new
 
     def close(self):
-        """Close the diagram and release its pipe, which another diagram may take."""
+        """Close the diagram with its pipe, view, tools and toolbar.
+
+        ``source`` and any inlet or outlet passed to a pipe stay open.
+        """
         pipe = self._trait_values.get("pipe")
         if pipe is not None and pipe._diagram and pipe._diagram() is self:
             self._release_pipe(pipe)
+            pipe.close()
+        links, self._links = self._links, []
+        for link in links:
+            link.unlink()
+        for tool in self._trait_values.get("tools", ()):
+            tool.on_done(self.refresh, remove=True)
+            tool.close()
+        for name in ("toolbar", "view"):
+            widget = self._trait_values.get(name)
+            if widget is not None:
+                widget.close()
         super().close()
 
     @T.observe("view")
@@ -223,7 +247,7 @@ class Diagram(StyledWidget):
     @T.default("toolbar")
     def _default_toolbar(self):
         toolbar = Toolbar(tools=self.tools)
-        T.link((self, "tools"), (toolbar, "tools"))
+        self._links.append(T.link((self, "tools"), (toolbar, "tools")))
         return toolbar
 
     def get_tool(self, tool_type: Type[Tool]) -> Tool:
