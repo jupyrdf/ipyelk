@@ -12,6 +12,8 @@ through the stream delivers it.
 import asyncio
 import importlib.util
 import os
+import subprocess
+import sys
 import threading
 import time
 from pathlib import Path
@@ -35,7 +37,47 @@ spec.loader.exec_module(shell_reply_fix)
 SubshellManager = subshell_manager.SubshellManager
 # by version, so a broken ``fixed_upstream`` cannot skip the tests below
 FIXED_UPSTREAM = ipykernel.version_info >= (7, 4)
+NEEDS_FIX = pytest.mark.skipif(
+    FIXED_UPSTREAM, reason="ipykernel sends through the stream"
+)
 TIMEOUT = 10.0
+
+KERNEL_PROBE = """
+from jupyter_client.manager import start_new_kernel
+
+km, kc = start_new_kernel(startup_timeout=60)
+code = (
+    "import ipykernel\\n"
+    "print(ipykernel.__version__)\\n"
+    "manager = get_ipython().kernel.shell_channel_thread.manager\\n"
+    "stream = manager._main_to_shell_channel.to_stream\\n"
+    "print(stream._recv_callback.__qualname__)\\n"
+    "print('_install' in globals())"
+)
+out = []
+try:
+    reply = kc.execute_interactive(
+        code, timeout=30, output_hook=lambda m: out.append(m["content"].get("text", ""))
+    )
+    print(reply["content"]["status"], *"".join(out).split())
+finally:
+    kc.stop_channels()
+    km.shutdown_kernel(now=True)
+"""
+
+
+class Opaque:
+    """A fixture value with a short ``repr``.
+
+    pytest formats test arguments on failure, and the pending futures of an
+    ``IOLoop`` can take it minutes.
+    """
+
+    def __init__(self, **kwargs):
+        self.__dict__.update(kwargs)
+
+    def __repr__(self):
+        return f"<{', '.join(self.__dict__)}>"
 
 
 def run_on_loop(loop, func):
@@ -74,7 +116,7 @@ def shell_channel_loop():
     thread = threading.Thread(target=run, name=name, daemon=True)
     thread.start()
     assert ready.wait(TIMEOUT)
-    yield box["loop"]
+    yield Opaque(loop=box["loop"])
     box["loop"].add_callback(box["loop"].stop)
     thread.join(TIMEOUT)
 
@@ -88,10 +130,9 @@ def sockets():
     client = context.socket(zmq.DEALER)
     client.setsockopt(zmq.IDENTITY, b"client")
     client.connect(f"tcp://127.0.0.1:{port}")
-    yield context, shell_socket, client
-    client.close(linger=0)
-    shell_socket.close(linger=0)
-    context.term()
+    yield Opaque(context=context, shell_socket=shell_socket, client=client)
+    # closes every socket first, so one left open cannot block it
+    context.destroy(linger=0)
 
 
 def test_no_op_when_fixed_upstream():
@@ -105,11 +146,23 @@ def test_no_op_when_fixed_upstream():
         assert "_send_on_shell_channel" not in vars(Manager)
 
 
-@pytest.mark.skipif(FIXED_UPSTREAM, reason="ipykernel sends through the stream")
-@pytest.mark.parametrize("fixed", [True, False])
+@NEEDS_FIX
+@pytest.mark.parametrize(
+    "fixed",
+    [
+        True,
+        pytest.param(
+            False,
+            marks=pytest.mark.skipif(
+                sys.platform == "win32",
+                reason="this harness does not strand the request on Windows",
+            ),
+        ),
+    ],
+)
 def test_reply_send_does_not_strand_a_request(shell_channel_loop, sockets, fixed):
-    loop = shell_channel_loop
-    context, shell_socket, client = sockets
+    loop = shell_channel_loop.loop
+    shell_socket, client = sockets.shell_socket, sockets.client
     received = []
     got = threading.Event()
 
@@ -125,7 +178,7 @@ def test_reply_send_does_not_strand_a_request(shell_channel_loop, sockets, fixed
         stream.on_recv(on_recv, copy=True)
         if fixed:
             assert shell_reply_fix.patch_send_on_shell_channel(Manager, stream)
-        return stream, Manager(context, loop, shell_socket)
+        return stream, Manager(sockets.context, loop, shell_socket)
 
     def strand_then_reply():
         # on the loop thread, so the stream cannot read in between
@@ -159,37 +212,27 @@ def test_reply_send_does_not_strand_a_request(shell_channel_loop, sockets, fixed
         run_on_loop(loop, teardown)
 
 
-@pytest.mark.skipif(FIXED_UPSTREAM, reason="ipykernel sends through the stream")
+@NEEDS_FIX
 def test_startup_file_patches_the_kernel(tmp_path):
-    manager = pytest.importorskip("jupyter_client.manager")
-    ipykernel_version = ipykernel.__version__
+    pytest.importorskip("jupyter_client.manager")
     startup = tmp_path / "profile_default" / "startup"
     startup.mkdir(parents=True)
     (startup / "00-shell-reply-fix.py").write_text(SCRIPT.read_text(encoding="utf-8"))
     env = {**os.environ, "IPYTHONDIR": str(tmp_path)}
-    km, kc = manager.start_new_kernel(startup_timeout=60, env=env)
-    try:
-        code = (
-            "import ipykernel\n"
-            "print(ipykernel.__version__)\n"
-            "manager = get_ipython().kernel.shell_channel_thread.manager\n"
-            "stream = manager._main_to_shell_channel.to_stream\n"
-            "print(stream._recv_callback.__qualname__)\n"
-            "print('_install' in globals())"
-        )
-        out = []
-        reply = kc.execute_interactive(
-            code,
-            timeout=30,
-            output_hook=lambda msg: out.append(msg["content"].get("text", "")),
-        )
-        assert reply["content"]["status"] == "ok"
-        # a user kernel spec could start another environment's kernel
-        assert "".join(out).split() == [
-            ipykernel_version,
-            "patch_send_on_shell_channel.<locals>._send_on_shell_channel",
-            "False",
-        ]
-    finally:
-        kc.stop_channels()
-        km.shutdown_kernel(now=True)
+    # in a child process, so a kernel that never answers fails the test, not the job
+    proc = subprocess.run(
+        [sys.executable, "-c", KERNEL_PROBE],
+        env=env,
+        capture_output=True,
+        text=True,
+        timeout=180,
+        check=False,
+    )
+    assert proc.returncode == 0, proc.stderr
+    # a user kernel spec could start another environment's kernel
+    assert proc.stdout.split()[-4:] == [
+        "ok",
+        ipykernel.__version__,
+        "patch_send_on_shell_channel.<locals>._send_on_shell_channel",
+        "False",
+    ], proc.stderr
