@@ -134,6 +134,7 @@ class IDElement(BaseModel, abc.ABC):
         return id(self) == id(other)
 
     _wire_id: str | None = PrivateAttr(None)
+    _derived_id: bool = PrivateAttr(False)
 
     def __copy__(self):
         return self._as_new_object(super().__copy__())
@@ -192,6 +193,11 @@ class IDElement(BaseModel, abc.ABC):
         if self._wire_id is None:
             self._wire_id = new_id()
         return self._wire_id
+
+    @property
+    def derived_id(self) -> bool:
+        """Whether ``id`` was derived (``Label.wrap``) and may be replaced on a clash."""
+        return self._derived_id
 
     def _repr_mimebundle_(self, **kwargs):
         from IPython.display import JSON, display
@@ -334,25 +340,31 @@ class Label(ShapeElement):
     def wrap(self, **kwargs) -> list[Label]:
         """Split text into individually laid-out labels with ``textwrap.wrap``.
 
-        Keyword arguments are forwarded to ``textwrap.wrap``. Wrapped labels inherit
-        this label's attributes and receive derived IDs.
+        Keyword arguments are forwarded to ``textwrap.wrap``. Each line copies this
+        label and its sub-labels (``metadata`` is shared). With several lines, an
+        explicit id ``L`` becomes ``L#<line>``; indexing replaces such a derived id
+        if another element already uses it.
         """
-        data = self.model_dump()
         lines = textwrap.wrap(self.text, **kwargs)
-        if self.id is None:
-            data.pop("id", None)
-        elif len(lines) > 1:
-            data.pop("id")
+        suffix = len(lines) > 1
         return [
-            Label(**{
-                **data,
-                "id": f"{self.id}.{index}"
-                if self.id is not None and len(lines) > 1
-                else self.id,
-                "text": line,
-            })
+            self._copy_line(f"#{index}" if suffix else "", text=line)
             for index, line in enumerate(lines)
         ]
+
+    def _copy_line(self, suffix: str, **update) -> Label:
+        copy = self.model_copy(
+            update={
+                **update,
+                "labels": [label._copy_line(suffix) for label in self.labels],
+                "layoutOptions": dict(self.layoutOptions),
+                "properties": self.properties.model_copy(deep=True),
+            }
+        )
+        if suffix and self.id is not None:
+            copy.id = f"{self.id}{suffix}"
+            copy._derived_id = True
+        return copy
 
 
 class Port(HierarchicalElement):

@@ -274,6 +274,9 @@
         "cssClasses": {
           "type": "string"
         },
+        "hidden": {
+          "type": "boolean"
+        },
         "isSymbol": {
           "type": "boolean"
         },

@@ -10,6 +10,8 @@ projection; the kernel index keeps it and it returns when the element is shown.
 
 import json
 
+import pytest
+
 from ipyelk.elements import (
     Node,
     NodeProperties,
@@ -136,4 +138,134 @@ def test_hidden_port_keeps_its_properties_after_a_slack_roundtrip():
 
     assert hidden_port.properties.hidden is True
     assert not hidden_port.properties.cssClasses
+    widget.close()
+
+
+PORT_GEOMETRY = {
+    "x": 1.0,
+    "y": 2.0,
+    "width": 12.0,
+    "height": 8.0,
+    "layoutOptions": {"org.eclipse.elk.port.side": "WEST"},
+}
+
+
+def browser(widget: MarkElementWidget, root: Node, edit=None, vis_index=None) -> dict:
+    """Project ``root``, send it through JSON, and merge it back like the browser."""
+    vis_index = vis_index or VisIndex.from_els(root)
+    vis_index.clear_slack(root)
+    with exclude_hidden, exclude_layout:
+        projected = convert_elkjson(root.model_dump(), vis_index)
+    wire = json.loads(json.dumps(to_json(projected, None)))
+    if edit is not None:
+        edit(wire)
+    widget.value = convert_elkjson(wire)
+    widget.persist()
+    return wire
+
+
+def geometry(port: Port) -> dict:
+    return {key: getattr(port, key) for key in PORT_GEOMETRY}
+
+
+def nested_port(hide_port: bool):
+    """``root > g1 > g2 > n`` with port ``n.p`` and an edge ``n.p -> other``.
+
+    Either the port or ``n`` is hidden, so ``n.p`` projects as a slack port onto
+    ``n`` or ``g2``.
+    """
+    root = Node(id="root")
+    g2 = root.add_child(Node(id="g1")).add_child(Node(id="g2"))
+    node = g2.add_child(Node(id="n", properties=NodeProperties(hidden=not hide_port)))
+    port = node.add_port(
+        Port(id="n.p", properties=PortProperties(hidden=hide_port), **PORT_GEOMETRY)
+    )
+    root.add_edge(port, root.add_child(Node(id="other"))).id = "edge"
+    widget = MarkElementWidget(value=root)
+    widget.persist(rebuild_index=True)
+    return widget, root, port, port if hide_port else node
+
+
+@pytest.mark.parametrize("hide_port", [True, False], ids=["hidden", "on-hidden-node"])
+def test_projected_port_keeps_its_geometry(hide_port):
+    widget, root, port, hidden = nested_port(hide_port)
+
+    for _ in range(3):
+        wire = browser(widget, root)
+        assert "slack-port" in json.dumps(wire)
+        assert geometry(port) == PORT_GEOMETRY
+        assert widget.index.elements["n.p"] is port
+        assert not port.properties.cssClasses
+
+    hidden.properties.hidden = False
+    wire = browser(widget, root)
+    assert "slack-port" not in json.dumps(wire)
+    assert geometry(port) == PORT_GEOMETRY
+    widget.close()
+
+
+@pytest.mark.parametrize("hide_port", [True, False], ids=["hidden", "on-hidden-node"])
+def test_hidden_port_ignores_a_custom_slack_style(hide_port):
+    widget, root, port, _ = nested_port(hide_port)
+    vis_index = VisIndex.from_els(root)
+    vis_index.slack_port_style = {"my-slack"}
+
+    wire = browser(widget, root, vis_index=vis_index)
+
+    assert "my-slack" in json.dumps(wire)
+    assert geometry(port) == PORT_GEOMETRY
+    widget.close()
+
+
+def test_port_revealed_during_a_layout_ignores_its_slack_port():
+    """The layout that comes back was made while the port was still hidden."""
+    widget, root, port, hidden = nested_port(hide_port=True)
+
+    def reveal(wire):
+        hidden.properties.hidden = False
+
+    browser(widget, root, reveal)
+
+    assert geometry(port) == PORT_GEOMETRY
+    widget.close()
+
+
+def test_visible_port_takes_the_layout():
+    root = Node(id="root")
+    a = root.add_child(Node(id="a"))
+    port = a.add_port(Port(id="a.p", **PORT_GEOMETRY))
+    root.add_edge(port, root.add_child(Node(id="b"))).id = "edge"
+    widget = MarkElementWidget(value=root)
+    widget.persist(rebuild_index=True)
+    laid_out = {
+        "x": 3.0,
+        "y": 4.0,
+        "width": 9.0,
+        "height": 7.0,
+        "layoutOptions": {"org.eclipse.elk.port.side": "EAST"},
+    }
+
+    browser(widget, root, lambda wire: wire["children"][0]["ports"][0].update(laid_out))
+
+    assert {key: getattr(port, key) for key in laid_out} == laid_out
+    widget.close()
+
+
+def test_moved_port_takes_the_layout():
+    """A port moved to another node keeps its id and still takes its layout."""
+    root = Node(id="root")
+    a = root.add_child(Node(id="a"))
+    b = root.add_child(Node(id="b"))
+    port = a.add_port(Port(id="p"))
+    widget = MarkElementWidget(value=root)
+    widget.persist(rebuild_index=True)
+    a.ports.remove(port.set_parent(None))
+    b.add_port(port)
+
+    browser(
+        widget, root, lambda wire: wire["children"][1]["ports"][0].update(x=3.0, y=4.0)
+    )
+
+    assert (port.x, port.y) == (3.0, 4.0)
+    assert widget.index.elements["p"] is port
     widget.close()

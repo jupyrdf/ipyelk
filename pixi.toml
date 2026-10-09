@@ -119,7 +119,11 @@ outputs = ["yarn.lock", "node_modules/.yarn-state.yml"]
 [feature.tasks-build.tasks.build-py-schema]
 cmd = "jlpm schema"
 depends-on = ["setup-js"]
-inputs = ["js/sprotty/json/elkschema.ts", "node_modules/.yarn-state.yml"]
+inputs = [
+  "js/sprotty/json/elkgraph-json.ts",
+  "js/sprotty/json/elkschema.ts",
+  "node_modules/.yarn-state.yml",
+]
 outputs = ["src/ipyelk/schema/elkschema.json"]
 
 [feature.tasks-build.tasks.build-js-lib]

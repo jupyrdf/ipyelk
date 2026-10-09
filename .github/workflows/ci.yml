@@ -47,6 +47,10 @@ jobs:
           key: ${{ env.CACHE_EPOCH }}-${{ hashFiles('package.json') }}-jlpm-core-meta
       - run: pixi run setup-js
       - run: touch node_modules/.cached-in-ci
+      - name: check the committed schema matches the TypeScript
+        run: |
+          pixi run -e build jlpm schema
+          git diff --exit-code src/ipyelk/schema/elkschema.json
       - run: pixi run dist
       - uses: actions/upload-artifact@v4
         with:

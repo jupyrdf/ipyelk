@@ -10,6 +10,7 @@ from pydantic import BaseModel, Field, SerializeAsAny
 from ..exceptions import NotFoundError
 from .common import EMPTY_SENTINEL
 from .elements import BaseElement, Edge, HierarchicalElement, Label, Node, Port
+from .registry import new_id
 
 
 def _missing_id(el: BaseElement, what: str = "element") -> ValueError:
@@ -102,6 +103,12 @@ class VisIndex(BaseModel):
     def __len__(self):
         return len(self.hidden)
 
+    @classmethod
+    def is_slack_port(cls, el: BaseElement) -> bool:
+        """Whether ``el`` is a port with the default ``slack_port_style``."""
+        style = cls.model_fields["slack_port_style"].get_default()
+        return isinstance(el, Port) and style <= set(el.properties.cssClasses.split())
+
     def port_factory(self, **kwargs) -> Port:
         port = Port(**kwargs)
         if port.width is None:
@@ -147,11 +154,20 @@ class ElementIndex(BaseModel):
 
     @classmethod
     def from_els(cls, *els: BaseElement) -> ElementIndex:
+        """Index ``els`` and their descendants by id.
+
+        A derived id (``Label.wrap``) that another element already uses is
+        replaced with a fresh one; any other id is kept.
+        """
+        found = list(iter_elements(*els))
+        given = {el.id: el for el in found if el.id is not None and not el.derived_id}
         elements: dict[str, SerializeAsAny[BaseElement]] = {}
-        for el in iter_elements(*els):
+        for el in found:
             el_id = el.get_id()
             if el_id is None:
                 raise _missing_id(el)
+            if el.derived_id and elements.get(el_id, given.get(el_id, el)) is not el:
+                el_id = el.id = new_id()
             elements[el_id] = el
         return cls(
             elements=elements,
@@ -207,7 +223,9 @@ class ElementIndex(BaseModel):
         what keeps `hidden` elements -- stripped from every serialized value by
         `Node.model_dump` -- alive across browser roundtrips); unknown ids are added,
         so elements that only exist in a value coming back from the browser
-        (e.g. slack ports) become addressable without discarding the index.
+        become addressable without discarding the index. A port that is hidden
+        (or under a hidden node), or comes back as a slack port, is not updated:
+        what comes back under its id is the projection's stand-in.
         """
         fields = [
             "properties",
@@ -224,25 +242,11 @@ class ElementIndex(BaseModel):
             if e1 is None:
                 self.elements[key] = e2
             elif type(e1) == type(e2):
-                # A collapsed view projects hidden ports onto a visible ancestor.
-                # They reuse the original id but their geometry/options belong to
-                # that ancestor, not to the hidden port restored on expansion.
-                if isinstance(e1, Port) and isinstance(e2, Port):
-                    parent1, parent2 = e1.get_parent(), e2.get_parent()
-                    if (
-                        parent1 is not None
-                        and parent2 is not None
-                        and parent1.get_id() != parent2.get_id()
-                    ):
-                        continue
+                if isinstance(e1, Port) and (
+                    is_hidden(e1) or VisIndex.is_slack_port(e2)
+                ):
+                    continue
                 for field in fields:
-                    # Slack-port styling belongs to a projection, not its hidden source.
-                    if (
-                        field == "properties"
-                        and isinstance(e1, Port)
-                        and "slack-port" in e2.properties.cssClasses.split()
-                    ):
-                        continue
                     if hasattr(e1, field) and hasattr(e2, field):
                         setattr(e1, field, getattr(e2, field))
 
@@ -518,13 +522,23 @@ class HierarchicalIndex(ElementIndex):
         return element, hidden
 
 
+def is_hidden(el: HierarchicalElement) -> bool:
+    """Whether ``el`` or any of its ancestors is hidden."""
+    node: HierarchicalElement | None = el
+    while node is not None:
+        if node.properties.hidden:
+            return True
+        node = node.get_parent()
+    return False
+
+
 def iter_elements(*els: BaseElement) -> Iterator[BaseElement]:
     """Iterate over BaseElements that follow the `Node` hierarchy
 
     :param el: current element
     :yield: sub element
     """
-    for el in set(els):
+    for el in dict.fromkeys(els):
         yield el
         if isinstance(el, Node):
             yield from iter_elements(*el.children)
@@ -575,7 +589,7 @@ def iter_edges(*els: Node) -> Iterator[tuple[Node, Edge]]:
     :param el: current element
     :yield: owning Node, Edge
     """
-    for el in set(els):
+    for el in dict.fromkeys(els):
         for edge in el.edges:
             yield el, edge
         yield from iter_edges(*el.children)

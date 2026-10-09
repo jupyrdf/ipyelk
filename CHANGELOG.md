@@ -329,6 +329,19 @@ throughout 3.x with the replacement in the message.
 - Log the routine "fixing N ids" message from `ValidationPipe` at debug level instead of
   warning: assigning ids to id-less elements is the normal path (`fix_null_id=True`), so
   every diagram built from id-less elements logged it
+- Keep the elements behind a collapsed view intact across layouts ([#171], [#187]):
+  - A hidden port, or a port on a hidden node, keeps its size, position, layout options
+    and properties. The slack port that stands in for it in the layout used to overwrite
+    them with its own 5×5 geometry, permanently. Any other port, including one that
+    moved to another node, still takes its layout from the browser.
+  - Each line of a wrapped label gets its own ids, and so do its sub-labels. The lines of
+    a label with id `L` get the ids `L#0`, `L#1`, … (sub-label `sub` gets `sub#0`, …).
+    If another element already uses one of these derived ids, indexing gives that line
+    a fresh id; ids you set yourself never change. Before, every line had the same id
+    (`L`, or one generated id) and the same sub-label ids. A wrapped line shares its
+    label's `metadata`.
+  - The ELK JSON schema accepts the slack-port `key` and `hidden` properties, so a
+    projection validates after a collapse and an expand.
 
 ### Development
 
@@ -358,6 +371,8 @@ throughout 3.x with the replacement in the message.
   to the descriptor ipykernel captures, where the dump woke the capture thread and made
   it look busy. A second dump lists the pending `asyncio` tasks of the kernel's event
   loops, with their await chains, and whether the shell locks are held ([#177])
+- Fail CI when the committed `elkschema.json` differs from what `jlpm schema` generates,
+  and rebuild it when `elkgraph-json.ts` changes ([#187])
 
 [#95]: https://github.com/jupyrdf/ipyelk/issues/95
 [eclipse-sprotty/sprotty#573]: https://github.com/eclipse-sprotty/sprotty/issues/573
@@ -366,11 +381,13 @@ throughout 3.x with the replacement in the message.
 [#161]: https://github.com/jupyrdf/ipyelk/issues/161
 [#164]: https://github.com/jupyrdf/ipyelk/issues/164
 [#167]: https://github.com/jupyrdf/ipyelk/issues/167
+[#171]: https://github.com/jupyrdf/ipyelk/issues/171
 [#176]: https://github.com/jupyrdf/ipyelk/issues/176
 [#177]: https://github.com/jupyrdf/ipyelk/issues/177
 [#178]: https://github.com/jupyrdf/ipyelk/issues/178
 [#180]: https://github.com/jupyrdf/ipyelk/issues/180
 [#181]: https://github.com/jupyrdf/ipyelk/issues/181
+[#187]: https://github.com/jupyrdf/ipyelk/issues/187
 [#191]: https://github.com/jupyrdf/ipyelk/issues/191
 
 ## `2.1.2`

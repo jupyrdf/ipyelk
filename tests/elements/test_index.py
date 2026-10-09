@@ -3,7 +3,14 @@
 import pytest
 
 from ipyelk.elements import Node, NodeProperties, Registry
-from ipyelk.elements.index import ElementIndex, IDReport, VisIndex, iter_visible
+from ipyelk.elements.index import (
+    ElementIndex,
+    IDReport,
+    VisIndex,
+    iter_edges,
+    iter_elements,
+    iter_visible,
+)
 
 
 def test_id_report_message_interpolates_duplicated_ids():
@@ -84,3 +91,15 @@ def test_vis_index_last_visible_is_the_parent():
     assert "w" not in index.hidden
     assert "x" not in index.hidden
     assert set(index.hidden) == {"y"}
+
+
+def test_iteration_follows_child_order():
+    """Tree order decides which of two clashing derived ids is kept."""
+    root = Node(id="root")
+    children = [root.add_child(Node(id=f"c{i}")) for i in range(12)]
+    for child in children:
+        child.add_edge(child, child).id = f"e{child.id}"
+
+    nodes = [el.id for el in iter_elements(root) if isinstance(el, Node)]
+    assert nodes[1:] == [c.id for c in children]
+    assert [owner.id for owner, _ in iter_edges(root)] == [c.id for c in children]
