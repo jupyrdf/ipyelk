@@ -94,7 +94,7 @@ def test_nested_graph_exports_and_roundtrip():
 @pytest.mark.parametrize(
     ("shape", "dimensions"),
     [
-        (shapes.Circle(radius=6), {"x": 6, "y": 6, "width": 12, "height": 12}),
+        (shapes.Circle(radius=6), {"width": 12, "height": 12}),
         (shapes.Ellipse(rx=4, ry=3), {"width": 8, "height": 6}),
         (shapes.Ellipse(rx=4, ry=3, width=20), {"width": 20, "height": 6}),
     ],
@@ -113,6 +113,20 @@ def test_nested_shape_dimensions(shape, dimensions):
     assert (shape.x, shape.y, shape.width, shape.height) == before
     assert node.width is None
     assert node.model_dump(include={"id"}) == {"id": "node"}
+
+
+def test_circle_leaves_its_center_to_the_renderer():
+    """``node:round`` centers the ellipse in the laid-out node unless x/y are set."""
+    shape = shapes.Circle(radius=6)
+    node = Node(id="n", width=100, height=50, properties=NodeProperties(shape=shape))
+    data = json.loads(node.model_dump_json(exclude_none=True))
+    assert data["properties"]["shape"] == {
+        "type": "node:round",
+        "width": 12,
+        "height": 12,
+    }
+    pinned = shapes.Circle(radius=6, x=3, y=4).model_dump(exclude_none=True)
+    assert (pinned["x"], pinned["y"]) == (3, 4)
     assert shape.model_dump(include={"type"}) == {"type": shape.type}
 
 

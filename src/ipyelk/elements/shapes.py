@@ -252,8 +252,8 @@ class Circle(NodeShape):
     def dimension(self, key: str) -> float | None:
         if key in {"width", "height"}:
             return self.radius * 2
-        value = super().dimension(key)
-        return self.radius if value is None else value
+        # x and y stay unset, so `node:round` centers the ellipse in the laid-out node
+        return super().dimension(key)
 
 
 class SVG(NodeShape):
