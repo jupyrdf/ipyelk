@@ -159,13 +159,16 @@ def test_reply_send_does_not_strand_a_request(shell_channel_loop, sockets, fixed
 @pytest.mark.skipif(FIXED_UPSTREAM, reason="ipykernel sends through the stream")
 def test_startup_file_patches_the_kernel(tmp_path):
     manager = pytest.importorskip("jupyter_client.manager")
+    ipykernel_version = pytest.importorskip("ipykernel").__version__
     startup = tmp_path / "profile_default" / "startup"
     startup.mkdir(parents=True)
-    (startup / "01-shell-reply-fix.py").write_text(SCRIPT.read_text(encoding="utf-8"))
+    (startup / "00-shell-reply-fix.py").write_text(SCRIPT.read_text(encoding="utf-8"))
     env = {**os.environ, "IPYTHONDIR": str(tmp_path)}
     km, kc = manager.start_new_kernel(startup_timeout=60, env=env)
     try:
         code = (
+            "import ipykernel\n"
+            "print(ipykernel.__version__)\n"
             "from ipykernel.subshell_manager import SubshellManager\n"
             "print(SubshellManager._send_on_shell_channel.__qualname__)\n"
             "print('_install' in globals())"
@@ -177,7 +180,9 @@ def test_startup_file_patches_the_kernel(tmp_path):
             output_hook=lambda msg: out.append(msg["content"].get("text", "")),
         )
         assert reply["content"]["status"] == "ok"
+        # a user kernel spec could start another environment's kernel
         assert "".join(out).split() == [
+            ipykernel_version,
             "patch_send_on_shell_channel.<locals>._send_on_shell_channel",
             "False",
         ]

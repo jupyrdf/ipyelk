@@ -97,7 +97,7 @@ export
 && rm -rf $NBCONVERT_DIR $IPYTHONDIR
 && mkdir -p $NBCONVERT_DIR $IPYTHONDIR/profile_default/startup
 && cp scripts/nbconvert_kernel_watchdog.py $IPYTHONDIR/profile_default/startup/00-watchdog.py
-&& cp scripts/kernel_shell_reply_fix.py $IPYTHONDIR/profile_default/startup/01-shell-reply-fix.py
+&& cp scripts/kernel_shell_reply_fix.py $IPYTHONDIR/profile_default/startup/00-shell-reply-fix.py
 && cd examples
 && rm -rf .ipynb_checkpoints/
 && jupyter nbconvert
