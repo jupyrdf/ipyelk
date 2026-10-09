@@ -66,20 +66,6 @@ finally:
 """
 
 
-class Opaque:
-    """A fixture value with a short ``repr``.
-
-    pytest formats test arguments on failure, and the pending futures of an
-    ``IOLoop`` can take it minutes.
-    """
-
-    def __init__(self, **kwargs):
-        self.__dict__.update(kwargs)
-
-    def __repr__(self):
-        return f"<{', '.join(self.__dict__)}>"
-
-
 def run_on_loop(loop, func):
     """Run ``func()`` on ``loop``'s thread and return its result."""
     box = {}
@@ -116,7 +102,7 @@ def shell_channel_loop():
     thread = threading.Thread(target=run, name=name, daemon=True)
     thread.start()
     assert ready.wait(TIMEOUT)
-    yield Opaque(loop=box["loop"])
+    yield box["loop"]
     box["loop"].add_callback(box["loop"].stop)
     thread.join(TIMEOUT)
 
@@ -130,7 +116,7 @@ def sockets():
     client = context.socket(zmq.DEALER)
     client.setsockopt(zmq.IDENTITY, b"client")
     client.connect(f"tcp://127.0.0.1:{port}")
-    yield Opaque(context=context, shell_socket=shell_socket, client=client)
+    yield context, shell_socket, client
     # closes every socket first, so one left open cannot block it
     context.destroy(linger=0)
 
@@ -155,14 +141,17 @@ def test_no_op_when_fixed_upstream():
             False,
             marks=pytest.mark.skipif(
                 sys.platform == "win32",
-                reason="this harness does not strand the request on Windows",
+                reason=(
+                    "this harness does not strand the request on Windows, so there"
+                    " only the kernel test guards the patch"
+                ),
             ),
         ),
     ],
 )
 def test_reply_send_does_not_strand_a_request(shell_channel_loop, sockets, fixed):
-    loop = shell_channel_loop.loop
-    shell_socket, client = sockets.shell_socket, sockets.client
+    loop = shell_channel_loop
+    context, shell_socket, client = sockets
     received = []
     got = threading.Event()
 
@@ -178,7 +167,7 @@ def test_reply_send_does_not_strand_a_request(shell_channel_loop, sockets, fixed
         stream.on_recv(on_recv, copy=True)
         if fixed:
             assert shell_reply_fix.patch_send_on_shell_channel(Manager, stream)
-        return stream, Manager(sockets.context, loop, shell_socket)
+        return stream, Manager(context, loop, shell_socket)
 
     def strand_then_reply():
         # on the loop thread, so the stream cannot read in between
