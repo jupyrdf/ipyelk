@@ -376,14 +376,16 @@ throughout 3.x with the replacement in the message.
   wake-up for a request that arrives during the send. The request then waits unread
   while the kernel idles. In nbconvert that happens when a cell prints into an
   `ipywidgets.Output`: `nbclient` answers with a `comm_msg` just as the cell's reply goes
-  out, and the next cell never runs. The `itest` environment now locks ipykernel 7.4,
-  which fixed it ([ipykernel#1529]). ipykernel 7.4 needs Python 3.11 or newer,
-  so for `itest-oldest` the `nbconvert--` task installs
-  `scripts/nbconvert_shell_reply_fix.py` as an IPython startup file in its kernels,
-  which backports the fix. The `utest` environments install `ipykernel` to test it
-- Lower the `nbconvert--` cell timeout from 1200 s to 40 s, and fire the kernel
-  watchdog after 30 s. The slowest of 325 notebook runs in recent CI jobs took 8.2 s
-  ([#177])
+  out, and the next cell never runs.
+  - The `itest` and `atest` environments now lock ipykernel 7.4, which fixed it
+    ([ipykernel#1529]).
+  - ipykernel 7.4 needs Python 3.11 or newer. For the Python 3.10 environments, the
+    kernels of the `nbconvert--` task and of the robot tests load
+    `scripts/kernel_shell_reply_fix.py`, a startup file that backports the fix and does
+    nothing on ipykernel 7.4 or newer. `utest-oldest` tests it
+- Lower the `nbconvert--` cell timeout from 1200 s to 40 s. The slowest healthy notebook
+  in 4061 notebook runs from the last 45 CI runs took 8.2 s. The kernel watchdog now
+  restarts with every cell and fires after 30 s without a new cell ([#177])
 - Fail CI when the committed `elkschema.json` differs from what `jlpm schema` generates,
   and rebuild it when `elkgraph-json.ts` changes ([#187])
 

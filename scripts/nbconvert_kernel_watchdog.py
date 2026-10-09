@@ -9,9 +9,10 @@ the job log shows the timeout and nothing else (#177).
 This file runs as an IPython startup file in the kernels nbconvert launches
 (``IPYTHONDIR`` is set by the ``nbconvert--`` task). ``faulthandler`` writes the
 stacks from a watchdog thread without the GIL or the event loop, so a busy loop
-cannot hide from it. The task sets ``IPYELK_KERNEL_WATCHDOG`` to 30 s, under its
-40 s cell timeout and over any healthy notebook in CI, and each notebook gets its
-own kernel, so the timer starts fresh per notebook.
+cannot hide from it. The timer restarts whenever a cell starts, so it fires when
+no cell has started for ``IPYELK_KERNEL_WATCHDOG`` seconds: a cell that runs that
+long, or a request the kernel never got to. The task sets it to 30 s, under its
+40 s cell timeout.
 
 The dump goes to the kernel's real stderr, which nbconvert passes through to the
 job log. On Linux and macOS, ipykernel has replaced file descriptor 2 with a pipe
@@ -27,15 +28,9 @@ when the GIL is disabled, where walking another thread's coroutines is unsafe.
 """
 
 
-def _ipyelk_kernel_watchdog():
+def _ipyelk_asyncio_dumper():
     import asyncio
-    import faulthandler
-    import os
-    import sys
-    import threading
     import traceback
-
-    from IPython import get_ipython
 
     max_tasks = 50
 
@@ -88,16 +83,41 @@ def _ipyelk_kernel_watchdog():
                 safely(dump, out, name, obj)
             out.write("--- end asyncio state ---\n")
 
+    return dump_asyncio
+
+
+def _ipyelk_kernel_watchdog(dump_asyncio):
+    import faulthandler
+    import os
+    import sys
+    import threading
+
+    from IPython import get_ipython
+
     timeout = float(os.environ.get("IPYELK_KERNEL_WATCHDOG", "900"))
     fd = getattr(sys.stderr, "_original_stdstream_copy", None)
     fd = os.dup(sys.__stderr__.fileno() if fd is None else fd)
-    faulthandler.dump_traceback_later(timeout, repeat=False, file=fd)
-    kernel = getattr(get_ipython(), "kernel", None)
-    if kernel is not None and getattr(sys, "_is_gil_enabled", lambda: True)():
-        timer = threading.Timer(timeout + 1, dump_asyncio, (fd, kernel))
-        timer.daemon = True
-        timer.start()
+    shell = get_ipython()
+    kernel = getattr(shell, "kernel", None)
+    with_asyncio = (
+        kernel is not None and getattr(sys, "_is_gil_enabled", lambda: True)()
+    )
+    timers = []
+
+    def arm(*_):
+        # a new call replaces the pending dump
+        faulthandler.dump_traceback_later(timeout, repeat=False, file=fd)
+        if with_asyncio:
+            for timer in timers:
+                timer.cancel()
+            timers[:] = [threading.Timer(timeout + 1, dump_asyncio, (fd, kernel))]
+            timers[0].daemon = True
+            timers[0].start()
+
+    arm()
+    if shell is not None:
+        shell.events.register("pre_run_cell", arm)
 
 
-_ipyelk_kernel_watchdog()
-del _ipyelk_kernel_watchdog
+_ipyelk_kernel_watchdog(_ipyelk_asyncio_dumper())
+del _ipyelk_kernel_watchdog, _ipyelk_asyncio_dumper

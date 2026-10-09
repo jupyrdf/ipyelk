@@ -143,6 +143,9 @@ Create ATest Kernel Startup
     ...    from ipyelk.pipes.text_sizer import BrowserTextSizer
     ...    BrowserTextSizer.timeout.default_value = 1.0
     Create File    ${startup_dir}${/}00-ipyelk-atest.py    ${content}
+    # ipykernel < 7.4 can leave a shell request unread (#177)
+    Copy File    ${ROOT}${/}scripts${/}kernel_shell_reply_fix.py
+    ...    ${startup_dir}${/}01-shell-reply-fix.py
 
 Initialize User Settings
     [Documentation]    Configure the settings directory, and modify settings that make tests less reproducible

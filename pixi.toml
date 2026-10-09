@@ -97,7 +97,7 @@ export
 && rm -rf $NBCONVERT_DIR $IPYTHONDIR
 && mkdir -p $NBCONVERT_DIR $IPYTHONDIR/profile_default/startup
 && cp scripts/nbconvert_kernel_watchdog.py $IPYTHONDIR/profile_default/startup/00-watchdog.py
-&& cp scripts/nbconvert_shell_reply_fix.py $IPYTHONDIR/profile_default/startup/01-shell-reply-fix.py
+&& cp scripts/kernel_shell_reply_fix.py $IPYTHONDIR/profile_default/startup/01-shell-reply-fix.py
 && cd examples
 && rm -rf .ipynb_checkpoints/
 && jupyter nbconvert
@@ -647,8 +647,6 @@ pip = "*"
 flit-core = "*"
 
 [feature.deps-utest.dependencies]
-# tests/test_nbconvert_shell_reply_fix.py
-ipykernel = "*"
 pytest = "*"
 pytest-html = "*"
 pytest-asyncio = "*"
@@ -658,6 +656,8 @@ bqplot = "*"
 importnb = "*"
 
 [feature.deps-itest.dependencies]
+# keep 7.4 or newer locked for itest and atest, which fixed #177; the py3.10 envs
+# cannot have it, so their kernels load scripts/kernel_shell_reply_fix.py instead
 ipykernel = "*"
 nbconvert = "*"
 

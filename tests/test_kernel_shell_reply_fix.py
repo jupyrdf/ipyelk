@@ -1,17 +1,17 @@
 # Copyright (c) 2026 ipyelk contributors.
 # Distributed under the terms of the Modified BSD License.
-"""The nbconvert kernels' shell reply fix (#177).
+"""The test kernels' shell reply fix (#177).
 
 Adapted from ipykernel's own regression test for the fix it shipped in 7.4
-(``tests/test_subshell_wedge.py``, ipython/ipykernel#1529). A request is queued on
-the shell ROUTER with its wake-up already consumed, then the shell channel thread
-sends a reply. With a raw send the request is never delivered; through the stream
-it is.
+(``tests/test_subshell_wedge.py``, ipykernel#1529). A request is queued on the
+shell ROUTER with its wake-up already consumed, as a raw send can do, then the
+shell channel thread sends a reply. A raw send leaves the request stranded; a send
+through the stream delivers it.
 """
 
 import asyncio
 import importlib.util
-import inspect
+import os
 import threading
 import time
 from pathlib import Path
@@ -24,17 +24,15 @@ ipykernel_thread = pytest.importorskip("ipykernel.thread")
 tornado_ioloop = pytest.importorskip("tornado.ioloop")
 zmqstream = pytest.importorskip("zmq.eventloop.zmqstream")
 
-SCRIPT = Path(__file__).parents[1] / "scripts" / "nbconvert_shell_reply_fix.py"
-spec = importlib.util.spec_from_file_location("nbconvert_shell_reply_fix", SCRIPT)
+SCRIPT = Path(__file__).parents[1] / "scripts" / "kernel_shell_reply_fix.py"
+spec = importlib.util.spec_from_file_location("kernel_shell_reply_fix", SCRIPT)
 assert spec
 assert spec.loader
 shell_reply_fix = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(shell_reply_fix)
 
 SubshellManager = subshell_manager.SubshellManager
-FIXED_UPSTREAM = (
-    "shell_stream" in inspect.signature(SubshellManager.__init__).parameters
-)
+FIXED_UPSTREAM = shell_reply_fix.fixed_upstream(SubshellManager)
 TIMEOUT = 10.0
 
 
@@ -152,7 +150,37 @@ def test_reply_send_does_not_strand_a_request(shell_channel_loop, sockets, fixed
             assert client.poll(int(TIMEOUT * 1000))
             assert client.recv_multipart() == [b"reply"]
         else:
-            # documents the ipykernel 7.0 to 7.3 behavior the fix exists for
+            # the ipykernel 7.0 to 7.3 behavior the fix exists for
             assert not got.wait(1.0)
     finally:
         run_on_loop(loop, teardown)
+
+
+@pytest.mark.skipif(FIXED_UPSTREAM, reason="ipykernel sends through the stream")
+def test_startup_file_patches_the_kernel(tmp_path):
+    manager = pytest.importorskip("jupyter_client.manager")
+    startup = tmp_path / "profile_default" / "startup"
+    startup.mkdir(parents=True)
+    (startup / "01-shell-reply-fix.py").write_text(SCRIPT.read_text(encoding="utf-8"))
+    env = {**os.environ, "IPYTHONDIR": str(tmp_path)}
+    km, kc = manager.start_new_kernel(startup_timeout=60, env=env)
+    try:
+        code = (
+            "from ipykernel.subshell_manager import SubshellManager\n"
+            "print(SubshellManager._send_on_shell_channel.__qualname__)\n"
+            "print('_install' in globals())"
+        )
+        out = []
+        reply = kc.execute_interactive(
+            code,
+            timeout=30,
+            output_hook=lambda msg: out.append(msg["content"].get("text", "")),
+        )
+        assert reply["content"]["status"] == "ok"
+        assert "".join(out).split() == [
+            "patch_send_on_shell_channel.<locals>._send_on_shell_channel",
+            "False",
+        ]
+    finally:
+        kc.stop_channels()
+        km.shutdown_kernel(now=True)
