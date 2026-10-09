@@ -345,7 +345,7 @@ throughout 3.x with the replacement in the message.
 - Center a `Circle` in its node: `Circle` no longer serializes `x` and `y` as its
   `radius`. The `node:round` renderer takes its radii from the laid-out node, so a node
   larger than the circle drew the ellipse off center. `x` and `y` that you set are still
-  serialized ([#193])
+  serialized ([#200])
 
 ### Development
 
@@ -399,7 +399,7 @@ throughout 3.x with the replacement in the message.
 [#181]: https://github.com/jupyrdf/ipyelk/issues/181
 [#187]: https://github.com/jupyrdf/ipyelk/issues/187
 [#191]: https://github.com/jupyrdf/ipyelk/issues/191
-[#193]: https://github.com/jupyrdf/ipyelk/issues/193
+[#200]: https://github.com/jupyrdf/ipyelk/issues/200
 
 ## `2.1.2`
 

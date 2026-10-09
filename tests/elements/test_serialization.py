@@ -113,6 +113,7 @@ def test_nested_shape_dimensions(shape, dimensions):
     assert (shape.x, shape.y, shape.width, shape.height) == before
     assert node.width is None
     assert node.model_dump(include={"id"}) == {"id": "node"}
+    assert shape.model_dump(include={"type"}) == {"type": shape.type}
 
 
 def test_circle_leaves_its_center_to_the_renderer():
@@ -127,7 +128,6 @@ def test_circle_leaves_its_center_to_the_renderer():
     }
     pinned = shapes.Circle(radius=6, x=3, y=4).model_dump(exclude_none=True)
     assert (pinned["x"], pinned["y"]) == (3, 4)
-    assert shape.model_dump(include={"type"}) == {"type": shape.type}
 
 
 def test_nested_include_exclude():
