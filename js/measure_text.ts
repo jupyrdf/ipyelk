@@ -73,10 +73,15 @@ export class ELKTextSizerModel extends DOMWidgetModel {
       ELK_CSS.sizer_class,
       styledClass,
     );
-    const raw_css: string = this.get('namespaced_css'); //TODO should this `raw_css` string be escaped?
-    // user style CSS, same trust as `StyledWidget._css_widget`; see TODO above
-    // ast-grep-ignore: ts-no-html-injection
-    el.innerHTML = `<div class="sprotty"><style>${raw_css}</style><svg class="sprotty-graph"><g></g></svg></div>`;
+    const sprotty = document.createElement('div');
+    sprotty.classList.add('sprotty');
+    const style = document.createElement('style');
+    style.textContent = this.get('namespaced_css');
+    const svg = createSVGElement('svg');
+    svg.classList.add('sprotty-graph');
+    svg.appendChild(createSVGElement('g'));
+    sprotty.append(style, svg);
+    el.appendChild(sprotty);
     return el;
   }
 
