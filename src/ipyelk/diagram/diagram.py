@@ -141,7 +141,7 @@ class Diagram(StyledWidget):
     def _check_open(self, action: str) -> None:
         if self._closed:
             name = type(self).__name__
-            msg = f"{name} is closed; cannot {action}; build a new {name}"
+            msg = f"{name} is closed and cannot {action}; build a new {name}"
             raise T.TraitError(msg)
 
     @T.validate("source", "view", "tools", "toolbar", "symbols", "style")

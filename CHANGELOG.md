@@ -332,7 +332,9 @@ throughout 3.x with the replacement in the message.
   or `style` on a closed `Diagram` raise `TraitError` naming its class, as do setting
   `pipes`, `schedule_run()` and `run()` on a closed `Pipeline`. A refused `pipes` set
   keeps the stages; it used to empty them. A diagram whose pipe was closed raises on
-  `refresh()`. Closing a diagram twice still does nothing ([#197])
+  `refresh()`. A run in flight when its pipeline closes is cancelled at the next stage,
+  even when the cancel comes from another event loop. Closing a diagram twice still
+  does nothing ([#197])
 - Log the routine "fixing N ids" message from `ValidationPipe` at debug level instead of
   warning: assigning ids to id-less elements is the normal path (`fix_null_id=True`), so
   every diagram built from id-less elements logged it
@@ -357,7 +359,7 @@ it.
 
 ```python
 diagram.close()
-diagram.refresh()  # TraitError: Diagram is closed; cannot refresh; build a new Diagram
+diagram.refresh()  # TraitError: Diagram is closed and cannot refresh; build a new Diagram
 diagram = Diagram(source=diagram.source)  # the source stays open
 ```
 

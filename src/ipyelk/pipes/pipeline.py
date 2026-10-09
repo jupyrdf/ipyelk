@@ -90,7 +90,6 @@ class Pipeline(SyncedOutletPipe):
     _taken: tuple[str, ...] = ()
     #: the stages ``pipes`` last accepted; the trait may already hold a proposal
     _stages: tuple[Pipe, ...] = ()
-    _closed: bool = False
 
     @T.default("status_widget")
     def _default_status_widget(self):
@@ -107,13 +106,12 @@ class Pipeline(SyncedOutletPipe):
         """Close this pipeline, its sub-pipes and the widgets it created."""
         for pipe in self.pipes:
             pipe.close()
-        self._closed = True
         super().close()
 
     def _check_open(self, action: str) -> None:
         if self._closed:
             name = type(self).__name__
-            msg = f"{name} is closed; cannot {action}; build a new {name}"
+            msg = f"{name} is closed and cannot {action}; use a new pipe"
             raise T.TraitError(msg)
 
     def schedule_run(self, change: T.Bunch | None = None) -> asyncio.Task | None:
@@ -223,6 +221,9 @@ class Pipeline(SyncedOutletPipe):
 
         # Look at enabled pipes
         for i, pipe in enumerate(self.pipes):
+            if self._closed:
+                # closed by a stage, or before a cancel from another loop landed
+                raise asyncio.CancelledError
             if i and self.superseded():
                 raise Superseded(f"superseded before stage {i}")
             # TODO use i and num_steps for reporting processing stage
