@@ -2,6 +2,7 @@
 # Distributed under the terms of the Modified BSD License.
 from __future__ import annotations
 
+import asyncio
 from datetime import datetime
 
 import ipywidgets as W
@@ -109,14 +110,23 @@ class Pipeline(SyncedOutletPipe):
         self._closed = True
         super().close()
 
+    def _check_open(self, action: str) -> None:
+        if self._closed:
+            name = type(self).__name__
+            msg = f"{name} is closed; cannot {action}; build a new {name}"
+            raise T.TraitError(msg)
+
+    def schedule_run(self, change: T.Bunch | None = None) -> asyncio.Task | None:
+        """Request a run (see ``Pipe.schedule_run``); refused once closed."""
+        self._check_open("run")
+        return super().schedule_run(change)
+
     @T.validate("pipes")
     def _validate_pipes(self, proposal: T.Bunch) -> list[Pipe]:
         """Refuse any change once closed, a closed stage, a stage listed twice,
         or a new stage that is part of an open diagram's pipe.
         """
-        if self._closed:
-            msg = f"{type(self).__name__} is closed; cannot set pipes"
-            raise T.TraitError(msg)
+        self._check_open("set pipes")
         pipes = proposal["value"]
         kept = {id(pipe) for pipe in self._stages}
         seen: set[int] = set()
@@ -191,6 +201,7 @@ class Pipeline(SyncedOutletPipe):
         ``flow`` is passed by a parent pipeline to a nested one, since the
         parent already took it.
         """
+        self._check_open("run")
         start = datetime.now()
         if flow is None:
             self._taken = taken = self.inlet.take()

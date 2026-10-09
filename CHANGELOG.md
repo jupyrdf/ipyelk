@@ -328,10 +328,11 @@ throughout 3.x with the replacement in the message.
   `ui` the tool built, and `Viewer.close()` its tools ([#191])
 - Raise on a closed diagram or pipeline instead of silently accepting the call. A closed
   widget has no comm, so the call never reached the browser. `refresh()`,
-  `register_tool()` and setting `source`, `pipe`, `view`, `tools`, `symbols` or `style`
-  on a closed `Diagram` raise `TraitError` naming its class, as does setting `pipes` on
-  a closed `Pipeline`, which now keeps its `pipes` (a refused set used to empty them).
-  Closing a diagram twice still does nothing ([#197])
+  `register_tool()` and setting `source`, `pipe`, `view`, `tools`, `toolbar`, `symbols`
+  or `style` on a closed `Diagram` raise `TraitError` naming its class, as do setting
+  `pipes`, `schedule_run()` and `run()` on a closed `Pipeline`. A refused `pipes` set
+  keeps the stages; it used to empty them. A diagram whose pipe was closed raises on
+  `refresh()`. Closing a diagram twice still does nothing ([#197])
 - Log the routine "fixing N ids" message from `ValidationPipe` at debug level instead of
   warning: assigning ids to id-less elements is the normal path (`fix_null_id=True`), so
   every diagram built from id-less elements logged it
@@ -356,7 +357,7 @@ it.
 
 ```python
 diagram.close()
-diagram.refresh()  # TraitError: Diagram is closed; cannot refresh
+diagram.refresh()  # TraitError: Diagram is closed; cannot refresh; build a new Diagram
 diagram = Diagram(source=diagram.source)  # the source stays open
 ```
 

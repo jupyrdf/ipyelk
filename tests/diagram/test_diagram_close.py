@@ -23,7 +23,7 @@ from ipyelk.pipes import (
     VisibilityPipe,
 )
 from ipyelk.pipes.pipeline import Pipeline
-from ipyelk.tools import ControlOverlay, SetTool, Tool
+from ipyelk.tools import ControlOverlay, SetTool, Tool, Toolbar
 from ipyelk.util import close_widget
 
 from .test_pipe_replacement import ROUNDS, is_open, live_widgets, make_source, refresh
@@ -147,10 +147,11 @@ ENTRY_POINTS = {
     "set source": lambda d: setattr(d, "source", make_source()),
     "set view": lambda d: setattr(d, "view", SprottyViewer()),
     "set tools": lambda d: setattr(d, "tools", ()),
+    "set toolbar": lambda d: setattr(d, "toolbar", Toolbar()),
     "set symbols": lambda d: setattr(d, "symbols", SymbolSpec()),
     "set style": lambda d: setattr(d, "style", {" .a": {"fill": "red"}}),
 }
-TRAITS = ("pipe", "source", "view", "tools", "symbols", "style")
+TRAITS = ("pipe", "source", "view", "tools", "toolbar", "symbols", "style")
 
 
 @pytest.mark.parametrize("action", ENTRY_POINTS)
@@ -159,7 +160,8 @@ def test_a_closed_diagram_raises(action: str) -> None:
     diagram.close()
     before = {name: getattr(diagram, name) for name in TRAITS}
 
-    with pytest.raises(T.TraitError, match=f"^Diagram is closed; cannot {action}$"):
+    msg = f"^Diagram is closed; cannot {action}; build a new Diagram$"
+    with pytest.raises(T.TraitError, match=msg):
         ENTRY_POINTS[action](diagram)
 
     assert {name: getattr(diagram, name) for name in TRAITS} == before
@@ -172,11 +174,29 @@ def test_a_closed_pipeline_refuses_pipes_and_keeps_them(owned: bool) -> None:
     stages = list(pipe.pipes)
     (diagram or pipe).close()
     name = type(pipe).__name__
+    msg = f"^{name} is closed; cannot set pipes; build a new {name}$"
 
     for pipes in ([ValidationPipe(), ValidationPipe()], [stages[0]], []):
-        with pytest.raises(T.TraitError, match=f"^{name} is closed; cannot set pipes$"):
+        with pytest.raises(T.TraitError, match=msg):
             pipe.pipes = pipes
         assert pipe.pipes == stages
+
+
+@pytest.mark.asyncio
+async def test_a_closed_pipeline_refuses_runs() -> None:
+    diagram = Diagram(source=make_source())
+    pipe = diagram.pipe
+    pipe.close()
+    msg = "^DefaultFlow is closed; cannot run; build a new DefaultFlow$"
+
+    with pytest.raises(T.TraitError, match=msg):
+        diagram.refresh()
+    with pytest.raises(T.TraitError, match=msg):
+        pipe.schedule_run()
+    with pytest.raises(T.TraitError, match=msg):
+        await pipe.run()
+    assert pipe._task is None
+    diagram.close()
 
 
 def test_closing_twice_is_a_silent_no_op() -> None:

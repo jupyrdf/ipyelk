@@ -49,8 +49,8 @@ class Diagram(StyledWidget):
         For example unique arrow head shapes or custom node shapes.
 
     A closed diagram raises ``TraitError`` on ``refresh()``, ``register_tool()``
-    and on setting ``source``, ``pipe``, ``view``, ``tools``, ``symbols`` or
-    ``style``.
+    and on setting ``source``, ``pipe``, ``view``, ``tools``, ``toolbar``,
+    ``symbols`` or ``style``.
 
     """
 
@@ -140,10 +140,11 @@ class Diagram(StyledWidget):
 
     def _check_open(self, action: str) -> None:
         if self._closed:
-            msg = f"{type(self).__name__} is closed; cannot {action}"
+            name = type(self).__name__
+            msg = f"{name} is closed; cannot {action}; build a new {name}"
             raise T.TraitError(msg)
 
-    @T.validate("source", "view", "tools", "symbols", "style")
+    @T.validate("source", "view", "tools", "toolbar", "symbols", "style")
     def _validate_open(self, proposal: T.Bunch):
         self._check_open(f"set {proposal['trait'].name}")
         return proposal["value"]
