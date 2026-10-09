@@ -377,22 +377,6 @@ class ElkLabel(ElkShape):
         )
         return strip_none(result)
 
-    def __hash__(self):
-        """Hash function used to track unique text size measurement requests"""
-        value = self.text
-        if self.properties:
-            css_classes = self.properties.cssClasses
-            if css_classes:
-                value += css_classes
-        return hash(value)
-
-    def __eq__(self, other) -> bool:
-        if isinstance(other, ElkLabel):
-            # TODO needed for the ElkText Sizer Caching. Revisit if using a
-            # different method besides `alru_cache` in the future
-            return hash(self) == hash(other)
-        return False
-
 
 @dataclass
 class ElkEdge(ElkGraphElement):

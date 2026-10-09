@@ -396,6 +396,7 @@ outputs = [
 [feature.tasks-lint.tasks.fix-taplo]
 cmd = """taplo fmt
   *.toml
+  scripts/*.toml
   --option=array_auto_collapse=true
   --option=compact_inline_tables=true
   --option=column_width=88"""

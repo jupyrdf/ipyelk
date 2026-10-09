@@ -125,6 +125,7 @@ jobs:
         with:
           name: ipyelk-${{ github.run_number }}-build
       - run: pixi run fix && pixi run fix
+      - run: git diff --exit-code
       - run: pixi run lint
 
   docs:
@@ -226,7 +227,8 @@ jobs:
           #   drop this only when both are met
           # - test-oldest (ubuntu-latest): the kernel stops running cells (#177);
           #   drop this once that stall is understood
-          ATEST_ARGS: >-
+          # a literal block: prettier rewraps a folded (`>-`) one past 88 columns
+          ATEST_ARGS: |-
             ${{ matrix.atest-args }}
             ${{ (startsWith(matrix.vm, 'macos') || (matrix.task == 'test-oldest' && matrix.vm == 'ubuntu-latest')) && '--skiponfailure gh:95' || '' }}
         # a browser that dies mid-test (Firefox 128 ESR went out of memory after
