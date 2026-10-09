@@ -93,16 +93,18 @@ export
     IPYTHONDIR=$PIXI_PROJECT_ROOT/build/reports/$PIXI_ENVIRONMENT_NAME/ipython
     IPYELK_TESTING=true
     IPYELK_NO_BROWSER=true
+    IPYELK_KERNEL_WATCHDOG=30
 && rm -rf $NBCONVERT_DIR $IPYTHONDIR
 && mkdir -p $NBCONVERT_DIR $IPYTHONDIR/profile_default/startup
 && cp scripts/nbconvert_kernel_watchdog.py $IPYTHONDIR/profile_default/startup/00-watchdog.py
+&& cp scripts/nbconvert_shell_reply_fix.py $IPYTHONDIR/profile_default/startup/01-shell-reply-fix.py
 && cd examples
 && rm -rf .ipynb_checkpoints/
 && jupyter nbconvert
     --to html
     --output-dir $NBCONVERT_DIR
     --execute
-    --ExecutePreprocessor.timeout=1200
+    --ExecutePreprocessor.timeout=40
     ./**/*.ipynb
 """
 
@@ -645,6 +647,8 @@ pip = "*"
 flit-core = "*"
 
 [feature.deps-utest.dependencies]
+# tests/test_nbconvert_shell_reply_fix.py
+ipykernel = "*"
 pytest = "*"
 pytest-html = "*"
 pytest-asyncio = "*"

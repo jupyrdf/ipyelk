@@ -9,9 +9,9 @@ the job log shows the timeout and nothing else (#177).
 This file runs as an IPython startup file in the kernels nbconvert launches
 (``IPYTHONDIR`` is set by the ``nbconvert--`` task). ``faulthandler`` writes the
 stacks from a watchdog thread without the GIL or the event loop, so a busy loop
-cannot hide from it. The default of 900 s is under the 1200 s cell timeout and
-far over any healthy run, and each notebook gets its own kernel, so the timer
-starts fresh per notebook.
+cannot hide from it. The task sets ``IPYELK_KERNEL_WATCHDOG`` to 30 s, under its
+40 s cell timeout and over any healthy notebook in CI, and each notebook gets its
+own kernel, so the timer starts fresh per notebook.
 
 The dump goes to the kernel's real stderr, which nbconvert passes through to the
 job log. On Linux and macOS, ipykernel has replaced file descriptor 2 with a pipe
