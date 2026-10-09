@@ -378,8 +378,8 @@ class Widget(NodeShape):
           Serialization writes its ``model_id`` to ``use``, so a value in ``use`` has
           no effect.
         - ``delay`` (``int`` or ``None``, default ``None``): a time in milliseconds.
-          If it is set, the frontend applies the diagram zoom to the widget only
-          after ``delay``. The ``15_Nesting_Plots`` example uses it.
+          If it is set and not 0, the frontend applies the diagram zoom to the widget
+          only after ``delay``. ``None`` and 0 apply the zoom at once. The ``15_Nesting_Plots`` example uses it.
 
     .. code-block:: python
 

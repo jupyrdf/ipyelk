@@ -59,18 +59,20 @@ the layout. The renderers use it as follows:
   it.
 - A parent label places its icon and its text with the `width` and `height` of the
   `Icon` shape, if they are set. It draws the icon at the laid-out size.
-- If a `LabelShape` sets both `width` and `height`, the frontend does not measure the
-  text of the label.
+- If a `LabelShape` sets both `width` and `height`, and neither is 0, the frontend
+  does not measure the text of the label.
 
-These rules apply until the first layout. After each layout, ipyelk copies the
-`properties`, `width` and `height` that come back from the frontend onto the element.
-The element then has the laid-out size as its own size, so a later change to the size of
-its shape has no effect.
+The rule that the element serializes the size of its shape applies only until the
+first layout. The renderer rules above still apply after it. After each layout, ipyelk
+copies the `properties`, `width` and `height` that come back from the frontend onto the
+element. The element then has the laid-out size as its own size, so a later change to
+the size of its shape has no effect.
 
 The shape also loses its subclass. For example, a `Circle` becomes a `NodeShape`, and an
 `Icon` becomes a `LabelShape`. After that, `node.properties.shape.radius = 20` raises a
 `ValueError`. To change the shape after a layout, assign a new shape and set the `width`
-and `height` of the element to `None`.
+and `height` of the element to `None`. This caveat is tracked in
+[#201](https://github.com/jupyrdf/ipyelk/issues/201), and goes away when it is fixed.
 
 ## The shapes
 
