@@ -48,6 +48,10 @@ class Diagram(StyledWidget):
         additional shape definitions that can be used in rendering the diagram.
         For example unique arrow head shapes or custom node shapes.
 
+    A closed diagram raises ``TraitError`` on ``refresh()``, ``register_tool()``
+    and on setting ``source``, ``pipe``, ``view``, ``tools``, ``symbols`` or
+    ``style``.
+
     """
 
     source = T.Instance(MarkElementWidget, kw={}, help="Syncs Elk JSON Elements")
@@ -61,6 +65,7 @@ class Diagram(StyledWidget):
     symbols = T.Instance(SymbolSpec, kw={}).tag(sync=True, **symbol_serialization)
     #: the runner ``refresh`` last registered ``_update_view`` on
     _refresh_task: asyncio.Future | None = None
+    _closed: bool = False
 
     def __init__(self, *args, **kwargs):
         #: ``(pipe, link)`` for each link ``_claim`` made to a pipe in the tree
@@ -133,8 +138,19 @@ class Diagram(StyledWidget):
         if pipe.on_progress is None and bars:
             pipe.on_progress = bars[0].update
 
+    def _check_open(self, action: str) -> None:
+        if self._closed:
+            msg = f"{type(self).__name__} is closed; cannot {action}"
+            raise T.TraitError(msg)
+
+    @T.validate("source", "view", "tools", "symbols", "style")
+    def _validate_open(self, proposal: T.Bunch):
+        self._check_open(f"set {proposal['trait'].name}")
+        return proposal["value"]
+
     @T.validate("pipe")
     def _validate_pipe(self, proposal: T.Bunch) -> Pipe:
+        self._check_open("set pipe")
         pipe = proposal["value"]
         current = self._trait_values.get("pipe")
         replacing = current is not None and pipe is not current
@@ -178,7 +194,9 @@ class Diagram(StyledWidget):
         """Close the diagram with its pipe, view, tools and toolbar.
 
         ``source`` and any inlet or outlet passed to a pipe stay open.
+        Closing again does nothing.
         """
+        self._closed = True
         pipe = self._trait_values.get("pipe")
         if pipe is not None and pipe._diagram and pipe._diagram() is self:
             self._release_pipe(pipe)
@@ -278,6 +296,7 @@ class Diagram(StyledWidget):
         :type tool: Tool
         :return: current Diagram instance
         """
+        self._check_open("register a tool")
         # TODO inject dependencies smarter...
         traits = tool.trait_names()
         if "diagram" in traits:
@@ -295,6 +314,7 @@ class Diagram(StyledWidget):
         callback (which receives the tool). Returns ``None`` when no event loop is
         running (see ``Pipe.schedule_run``).
         """
+        self._check_open("refresh")
         self.log.debug("Refreshing diagram")
         task = self.pipe.schedule_run()
         if task is None:

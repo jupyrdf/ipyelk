@@ -89,6 +89,7 @@ class Pipeline(SyncedOutletPipe):
     _taken: tuple[str, ...] = ()
     #: the stages ``pipes`` last accepted; the trait may already hold a proposal
     _stages: tuple[Pipe, ...] = ()
+    _closed: bool = False
 
     @T.default("status_widget")
     def _default_status_widget(self):
@@ -105,13 +106,17 @@ class Pipeline(SyncedOutletPipe):
         """Close this pipeline, its sub-pipes and the widgets it created."""
         for pipe in self.pipes:
             pipe.close()
+        self._closed = True
         super().close()
 
     @T.validate("pipes")
     def _validate_pipes(self, proposal: T.Bunch) -> list[Pipe]:
-        """Refuse a closed stage, a stage listed twice, or a new stage that is
-        part of an open diagram's pipe.
+        """Refuse any change once closed, a closed stage, a stage listed twice,
+        or a new stage that is part of an open diagram's pipe.
         """
+        if self._closed:
+            msg = f"{type(self).__name__} is closed; cannot set pipes"
+            raise T.TraitError(msg)
         pipes = proposal["value"]
         kept = {id(pipe) for pipe in self._stages}
         seen: set[int] = set()

@@ -9,10 +9,12 @@ import weakref
 
 import ipywidgets as W
 import pytest
+import traitlets as T
 
 from ipyelk import Diagram
 from ipyelk.diagram import SprottyViewer
 from ipyelk.diagram.flow import DefaultFlow
+from ipyelk.elements import SymbolSpec
 from ipyelk.pipes import (
     BrowserTextSizer,
     ElkJS,
@@ -126,13 +128,65 @@ def test_close_keeps_widgets_passed_in() -> None:
 def test_a_closed_diagram_drops_its_links_and_callbacks() -> None:
     diagram = Diagram(source=make_source())
     toolbar, view, tools = diagram.toolbar, diagram.view, diagram.tools
+    symbols = diagram.symbols
     diagram.close()
 
     assert all(
         diagram.refresh not in tool._on_done_handlers.callbacks for tool in tools
     )
-    diagram.tools = ()
-    assert toolbar.tools == list(tools)
-    symbols = view.symbols
-    diagram.symbols = type(symbols)()
-    assert view.symbols is symbols
+    toolbar.tools = ()
+    assert diagram.tools == tools
+    view.symbols = type(symbols)()
+    assert diagram.symbols is symbols
+
+
+ENTRY_POINTS = {
+    "refresh": lambda d: d.refresh(),
+    "register a tool": lambda d: d.register_tool(SetTool()),
+    "set pipe": lambda d: setattr(d, "pipe", DefaultFlow()),
+    "set source": lambda d: setattr(d, "source", make_source()),
+    "set view": lambda d: setattr(d, "view", SprottyViewer()),
+    "set tools": lambda d: setattr(d, "tools", ()),
+    "set symbols": lambda d: setattr(d, "symbols", SymbolSpec()),
+    "set style": lambda d: setattr(d, "style", {" .a": {"fill": "red"}}),
+}
+TRAITS = ("pipe", "source", "view", "tools", "symbols", "style")
+
+
+@pytest.mark.parametrize("action", ENTRY_POINTS)
+def test_a_closed_diagram_raises(action: str) -> None:
+    diagram = Diagram(source=make_source())
+    diagram.close()
+    before = {name: getattr(diagram, name) for name in TRAITS}
+
+    with pytest.raises(T.TraitError, match=f"^Diagram is closed; cannot {action}$"):
+        ENTRY_POINTS[action](diagram)
+
+    assert {name: getattr(diagram, name) for name in TRAITS} == before
+
+
+@pytest.mark.parametrize("owned", [True, False], ids=["diagram-pipe", "standalone"])
+def test_a_closed_pipeline_refuses_pipes_and_keeps_them(owned: bool) -> None:
+    diagram = Diagram(source=make_source()) if owned else None
+    pipe = diagram.pipe if diagram else Pipeline(pipes=[ValidationPipe()])
+    stages = list(pipe.pipes)
+    (diagram or pipe).close()
+    name = type(pipe).__name__
+
+    for pipes in ([ValidationPipe(), ValidationPipe()], [stages[0]], []):
+        with pytest.raises(T.TraitError, match=f"^{name} is closed; cannot set pipes"):
+            pipe.pipes = pipes
+        assert pipe.pipes == stages
+
+
+def test_closing_twice_is_a_silent_no_op() -> None:
+    diagram = Diagram(source=make_source())
+    pipe = diagram.pipe
+    diagram.close()
+    widgets = live_widgets()
+
+    diagram.close()
+    pipe.close()
+
+    assert live_widgets() == widgets
+    assert not is_open(diagram)

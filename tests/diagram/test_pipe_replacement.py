@@ -466,7 +466,8 @@ def test_closing_a_diagram_closes_its_pipe() -> None:
     assert first._pipe_links == []
     with pytest.raises(T.TraitError, match="closed"):
         Diagram(source=make_source(), pipe=pipe)
-    first.style = {" .b": {"fill": "blue"}}
+    with pytest.raises(T.TraitError, match="Diagram is closed"):
+        first.style = {" .b": {"fill": "blue"}}
     assert sizer(pipe).style == {" .a": {"fill": "red"}}
 
 

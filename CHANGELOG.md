@@ -326,6 +326,12 @@ throughout 3.x with the replacement in the message.
   `control_overlay`, and a `layout` or tool `ui` passed in. A closed diagram's pipe is
   closed, so another diagram can no longer take it. `Tool.close()` also closes the
   `ui` the tool built, and `Viewer.close()` its tools ([#191])
+- Raise on a closed diagram or pipeline instead of silently accepting the call. A closed
+  widget has no comm, so the call never reached the browser. `refresh()`,
+  `register_tool()` and setting `source`, `pipe`, `view`, `tools`, `symbols` or `style`
+  on a closed `Diagram` raise `TraitError` naming it, as does setting `pipes` on a
+  closed `Pipeline`, which now keeps its `pipes` (a refused set used to empty them).
+  Closing a diagram twice still does nothing ([#197])
 - Log the routine "fixing N ids" message from `ValidationPipe` at debug level instead of
   warning: assigning ids to id-less elements is the normal path (`fix_null_id=True`), so
   every diagram built from id-less elements logged it
@@ -342,6 +348,17 @@ throughout 3.x with the replacement in the message.
     label's `metadata`.
   - The ELK JSON schema accepts the slack-port `key` and `hidden` properties, so a
     projection validates after a collapse and an expand.
+
+### Migration
+
+A diagram or pipeline is dead once closed ([#197]): build a new one instead of reusing
+it.
+
+```python
+diagram.close()
+diagram.refresh()  # TraitError: Diagram is closed; cannot refresh
+diagram = Diagram(source=diagram.source)  # the source stays open
+```
 
 ### Development
 
@@ -389,6 +406,7 @@ throughout 3.x with the replacement in the message.
 [#181]: https://github.com/jupyrdf/ipyelk/issues/181
 [#187]: https://github.com/jupyrdf/ipyelk/issues/187
 [#191]: https://github.com/jupyrdf/ipyelk/issues/191
+[#197]: https://github.com/jupyrdf/ipyelk/issues/197
 
 ## `2.1.2`
 
