@@ -1,11 +1,8 @@
 # Copyright (c) 2024 ipyelk contributors.
 # Distributed under the terms of the Modified BSD License.
-"""Shapes select how the frontend draws a node, port, label or edge.
+"""Shape classes. A shape selects how the frontend draws an element.
 
-The frontend is the ipyelk JupyterLab extension that draws the diagram in the
-browser. A shape is the object in ``properties.shape`` of an element. Its ``type``
-string selects the renderer, that is, the frontend view that draws the element.
-The other fields hold the data that the renderer draws.
+The *Shapes* page of the API reference describes the shapes and the terms used here.
 """
 
 from __future__ import annotations
@@ -25,15 +22,10 @@ from .common import serialize_value
 
 
 class Point(BaseModel):
-    """A point with an ``x`` and a ``y`` coordinate, in pixels.
+    """A point in pixels. ``Point(-1, 0)`` is the same as ``Point(x=-1, y=0)``.
 
-    :py:class:`~ipyelk.elements.EndpointSymbol` uses points for its ``path_offset``
-    and its ``symbol_offset``. The constructor also accepts the two coordinates as
-    positional arguments:
-
-    .. code-block:: python
-
-        Point(-1, 0)
+    Fields:
+        - ``x``, ``y`` (``float``, default ``0``)
     """
 
     x: float = 0
@@ -46,9 +38,9 @@ class Point(BaseModel):
 class BaseShape(BaseModel):
     """The base class of all shapes.
 
-    ``type`` is the type string. The frontend uses it to select the renderer. If
-    ``type`` is ``None``, the frontend uses the default renderer for the element:
-    ``node``, ``port``, ``label`` or ``edge``.
+    Fields:
+        - ``type`` (``str`` or ``None``): the type string, which selects the renderer.
+          Each subclass sets its own default. ``None`` selects the default renderer.
     """
 
     type: str | None = None
@@ -56,9 +48,8 @@ class BaseShape(BaseModel):
     def dimension(self, key: str) -> float | None:
         """Return the value of ``x``, ``y``, ``width`` or ``height`` to serialize.
 
-        ``key`` is the name of the field. Subclasses override this method to
-        calculate a value from other fields. For example, :py:class:`Circle`
-        calculates ``width`` from ``radius``.
+        ``key`` is the name of the field. A subclass can calculate the value from
+        other fields, as :py:class:`Circle` does.
         """
         return getattr(self, key, None)
 
@@ -66,15 +57,14 @@ class BaseShape(BaseModel):
 class EdgeShape(BaseShape):
     """The shape of an edge: a line along the route of the edge.
 
-    ``start`` and ``end`` are optional symbol identifiers. A symbol identifier is
-    the ``identifier`` of a :py:class:`~ipyelk.elements.Symbol` in the ``symbols``
-    of the diagram. The renderer draws the ``start`` symbol at the first point of
-    the route and the ``end`` symbol at the last point. It turns each symbol to
-    the direction of the route at that point.
+    The renderer draws the ``start`` symbol at the first point of the route and the
+    ``end`` symbol at the last point, turned to the direction of the route. If no
+    symbol has the identifier, the renderer draws nothing at that end. An
+    :py:class:`~ipyelk.elements.EndpointSymbol` can also make the line shorter.
 
-    If the symbol is an :py:class:`~ipyelk.elements.EndpointSymbol`, its
-    ``path_offset`` makes the line shorter and its ``symbol_offset`` moves the
-    symbol. An edge shape has no ``use`` field.
+    Fields:
+        - ``start``, ``end`` (``str`` or ``None``, default ``None``): a symbol
+          identifier.
 
     .. code-block:: python
 
@@ -93,20 +83,14 @@ class EdgeShape(BaseShape):
 class ElementShape(BaseShape):
     """The base class of the shapes of nodes, ports and labels.
 
-    All the fields are optional:
-
-    - ``x`` and ``y`` are a position in pixels from the top-left corner of the
-      element. Only the renderers of :py:class:`Circle`, :py:class:`Ellipse` and
-      :py:class:`SVG` use them.
-    - ``width`` and ``height`` are a size in pixels. If the element has no
-      ``width`` or ``height`` of its own, the element serializes the value of its
-      shape.
-    - ``use`` is a string. Each subclass gives ``use`` its own meaning.
-    - ``delay`` is a time in milliseconds. Only :py:class:`Widget` uses it.
-
-    The layout can change the size of the element. The renderers draw the size
-    that the layout gives. If ``type`` is not the type string of this class or
-    of a direct subclass, pydantic raises a ``ValidationError``.
+    Fields, all ``None`` by default:
+        - ``x``, ``y`` (``float``): a position in pixels in the element. Only
+          :py:class:`Circle`, :py:class:`Ellipse` and :py:class:`SVG` use them.
+        - ``width``, ``height`` (``float``): a size in pixels. The element serializes
+          this size if it has no ``width`` or ``height`` of its own. After a layout,
+          the element has the laid-out size as its own size.
+        - ``use`` (``str``): each subclass gives ``use`` its own meaning.
+        - ``delay`` (``int``): a time in milliseconds. Only :py:class:`Widget` uses it.
     """
 
     x: float | None = None
@@ -151,9 +135,10 @@ class ElementShape(BaseShape):
 class PortShape(ElementShape):
     """The shape of a port.
 
-    If ``use`` is a symbol identifier, the renderer draws that symbol at the
-    ``width`` and ``height`` of the port. If ``use`` is ``None``, the renderer
-    draws a rectangle.
+    Fields:
+        - ``use`` (``str`` or ``None``, default ``None``): a symbol identifier, drawn
+          at the size of the port. If ``use`` is ``None`` or no symbol has it, the
+          renderer draws a rectangle.
     """
 
     type: str | None = "port"
@@ -163,8 +148,13 @@ class PortShape(ElementShape):
 class LabelShape(ElementShape):
     """The shape of a label.
 
-    If ``use`` is a symbol identifier, the renderer draws that symbol in place of
-    the text of the label. If ``use`` is ``None``, the renderer draws the text.
+    If ``width`` and ``height`` are both set and not 0, the frontend does not measure
+    the text of the label.
+
+    Fields:
+        - ``use`` (``str`` or ``None``, default ``None``): a symbol identifier, drawn in
+          place of the text. If ``use`` is ``None`` or no symbol has it, the renderer
+          draws the text.
     """
 
     type: str | None = "label"
@@ -172,12 +162,14 @@ class LabelShape(ElementShape):
 
 
 class Icon(LabelShape):
-    """A label shape for a symbol in front of the text of a label.
+    """A label shape for a symbol in front of the text of its parent label.
 
-    ``Icon`` is a :py:class:`LabelShape` that requires ``use``. Put a label with
-    an ``Icon`` shape in the ``labels`` of another label, the parent label. The
-    parent label draws the symbol of its first nested label to the left of its own
-    text. A label that is not nested draws the symbol in place of its text.
+    Put a label with an ``Icon`` shape first in the ``labels`` of another label, the
+    parent label. The parent label draws the symbol to the left of its own text. A
+    label that is not nested draws the symbol in place of its text.
+
+    Fields:
+        - ``use`` (``str``, required): a symbol identifier.
 
     .. code-block:: python
 
@@ -193,20 +185,20 @@ class Icon(LabelShape):
 
 
 class NodeShape(ElementShape):
-    """The base class of the node shapes.
+    """The base class of the node shapes. With no ``type``, it draws a rectangle.
 
-    Each subclass sets ``type`` to select a renderer and gives ``use`` its own
-    meaning. A ``NodeShape`` with no ``type`` draws as a rectangle, the same as
-    :py:class:`Rect`.
+    After a layout, the node gets back a ``NodeShape``, not the subclass that you set.
+    The *Width and height* section of the *Shapes* page explains this.
     """
 
 
 class Path(NodeShape):
-    """An SVG path. ``use`` is the path data, that is, the ``d`` attribute of an
-    SVG ``path`` element.
+    """An SVG path. The renderer does not scale it to the size of the node.
 
-    The path coordinates are pixels from the top-left corner of the node. The
-    renderer does not scale the path to the ``width`` and ``height`` of the node.
+    Fields:
+        - ``use`` (``str``, required): the path data, that is, the ``d`` attribute of
+          an SVG ``path`` element. Its coordinates are pixels from the top-left corner
+          of the node.
 
     .. code-block:: python
 
@@ -231,15 +223,18 @@ class Path(NodeShape):
 
 
 class Circle(NodeShape):
-    """A circle with the radius ``radius``, in pixels. It has no ``use``.
+    """A circle. It serializes ``width`` and ``height`` as two times ``radius``.
 
-    ``Circle`` always calculates ``width`` and ``height`` as two times ``radius``.
-    Its ``width`` and ``height`` fields have no effect. ``x`` and ``y`` are the
-    center of the circle. If ``x`` or ``y`` is ``None``, its value is ``radius``.
+    The ``node:round`` renderer does not read ``radius``. It draws an ellipse with half
+    the laid-out width and height of the node as its radii. If the laid-out width and
+    height differ, the ellipse is not a circle.
 
-    ``Circle`` and :py:class:`Ellipse` share the ``node:round`` renderer. The
-    renderer draws an ellipse that fills the node. If the node has its own
-    ``width`` or ``height``, the result is not a circle.
+    Fields:
+        - ``radius`` (``float``, default ``0``): the radius in pixels, not serialized.
+          The default gives a node of 0 by 0 pixels.
+        - ``x``, ``y`` (``float`` or ``None``, default ``None``): the center. If they
+          are ``None``, the renderer centers the ellipse in the node.
+        - ``width``, ``height``: these fields have no effect.
 
     .. code-block:: python
 
@@ -257,16 +252,14 @@ class Circle(NodeShape):
 
 
 class SVG(NodeShape):
-    """SVG markup. ``use`` is the markup as a string.
+    """SVG markup. The renderer does not scale it to the size of the node.
 
-    The renderer puts the markup in an SVG ``g`` element and moves it by ``x``
-    and ``y``, in pixels. The renderer does not scale the markup to the ``width``
-    and ``height`` of the node.
+    Put only trusted markup in ``use``, as the warning on the *Shapes* page explains.
 
-    .. warning::
-
-        The frontend inserts ``use`` into the page without changes. Put only
-        markup from a source that you trust in ``use``.
+    Fields:
+        - ``use`` (``str``, required): the SVG markup.
+        - ``x``, ``y`` (``float`` or ``None``, default ``None``): the offset of the
+          markup in pixels. ``None`` is 0.
 
     .. code-block:: python
 
@@ -278,15 +271,15 @@ class SVG(NodeShape):
 
 
 class Ellipse(NodeShape):
-    """An ellipse with the radii ``rx`` and ``ry``, in pixels. It has no ``use``.
+    """An ellipse. The ``node:round`` renderer draws it as it draws :py:class:`Circle`.
 
-    ``rx`` is the horizontal radius and ``ry`` is the vertical radius. If
-    ``width`` is not set, ``Ellipse`` calculates it as two times ``rx``. If
-    ``height`` is not set, ``Ellipse`` calculates it as two times ``ry``.
-
-    The renderer draws the ellipse to fill the node. ``x`` and ``y`` are the
-    center of the ellipse. If they are ``None``, the center is the center of the
-    node.
+    Fields:
+        - ``rx``, ``ry`` (``float``, default ``0``): the horizontal and the vertical
+          radius in pixels, not serialized.
+        - ``width``, ``height`` (``float`` or ``None``, default ``None``): if ``width``
+          is ``None`` or 0, ``Ellipse`` serializes two times ``rx``. The same rule
+          applies to ``height`` and ``ry``.
+        - ``x``, ``y`` (``float`` or ``None``, default ``None``): as for ``Circle``.
     """
 
     type: str = "node:round"
@@ -300,21 +293,19 @@ class Ellipse(NodeShape):
 
 
 class Diamond(NodeShape):
-    """A diamond, that is, a polygon with four corners. It has no ``use``.
-
-    The four corners are at the middle of the four sides of the node.
-    """
+    """A polygon with its four corners at the middle of the four sides of the node."""
 
     type: str = "node:diamond"
 
 
 class Comment(NodeShape):
-    """A rectangle with a corner notch at the top right.
+    """A rectangle with a corner notch, a triangle cut from the top-right corner.
 
-    The corner notch is the triangle that the renderer removes from the top-right
-    corner. ``use`` is the length of the two short sides of the notch in pixels,
-    as a string. The default is ``"15"``. ``Comment`` changes a number to a
-    string, also when you assign it after construction.
+    Fields:
+        - ``use`` (``str``, default ``"15"``): the length in pixels of the two short
+          sides of the notch. ``Comment`` changes a number to a string, also on
+          assignment. For ``"0"`` or a string that is not a number, the renderer
+          draws a 15 pixel notch.
 
     .. code-block:: python
 
@@ -334,28 +325,21 @@ class Comment(NodeShape):
 
 
 class Rect(NodeShape):
-    """A rectangle at the ``width`` and ``height`` of the node. It has no ``use``.
-
-    The frontend also draws a rectangle for a node that has no shape.
-    """
+    """A rectangle at the size of the node. A node with no shape draws the same."""
 
     type: str = "node"
 
 
 class Use(NodeShape):
-    """A symbol. ``use`` is a symbol identifier.
+    """A symbol at the size of the node.
 
-    A symbol identifier is the ``identifier`` of a
-    :py:class:`~ipyelk.elements.Symbol` in the ``symbols`` of the diagram. The
-    renderer draws the symbol at the ``width`` and ``height`` of the node.
+    Fields:
+        - ``use`` (``str``, required): a symbol identifier. If no symbol has it, the
+          renderer draws nothing.
 
     .. code-block:: python
 
-        Node(
-            properties=NodeProperties(shape=Use(use="final_state")),
-            width=12,
-            height=12,
-        )
+        NodeProperties(shape=Use(use="final_state"))
     """
 
     type: str = "node:use"
@@ -363,10 +347,10 @@ class Use(NodeShape):
 
 
 class Image(NodeShape):
-    """An image. ``use`` is the URL of the image.
+    """An image in an SVG ``image`` element, at the size of the node.
 
-    The renderer draws the image in an SVG ``image`` element at the ``width``
-    and ``height`` of the node.
+    Fields:
+        - ``use`` (``str``, required): the URL of the image.
     """
 
     type: str = "node:image"
@@ -374,16 +358,12 @@ class Image(NodeShape):
 
 
 class ForeignObject(NodeShape):
-    """HTML in the diagram SVG. ``use`` is HTML markup as a string.
+    """HTML markup in an SVG ``foreignObject`` element in the diagram SVG.
 
-    The renderer puts the markup in a ``div`` in an SVG ``foreignObject``
-    element, at the ``width`` and ``height`` of the node. :py:class:`HTML` draws
-    HTML markup above the diagram SVG.
+    Put only trusted markup in ``use``, as the warning on the *Shapes* page explains.
 
-    .. warning::
-
-        The frontend inserts ``use`` into the page without changes. Put only
-        markup from a source that you trust in ``use``.
+    Fields:
+        - ``use`` (``str``, required): the HTML markup.
     """
 
     type: str = "node:foreignobject"
@@ -391,25 +371,19 @@ class ForeignObject(NodeShape):
 
 
 class Widget(NodeShape):
-    """A Jupyter widget. ``widget`` is the ipywidgets ``DOMWidget`` to draw.
+    """A Jupyter widget in the HTML layer, which :py:class:`HTML` describes.
 
-    The frontend draws a view of ``widget`` in the HTML layer, at the position,
-    ``width`` and ``height`` of the node. :py:class:`HTML` describes the HTML
-    layer. Serialization writes the ``model_id`` of ``widget`` to ``use``. A
-    value that you set in ``use`` has no effect.
-
-    ``delay`` is a time in milliseconds. If ``delay`` is set, the frontend first
-    draws the widget without the diagram zoom. After ``delay`` milliseconds, it
-    applies the diagram zoom. The ``15_Nesting_Plots`` example sets ``delay`` for
-    its plot widgets.
+    Fields:
+        - ``widget`` (ipywidgets ``DOMWidget``, required): the widget to draw.
+          Serialization writes its ``model_id`` to ``use``, so a value in ``use`` has
+          no effect.
+        - ``delay`` (``int`` or ``None``, default ``None``): a time in milliseconds.
+          If it is set, the frontend applies the diagram zoom to the widget only
+          after ``delay``. The ``15_Nesting_Plots`` example uses it.
 
     .. code-block:: python
 
-        Node(
-            properties=NodeProperties(shape=Widget(widget=IntSlider())),
-            width=320,
-            height=40,
-        )
+        NodeProperties(shape=Widget(widget=IntSlider()))
     """
 
     type: str = "node:widget"
@@ -429,17 +403,14 @@ class Widget(NodeShape):
 
 
 class HTML(NodeShape):
-    """HTML above the diagram SVG. ``use`` is HTML markup as a string.
+    """HTML markup in the HTML layer, at the position and size of the node.
 
-    The frontend draws the markup in the HTML layer. The HTML layer is a ``div``
-    above the diagram SVG that moves and zooms with the diagram. In the HTML
-    layer, the markup fills a ``div`` at the position, ``width`` and ``height``
-    of the node. The diagram SVG has a rectangle for the node under that ``div``.
+    The HTML layer is a ``div`` above the diagram SVG that moves and zooms with the
+    diagram. Put only trusted markup in ``use``, as the warning on the *Shapes* page
+    explains.
 
-    .. warning::
-
-        The frontend inserts ``use`` into the page without changes. Put only
-        markup from a source that you trust in ``use``.
+    Fields:
+        - ``use`` (``str``, required): the HTML markup.
     """
 
     type: str = "node:html"
