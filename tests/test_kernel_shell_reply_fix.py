@@ -220,19 +220,24 @@ def test_startup_file_patches_the_kernel(tmp_path):
     (startup / "00-shell-reply-fix.py").write_text(SCRIPT.read_text(encoding="utf-8"))
     env = {**os.environ, "IPYTHONDIR": str(tmp_path)}
     # in a child process, so a kernel that never answers fails the test, not the job
-    proc = subprocess.run(
-        [sys.executable, "-c", KERNEL_PROBE],
-        env=env,
-        capture_output=True,
-        text=True,
-        timeout=180,
-        check=False,
-    )
-    assert proc.returncode == 0, proc.stderr
+    # files, not pipes: on Windows, a timeout waits for every pipe to close, and
+    # the kernel inherits them
+    out, err = tmp_path / "stdout.txt", tmp_path / "stderr.txt"
+    with out.open("w") as stdout, err.open("w") as stderr:
+        proc = subprocess.run(
+            [sys.executable, "-c", KERNEL_PROBE],
+            env=env,
+            stdout=stdout,
+            stderr=stderr,
+            timeout=180,
+            check=False,
+        )
+    errors = err.read_text(errors="replace")
+    assert proc.returncode == 0, errors
     # a user kernel spec could start another environment's kernel
-    assert proc.stdout.split()[-4:] == [
+    assert out.read_text().split()[-4:] == [
         "ok",
         ipykernel.__version__,
         "patch_send_on_shell_channel.<locals>._send_on_shell_channel",
         "False",
-    ], proc.stderr
+    ], errors
