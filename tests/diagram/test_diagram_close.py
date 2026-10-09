@@ -174,7 +174,7 @@ def test_a_closed_pipeline_refuses_pipes_and_keeps_them(owned: bool) -> None:
     name = type(pipe).__name__
 
     for pipes in ([ValidationPipe(), ValidationPipe()], [stages[0]], []):
-        with pytest.raises(T.TraitError, match=f"^{name} is closed; cannot set pipes"):
+        with pytest.raises(T.TraitError, match=f"^{name} is closed; cannot set pipes$"):
             pipe.pipes = pipes
         assert pipe.pipes == stages
 

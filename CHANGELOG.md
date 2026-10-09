@@ -329,8 +329,8 @@ throughout 3.x with the replacement in the message.
 - Raise on a closed diagram or pipeline instead of silently accepting the call. A closed
   widget has no comm, so the call never reached the browser. `refresh()`,
   `register_tool()` and setting `source`, `pipe`, `view`, `tools`, `symbols` or `style`
-  on a closed `Diagram` raise `TraitError` naming it, as does setting `pipes` on a
-  closed `Pipeline`, which now keeps its `pipes` (a refused set used to empty them).
+  on a closed `Diagram` raise `TraitError` naming its class, as does setting `pipes` on
+  a closed `Pipeline`, which now keeps its `pipes` (a refused set used to empty them).
   Closing a diagram twice still does nothing ([#197])
 - Log the routine "fixing N ids" message from `ValidationPipe` at debug level instead of
   warning: assigning ids to id-less elements is the normal path (`fix_null_id=True`), so
