@@ -19,6 +19,7 @@ from pathlib import Path
 import pytest
 
 zmq = pytest.importorskip("zmq")
+ipykernel = pytest.importorskip("ipykernel")
 subshell_manager = pytest.importorskip("ipykernel.subshell_manager")
 ipykernel_thread = pytest.importorskip("ipykernel.thread")
 tornado_ioloop = pytest.importorskip("tornado.ioloop")
@@ -32,7 +33,8 @@ shell_reply_fix = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(shell_reply_fix)
 
 SubshellManager = subshell_manager.SubshellManager
-FIXED_UPSTREAM = shell_reply_fix.fixed_upstream(SubshellManager)
+# by version, so a broken ``fixed_upstream`` cannot skip the tests below
+FIXED_UPSTREAM = ipykernel.version_info >= (7, 4)
 TIMEOUT = 10.0
 
 
@@ -96,6 +98,7 @@ def test_no_op_when_fixed_upstream():
     class Manager(SubshellManager):
         pass
 
+    assert shell_reply_fix.fixed_upstream(SubshellManager) is FIXED_UPSTREAM
     patched = shell_reply_fix.patch_send_on_shell_channel(Manager, None)
     assert patched is not FIXED_UPSTREAM
     if FIXED_UPSTREAM:
@@ -159,7 +162,7 @@ def test_reply_send_does_not_strand_a_request(shell_channel_loop, sockets, fixed
 @pytest.mark.skipif(FIXED_UPSTREAM, reason="ipykernel sends through the stream")
 def test_startup_file_patches_the_kernel(tmp_path):
     manager = pytest.importorskip("jupyter_client.manager")
-    ipykernel_version = pytest.importorskip("ipykernel").__version__
+    ipykernel_version = ipykernel.__version__
     startup = tmp_path / "profile_default" / "startup"
     startup.mkdir(parents=True)
     (startup / "00-shell-reply-fix.py").write_text(SCRIPT.read_text(encoding="utf-8"))
@@ -169,8 +172,9 @@ def test_startup_file_patches_the_kernel(tmp_path):
         code = (
             "import ipykernel\n"
             "print(ipykernel.__version__)\n"
-            "from ipykernel.subshell_manager import SubshellManager\n"
-            "print(SubshellManager._send_on_shell_channel.__qualname__)\n"
+            "manager = get_ipython().kernel.shell_channel_thread.manager\n"
+            "stream = manager._main_to_shell_channel.to_stream\n"
+            "print(stream._recv_callback.__qualname__)\n"
             "print('_install' in globals())"
         )
         out = []

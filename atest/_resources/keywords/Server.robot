@@ -86,7 +86,7 @@ Initialize Coverage Kernel
     ${cov_path} =    Set Variable    ${OUTPUT_DIR}${/}pycov
     Create Directory    ${cov_path}
     # interpreter options (ipykernel 7.4 adds `-Xfrozen_modules=off`) go before
-    # `-m coverage`, the rest after `coverage run`
+    # `-m coverage`, the rest after `coverage run`; the spec must run a module (`-m`)
     ${module_at} =    Evaluate    $spec_json["argv"].index("-m")
     ${options} =    Get Slice From List    ${spec_json["argv"]}    1    ${module_at}
     ${rest} =    Get Slice From List    ${spec_json["argv"]}    ${module_at}
