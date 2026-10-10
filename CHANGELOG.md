@@ -375,6 +375,21 @@ throughout 3.x with the replacement in the message.
   to the descriptor ipykernel captures, where the dump woke the capture thread and made
   it look busy. A second dump lists the pending `asyncio` tasks of the kernel's event
   loops, with their await chains, and whether the shell locks are held ([#177])
+- Fix the `itest-nbconvert` hang in `03_App.ipynb` ([#177]). ipykernel 7.0 to 7.3 send
+  shell replies raw on the socket their shell stream reads from, which can swallow the
+  wake-up for a request that arrives during the send. The request then waits unread
+  while the kernel idles. In nbconvert that happens when a cell prints into an
+  `ipywidgets.Output`: `nbclient` answers with a `comm_msg` just as the cell's reply goes
+  out, and the next cell never runs.
+  - The `itest` and `atest` environments now lock ipykernel 7.4, which fixed it
+    ([ipykernel#1529]).
+  - ipykernel 7.4 needs Python 3.11 or newer. For the Python 3.10 environments, the
+    kernels of the `nbconvert--` task and of the robot tests load
+    `scripts/kernel_shell_reply_fix.py`, a startup file that backports the fix and does
+    nothing on ipykernel 7.4 or newer. `utest-oldest` tests it
+- Lower the `nbconvert--` cell timeout from 1200 s to 40 s. The slowest healthy notebook
+  in 4061 notebook runs from the last 45 CI runs took 8.2 s. The kernel watchdog now
+  restarts with every cell and fires after 30 s without a new cell ([#177])
 - Fail CI when the committed `elkschema.json` differs from what `jlpm schema` generates,
   and rebuild it when `elkgraph-json.ts` changes ([#187])
 
@@ -394,6 +409,7 @@ throughout 3.x with the replacement in the message.
 [#171]: https://github.com/jupyrdf/ipyelk/issues/171
 [#176]: https://github.com/jupyrdf/ipyelk/issues/176
 [#177]: https://github.com/jupyrdf/ipyelk/issues/177
+[ipykernel#1529]: https://github.com/ipython/ipykernel/pull/1529
 [#178]: https://github.com/jupyrdf/ipyelk/issues/178
 [#180]: https://github.com/jupyrdf/ipyelk/issues/180
 [#181]: https://github.com/jupyrdf/ipyelk/issues/181
