@@ -8,5 +8,6 @@ widgets
 tools
 loaders
 pipes
+shapes
 schema
 ```

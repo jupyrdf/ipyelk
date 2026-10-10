@@ -342,6 +342,10 @@ throughout 3.x with the replacement in the message.
     label's `metadata`.
   - The ELK JSON schema accepts the slack-port `key` and `hidden` properties, so a
     projection validates after a collapse and an expand.
+- Center a `Circle` in its node: `Circle` no longer serializes `x` and `y` as its
+  `radius`. The `node:round` renderer takes its radii from the laid-out node, so a node
+  larger than the circle drew the ellipse off center. `x` and `y` that you set are still
+  serialized ([#200])
 
 ### Development
 
@@ -374,6 +378,12 @@ throughout 3.x with the replacement in the message.
 - Fail CI when the committed `elkschema.json` differs from what `jlpm schema` generates,
   and rebuild it when `elkgraph-json.ts` changes ([#187])
 
+### Documentation
+
+- Document the shape API: a docstring for each class in `ipyelk.elements.shapes`, and a
+  _Shapes_ page in the API reference with one table row for each shape ([#66])
+
+[#66]: https://github.com/jupyrdf/ipyelk/issues/66
 [#95]: https://github.com/jupyrdf/ipyelk/issues/95
 [eclipse-sprotty/sprotty#573]: https://github.com/eclipse-sprotty/sprotty/issues/573
 [#147]: https://github.com/jupyrdf/ipyelk/issues/147
@@ -389,6 +399,7 @@ throughout 3.x with the replacement in the message.
 [#181]: https://github.com/jupyrdf/ipyelk/issues/181
 [#187]: https://github.com/jupyrdf/ipyelk/issues/187
 [#191]: https://github.com/jupyrdf/ipyelk/issues/191
+[#200]: https://github.com/jupyrdf/ipyelk/issues/200
 
 ## `2.1.2`
 
