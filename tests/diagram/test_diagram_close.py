@@ -4,24 +4,30 @@
 
 from __future__ import annotations
 
+import asyncio
 import gc
+import logging
 import weakref
 
 import ipywidgets as W
 import pytest
+import traitlets as T
 
 from ipyelk import Diagram
 from ipyelk.diagram import SprottyViewer
 from ipyelk.diagram.flow import DefaultFlow
+from ipyelk.elements import SymbolSpec
 from ipyelk.pipes import (
     BrowserTextSizer,
     ElkJS,
     MarkElementWidget,
+    Pipe,
     ValidationPipe,
     VisibilityPipe,
 )
+from ipyelk.pipes import flows as F
 from ipyelk.pipes.pipeline import Pipeline
-from ipyelk.tools import ControlOverlay, SetTool, Tool
+from ipyelk.tools import ControlOverlay, SetTool, Tool, Toolbar
 from ipyelk.util import close_widget
 
 from .test_pipe_replacement import ROUNDS, is_open, live_widgets, make_source, refresh
@@ -126,13 +132,118 @@ def test_close_keeps_widgets_passed_in() -> None:
 def test_a_closed_diagram_drops_its_links_and_callbacks() -> None:
     diagram = Diagram(source=make_source())
     toolbar, view, tools = diagram.toolbar, diagram.view, diagram.tools
+    symbols = diagram.symbols
     diagram.close()
 
     assert all(
         diagram.refresh not in tool._on_done_handlers.callbacks for tool in tools
     )
-    diagram.tools = ()
-    assert toolbar.tools == list(tools)
-    symbols = view.symbols
-    diagram.symbols = type(symbols)()
-    assert view.symbols is symbols
+    toolbar.tools = ()
+    assert diagram.tools == tools
+    view.symbols = type(symbols)()
+    assert diagram.symbols is symbols
+
+
+ENTRY_POINTS = {
+    "refresh": lambda d: d.refresh(),
+    "register a tool": lambda d: d.register_tool(SetTool()),
+    "set pipe": lambda d: setattr(d, "pipe", DefaultFlow()),
+    "set source": lambda d: setattr(d, "source", make_source()),
+    "set view": lambda d: setattr(d, "view", SprottyViewer()),
+    "set tools": lambda d: setattr(d, "tools", ()),
+    "set toolbar": lambda d: setattr(d, "toolbar", Toolbar()),
+    "set symbols": lambda d: setattr(d, "symbols", SymbolSpec()),
+    "set style": lambda d: setattr(d, "style", {" .a": {"fill": "red"}}),
+}
+TRAITS = ("pipe", "source", "view", "tools", "toolbar", "symbols", "style")
+
+
+@pytest.mark.parametrize("action", ENTRY_POINTS)
+def test_a_closed_diagram_raises(action: str) -> None:
+    diagram = Diagram(source=make_source())
+    diagram.close()
+    before = {name: getattr(diagram, name) for name in TRAITS}
+
+    msg = f"^Diagram is closed and cannot {action}; build a new Diagram$"
+    with pytest.raises(T.TraitError, match=msg):
+        ENTRY_POINTS[action](diagram)
+
+    assert {name: getattr(diagram, name) for name in TRAITS} == before
+
+
+@pytest.mark.parametrize("owned", [True, False], ids=["diagram-pipe", "standalone"])
+def test_a_closed_pipeline_refuses_pipes_and_keeps_them(owned: bool) -> None:
+    diagram = Diagram(source=make_source()) if owned else None
+    pipe = diagram.pipe if diagram else Pipeline(pipes=[ValidationPipe()])
+    stages = list(pipe.pipes)
+    (diagram or pipe).close()
+    name = type(pipe).__name__
+    msg = f"^{name} is closed and cannot set pipes; use a new pipe$"
+
+    for pipes in ([ValidationPipe(), ValidationPipe()], [stages[0]], []):
+        with pytest.raises(T.TraitError, match=msg):
+            pipe.pipes = pipes
+        assert pipe.pipes == stages
+
+
+@pytest.mark.asyncio
+async def test_a_closed_pipeline_refuses_runs() -> None:
+    diagram = Diagram(source=make_source())
+    pipe = diagram.pipe
+    pipe.close()
+    msg = "^DefaultFlow is closed and cannot run; use a new pipe$"
+
+    with pytest.raises(T.TraitError, match=msg):
+        diagram.refresh()
+    with pytest.raises(T.TraitError, match=msg):
+        pipe.schedule_run()
+    with pytest.raises(T.TraitError, match=msg):
+        await pipe.run()
+    assert pipe._task is None
+    diagram.close()
+
+
+def test_closing_twice_is_a_silent_no_op() -> None:
+    diagram = Diagram(source=make_source())
+    pipe = diagram.pipe
+    diagram.close()
+    widgets = live_widgets()
+
+    diagram.close()
+    pipe.close()
+
+    assert live_widgets() == widgets
+    assert not is_open(diagram)
+
+
+class Closer(Pipe):
+    """A stage that calls ``hook`` and lets the run go on."""
+
+    hook = None
+
+    async def run(self):
+        self.hook()
+        self.outlet.value = self.inlet.value
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("closing", ["pipeline", "diagram"])
+async def test_closing_mid_run_cancels_before_a_nested_stage(
+    closing: str, caplog: pytest.LogCaptureFixture
+) -> None:
+    closer = Closer(observes=(F.New,))
+    nested = Pipeline(pipes=[Pipe(observes=(F.New,), reports=(F.Layout,))])
+    pipe = Pipeline(pipes=[closer, nested])
+    errors = []
+    pipe.on_error = lambda _pipe, error: errors.append(error)
+    diagram = Diagram(source=make_source(), pipe=pipe)
+    closer.hook = pipe.close if closing == "pipeline" else diagram.close
+
+    task = diagram.refresh()
+    with pytest.raises(asyncio.CancelledError):
+        await task
+
+    assert task.cancelled()
+    assert errors == []
+    assert [r for r in caplog.records if r.levelno >= logging.WARNING] == []
+    diagram.close()

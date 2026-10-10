@@ -116,6 +116,15 @@
   `ipyelk.tools.contol_overlay` module raises it too, naming the new path; it re-exports
   nothing. Both flavors share the `ipyelk.exceptions.DeprecatedAPI` base, so one
   `except` catches either.
+- Raise on a closed diagram or pipeline instead of silently accepting the call. A closed
+  widget has no comm, so the call never reached the browser. `refresh()`,
+  `register_tool()` and setting `source`, `pipe`, `view`, `tools`, `toolbar`, `symbols`
+  or `style` on a closed `Diagram` raise `TraitError` naming its class, as do setting
+  `pipes`, `schedule_run()` and `run()` on a closed `Pipeline`. A refused `pipes` set
+  keeps the stages; it used to empty them. A diagram whose pipe was closed raises on
+  `refresh()`. A run in flight when its pipeline closes is cancelled at the next stage,
+  even when the cancel comes from another event loop. Closing a diagram twice still does
+  nothing ([#197]).
 
 ### Migration
 
@@ -185,6 +194,15 @@ The removed names (`handler`, `on_run`, `disable`, `Hover.ids`, assigning `on_st
 `DeprecatedAPIError` -- or `DeprecatedImportError` for the module-level names --
 throughout 3.x with the replacement in the message.
 
+A diagram or pipeline is dead once closed ([#197]): build a new one instead of reusing
+it.
+
+```python
+diagram.close()
+diagram.refresh()  # TraitError: Diagram is closed and cannot refresh; build a new Diagram
+diagram = Diagram(source=diagram.source)  # the source stays open
+```
+
 ### `@jupyrdf/jupyter-elk 3.0.0`
 
 - Write `hovered_id` back on pointer leave, but only when the departed element is still
@@ -211,6 +229,7 @@ throughout 3.x with the replacement in the message.
 
 [#155]: https://github.com/jupyrdf/ipyelk/issues/155
 [#156]: https://github.com/jupyrdf/ipyelk/issues/156
+[#197]: https://github.com/jupyrdf/ipyelk/issues/197
 
 ## `2.1.3` (unreleased)
 

@@ -220,6 +220,7 @@ class Pipe(W.Widget):
     _generation: int = 0
     #: the diagram that owns this pipe (see ``Diagram.pipe``)
     _diagram: weakref.ref | None = None
+    _closed: bool = False
     _requested: int = 0
     status = T.Instance(PipeStatus, kw={})
     status_widget = T.Instance(W.DOMWidget, allow_none=True)
@@ -276,6 +277,7 @@ class Pipe(W.Widget):
         layout = self._trait_values.get("layout")
         if layout is not None:
             layout.close()
+        self._closed = True
 
     def _repr_mimebundle_(self, **kwargs):
         if self.status_widget is None:
@@ -348,6 +350,9 @@ class Pipe(W.Widget):
         while self._generation < self._requested:
             if served:
                 await asyncio.sleep(0)
+            if self._closed:
+                # closed before a cancel from another loop landed
+                raise asyncio.CancelledError
             served = True
             self._generation = self._requested
             try:

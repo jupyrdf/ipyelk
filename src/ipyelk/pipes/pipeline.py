@@ -2,6 +2,7 @@
 # Distributed under the terms of the Modified BSD License.
 from __future__ import annotations
 
+import asyncio
 from datetime import datetime
 
 import ipywidgets as W
@@ -107,11 +108,23 @@ class Pipeline(SyncedOutletPipe):
             pipe.close()
         super().close()
 
+    def _check_open(self, action: str) -> None:
+        if self._closed:
+            name = type(self).__name__
+            msg = f"{name} is closed and cannot {action}; use a new pipe"
+            raise T.TraitError(msg)
+
+    def schedule_run(self, change: T.Bunch | None = None) -> asyncio.Task | None:
+        """Request a run (see ``Pipe.schedule_run``); refused once closed."""
+        self._check_open("run")
+        return super().schedule_run(change)
+
     @T.validate("pipes")
     def _validate_pipes(self, proposal: T.Bunch) -> list[Pipe]:
-        """Refuse a closed stage, a stage listed twice, or a new stage that is
-        part of an open diagram's pipe.
+        """Refuse any change once closed, a closed stage, a stage listed twice,
+        or a new stage that is part of an open diagram's pipe.
         """
+        self._check_open("set pipes")
         pipes = proposal["value"]
         kept = {id(pipe) for pipe in self._stages}
         seen: set[int] = set()
@@ -186,6 +199,7 @@ class Pipeline(SyncedOutletPipe):
         ``flow`` is passed by a parent pipeline to a nested one, since the
         parent already took it.
         """
+        self._check_open("run")
         start = datetime.now()
         if flow is None:
             self._taken = taken = self.inlet.take()
@@ -207,6 +221,9 @@ class Pipeline(SyncedOutletPipe):
 
         # Look at enabled pipes
         for i, pipe in enumerate(self.pipes):
+            if self._closed:
+                # closed by a stage, or before a cancel from another loop landed
+                raise asyncio.CancelledError
             if i and self.superseded():
                 raise Superseded(f"superseded before stage {i}")
             # TODO use i and num_steps for reporting processing stage
