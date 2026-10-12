@@ -136,13 +136,18 @@
     `LabelPortSpacing` still works, emits a `DeprecationWarning` and sets the horizontal
     spacing.
   - The `LayoutAlgorithm` choices no longer offer Draw2D
-    (`org.eclipse.elk.conn.gmf.layouter.Draw2D`) and `Draw2DLayout` is removed: `elkjs`
-    does not have it, and a layout with it failed.
+    (`org.eclipse.elk.conn.gmf.layouter.Draw2D`), because `elkjs` does not have it and a
+    layout with it failed. Importing `Draw2DLayout` raises `DeprecatedImportError`
+    throughout 3.x, with the algorithms to use instead in the message.
 - `layoutOptions` on elements is typed `LayoutOptions` (`dict[str, str]`, from
   `ipyelk.elements`), like the ELK JSON schema. Validation writes `bool` values as
-  `"true"` or `"false"` and numbers as strings, and raises `ValidationError` for any
-  other value or a key that is not a string. `OptionsWidget.value` only accepts string
-  keys and values ([#31]).
+  `"true"` or `"false"` and numbers as strings. A whole-number `float` loses its
+  fraction (`2.0` becomes `"2"`), because ELK ignores an integer option with the value
+  `"2.0"`. Validation raises `ValidationError` for `nan`, an infinity, `None`, any other
+  value, or a key that is not a string; 2.x accepted them. Serialization writes `bool`
+  values and numbers as strings too, so a value set in place
+  (`node.layoutOptions[key] = 20`) goes to ELK as `"20"`. `OptionsWidget.value` only
+  accepts string keys and values ([#31]).
 
 ### Migration
 
@@ -206,21 +211,58 @@ view.painter.clear()
 view.painter.styles  # {"n2": ("highlight",)}
 ```
 
+```python
+# 2.x: option ids that ELK ignored without an error
+{"org.eclipse.elk.edge.edgeEdge": "5"}
+{"org.eclipse.elk.edge.edgeNode": "5"}
+{"org.eclipse.elk.edge.edgeLabel": "5"}
+{"org.eclipse.elk.edge.edgeEdgeBetweenLayers": "5"}
+{"org.eclipse.elk.edge.edgeNodeBetweenLayers": "5"}
+{"org.eclipse.elk.partitioning.active": "true"}
+{"org.eclipse.elk.layered.considerModelOrder": "NODES_AND_EDGES"}
+# 3.0: the ids that ELK knows (the option classes use them)
+{"org.eclipse.elk.spacing.edgeEdge": "5"}
+{"org.eclipse.elk.spacing.edgeNode": "5"}
+{"org.eclipse.elk.spacing.edgeLabel": "5"}
+{"org.eclipse.elk.layered.spacing.edgeEdgeBetweenLayers": "5"}
+{"org.eclipse.elk.layered.spacing.edgeNodeBetweenLayers": "5"}
+{"org.eclipse.elk.partitioning.activate": "true"}
+{"org.eclipse.elk.layered.considerModelOrder.strategy": "NODES_AND_EDGES"}
+
+# 2.x                                   # 3.0
+opt.LabelPortSpacing(spacing=3)         opt.LabelPortHorizontalSpacing(spacing=3)
+                                        opt.LabelPortVerticalSpacing(spacing=3)
+from ipyelk.elements.layout_options.layout import Draw2DLayout
+                                        from ipyelk.elements.layout_options.layout import ELKLayered
+LayoutAlgorithm(value=Draw2DLayout.identifier)
+                                        LayoutAlgorithm(value=ELKLayered.identifier)
+# 2.x sent None to ELK; 3.0 raises ValidationError, so leave the key out
+Node(layoutOptions={"elk.direction": None})
+                                        Node(layoutOptions={})
+# 2.x sent 2.0, 3.0 sends "2" (ELK ignores "2.0" for an integer option)
+Node(layoutOptions={"elk.partitioning.partition": 2.0})
+```
+
 The removed names (`handler`, `on_run`, `disable`, `Hover.ids`, assigning `on_start` or
 `on_done`, the `contol_overlay` module, `Viewer.zoom`/`pan`/`viewed`,
-`ipyelk.tools.Zoom`/`Pan`, `Painter.cssClasses`/`marks`/`name`) raise
-`DeprecatedAPIError` -- or `DeprecatedImportError` for the module-level names --
-throughout 3.x with the replacement in the message.
+`ipyelk.tools.Zoom`/`Pan`, `Painter.cssClasses`/`marks`/`name`,
+`ipyelk.elements.layout_options.layout.Draw2DLayout`) raise `DeprecatedAPIError` -- or
+`DeprecatedImportError` for the module-level names -- throughout 3.x with the
+replacement in the message.
 
 ### Added
 
 - An opt-in check for layout option keys that ELK ignores without an error. ELK takes a
   full option id, or the end of one that starts after a dot (`elk.direction`,
-  `spacing.nodeNode`). `ipyelk.schema.unknown_layout_options(keys)` returns the keys
-  that end no id or more than one: `direction` also ends `layered.priority.direction`.
+  `spacing.nodeNode`), and the old ids of some options (`layered.northOrSouthPort`).
+  `ipyelk.schema.unknown_layout_options(keys)` returns the keys that end no id or more
+  than one: `direction` also ends `layered.priority.direction`.
+  `ipyelk.schema.untargeted_layout_options(keys, targets)` returns the keys whose option
+  does not apply to that kind of element, for example a node option on an edge.
   `ValidationPipe(check_layout_options=True)` writes them per element id to
-  `layout_options_report` and emits a `UserWarning`. The check is off by default. Refs
-  [#115].
+  `layout_options_report` and `layout_options_target_report`, and emits one
+  `UserWarning`. The check is off by default, and turning it off clears both reports.
+  Refs [#115].
 
 ### Development
 
@@ -228,10 +270,8 @@ throughout 3.x with the replacement in the message.
   categories of the bundled `elkjs`. `pixi run build-py-elk-catalog` writes it. A
   `vitest` checks it against the installed `elkjs`, and a unit test checks the option
   classes against it ([#29]).
-- CI regenerates `elkschema.json` and `elk-catalog.json` and fails if they differ from
-  the committed files. `build-py-schema` also reruns when
-  `js/sprotty/json/elkgraph-json.ts` changes, and `jlpm schema` passes the real path of
-  `elkschema.ts` ([#187]).
+- CI also regenerates `elk-catalog.json` and fails if it differs from the committed
+  file, and `jlpm schema` passes the real path of `elkschema.ts` ([#187]).
 
 ### `@jupyrdf/jupyter-elk 3.0.0`
 
