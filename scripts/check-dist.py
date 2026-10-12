@@ -23,16 +23,22 @@ TPL = ROOT / "src/_d" / TPL_PATH
 
 LICENSE_BYTES = {p: p.read_bytes() for p in [LICENSE, COPYRIGHT, EPL, TPL]}
 
-PY_VERSION = tomllib.loads(PPT.read_text(**UTF8))["project"]["version"]
+PROJECT = tomllib.loads(PPT.read_text(**UTF8))["project"]
+PY_VERSION = PROJECT["version"]
 PFX = f"ipyelk-{PY_VERSION}"
+#: the core-metadata license fields (PEP 639) that PyPI shows (#133)
+LICENSE_FIELDS = {
+    "License-Expression": [PROJECT["license"]],
+    "License-File": sorted(PROJECT["license-files"]),
+}
 
 WHEEL_FILE_GROUPS = [
-    (
+    *(
         (
-            f"{PFX}.dist-info/LICENSE.txt",
-            f"{PFX}.dist-info/licenses/LICENSE.txt",
-        ),
-        LICENSE_BYTES[LICENSE],
+            (f"{PFX}.dist-info/licenses/{p.relative_to(ROOT).as_posix()}",),
+            LICENSE_BYTES[p],
+        )
+        for p in [LICENSE, COPYRIGHT, EPL]
     ),
     ((f"{PFX}.data/data/{TPL_PATH}",), LICENSE_BYTES[TPL]),
 ]
@@ -45,9 +51,26 @@ SDIST_FILES = {
 }
 
 
+def check_license_fields(where: str, metadata: str) -> None:
+    """Fail unless the license fields of ``metadata`` match ``pyproject.toml``."""
+    found: dict[str, list[str]] = {}
+    for line in metadata.split("\n\n", 1)[0].splitlines():
+        key, _, value = line.partition(": ")
+        if key in LICENSE_FIELDS:
+            found.setdefault(key, []).append(value)
+    for key, expected in LICENSE_FIELDS.items():
+        assert sorted(found.get(key, [])) == expected, (
+            f"!!! {where} {key} is {found.get(key)}, expected {expected}"
+        )
+        print(f"OK {where} {key}: {', '.join(expected)}")
+
+
 def check_whl(path: Path) -> None:
     with zipfile.ZipFile(path, "r") as whl:
         names = set(whl.namelist())
+        check_license_fields(
+            "wheel", whl.read(f"{PFX}.dist-info/METADATA").decode("utf-8")
+        )
         for fns, fbytes in WHEEL_FILE_GROUPS:
             for fn in fns:
                 if fn in names:
@@ -60,6 +83,9 @@ def check_whl(path: Path) -> None:
 
 def check_sdist(path: Path) -> None:
     with tarfile.open(path, "r:gz") as sdist:
+        check_license_fields(
+            "sdist", sdist.extractfile(f"{PFX}/PKG-INFO").read().decode("utf-8")
+        )
         for fn, fbytes in SDIST_FILES.items():
             assert sdist.extractfile(fn).read() == fbytes, f"!!! sdist {fn} is wrong"
             print(f"OK sdist {fn}")

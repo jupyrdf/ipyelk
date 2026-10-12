@@ -315,6 +315,12 @@ replacement in the message.
 
 ### Fixed
 
+- PyPI shows the license: the wheel and the source distribution declare
+  `License-Expression: BSD-3-Clause` (PEP 639) and list `LICENSE.txt`, `COPYRIGHT.md`
+  and the EPL text for the bundled elkjs and sprotty code as `License-File`s, which the
+  wheel ships under `.dist-info/licenses/`. 2.1.x had only a `License ::` classifier, so
+  PyPI showed no license. `scripts/check-dist.py` fails the build if these fields go
+  missing ([#133])
 - Hiding a root-level node with visible edges no longer crashes elkjs: `iter_visible`
   reported every sibling after a hidden one as hidden and projected a hidden node's
   slack port onto its preceding sibling (for a hidden first child of the root, onto the
@@ -503,6 +509,7 @@ replacement in the message.
 [#66]: https://github.com/jupyrdf/ipyelk/issues/66
 [#95]: https://github.com/jupyrdf/ipyelk/issues/95
 [eclipse-sprotty/sprotty#573]: https://github.com/eclipse-sprotty/sprotty/issues/573
+[#133]: https://github.com/jupyrdf/ipyelk/issues/133
 [#147]: https://github.com/jupyrdf/ipyelk/issues/147
 [#160]: https://github.com/jupyrdf/ipyelk/issues/160
 [#161]: https://github.com/jupyrdf/ipyelk/issues/161
