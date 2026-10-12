@@ -12,4 +12,14 @@ describe('elk-catalog.json', () => {
     const committed = JSON.parse(readFileSync(CATALOG_PATH, 'utf-8'));
     expect(committed).toEqual(await buildCatalog());
   });
+
+  it('lists the old ids that ELK still accepts', async () => {
+    const { options } = await buildCatalog();
+    const legacy = options.filter((o: { legacyIds?: string[] }) => o.legacyIds);
+    // elkjs 0.12.0 has one: `layered.northOrSouthPort`
+    expect(legacy.length).toBeGreaterThan(0);
+    for (const option of legacy) {
+      expect(option.legacyIds).not.toContain(option.id);
+    }
+  });
 });

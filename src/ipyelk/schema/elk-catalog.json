@@ -311,7 +311,8 @@
       "description": "Specifies whether non-flow ports may switch sides if their node's port constraints are either FIXED_SIDE or FIXED_ORDER. A non-flow port is a port on a side that is not part of the currently configured layout flow. For instance, given a left-to-right layout direction, north and south ports would be considered non-flow ports. Further note that the underlying criterium whether to switch sides or not solely relies on the minimization of edge crossings. Hence, edge length and other aesthetics criteria are not addressed.",
       "group": "",
       "type": "BOOLEAN",
-      "targets": ["PORTS"]
+      "targets": ["PORTS"],
+      "legacyIds": ["org.eclipse.elk.layered.northOrSouthPort"]
     },
     {
       "id": "org.eclipse.elk.layered.compaction.connectedComponents",

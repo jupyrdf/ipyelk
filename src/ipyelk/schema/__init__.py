@@ -1,7 +1,7 @@
 # Copyright (c) 2024 ipyelk contributors.
 # Distributed under the terms of the Modified BSD License.
 
-from .catalog import elk_catalog, unknown_layout_options
+from .catalog import elk_catalog, unknown_layout_options, untargeted_layout_options
 from .validator import SCHEMA, ElkSchemaValidator, validate_elk_json
 
 __all__ = [
@@ -9,5 +9,6 @@ __all__ = [
     "ElkSchemaValidator",
     "elk_catalog",
     "unknown_layout_options",
+    "untargeted_layout_options",
     "validate_elk_json",
 ]
