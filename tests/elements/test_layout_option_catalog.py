@@ -102,3 +102,19 @@ def test_label_port_spacing_is_deprecated() -> None:
     assert isinstance(option, port_options.LabelPortHorizontalSpacing)
     assert option.identifier == port_options.LabelPortHorizontalSpacing.identifier
     assert option.value == "3.0"
+
+
+def test_draw2d_layout_is_a_tombstone() -> None:
+    """``Draw2DLayout`` raises ``DeprecatedImportError`` with the reason and a replacement."""
+    from ipyelk.exceptions import DeprecatedImportError
+
+    with pytest.raises(DeprecatedImportError, match="elkjs has no Draw2D") as info:
+        from ipyelk.elements.layout_options.layout import (
+            Draw2DLayout,
+        )
+    assert "ELKLayered" in str(info.value)
+    with pytest.raises(DeprecatedImportError, match="ELKLayered"):
+        from ipyelk.elements.layout_options import (  # ruff: ignore[unused-import]
+            Draw2DLayout,
+        )
+    assert not hasattr(layout_options, "NoSuchOption")
