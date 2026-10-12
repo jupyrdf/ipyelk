@@ -11,7 +11,11 @@ import { SGraphImpl } from 'sprotty';
 import { ElkProperties } from '../sprotty/json/elkgraph-json';
 import { ElkModelRenderer } from '../sprotty/renderer';
 import { ElkLabel, ElkNode } from '../sprotty/sprotty-model';
-import { ElkLabelView, ElkNodeView } from '../sprotty/views/node_views';
+import {
+  ElkLabelView,
+  ElkNodeView,
+  ElkRoundNodeView,
+} from '../sprotty/views/node_views';
 
 // Partial renderer fixture: hidden rendering bypasses viewport culling,
 // hrefID selects text labels, and renderChildren omits unrelated children.
@@ -152,5 +156,29 @@ describe('ElkNodeView label separator', () => {
       const node = makeNode(width, [{ y: 5, properties: { separator: true } }]);
       expect(renderSeparatorPaths(node)).toEqual([]);
     }
+  });
+});
+
+describe('ElkRoundNodeView', () => {
+  function renderEllipse(shape: ElkProperties['shape']): VNode {
+    const root = new SGraphImpl();
+    const node = new ElkNode();
+    node.id = 'r0';
+    node.type = 'node:round';
+    node.size = { width: 100, height: 50 };
+    node.position = { x: 0, y: 0 };
+    node.properties = { shape };
+    root.add(node);
+    return new ElkRoundNodeView().renderMark(node, asContext(context));
+  }
+
+  it('centers the ellipse in the node when the shape sets no x or y (#200)', () => {
+    const attrs = renderEllipse({ type: 'node:round', width: 12, height: 12 }).data?.attrs;
+    expect(attrs).toMatchObject({ rx: 50, ry: 25, cx: 50, cy: 25 });
+  });
+
+  it('places the center at x and y when the shape sets them', () => {
+    const attrs = renderEllipse({ type: 'node:round', x: 3, y: 4 }).data?.attrs;
+    expect(attrs).toMatchObject({ rx: 50, ry: 25, cx: 3, cy: 4 });
   });
 });
