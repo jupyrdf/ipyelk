@@ -114,6 +114,10 @@ class Pipeline(SyncedOutletPipe):
             msg = f"{name} is closed and cannot {action}; use a new pipe"
             raise T.TraitError(msg)
 
+    def _cancel_if_closed(self) -> None:
+        if self._closed:
+            raise asyncio.CancelledError
+
     def schedule_run(self, change: T.Bunch | None = None) -> asyncio.Task | None:
         """Request a run (see ``Pipe.schedule_run``); refused once closed."""
         self._check_open("run")
@@ -207,6 +211,7 @@ class Pipeline(SyncedOutletPipe):
             taken = flow
         try:
             await self._run_pipes(taken)
+            self._cancel_if_closed()
         except BaseException:
             if flow is None and self._taken is taken:
                 self._release_taken()
@@ -221,9 +226,7 @@ class Pipeline(SyncedOutletPipe):
 
         # Look at enabled pipes
         for i, pipe in enumerate(self.pipes):
-            if self._closed:
-                # closed by a stage, or before a cancel from another loop landed
-                raise asyncio.CancelledError
+            self._cancel_if_closed()
             if i and self.superseded():
                 raise Superseded(f"superseded before stage {i}")
             # TODO use i and num_steps for reporting processing stage
@@ -231,7 +234,9 @@ class Pipeline(SyncedOutletPipe):
             p_name = f"pipe {i}: {type(pipe)}"
             try:
                 await self._run_pipe(i, pipe, flow)
+                self._cancel_if_closed()
             except Exception as err:
+                self._cancel_if_closed()
                 self.log.exception(f"Error running {p_name}")
                 self.status_update(
                     PipeStatus.error(
@@ -249,6 +254,8 @@ class Pipeline(SyncedOutletPipe):
             pipe.outlet.value = pipe.inlet.value
             return
         self.status_update(PipeStatus.running(), pipe=pipe)
+        # A progress callback may have closed this pipeline and its stages.
+        self._cancel_if_closed()
         if isinstance(pipe, Pipeline):
             await pipe.run(flow=flow if i == 0 else pipe.inlet.flow)
         else:

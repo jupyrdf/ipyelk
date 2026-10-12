@@ -253,6 +253,28 @@ async def test_close_before_a_cross_loop_cancel_lands_mid_run(subshell):
 
 
 @pytest.mark.asyncio
+async def test_close_before_a_cross_loop_cancel_lands_in_the_final_stage(subshell):
+    blocking = _Blocking(observes=(F.New,), reports=(F.Layout,))
+    pipeline = Pipeline(pipes=[blocking])
+    errors = _watched(pipeline)
+    finished = []
+    blocking.on_progress = lambda pipe: finished.append(pipe.status.state())
+    pipeline.inlet.record(F.New)
+    tasks: list[asyncio.Task] = []
+    subshell.call_soon_threadsafe(lambda: tasks.append(pipeline.schedule_run()))
+    try:
+        assert await asyncio.to_thread(blocking.started.wait, 5)
+        pipeline.close()
+    finally:
+        blocking.proceed.set()
+    await _settled(tasks[0])
+
+    assert tasks[0].cancelled()
+    assert errors == []
+    assert finished == ["running"]
+
+
+@pytest.mark.asyncio
 async def test_close_before_a_cross_loop_runner_starts(subshell):
     """A close lands between ``schedule_run`` and the runner's first step."""
     pipeline = Pipeline(pipes=[Pipe(observes=(F.New,), reports=(F.Layout,))])

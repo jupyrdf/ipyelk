@@ -394,7 +394,7 @@ class Pipe(W.Widget):
             exception = future.exception()
         except asyncio.CancelledError:
             return
-        if exception is None:
+        if self._closed or exception is None:
             return
         if (
             not isinstance(self.status, PipeStatus)

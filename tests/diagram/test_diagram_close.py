@@ -247,3 +247,45 @@ async def test_closing_mid_run_cancels_before_a_nested_stage(
     assert errors == []
     assert [r for r in caplog.records if r.levelno >= logging.WARNING] == []
     diagram.close()
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("closing", ["pipeline", "diagram"])
+async def test_closing_from_progress_cancels_before_a_nested_stage(
+    closing: str, caplog: pytest.LogCaptureFixture
+) -> None:
+    nested = Pipeline(pipes=[Pipe(observes=(F.New,), reports=(F.Layout,))])
+    pipe = Pipeline(pipes=[nested])
+    errors = []
+    pipe.on_error = lambda _pipe, error: errors.append(error)
+    diagram = Diagram(source=make_source(), pipe=pipe)
+    pipe.on_progress = lambda _pipe: (
+        pipe.close() if closing == "pipeline" else diagram.close()
+    )
+
+    try:
+        task = diagram.refresh()
+        with pytest.raises(asyncio.CancelledError):
+            await task
+        assert task.cancelled()
+        assert errors == []
+        assert [r for r in caplog.records if r.levelno >= logging.WARNING] == []
+    finally:
+        diagram.close()
+
+
+@pytest.mark.asyncio
+async def test_closed_diagram_ignores_a_queued_successful_view_update() -> None:
+    diagram = Diagram(source=make_source(), pipe=Pipe())
+    displayed = make_source()
+    diagram.view.source = displayed
+    before = displayed.value
+    diagram.pipe.outlet.value = make_source().value
+    completed = asyncio.get_running_loop().create_future()
+    completed.set_result(None)
+    completed.add_done_callback(diagram._update_view)
+
+    diagram.close()
+    await asyncio.sleep(0)
+
+    assert displayed.value is before

@@ -331,6 +331,8 @@ class Diagram(StyledWidget):
             exception = future.exception()
         except asyncio.CancelledError:
             return
+        if self._closed:
+            return
         if exception is not None:
             self.log.warning("Diagram refresh failed: %r", exception)
             return
