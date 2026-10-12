@@ -207,7 +207,9 @@ jobs:
         with:
           path: ~/.cache/jupyterlab_builder
           key: ${{ env.CACHE_EPOCH }}-${{ hashFiles('package.json') }}-jlpm-core-meta
-      - run: pixi run u${{ matrix.task }}-pytest
+      # under 1 minute when healthy; a hung kernel test once held it for 50
+      - timeout-minutes: 10
+        run: pixi run u${{ matrix.task }}-pytest
       - if: matrix.task == 'test'
         run: pixi run test-js
       - run: pixi run i${{ matrix.task }}-nbconvert
