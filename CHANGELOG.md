@@ -409,8 +409,8 @@ throughout 3.x with the replacement in the message.
   shell replies raw on the socket their shell stream reads from, which can swallow the
   wake-up for a request that arrives during the send. The request then waits unread
   while the kernel idles. In nbconvert that happens when a cell prints into an
-  `ipywidgets.Output`: `nbclient` answers with a `comm_msg` just as the cell's reply goes
-  out, and the next cell never runs.
+  `ipywidgets.Output`: `nbclient` answers with a `comm_msg` just as the cell's reply
+  goes out, and the next cell never runs.
   - The `itest` and `atest` environments now lock ipykernel 7.4, which fixed it
     ([ipykernel#1529]).
   - ipykernel 7.4 needs Python 3.11 or newer. For the Python 3.10 environments, the
