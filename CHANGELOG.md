@@ -302,7 +302,6 @@ replacement in the message.
 [#115]: https://github.com/jupyrdf/ipyelk/issues/115
 [#155]: https://github.com/jupyrdf/ipyelk/issues/155
 [#156]: https://github.com/jupyrdf/ipyelk/issues/156
-[#187]: https://github.com/jupyrdf/ipyelk/issues/187
 
 ## `2.1.3` (unreleased)
 
