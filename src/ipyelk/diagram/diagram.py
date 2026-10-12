@@ -202,7 +202,7 @@ class Diagram(StyledWidget):
 
         :param change: viewer change event
         """
-        # TODO should the `viewer` instance be allowed to change?
+        # TODO(#208): should the `view` instance be allowed to change?
         self._update_view_sources()
         self.children = [self.view, self.toolbar]
 

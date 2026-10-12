@@ -1,5 +1,8 @@
 """Python Quick Types from JSON Schema
 
+TODO(#214): only the tag classes ``ElkGraphElement``, ``ElkNode``, ``ElkPort``,
+``ElkEdge`` and ``ElkLabel`` (and ``strip_none``) are used.
+
 https://app.quicktype.io/?share=v69WIlc7rT81xJjmW3XY
 """
 

@@ -64,7 +64,8 @@ export class JLModelSource extends LocalModelSource {
       styles,
     );
     await this.updateModel(sGraph);
-    // TODO this promise resolves before ModelViewer rendering is done. need to hook into postprocessing
+    // TODO(#43): this promise resolves before ModelViewer rendering is done; hook into
+    // postprocessing
   }
 
   public get root(): SModelRootImpl {

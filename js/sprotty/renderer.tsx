@@ -374,7 +374,7 @@ export class SSymbolModelFactory extends SModelFactory {
         this.createElement(childSchema, root),
       );
     }
-    // TODO is there a better way to get a handle to the active `SModelRoot`?
+    // TODO(#212): read the active `SModelRoot` from sprotty, not the last build
     this.root = root;
     return root;
   }

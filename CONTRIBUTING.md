@@ -134,6 +134,13 @@ accepted as unlikely: `window['eval']`, `Reflect.apply(eval, ...)` and `const e 
 `DOMParser.parseFromString`; `console.log.call`/`.apply`; and an `Instance` nested in
 `T.Tuple(...)` next to a JSON one.
 
+### Work Markers
+
+A `TODO`, `FIXME`, `XXX` or `HACK` comment names the GitHub issue that tracks it:
+`TODO(#123): what to do`. `pixi run lint-todos` (part of `pixi run lint`) fails on a
+marker without an issue number. Open the issue first, then write the marker.
+`git grep "TODO(#"` lists them all.
+
 ### Prose
 
 [Vale](https://vale.sh) lints the prose in the root `*.md` files, `docs/`, docstrings

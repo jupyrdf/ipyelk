@@ -66,6 +66,7 @@ def get_endpoint(
     try:
         port = pt.get_port(key=port_key)
     except NotFoundError as e:
+        # TODO(#215): `el_map` has no `__contains__`, so this is always false
         if port_key in el_map:
             el = el_map.get(port_key)  # port_key was a global id
             if isinstance(el, Port) and el._parent is pt:

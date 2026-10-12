@@ -100,7 +100,7 @@ class Record(Node):
     def serialize_element(
         self, handler: SerializerFunctionWrapHandler, info: SerializationInfo
     ):
-        # TODO need ability to resize the min width based on label/child max width
+        # TODO(#209): size the min width from the widest label or child
         # the strings the option widgets would make: a widget built on every dump
         # is never closed
         constraints = "NODE_LABELS PORTS PORT_LABELS MINIMUM_SIZE"
