@@ -473,6 +473,7 @@ inputs = [
   "*.*{md,json,yml,yaml,js}",
   "node_modules/.yarn-state.yml",
   "{style,js,.github,examples,lite,atest,docs,scripts}/**/*.{css,md,json,yml,yaml,ts,tsx}",
+  "scripts/**/*.mjs",
 ]
 
 [feature.tasks-lint.tasks.fix-nblint]
