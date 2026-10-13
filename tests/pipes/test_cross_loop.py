@@ -243,9 +243,11 @@ async def test_close_before_a_cross_loop_cancel_lands_mid_run(subshell):
 
     tasks: list[asyncio.Task] = []
     subshell.call_soon_threadsafe(lambda: tasks.append(pipeline.schedule_run()))
-    await asyncio.to_thread(blocking.started.wait, 5)
-    pipeline.close()
-    blocking.proceed.set()
+    try:
+        assert await asyncio.to_thread(blocking.started.wait, 5)
+        pipeline.close()
+    finally:
+        blocking.proceed.set()
     await _settled(tasks[0])
 
     assert tasks[0].cancelled()
