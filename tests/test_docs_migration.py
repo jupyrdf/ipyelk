@@ -214,9 +214,9 @@ class _ShowError(logging.Handler):
             print(traceback.format_exception_only(record.exc_info[1])[-1].strip())
 
 
-def _run(src: str) -> tuple[str, bool]:
-    """Run a block like a notebook cell: what it prints, shows or raises, and if it
-    raised.
+def _run(src: str) -> tuple[list[str], bool]:
+    """Run a block like a notebook cell: the lines that it prints, shows or raises,
+    and if it raised.
     """
 
     async def cell() -> None:
@@ -236,7 +236,13 @@ def _run(src: str) -> tuple[str, bool]:
             contextlib.redirect_stdout(out),
             warnings.catch_warnings(record=True) as shown,
         ):
+            # what IPython shows: a DeprecationWarning only from the notebook's code
             warnings.simplefilter("always")
+            warnings.simplefilter("ignore", DeprecationWarning)
+            warnings.simplefilter("ignore", PendingDeprecationWarning)
+            warnings.filterwarnings(
+                "always", category=DeprecationWarning, module="__main__"
+            )
             try:
                 asyncio.run(cell())
             except Exception as error:
@@ -245,23 +251,29 @@ def _run(src: str) -> tuple[str, bool]:
     finally:
         logger.removeHandler(handler)
     shown_text = [f"{w.category.__name__}: {w.message}" for w in shown]
-    return " ".join([*shown_text, out.getvalue()]), raised
+    return [*shown_text, *out.getvalue().splitlines()], raised
 
 
-def _norm(text: str) -> str:
-    return " ".join(text.split())
+def _norm(lines: list[str]) -> str:
+    return "\n".join(" ".join(line.split()) for line in lines if line.strip())
 
 
 @pytest.mark.parametrize("block", _blocks(), ids=itemgetter("id"))
 def test_migration_example(block: dict) -> None:
-    """A 2.x block shows its quoted text, and a 3.0 block runs, unless pending."""
+    """A 2.x block shows its quoted text, and a 3.0 block runs and shows no error,
+    unless pending.
+    """
     assert block["label"], "start the block with # 2.x, # 3.0 or # both versions"
     if block["pr"] and block["label"] != "2.x":
         pytest.skip(f"the code of #{block['pr']} is not on this branch")
-    got, raised = _run(block["src"])
-    got, expect = _norm(got), _norm(block["expect"] or "")
+    lines, raised = _run(block["src"])
+    got, expect = _norm(lines), _norm((block["expect"] or "").splitlines())
+    if not raised:  # a printed value or a warning: whole lines, not a part of a line
+        got, expect = f"\n{got}\n", f"\n{expect}\n" if expect else ""
     if block["label"] == "3.0":
         assert not raised, f"{block['section']}: the 3.0 code fails: {got}"
+        shown = re.search(r"\w+(Error|Warning):", got)
+        assert not shown, f"{block['section']}: the 3.0 code shows an error: {got}"
     elif block["pr"]:
         assert not expect or expect not in got, (
             f"{block['section']}: the 2.x code shows the 3.0 text, so #{block['pr']}"
