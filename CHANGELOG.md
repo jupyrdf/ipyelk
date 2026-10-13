@@ -265,10 +265,11 @@ Node(layoutOptions={"org.eclipse.elk.partitioning.partition": 2.0})
 
 The removed names (`handler`, `on_run`, `disable`, `Hover.ids`, assigning `on_start` or
 `on_done`, the `contol_overlay` and `ipyelk.pipes.mappings` modules,
-`Viewer.zoom`/`pan`/`viewed`, `ipyelk.tools.Zoom`/`Pan`, `Painter.cssClasses`/`marks`/`name`,
-`Draw2DLayout` from `ipyelk.elements.layout_options` or its `layout` module) raise
-`DeprecatedAPIError` -- or `DeprecatedImportError` for the module-level names --
-throughout 3.x with the replacement in the message.
+`Viewer.zoom`/`pan`/`viewed`, `ipyelk.tools.Zoom`/`Pan`,
+`Painter.cssClasses`/`marks`/`name`, `Draw2DLayout` from
+`ipyelk.elements.layout_options` or its `layout` module) raise `DeprecatedAPIError` --
+or `DeprecatedImportError` for the module-level names -- throughout 3.x with the
+replacement in the message.
 
 ### Added
 
