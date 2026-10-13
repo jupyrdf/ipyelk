@@ -93,19 +93,20 @@ This table lists the removed names that raise `DeprecatedAPIError` or
 raise no error or a different error. The last column of the table links to the section
 that tells you what to use instead.
 
-| Removed name                                                                                                                            | Error                   | Section                           |
-| --------------------------------------------------------------------------------------------------------------------------------------- | ----------------------- | --------------------------------- |
-| `Tool.handler`                                                                                                                          | `DeprecatedAPIError`    | {ref}`migration-trigger`          |
-| `ToolButton.handler`, `ToolButton(handler=...)`                                                                                         | `DeprecatedAPIError`    | {ref}`migration-on-click`         |
-| `Tool.on_run`                                                                                                                           | `DeprecatedAPIError`    | {ref}`migration-on-start-on-done` |
-| assigning `Tool.on_start` or `Tool.on_done`                                                                                             | `DeprecatedAPIError`    | {ref}`migration-on-start-on-done` |
-| `Tool.disable`                                                                                                                          | `DeprecatedAPIError`    | {ref}`migration-disabled`         |
-| `Hover.ids`                                                                                                                             | `DeprecatedAPIError`    | {ref}`migration-hovered-id`       |
-| `Viewer.zoom`, `Viewer.pan`, `Viewer.viewed`                                                                                            | `DeprecatedAPIError`    | {ref}`migration-viewport`         |
-| `Painter.cssClasses`, `Painter.marks`, `Painter.name`                                                                                   | `DeprecatedAPIError`    | {ref}`migration-painter`          |
-| `ipyelk.tools.Zoom`, `ipyelk.tools.Pan`                                                                                                 | `DeprecatedImportError` | {ref}`migration-zoom-pan-import`  |
-| `ipyelk.tools.contol_overlay`                                                                                                           | `DeprecatedImportError` | {ref}`migration-control-module`   |
-| `ipyelk.elements.layout_options.Draw2DLayout`, `ipyelk.elements.layout_options.layout.Draw2DLayout`, in [#192], which is not merged yet | `DeprecatedImportError` | {ref}`migration-draw2d`           |
+| Removed name                                                                                        | Error                   | Section                           |
+| --------------------------------------------------------------------------------------------------- | ----------------------- | --------------------------------- |
+| `Tool.handler`                                                                                      | `DeprecatedAPIError`    | {ref}`migration-trigger`          |
+| `ToolButton.handler`, `ToolButton(handler=...)`                                                     | `DeprecatedAPIError`    | {ref}`migration-on-click`         |
+| `Tool.on_run`                                                                                       | `DeprecatedAPIError`    | {ref}`migration-on-start-on-done` |
+| assigning `Tool.on_start` or `Tool.on_done`                                                         | `DeprecatedAPIError`    | {ref}`migration-on-start-on-done` |
+| `Tool.disable`                                                                                      | `DeprecatedAPIError`    | {ref}`migration-disabled`         |
+| `Hover.ids`                                                                                         | `DeprecatedAPIError`    | {ref}`migration-hovered-id`       |
+| `Viewer.zoom`, `Viewer.pan`, `Viewer.viewed`                                                        | `DeprecatedAPIError`    | {ref}`migration-viewport`         |
+| `Painter.cssClasses`, `Painter.marks`, `Painter.name`                                               | `DeprecatedAPIError`    | {ref}`migration-painter`          |
+| `ipyelk.tools.Zoom`, `ipyelk.tools.Pan`                                                             | `DeprecatedImportError` | {ref}`migration-zoom-pan-import`  |
+| `ipyelk.tools.contol_overlay`                                                                       | `DeprecatedImportError` | {ref}`migration-control-module`   |
+| `ipyelk.elements.layout_options.Draw2DLayout`, `ipyelk.elements.layout_options.layout.Draw2DLayout` | `DeprecatedImportError` | {ref}`migration-draw2d`           |
+| `ipyelk.pipes.mappings`, in [#206], which is not merged yet                                         | `DeprecatedImportError` | {ref}`migration-mappings`         |
 
 ## Tools
 
@@ -952,10 +953,6 @@ The `layoutOptions` dictionary of an element maps option ids to values.
 
 ### Option classes use the option ids that ELK knows
 
-```{note}
-This change is in [#192], which is not merged yet.
-```
-
 Some 2.x option classes wrote option ids that ELK does not know. ELK ignored these
 options and showed no error. In 3.0, these option classes write the correct option ids.
 Thus, these options now change the layout. A unit test checks each option class against
@@ -1017,10 +1014,6 @@ print(unknown_layout_options(node.layoutOptions))
 
 ### Set the label-port spacing in each direction
 
-```{note}
-This change is in [#192], which is not merged yet.
-```
-
 `LabelPortHorizontalSpacing` and `LabelPortVerticalSpacing` replace `LabelPortSpacing`.
 ELK has no `spacing.labelPort` option, so ELK ignored `LabelPortSpacing`. In 3.0,
 `LabelPortSpacing` sets the horizontal spacing and shows a `DeprecationWarning`.
@@ -1054,10 +1047,6 @@ LabelPortVerticalSpacing(spacing=3)
 (migration-draw2d)=
 
 ### Select a layout algorithm other than Draw2D
-
-```{note}
-This change is in [#192], which is not merged yet.
-```
 
 The choices of `LayoutAlgorithm` no longer include Draw2D
 (`org.eclipse.elk.conn.gmf.layouter.Draw2D`). `elkjs` does not have this algorithm, so a
@@ -1103,15 +1092,12 @@ LayoutAlgorithm(value=ELKLayered.identifier)
 
 ### Give `layoutOptions` string keys and values
 
-```{note}
-This change is in [#192], which is not merged yet.
-```
-
 The type of `layoutOptions` on elements is `LayoutOptions`, from `ipyelk.elements`. It
 is `dict[str, str]`, as in the ELK JSON schema. When `ipyelk` validates an element, it
 changes the values:
 
-- A `bool` becomes `"true"` or `"false"`. A NumPy `bool_` does too.
+- A `bool` becomes `"true"` or `"false"`. A NumPy boolean, for example `np.bool_(True)`,
+  does too.
 - An integer becomes a string: `20` becomes `"20"`. A NumPy integer, for example
   `np.int64(20)`, does too.
 - A `float` that has no fractional part and a magnitude less than `2**53` loses its
@@ -1255,31 +1241,36 @@ print(label == ElkLabel(id="l1", text="hello"))
 
 (migration-wrapping-horizontal)=
 
-### Do not set `GraphWrappingStrategy.horizontal`
+### Do not use `GraphWrappingStrategy.horizontal`
 
 ```{note}
 This change is in [#206], which is not merged yet.
 ```
 
 3.0 removes the trait `GraphWrappingStrategy.horizontal`. No code read it, so it changed
-nothing. On 3.0, the keyword `horizontal=` shows a `DeprecationWarning` from
-`traitlets`. An assignment to `horizontal` makes a plain Python attribute and shows no
-error.
+nothing. On 3.0, `GraphWrappingStrategy(horizontal=...)` ignores the keyword and shows
+no error. A later read of `horizontal` raises `AttributeError`. An assignment to
+`horizontal` makes a plain Python attribute and shows no error.
 
-This change affects code that sets `GraphWrappingStrategy.horizontal`. No other trait
-replaces it. The change is in [#206].
+`traitlets` issues a `DeprecationWarning` for the ignored keyword. A notebook shows a
+`DeprecationWarning` only when the code of the notebook issues it. Thus, a notebook does
+not show this warning. By default, a `pytest` run shows it in its summary of warnings.
+
+This change affects code that sets or reads `GraphWrappingStrategy.horizontal`. No other
+trait replaces it. The change is in [#206].
 
 ```python
 # 2.x
 from ipyelk.elements.layout_options.wrapping_options import GraphWrappingStrategy
 
-GraphWrappingStrategy(horizontal="center")
+strategy = GraphWrappingStrategy(horizontal="center")
+print(strategy.horizontal)
 ```
 
-The 2.x code shows this warning on 3.0:
+The 2.x code raises this error on 3.0:
 
 ```text
-DeprecationWarning: Passing unrecognized arguments to super(GraphWrappingStrategy).__init__(horizontal='center').
+AttributeError: 'GraphWrappingStrategy' object has no attribute 'horizontal'
 ```
 
 ```python
@@ -1348,33 +1339,43 @@ from ipyelk.tools.control_overlay import ControlOverlay as SameClass
 print(ControlOverlay is SameClass)
 ```
 
+(migration-mappings)=
+
 ### Do not import `ipyelk.pipes.mappings`
 
 ```{note}
 This change is in [#206], which is not merged yet.
 ```
 
-3.0 removes the module `ipyelk.pipes.mappings`, because no code used it. An import of
-the module raises `ModuleNotFoundError`, not `DeprecatedImportError`.
+3.0 removes the module `ipyelk.pipes.mappings`, because no code used it. The module had
+its own classes `Edge` and `Port`, which are not the classes of `ipyelk.elements`. It
+also had the type aliases `NodeMap`, `EdgeMap` and `PortMap`. 3.0 has no replacement for
+these names. An import of the module or of one of its names raises
+`DeprecatedImportError`.
 
-This change affects code that imports `ipyelk.pipes.mappings`. The change is in [#206].
+This change affects code that imports `ipyelk.pipes.mappings`. To make a graph, use the
+classes `Node`, `Edge` and `Port` from `ipyelk.elements`. The change is in [#206].
 
 ```python
 # 2.x
-import ipyelk.pipes.mappings
+from ipyelk.pipes.mappings import NodeMap
 ```
 
 The 2.x code raises this error on 3.0:
 
 ```text
-ModuleNotFoundError: No module named 'ipyelk.pipes.mappings'
+DeprecatedImportError: ipyelk.pipes.mappings was removed in ipyelk 3.0: nothing in ipyelk used its Edge and Port dataclasses or its NodeMap, EdgeMap and PortMap aliases, and nothing replaces them. Build graphs from ipyelk.elements.Node, Edge and Port. No alias: this error is raised throughout 3.x.
 ```
 
 ```python
-# 3.0
-from ipyelk.pipes import Pipe, Pipeline
+# 3.0: make the graph from the classes of ipyelk.elements
+from ipyelk.elements import Node, Port
 
-print(Pipe.__name__, Pipeline.__name__)
+a = Node(id="a", ports=[Port(id="a.out")])
+b = Node(id="b")
+root = Node(id="root", children=[a, b])
+root.add_edge(source=a.ports[0], target=b)
+print(len(root.edges))
 ```
 
 ### Do not import `NodeExpandTool` in TypeScript
