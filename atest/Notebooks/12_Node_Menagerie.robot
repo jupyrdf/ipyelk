@@ -22,9 +22,11 @@ Click In A Widget Node Should Not Select It
     [Documentation]    A click inside the widget that a widget node shows, here on
     ...    the handle of a slider, belongs to the widget: the node stays unselected.
     ...    It used to be selected, as the handle is not the widget's own element.
-    ${app} =    Set Variable    xpath:(//div[contains(@class,"jp-ElkApp")])[2]
+    ...    The `oldest` JupyterLab only renders the cells near the viewport: scroll
+    ...    to the widget example's cell, then take the first slider in a diagram.
+    Scroll To Cell    11
     ${handle} =    Set Variable
-    ...    ${app}//div[contains(@class,"elkcontainer")]//*[contains(@class,"noUi-handle")]
+    ...    xpath:(//div[contains(@class,"elkcontainer")]//*[contains(@class,"noUi-handle")])[1]
     Wait Until Page Contains Element    ${handle}    timeout=30s
     ${el} =    Get WebElement    ${handle}
     Execute Javascript    arguments[0].scrollIntoView({block: "center"})    ARGUMENTS    ${el}
@@ -32,5 +34,7 @@ Click In A Widget Node Should Not Select It
     # a selection would render within a frame or two; give it time
     Sleep    1s
     Capture Page Screenshot    11-clicked-widget-node.png
+    ${app} =    Set Variable    ${handle}/ancestor::div[contains(@class,"jp-ElkApp")][1]
+    Page Should Contain Element    ${app}
     Page Should Not Contain Element
     ...    ${app}//*[contains(@class,"elknode")][contains(concat(" ", @class, " "), " selected ")]
