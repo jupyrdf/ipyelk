@@ -40,3 +40,13 @@ def test_a_marker_without_an_issue_is_reported(word, line):
 
 def test_words_that_only_contain_a_marker_pass():
     assert not list(check_todos.untracked("todo_list = mastodon = 'HACKATHON'"))
+
+
+@pytest.mark.parametrize("word", ["to" + "do", "fix" + "me", "To" + "do"])
+def test_a_lower_case_marker_with_a_colon_is_reported(word):
+    assert [n for n, _ in check_todos.untracked(f"x = 1\n# {word}: fix it\n")] == [2]
+    assert not list(check_todos.untracked(f"# {word}(#12): fix it"))
+
+
+def test_a_lower_case_word_without_a_colon_passes():
+    assert not list(check_todos.untracked("# the to" + "do list, and a fix" + "me tag"))

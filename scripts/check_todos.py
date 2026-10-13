@@ -3,7 +3,7 @@
 """Fail on a work marker in code that does not name the issue that tracks it.
 
 Write a marker as ``TODO(#123): what to do``, with ``FIXME``, ``XXX`` or ``HACK``
-in place of ``TODO`` as needed. Every marker then points to a GitHub issue, and
+in place of ``TODO`` as needed. A ``todo:`` or ``fixme:`` in lower case counts too. Every marker then points to a GitHub issue, and
 ``git grep "TODO(#"`` lists them. Markdown files are prose, so they are not checked.
 """
 
@@ -16,8 +16,9 @@ from collections.abc import Iterator
 from pathlib import Path
 
 ROOT = Path(__file__).parent.parent
-#: a marker word that is not followed by ``(#<issue number>)``
-UNTRACKED = re.compile(r"\b(?:TODO|FIXME|XXX|HACK)\b(?!\(#\d+\))")
+#: a marker word that is not followed by ``(#<issue number>)``, or a ``todo:`` or
+#: ``fixme:`` in any case (a lower-case word without the colon is ordinary prose)
+UNTRACKED = re.compile(r"\b(?:TODO|FIXME|XXX|HACK)\b(?!\(#\d+\))|\b(?i:todo|fixme):")
 SUFFIXES = {
     ".cfg",
     ".cjs",

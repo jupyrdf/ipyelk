@@ -125,7 +125,11 @@ jobs:
         with:
           name: ipyelk-${{ github.run_number }}-build
       - run: pixi run fix && pixi run fix
-      - run: git diff --exit-code
+      - name: check that fix changed and added no file
+        run: |
+          git diff --exit-code
+          git status --porcelain
+          test -z "$(git status --porcelain)"
       - run: pixi run lint
 
   docs:

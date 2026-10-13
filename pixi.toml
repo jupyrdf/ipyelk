@@ -479,8 +479,9 @@ inputs = [".github/workflows"]
 cmd = "python scripts/check_todos.py"
 inputs = [
   "scripts/check_todos.py",
-  "{scripts,src,tests,docs,atest,examples,js,style,.github}/**/*",
-  "*.{toml,yml,yaml,ini,cfg}",
+  "{scripts,src,tests,docs,atest,examples,js,style,third-party,.github}/**/*",
+  "*.{toml,yml,yaml,ini,cfg,js,cjs,mjs}",
+  ".*.{yml,yaml}",
   "!**/{.ipynb_checkpoints,__pycache__,node_modules}/",
 ]
 

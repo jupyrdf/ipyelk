@@ -138,8 +138,8 @@ accepted as unlikely: `window['eval']`, `Reflect.apply(eval, ...)` and `const e 
 
 A `TODO`, `FIXME`, `XXX` or `HACK` comment names the GitHub issue that tracks it:
 `TODO(#123): what to do`. `pixi run lint-todos` (part of `pixi run lint`) fails on a
-marker without an issue number. Open the issue first, then write the marker.
-`git grep "TODO(#"` lists them all.
+marker without an issue number, and on a `todo:` or `fixme:` in lower case. Open the
+issue first, then write the marker. `git grep "TODO(#"` lists them all.
 
 ### Prose
 
