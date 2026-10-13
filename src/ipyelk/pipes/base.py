@@ -284,8 +284,15 @@ class Pipe(W.Widget):
             raise NotImplementedError
         return self.status_widget._repr_mimebundle_(**kwargs)
 
+    def _check_open(self, action: str) -> None:
+        if self._closed:
+            name = type(self).__name__
+            msg = f"{name} is closed and cannot {action}; use a new pipe"
+            raise T.TraitError(msg)
+
     def schedule_run(self, change: T.Bunch | None = None) -> asyncio.Task | None:
-        """Request a run and return the task that will serve it.
+        """Request a run and return the task that will serve it; refused once
+        closed.
 
         Requests coalesce on the trailing edge: one runner task serves every
         request made while it is alive, so ten calls in one tick cost one run and
@@ -303,6 +310,7 @@ class Pipe(W.Widget):
         construction (``Diagram(source=...)`` refreshes from a trait observer).
         The request still counts and is served by the next runner.
         """
+        self._check_open("run")
         self._requested += 1
         task = self._task
         try:

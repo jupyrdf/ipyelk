@@ -187,18 +187,21 @@ def test_a_closed_pipeline_refuses_pipes_and_keeps_them(owned: bool) -> None:
 
 
 @pytest.mark.asyncio
-async def test_a_closed_pipeline_refuses_runs() -> None:
-    diagram = Diagram(source=make_source())
+@pytest.mark.parametrize("plain", [False, True], ids=["pipeline", "pipe"])
+async def test_a_closed_pipeline_refuses_runs(plain: bool) -> None:
+    kwargs = {"pipe": Pipe()} if plain else {}
+    diagram = Diagram(source=make_source(), **kwargs)
     pipe = diagram.pipe
     pipe.close()
-    msg = "^DefaultFlow is closed and cannot run; use a new pipe$"
+    msg = f"^{type(pipe).__name__} is closed and cannot run; use a new pipe$"
 
     with pytest.raises(T.TraitError, match=msg):
         diagram.refresh()
     with pytest.raises(T.TraitError, match=msg):
         pipe.schedule_run()
-    with pytest.raises(T.TraitError, match=msg):
-        await pipe.run()
+    if isinstance(pipe, Pipeline):
+        with pytest.raises(T.TraitError, match=msg):
+            await pipe.run()
     assert pipe._task is None
     diagram.close()
 

@@ -119,8 +119,9 @@
 - Raise on a closed diagram or pipeline instead of silently accepting the call. A closed
   widget has no comm, so the call never reached the browser. `refresh()`,
   `register_tool()` and setting `source`, `pipe`, `view`, `tools`, `toolbar`, `symbols`
-  or `style` on a closed `Diagram` raise `TraitError` naming its class, as do setting
-  `pipes`, `schedule_run()` and `run()` on a closed `Pipeline`. A refused `pipes` set
+  or `style` on a closed `Diagram` raise `TraitError` naming its class, as do
+  `schedule_run()` on a closed `Pipe` and setting `pipes` or calling `run()` on a closed
+  `Pipeline`. A refused `pipes` set
   keeps the stages; it used to empty them. A diagram whose pipe was closed raises on
   `refresh()`. A run in flight when its pipeline closes is cancelled before the next
   stage or successful completion, even when a progress callback closes it or the cancel

@@ -108,20 +108,9 @@ class Pipeline(SyncedOutletPipe):
             pipe.close()
         super().close()
 
-    def _check_open(self, action: str) -> None:
-        if self._closed:
-            name = type(self).__name__
-            msg = f"{name} is closed and cannot {action}; use a new pipe"
-            raise T.TraitError(msg)
-
     def _cancel_if_closed(self) -> None:
         if self._closed:
             raise asyncio.CancelledError
-
-    def schedule_run(self, change: T.Bunch | None = None) -> asyncio.Task | None:
-        """Request a run (see ``Pipe.schedule_run``); refused once closed."""
-        self._check_open("run")
-        return super().schedule_run(change)
 
     @T.validate("pipes")
     def _validate_pipes(self, proposal: T.Bunch) -> list[Pipe]:
