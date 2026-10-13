@@ -111,3 +111,4 @@ def test_element_index_membership_is_by_id():
     assert "n" in index
     assert "elements" not in index
     assert "missing" not in index
+    assert 1 in ElementIndex.from_els(Node(id="1"))

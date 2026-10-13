@@ -66,9 +66,9 @@ def get_endpoint(
     try:
         port = pt.get_port(key=port_key)
     except NotFoundError as e:
-        if port_key in el_map:
-            el = el_map.get(port_key)  # port_key was a global id
-            if isinstance(el, Port) and el._parent is pt:
+        el = el_map.get(port_key) if port_key in el_map else None
+        if isinstance(el, Port):  # port_key was a global port id
+            if el._parent is pt:
                 return el
             # TODO a new exception type?
             raise ValueError(

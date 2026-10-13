@@ -312,20 +312,20 @@ throughout 3.x with the replacement in the message.
     of the current pipe (wrapping it, or reusing its stages), raises `TraitError` too:
     build a new pipe instead
   - The rule also holds when a pipeline's `pipes` changes in place, and before a
-    `Pipeline` is wired. Adding another open diagram's stage to an assigned pipeline was
-    accepted, so the stage ran in both, and `Pipeline(pipes=[...])` rewired a live
+    `Pipeline` is wired. Adding another open diagram's stage to an assigned pipeline
+    was accepted, so the stage ran in both, and `Pipeline(pipes=[...])` rewired a live
     diagram's stage before anything could refuse it. Both now raise `TraitError` and
     change nothing, as does a `pipes` list with a closed stage or a stage listed twice
-    (it was wired into a cycle). A stage added in place belongs to the diagram (and gets
-    its `style`); a stage removed in place is released, not closed ([#191])
+    (it was wired into a cycle). A stage added in place belongs to the diagram (and
+    gets its `style`); a stage removed in place is released, not closed ([#191])
 - Close what a diagram owns when the diagram is closed. `Diagram.close()` only released
   its pipe, so the pipe tree, the view, the tools and the toolbar stayed open: every
   closed diagram left 68 widgets behind, 130 with the status view shown. It now closes
-  them with their layout and style widgets and drops its links to them, and leaves open
-  `diagram.source`, an inlet or outlet passed to a pipe, the viewer's `control_overlay`,
-  and a `layout` or tool `ui` passed in. A closed diagram's pipe is closed, so another
-  diagram can no longer take it. `Tool.close()` also closes the `ui` the tool built, and
-  `Viewer.close()` its tools ([#191])
+  them with their layout and style widgets and drops its links to them, and leaves
+  open `diagram.source`, an inlet or outlet passed to a pipe, the viewer's
+  `control_overlay`, and a `layout` or tool `ui` passed in. A closed diagram's pipe is
+  closed, so another diagram can no longer take it. `Tool.close()` also closes the
+  `ui` the tool built, and `Viewer.close()` its tools ([#191])
 - Log the routine "fixing N ids" message from `ValidationPipe` at debug level instead of
   warning: assigning ids to id-less elements is the normal path (`fix_null_id=True`), so
   every diagram built from id-less elements logged it
@@ -334,11 +334,11 @@ throughout 3.x with the replacement in the message.
     and properties. The slack port that stands in for it in the layout used to overwrite
     them with its own 5×5 geometry, permanently. Any other port, including one that
     moved to another node, still takes its layout from the browser.
-  - Each line of a wrapped label gets its own ids, and so do its sub-labels. The lines
-    of a label with id `L` get the ids `L#0`, `L#1`, … (sub-label `sub` gets `sub#0`,
-    …). If another element already uses one of these derived ids, indexing gives that
-    line a fresh id; ids you set yourself never change. Before, every line had the same
-    id (`L`, or one generated id) and the same sub-label ids. A wrapped line shares its
+  - Each line of a wrapped label gets its own ids, and so do its sub-labels. The lines of
+    a label with id `L` get the ids `L#0`, `L#1`, … (sub-label `sub` gets `sub#0`, …).
+    If another element already uses one of these derived ids, indexing gives that line
+    a fresh id; ids you set yourself never change. Before, every line had the same id
+    (`L`, or one generated id) and the same sub-label ids. A wrapped line shares its
     label's `metadata`.
   - The ELK JSON schema accepts the slack-port `key` and `hidden` properties, so a
     projection validates after a collapse and an expand.
@@ -349,9 +349,9 @@ throughout 3.x with the replacement in the message.
 - Find an existing port when a NetworkX edge's `sourcePort`, `targetPort` or `port` is
   the port's global id rather than its key. `ElementIndex` had no `__contains__`, so the
   loader's `port_key in el_map` check was always false and it added a second port with
-  that key instead. A global id that names any other element (a node, or another node's
-  port) now raises `ValueError`. `ElementIndex` and `HierarchicalIndex` support
-  `key in index`, by id ([#215])
+  that key instead. `ElementIndex` and `HierarchicalIndex` now support `key in index`,
+  by id. A port key that is the id of another node's port raises `ValueError`; a key
+  that matches a node id still makes a new port ([#215])
 
 ### Development
 
@@ -385,8 +385,8 @@ throughout 3.x with the replacement in the message.
   shell replies raw on the socket their shell stream reads from, which can swallow the
   wake-up for a request that arrives during the send. The request then waits unread
   while the kernel idles. In nbconvert that happens when a cell prints into an
-  `ipywidgets.Output`: `nbclient` answers with a `comm_msg` just as the cell's reply
-  goes out, and the next cell never runs.
+  `ipywidgets.Output`: `nbclient` answers with a `comm_msg` just as the cell's reply goes
+  out, and the next cell never runs.
   - The `itest` and `atest` environments now lock ipykernel 7.4, which fixed it
     ([ipykernel#1529]).
   - ipykernel 7.4 needs Python 3.11 or newer. For the Python 3.10 environments, the

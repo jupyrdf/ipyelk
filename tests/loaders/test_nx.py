@@ -47,15 +47,45 @@ def test_get_endpoint_finds_a_port_by_its_global_id():
     assert node.ports[0] is port
 
 
-@pytest.mark.parametrize("port_key", ["n", "m", "m.p"])
-def test_get_endpoint_rejects_a_global_id_that_is_not_its_port(port_key):
+def test_get_endpoint_rejects_another_nodes_port_id():
     node = Node(id="n")
     other = Node(id="m")
     other.add_port(Port(id="m.p"))
     el_map = HierarchicalIndex.from_els(node, other)
     with pytest.raises(ValueError, match="consistent with the edge"):
-        get_endpoint(el_map, "n", port_key=port_key)
+        get_endpoint(el_map, "n", port_key="m.p")
     assert node.ports == []
+
+
+@pytest.mark.parametrize("port_key", ["n", "m", "n.c"])
+def test_get_endpoint_makes_a_port_for_a_key_that_names_a_node(port_key):
+    node = Node(id="n")
+    node.add_child(Node(id="n.c"))
+    other = Node(id="m")
+    el_map = HierarchicalIndex.from_els(node, other)
+    port = get_endpoint(el_map, "n", port_key=port_key)
+    assert isinstance(port, Port)
+    assert len(node.ports) == 1
+    assert node.ports[0] is port
+    assert port.properties.key == port_key
+
+
+def test_nx_port_keys_may_match_node_ids():
+    graph = nx.MultiDiGraph()
+    graph.add_edge("in", "process", sourcePort="out", targetPort="in")
+    graph.add_edge("process", "out", sourcePort="out", targetPort="in")
+    mark = NXLoader().load(graph=graph)
+    try:
+        ports = [el for el in index.iter_elements(mark.value) if isinstance(el, Port)]
+        found = sorted((port.get_parent().id, port.properties.key) for port in ports)
+        assert found == [
+            ("in", "out"),
+            ("out", "in"),
+            ("process", "in"),
+            ("process", "out"),
+        ]
+    finally:
+        mark.close()
 
 
 def test_nx_edge_lands_on_an_existing_port_by_global_id():
