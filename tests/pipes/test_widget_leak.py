@@ -11,9 +11,11 @@ import gc
 import ipywidgets as W
 import pytest
 from ipywidgets.widgets import widget as widget_module
+from pydantic_core import PydanticSerializationError
 
 from ipyelk import Diagram
 from ipyelk.elements import Compartment, Node, Record
+from ipyelk.elements import layout_options as opt
 from ipyelk.pipes import MarkElementWidget
 from ipyelk.pipes.base import PipeStatus, rep_elapsed
 from ipyelk.pipes.pipeline import Pipeline, PipelineStatusView
@@ -77,6 +79,24 @@ def test_record_dump_adds_no_live_widgets() -> None:
     assert record.children[0].layoutOptions["org.eclipse.elk.nodeSize.minimum"] == (
         "(80, 20)"
     )
+
+
+@pytest.mark.parametrize("min_height", [33, 33.0])
+def test_record_writes_what_the_option_widget_wrote(min_height: float) -> None:
+    """A whole ``min_height`` gives the string the ``NodeSizeMinimum`` widget gave."""
+    record = Record(min_height=min_height, children=[Compartment()])
+    record.model_dump()
+    widget = opt.NodeSizeMinimum(width=80, height=min_height)
+    assert record.children[0].layoutOptions[widget.identifier] == widget.value
+    assert widget.value == "(80, 33)"
+    widget.close()
+
+
+def test_record_rejects_a_fractional_min_height() -> None:
+    """The widget's ``Int`` trait refused ``33.7``, so serializing it still fails."""
+    record = Record(min_height=33.7, children=[Compartment()])
+    with pytest.raises(PydanticSerializationError, match=r"whole number, not 33\.7"):
+        record.model_dump()
 
 
 def test_pipe_status_is_not_a_widget() -> None:

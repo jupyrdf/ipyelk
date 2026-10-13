@@ -88,12 +88,21 @@ class Partition(Node):
 
 
 class Record(Node):
+    """A node whose children are compartments of one shared width.
+
+    Serializing a ``Record`` sets each child's minimum size to ``width`` (cut to
+    a whole number) and ``min_height``. A ``min_height`` that is not a whole
+    number, such as ``33.7``, raises ``ValueError`` when it is serialized.
+    """
+
     layoutOptions: dict = Field(default_factory=lambda: {**record_opts})
     width: float = Field(
         default=80, description="Width needs to be shared by all children "
     )
     min_height: float = Field(
-        default=20, exclude=True, description="Minimum height of a compartment"
+        default=20,
+        exclude=True,
+        description="Minimum height of a compartment, a whole number",
     )
 
     @model_serializer(mode="wrap")
@@ -104,6 +113,10 @@ class Record(Node):
         # the strings the option widgets would make: a widget built on every dump
         # is never closed
         constraints = "NODE_LABELS PORTS PORT_LABELS MINIMUM_SIZE"
+        if not float(self.min_height).is_integer():
+            # the `Int` trait of the old `NodeSizeMinimum` widget rejected it too
+            msg = f"Record.min_height must be a whole number, not {self.min_height!r}"
+            raise ValueError(msg)
         minimum = f"({int(self.width)}, {int(self.min_height)})"
         size = {
             opt.NodeSizeConstraints.identifier: constraints,

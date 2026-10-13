@@ -621,18 +621,19 @@ def iter_hierarchy(
 
 def iter_labels(
     *els: BaseElement,
-) -> Iterator[tuple[Node, Label]]:
-    """Iterate over BaseElements that follow the `Node` hierarchy
+) -> Iterator[tuple[BaseElement, Label]]:
+    """Iterate over every label of the elements and their child nodes
+
+    An element's own labels come before those of its children (tree order).
 
     :param els: iterable of elements
     :yield: element and label pair
     """
     for el in els:
+        for label in el.labels:
+            yield el, label
         if isinstance(el, Node):
-            yield from iter_labels(
-                *el.children,
-            )
-        yield from zip([el], el.labels, strict=False)
+            yield from iter_labels(*el.children)
 
 
 def get_ancestor(element: HierarchicalElement) -> HierarchicalElement:

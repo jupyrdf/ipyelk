@@ -2,13 +2,14 @@
 # Distributed under the terms of the Modified BSD License.
 import pytest
 
-from ipyelk.elements import Node, NodeProperties, Registry
+from ipyelk.elements import Label, Node, NodeProperties, Registry
 from ipyelk.elements.index import (
     ElementIndex,
     IDReport,
     VisIndex,
     iter_edges,
     iter_elements,
+    iter_labels,
     iter_visible,
 )
 from ipyelk.exceptions import NotFoundError, NotUniqueError
@@ -104,6 +105,17 @@ def test_iteration_follows_child_order():
     nodes = [el.id for el in iter_elements(root) if isinstance(el, Node)]
     assert nodes[1:] == [c.id for c in children]
     assert [owner.id for owner, _ in iter_edges(root)] == [c.id for c in children]
+
+
+def test_iter_labels_yields_every_label_in_tree_order():
+    child = Node(id="c", labels=[Label(text="x"), Label(text="y")])
+    root = Node(
+        id="n",
+        labels=[Label(text="a"), Label(text="b"), Label(text="c")],
+        children=[child],
+    )
+    pairs = [(el.id, label.text) for el, label in iter_labels(root)]
+    assert pairs == [("n", "a"), ("n", "b"), ("n", "c"), ("c", "x"), ("c", "y")]
 
 
 def test_root_without_a_parentless_node_is_not_found():
