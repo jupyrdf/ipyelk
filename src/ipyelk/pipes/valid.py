@@ -1,9 +1,11 @@
 # Copyright (c) 2024 ipyelk contributors.
 # Distributed under the terms of the Modified BSD License.
+import warnings
+
 import traitlets as T
 from ipywidgets.widgets.trait_types import TypedTuple
 
-from ..elements import EdgeReport, IDReport, Node
+from ..elements import Edge, EdgeReport, IDReport, Label, Node, Port
 from . import flows as F
 from .base import Pipe
 from .marks import MarkIndex
@@ -24,6 +26,12 @@ class ValidationPipe(Pipe):
     id_report = T.Instance(IDReport, kw={})
     edge_report = T.Instance(EdgeReport, kw={})
     schema_report = T.Dict(kw={})
+    #: opt in to report layout option keys that ELK ignores (off by default)
+    check_layout_options = T.Bool(default_value=False)
+    #: element id to the layout option keys ELK does not resolve to one option
+    layout_options_report = T.Dict(kw={})
+    #: element id to the layout option keys whose option does not apply to it
+    layout_options_target_report = T.Dict(kw={})
     errors = T.Dict(kw={})
 
     async def run(self) -> None:
@@ -49,11 +57,53 @@ class ValidationPipe(Pipe):
                 self.errors = self.collect_errors()
                 if self.errors:
                     raise ValueError("Outlet value is not valid")
+            if self.check_layout_options:
+                self.report_layout_options(outlet_index)
 
     def get_reports(self, index: MarkIndex):
         if index.elements is None:
             raise ValueError("Mark index has no elements")
         self.edge_report, self.id_report = index.elements.get_reports()
+
+    @T.observe("check_layout_options")
+    def _clear_layout_options_reports(self, change: T.Bunch) -> None:
+        if not change.new:
+            self.layout_options_report = {}
+            self.layout_options_target_report = {}
+
+    def report_layout_options(self, index: MarkIndex) -> None:
+        """Warn about layout option keys that ELK would ignore without an error."""
+        # not at the top: `ipyelk.schema` is slow to import, and the check is opt-in
+        from ..schema.catalog import (
+            unknown_layout_options,
+            untargeted_layout_options,
+        )
+
+        if index.elements is None:
+            raise ValueError("Mark index has no elements")
+        root = self.outlet.value
+        report, target_report = {}, {}
+        for el_id, el in index.elements.items():
+            unknown = unknown_layout_options(el.layoutOptions)
+            if unknown:
+                report[el_id] = unknown
+            targets = elk_targets(el, root)
+            untargeted = (
+                untargeted_layout_options(el.layoutOptions, targets) if targets else []
+            )
+            if untargeted:
+                target_report[el_id] = untargeted
+        self.layout_options_report = report
+        self.layout_options_target_report = target_report
+        problems = {
+            "ELK does not resolve these layout options to one option": report,
+            "these layout options do not apply to their element": target_report,
+        }
+        message = "; ".join(
+            f"{text}: {found}" for text, found in problems.items() if found
+        )
+        if message:
+            warnings.warn(message, UserWarning, stacklevel=2)
 
     def collect_errors(self) -> dict:
         errors: dict[str, object] = {}
@@ -96,3 +146,16 @@ class ValidationPipe(Pipe):
                 new.edges.append(edge)
                 fixes += 1
         return root, fixes
+
+
+def elk_targets(el: object, root: object = None) -> tuple[str, ...]:
+    """The ELK ``targets`` that an element is, empty for an unknown kind.
+
+    A node with children, and the ``root``, is a ``PARENTS`` target too.
+    """
+    if isinstance(el, Node):
+        return ("PARENTS", "NODES") if el.children or el is root else ("NODES",)
+    for kind, targets in ((Edge, "EDGES"), (Port, "PORTS"), (Label, "LABELS")):
+        if isinstance(el, kind):
+            return (targets,)
+    return ()

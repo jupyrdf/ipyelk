@@ -165,7 +165,7 @@ class EdgeSpacing(SpacingOptionWidget):
     https://www.eclipse.org/elk/reference/options/org-eclipse-elk-spacing-edgeEdge.html
     """
 
-    identifier = "org.eclipse.elk.edge.edgeEdge"
+    identifier = "org.eclipse.elk.spacing.edgeEdge"
     applies_to = ["parents"]
     group = "spacing"
     _slider_description: str = "Edge Spacing"
@@ -177,7 +177,7 @@ class EdgeNodeSpacing(SpacingOptionWidget):
     https://www.eclipse.org/elk/reference/options/org-eclipse-elk-spacing-edgeNode.html
     """
 
-    identifier = "org.eclipse.elk.edge.edgeNode"
+    identifier = "org.eclipse.elk.spacing.edgeNode"
     applies_to = ["parents"]
     group = "spacing"
     _slider_description = "Edge Node Spacing"
@@ -191,7 +191,7 @@ class EdgeEdgeLayerSpacing(SpacingOptionWidget):
     https://www.eclipse.org/elk/reference/options/org-eclipse-elk-layered-spacing-edgeEdgeBetweenLayers.html
     """
 
-    identifier = "org.eclipse.elk.edge.edgeEdgeBetweenLayers"
+    identifier = "org.eclipse.elk.layered.spacing.edgeEdgeBetweenLayers"
     applies_to = ["parents"]
     group = "spacing"
     _slider_description = "Edge Edge Between Layer Spacing"
@@ -205,7 +205,7 @@ class EdgeNodeLayerSpacing(SpacingOptionWidget):
     https://www.eclipse.org/elk/reference/options/org-eclipse-elk-layered-spacing-edgeNodeBetweenLayers.html
     """
 
-    identifier = "org.eclipse.elk.edge.edgeNodeBetweenLayers"
+    identifier = "org.eclipse.elk.layered.spacing.edgeNodeBetweenLayers"
     applies_to = ["parents"]
     group = "spacing"
     _slider_description = "Edge Node Layer Spacing"
@@ -219,7 +219,7 @@ class EdgeLabelSpacing(SpacingOptionWidget):
     https://www.eclipse.org/elk/reference/options/org-eclipse-elk-spacing-edgeLabel.html
     """
 
-    identifier = "org.eclipse.elk.edge.edgeLabel"
+    identifier = "org.eclipse.elk.spacing.edgeLabel"
     applies_to = ["parents"]
     group = "spacing"
     _slider_description = "Edge Label Spacing"
