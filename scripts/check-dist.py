@@ -1,5 +1,6 @@
 """Check for files in dist archives."""
 
+import json
 import sys
 import tarfile
 import zipfile
@@ -13,6 +14,7 @@ UTF8 = {"encoding": "utf-8"}
 
 DIST = ROOT / "dist"
 PPT = ROOT / "pyproject.toml"
+PKG_JSON = ROOT / "package.json"
 LICENSE = ROOT / "LICENSE.txt"
 COPYRIGHT = ROOT / "COPYRIGHT.md"
 EPL1 = ROOT / "third-party/epl-v10.html"
@@ -20,9 +22,13 @@ EPL2 = ROOT / "third-party/epl-v20.html"
 #: the files ``project.license-files`` must list, so the wheel ships them (#133)
 LICENSE_FILES = [LICENSE, COPYRIGHT, EPL1, EPL2]
 LICENSE_FILE_NAMES = sorted(p.relative_to(ROOT).as_posix() for p in LICENSE_FILES)
-TPL_PATH = (
-    "share/jupyter/labextensions/@jupyrdf/jupyter-elk/static/third-party-licenses.json"
-)
+#: the expression chosen in #133: ipyelk's own license and the EPL code it contains
+LICENSE_EXPRESSION = "BSD-3-Clause AND EPL-1.0 AND EPL-2.0"
+#: npm writes a compound SPDX expression in parentheses
+NPM_LICENSE = f"({LICENSE_EXPRESSION})"
+EXT_PATH = "share/jupyter/labextensions/@jupyrdf/jupyter-elk"
+EXT_PKG_PATH = f"{EXT_PATH}/package.json"
+TPL_PATH = f"{EXT_PATH}/static/third-party-licenses.json"
 TPL = ROOT / "src/_d" / TPL_PATH
 
 LICENSE_BYTES = {p: p.read_bytes() for p in [*LICENSE_FILES, TPL]}
@@ -32,7 +38,7 @@ PY_VERSION = PROJECT["version"]
 PFX = f"ipyelk-{PY_VERSION}"
 #: the core-metadata license fields (PEP 639) that PyPI shows (#133)
 LICENSE_FIELDS = {
-    "License-Expression": [PROJECT.get("license")],
+    "License-Expression": [LICENSE_EXPRESSION],
     "License-File": LICENSE_FILE_NAMES,
 }
 
@@ -58,7 +64,12 @@ SDIST_FILES = {
 
 def check_pyproject() -> None:
     """Fail unless ``pyproject.toml`` declares the license and its files."""
-    assert PROJECT.get("license"), "!!! pyproject.toml has no project.license"
+    found = PROJECT.get("license")
+    assert found == LICENSE_EXPRESSION, (
+        f"!!! pyproject.toml project.license is {found!r}, "
+        f"expected {LICENSE_EXPRESSION!r}"
+    )
+    print(f"OK pyproject.toml project.license: {found}")
     files = sorted(PROJECT.get("license-files", []))
     assert files == LICENSE_FILE_NAMES, (
         f"!!! pyproject.toml project.license-files is {files}, "
@@ -81,6 +92,15 @@ def check_license_fields(where: str, metadata: str) -> None:
         print(f"OK {where} {key}: {', '.join(expected)}")
 
 
+def check_npm_license(where: str, package_json: bytes) -> None:
+    """Fail unless the ``license`` of ``package_json`` is the npm expression."""
+    found = json.loads(package_json).get("license")
+    assert found == NPM_LICENSE, (
+        f"!!! {where} license is {found!r}, expected {NPM_LICENSE!r}"
+    )
+    print(f"OK {where} license: {found}")
+
+
 def check_whl(path: Path) -> None:
     with zipfile.ZipFile(path, "r") as whl:
         names = set(whl.namelist())
@@ -95,21 +115,31 @@ def check_whl(path: Path) -> None:
                     break
             else:
                 raise AssertionError(f"!!! wheel missing one of {', '.join(fns)}")
+        ext_pkg = f"{PFX}.data/data/{EXT_PKG_PATH}"
+        assert ext_pkg in names, f"!!! wheel missing {ext_pkg}"
+        check_npm_license(f"wheel {ext_pkg}", whl.read(ext_pkg))
 
 
 def check_sdist(path: Path) -> None:
     with tarfile.open(path, "r:gz") as sdist:
-        check_license_fields(
-            "sdist", sdist.extractfile(f"{PFX}/PKG-INFO").read().decode("utf-8")
-        )
+        names = set(sdist.getnames())
+
+        def read(fn: str) -> bytes:
+            assert fn in names, f"!!! sdist missing {fn}"
+            return sdist.extractfile(fn).read()
+
+        check_license_fields("sdist", read(f"{PFX}/PKG-INFO").decode("utf-8"))
         for fn, fbytes in SDIST_FILES.items():
-            assert sdist.extractfile(fn).read() == fbytes, f"!!! sdist {fn} is wrong"
+            assert read(fn) == fbytes, f"!!! sdist {fn} is wrong"
             print(f"OK sdist {fn}")
+        ext_pkg = f"{PFX}/src/_d/{EXT_PKG_PATH}"
+        check_npm_license(f"sdist {ext_pkg}", read(ext_pkg))
 
 
 def main(dist: Path = DIST) -> int:
     """Check the one wheel and source distribution of this version in ``dist``."""
     check_pyproject()
+    check_npm_license("package.json", PKG_JSON.read_bytes())
     whl, sdist = dist / f"{PFX}-py3-none-any.whl", dist / f"{PFX}.tar.gz"
     found = sorted(p.name for p in [*dist.glob("*.whl"), *dist.glob("*.tar.gz")])
     if found != sorted([whl.name, sdist.name]):
