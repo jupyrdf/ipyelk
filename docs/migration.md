@@ -902,6 +902,9 @@ did nothing, and no error showed.
 - When a pipeline closes while it processes a diagram, it stops before the next stage.
   The task that `refresh()` returned is then cancelled, so `await diagram.refresh()`
   raises `asyncio.CancelledError`.
+- When a run fails just before its pipe closes, the task keeps the exception. The closed
+  pipe does not call its `on_error` callback. It logs a warning that names the
+  exception.
 - A second `close()` still does nothing.
 
 `ClosedError` is a subclass of `traitlets.TraitError` and of `RuntimeError`. Thus, an
