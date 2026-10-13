@@ -1111,19 +1111,23 @@ The type of `layoutOptions` on elements is `LayoutOptions`, from `ipyelk.element
 is `dict[str, str]`, as in the ELK JSON schema. When `ipyelk` validates an element, it
 changes the values:
 
-- A `bool` becomes `"true"` or `"false"`.
-- An `int` becomes a string: `20` becomes `"20"`.
+- A `bool` becomes `"true"` or `"false"`. A NumPy `bool_` does too.
+- An integer becomes a string: `20` becomes `"20"`. A NumPy integer, for example
+  `np.int64(20)`, does too.
 - A `float` that has no fractional part and a magnitude less than `2**53` loses its
   fraction: `2.0` becomes `"2"`. ELK ignores an integer option with the value `"2.0"`.
 - Another `float` becomes its `repr()`: `2.5` becomes `"2.5"`, and `1e16` becomes
   `"1e+16"`.
+- Another number, for example `np.float64(12.5)`, a `Decimal` or a `Fraction`, becomes a
+  plain `float` first. Thus, `np.float64(12.5)` becomes `"12.5"`.
 
 Validation raises `ValidationError` for `nan`, an infinity, `None`, a value of another
 type, or a key that is not a string. 2.x accepted these values. When `ipyelk` serializes
 an element for ELK, it changes a `bool` or a number to a string too. Thus, a value that
 you set in place, for example `node.layoutOptions[key] = 20`, goes to ELK as `"20"`. A
 `None` that you set in place makes the serialization raise a `ValueError` that names the
-key. `OptionsWidget.value` accepts only string keys and values.
+key. With `exclude_none=True`, the serialization removes that key instead, and ELK uses
+the default of the option. `OptionsWidget.value` accepts only string keys and values.
 
 This change affects code that puts `None`, `nan` or an object other than a string, a
 number or a `bool` in `layoutOptions`. Code that puts `2.0` there also changes: ELK now
