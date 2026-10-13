@@ -1,6 +1,7 @@
 # Copyright (c) 2024 ipyelk contributors.
 # Distributed under the terms of the Modified BSD License.
 import asyncio
+import logging
 
 import pytest
 
@@ -124,7 +125,7 @@ class _TrackedFuture(asyncio.Future):
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize("pipe_type", [Pipe, Pipeline])
-async def test_closed_pipe_consumes_error_without_reporting_it(pipe_type):
+async def test_closed_pipe_consumes_error_without_reporting_it(pipe_type, caplog):
     pipe = pipe_type()
     seen = []
     pipe.on_error = lambda pipe, exc: seen.append((pipe, exc))
@@ -138,3 +139,8 @@ async def test_closed_pipe_consumes_error_without_reporting_it(pipe_type):
     assert failed.retrieved
     assert seen == []
     assert pipe.status is status
+    warnings = [r for r in caplog.records if r.levelno == logging.WARNING]
+    assert [r.getMessage() for r in warnings] == [
+        f"{pipe_type.__name__} was closed before its run failed with "
+        "ValueError('completed before close')"
+    ]
