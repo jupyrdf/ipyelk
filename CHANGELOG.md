@@ -346,6 +346,10 @@ throughout 3.x with the replacement in the message.
   `radius`. The `node:round` renderer takes its radii from the laid-out node, so a node
   larger than the circle drew the ellipse off center. `x` and `y` that you set are still
   serialized ([#200])
+- Treat a click anywhere inside a widget that a diagram shows in its control overlay or
+  in a widget node, such as on the icon of a button, as a widget click, which the select
+  tool ignores. Only a click on the widget's own element was. A diagram shown as a
+  widget node of another diagram still selects its own nodes ([#216])
 
 ### Development
 
@@ -392,6 +396,8 @@ throughout 3.x with the replacement in the message.
   restarts with every cell and fires after 30 s without a new cell ([#177])
 - Fail CI when the committed `elkschema.json` differs from what `jlpm schema` generates,
   and rebuild it when `elkgraph-json.ts` changes ([#187])
+- Run the JS unit tests that need a DOM under `happy-dom`, chosen per file with a
+  `@vitest-environment happy-dom` comment ([#216])
 
 ### Documentation
 
@@ -416,6 +422,7 @@ throughout 3.x with the replacement in the message.
 [#187]: https://github.com/jupyrdf/ipyelk/issues/187
 [#191]: https://github.com/jupyrdf/ipyelk/issues/191
 [#200]: https://github.com/jupyrdf/ipyelk/issues/200
+[#216]: https://github.com/jupyrdf/ipyelk/issues/216
 
 ## `2.1.2`
 

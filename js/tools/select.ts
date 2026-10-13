@@ -66,7 +66,7 @@ export class NodeSelectToolMouseListener extends DragAwareHoverMouseListener {
   nonDraggingMouseUp(target: SModelElementImpl, event: MouseEvent): Action[] {
     let entering: SModelElementImpl[] = []; // elements entering selection
     let exiting: SModelElementImpl[] = []; // element exiting selection
-    if (event.button === 0 && !isJLWidget(event.target as Element)) {
+    if (event.button === 0 && !isJLWidget(event)) {
       const selectableTarget = findParentByFeature(target, isSelectable);
       if (selectableTarget != null) {
         // multi-selection?
@@ -116,10 +116,22 @@ export class NodeSelectToolMouseListener extends DragAwareHoverMouseListener {
   }
 }
 
-/*
- * Test is given dom element is a jupyter lab widget
+/**
+ * Whether a mouse event on a diagram started in a JupyterLab widget that the
+ * diagram shows in an overlay (a widget node or the control overlay), on the
+ * widget or on any element inside it, such as the icon of a button.
+ *
+ * The widget must be inside the diagram that handles the event
+ * (`currentTarget`): a diagram shown as a widget node of another diagram is
+ * itself inside an overlay container, and still selects its own nodes.
  */
-function isJLWidget(target: Element): boolean {
-  // TODO is this sufficiently robust?
-  return target?.classList?.contains('jupyter-widgets');
+export function isJLWidget(event: Pick<Event, 'target' | 'currentTarget'>): boolean {
+  const widget = (event.target as Element | null)?.closest?.(
+    '.elkcontainer .jupyter-widgets',
+  );
+  if (widget == null) {
+    return false;
+  }
+  const root = event.currentTarget as Node | null;
+  return root == null || root.contains(widget);
 }
