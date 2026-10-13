@@ -197,8 +197,7 @@ describe('ElkRoundNodeView', () => {
   }
 
   it('centers the ellipse in the node when the shape sets no x or y (#200)', () => {
-    const attrs = renderEllipse({ type: 'node:round', width: 12, height: 12 }).data
-      ?.attrs;
+    const attrs = renderEllipse({ type: 'node:round', width: 12, height: 12 }).data?.attrs;
     expect(attrs).toMatchObject({ rx: 50, ry: 25, cx: 50, cy: 25 });
   });
 
