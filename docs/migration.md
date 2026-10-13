@@ -12,8 +12,8 @@ Each section tells you:
 - the error or the symptom that the 2.x code shows on 3.0
 - the pull request that made the change
 
-The [CHANGELOG][changelog] lists every change, including the changes that do not break
-2.x code.
+The {doc}`changelog` lists every change, including the changes that do not break 2.x
+code.
 
 ```{note}
 Some sections describe changes from pull requests that are not merged yet. A note at
@@ -25,17 +25,21 @@ merged, the 2.x code in that section still works.
 
 Do these steps before you change your code:
 
-1. Search your code for the names in the table in {ref}`migration-removed-names`.
+1. Search your code for the removed names in the table in
+   {ref}`migration-removed-names`. The table lists the names that raise
+   `DeprecatedAPIError` or `DeprecatedImportError`.
 2. Run your notebooks and your tests with `ipyelk` 3.0.
 3. If you see `DeprecatedAPIError` or `DeprecatedImportError`, read the message. The
    message names the replacement.
 4. Read the sections about changes that do not raise an error:
    - {ref}`migration-unbound`
+   - {ref}`migration-callback-argument`
    - {ref}`migration-record-reports`
    - {ref}`migration-hover-leave`
    - {ref}`migration-selection-ids`
    - {ref}`migration-option-ids`
    - {ref}`migration-layout-options`
+   - {ref}`migration-wrapping-horizontal`
 
 (migration-removed-names)=
 
@@ -84,22 +88,24 @@ except DeprecatedAPI as error:
     print(type(error).__name__)
 ```
 
-This table lists the removed names. The last column links to the section that tells you
-what to use instead.
+This table lists the removed names that raise `DeprecatedAPIError` or
+`DeprecatedImportError`. Some sections of this page describe other removed names, which
+raise no error or a different error. The last column of the table links to the section
+that tells you what to use instead.
 
-| Removed name                                                                             | Error                   | Section                           |
-| ---------------------------------------------------------------------------------------- | ----------------------- | --------------------------------- |
-| `Tool.handler`                                                                           | `DeprecatedAPIError`    | {ref}`migration-trigger`          |
-| `ToolButton.handler`, `ToolButton(handler=...)`                                          | `DeprecatedAPIError`    | {ref}`migration-on-click`         |
-| `Tool.on_run`                                                                            | `DeprecatedAPIError`    | {ref}`migration-on-start-on-done` |
-| assigning `Tool.on_start` or `Tool.on_done`                                              | `DeprecatedAPIError`    | {ref}`migration-on-start-on-done` |
-| `Tool.disable`                                                                           | `DeprecatedAPIError`    | {ref}`migration-disabled`         |
-| `Hover.ids`                                                                              | `DeprecatedAPIError`    | {ref}`migration-hovered-id`       |
-| `Viewer.zoom`, `Viewer.pan`, `Viewer.viewed`                                             | `DeprecatedAPIError`    | {ref}`migration-viewport`         |
-| `Painter.cssClasses`, `Painter.marks`, `Painter.name`                                    | `DeprecatedAPIError`    | {ref}`migration-painter`          |
-| `ipyelk.tools.Zoom`, `ipyelk.tools.Pan`                                                  | `DeprecatedImportError` | {ref}`migration-zoom-pan-import`  |
-| `ipyelk.tools.contol_overlay`                                                            | `DeprecatedImportError` | {ref}`migration-control-module`   |
-| `ipyelk.elements.layout_options.layout.Draw2DLayout`, in [#192], which is not merged yet | `DeprecatedImportError` | {ref}`migration-draw2d`           |
+| Removed name                                                                                                                            | Error                   | Section                           |
+| --------------------------------------------------------------------------------------------------------------------------------------- | ----------------------- | --------------------------------- |
+| `Tool.handler`                                                                                                                          | `DeprecatedAPIError`    | {ref}`migration-trigger`          |
+| `ToolButton.handler`, `ToolButton(handler=...)`                                                                                         | `DeprecatedAPIError`    | {ref}`migration-on-click`         |
+| `Tool.on_run`                                                                                                                           | `DeprecatedAPIError`    | {ref}`migration-on-start-on-done` |
+| assigning `Tool.on_start` or `Tool.on_done`                                                                                             | `DeprecatedAPIError`    | {ref}`migration-on-start-on-done` |
+| `Tool.disable`                                                                                                                          | `DeprecatedAPIError`    | {ref}`migration-disabled`         |
+| `Hover.ids`                                                                                                                             | `DeprecatedAPIError`    | {ref}`migration-hovered-id`       |
+| `Viewer.zoom`, `Viewer.pan`, `Viewer.viewed`                                                                                            | `DeprecatedAPIError`    | {ref}`migration-viewport`         |
+| `Painter.cssClasses`, `Painter.marks`, `Painter.name`                                                                                   | `DeprecatedAPIError`    | {ref}`migration-painter`          |
+| `ipyelk.tools.Zoom`, `ipyelk.tools.Pan`                                                                                                 | `DeprecatedImportError` | {ref}`migration-zoom-pan-import`  |
+| `ipyelk.tools.contol_overlay`                                                                                                           | `DeprecatedImportError` | {ref}`migration-control-module`   |
+| `ipyelk.elements.layout_options.Draw2DLayout`, `ipyelk.elements.layout_options.layout.Draw2DLayout`, in [#192], which is not merged yet | `DeprecatedImportError` | {ref}`migration-draw2d`           |
 
 ## Tools
 
@@ -111,16 +117,7 @@ control a diagram: `Selection`, `Hover`, `FitTool` and `ToggleCollapsedTool` are
 In 2.x, some tool names had more than one role. In 3.0, each name has one role. The
 sections below describe each name. The changes are in [#157].
 
-(migration-trigger)=
-
-#### Request a run with `trigger()`
-
-A run is one execution of the `run()` method of a tool. `Tool.trigger()` requests a run.
-A call to `trigger()` is a request. `trigger()` cancels a run that did not finish,
-schedules `run()`, and returns the `asyncio.Task`. `Tool.handler` is removed.
-
-This change affects code that calls `tool.handler()` or passes `tool.handler` as a
-callback. The change is in [#157].
+The examples in these sections use this tool:
 
 ```python
 # both versions: a tool that prints when it runs
@@ -134,6 +131,17 @@ class Hello(Tool):
 
 tool = Hello()
 ```
+
+(migration-trigger)=
+
+#### Request a run with `trigger()`
+
+A run is one execution of the `run()` method of a tool. `Tool.trigger()` requests a run.
+A call to `trigger()` is a request. `trigger()` cancels a run that did not finish,
+schedules `run()`, and returns the `asyncio.Task`. `Tool.handler` is removed.
+
+This change affects code that calls `tool.handler()` or passes `tool.handler` as a
+callback. The change is in [#157].
 
 ```python
 # 2.x
@@ -226,19 +234,6 @@ This change affects code that registers `on_run` callbacks or assigns `on_done`.
 The change is in [#157].
 
 ```python
-# both versions: a tool that prints when it runs
-from ipyelk.tools import Tool
-
-
-class Hello(Tool):
-    async def run(self):
-        print("hello")
-
-
-tool = Hello()
-```
-
-```python
 # 2.x
 tool.on_run(lambda tool: print("ran"))
 ```
@@ -266,6 +261,8 @@ tool.on_start(lambda tool: print("started"))
 tool.on_done(lambda tool: print("done"))
 await tool.trigger()
 ```
+
+(migration-callback-argument)=
 
 #### Callbacks receive the object that calls them
 
@@ -343,8 +340,9 @@ print(node.properties.cssClasses)
 `Tool.disabled` replaces the `disable` trait. In 2.x, no code read `disable`, so it
 disabled nothing. In 3.0, `disabled` stops the tool:
 
-- `trigger()` raises `RuntimeError`, and a click on a `ToolButton` raises
-  `RuntimeError`. Nothing is scheduled, and no callback fires.
+- `trigger()` raises `RuntimeError`. Nothing is scheduled, and no callback fires.
+- A click on a `ToolButton` does not run its callback. In a notebook, the click shows
+  the `RuntimeError`.
 - Every control under `tool.ui` that has a `disabled` trait is disabled. Boxes and
   progress bars have no `disabled` trait.
 
@@ -544,13 +542,8 @@ print(selection.missing_ids())
 of `ids` to a list is always `False`. The `01_Linking` example now compares `ids` to a
 tuple.
 
-`Toolbar.order()` returns a `dict[int, list[DOMWidget]]` and `Toolbar.tool_order()`
-returns a `list[DOMWidget]`. These are the `ui` widgets of the tools. The methods
-returned these types in 2.x, and 3.0 gives them these type annotations. A tool without a
-`ui` is not in the result.
-
-This change affects code that compares `Selection.ids` to a list, and code that type
-checks the results of `Toolbar.order()`. The change is in [#157].
+This change affects code that compares `Selection.ids` to a list. The change is in
+[#157].
 
 ```python
 # both versions
@@ -574,6 +567,16 @@ False
 # 3.0
 print(selection.ids == ("n1",))
 ```
+
+### Type-check `Toolbar.order()` as tool widgets
+
+`Toolbar.order()` returns a `dict[int, list[DOMWidget]]`, and `Toolbar.tool_order()`
+returns a `list[DOMWidget]`. These are the `ui` widgets of the tools, not the tools. The
+methods returned these widgets in 2.x too, but their 2.x type annotations named `Tool`.
+A tool without a `ui` is not in the result.
+
+This change affects only code that a type checker checks against the 2.x annotations.
+The code runs as before. The change is in [#157].
 
 (migration-hovered-id)=
 
@@ -631,7 +634,7 @@ hover = Hover()
 ```
 
 ```python
-# 2.x: the observer expects a string
+# 2.x, with ids renamed to hovered_id: the observer expects a string
 hover.observe(lambda change: print(change.new.upper()), "hovered_id")
 hover.hovered_id = "n1"
 hover.hovered_id = None  # what the browser writes when the pointer leaves
@@ -703,8 +706,8 @@ painter.clear()
 
 ## Diagrams and viewers
 
-A viewer is the `Viewer` widget of a diagram, `diagram.view`. A view is one display of a
-viewer in the browser. A viewer can have more than one view.
+These sections describe the `Diagram` and its viewer, `diagram.view`. A viewer can have
+more than one view.
 
 ### Override `fit()` and `center()` with the full signatures
 
@@ -755,8 +758,6 @@ view.fit("n1")
 view.fit_tool.ui.click()
 ```
 
-(migration-control-overlay)=
-
 ### Add a `ControlOverlay` before you use it
 
 `Viewer.control_overlay` is `None` by default. In 2.x, every viewer had a
@@ -782,10 +783,10 @@ button = W.Button(description="Hello")
 view.control_overlay.children = [button]
 ```
 
-On Python 3.14, the 2.x code raises this error on 3.0:
+The 2.x code raises this error on 3.0:
 
 ```text
-AttributeError: 'NoneType' object has no attribute 'children' and no __dict__ for setting new attributes
+AttributeError: 'NoneType' object has no attribute 'children'
 ```
 
 ```python
@@ -887,26 +888,35 @@ view.set_viewport(zoom=2, animate=False, view_id=view.viewport.view_id)
 This change is in [#202], which is not merged yet.
 ```
 
-A closed `Diagram` or `Pipeline` raises an error when you use it. A `Pipeline` is a pipe
-that runs a list of other pipes, its stages. A closed widget has no connection to the
-browser, so a call to it cannot reach the browser. In 2.x, the call did nothing, and no
-error showed.
+A closed `Diagram` or `Pipe` raises `ipyelk.exceptions.ClosedError` when you use it. A
+`Pipeline` is a pipe that runs a list of other pipes, its stages. A closed widget has no
+connection to the browser, so a call to it cannot reach the browser. In 2.x, the call
+did nothing, and no error showed.
 
 - On a closed `Diagram`, `refresh()`, `register_tool()` and an assignment to `source`,
-  `pipe`, `view`, `tools`, `toolbar`, `symbols` or `style` raise `TraitError`.
-- On a closed `Pipeline`, `schedule_run()`, `run()` and an assignment to `pipes` raise
-  `TraitError`. A refused `pipes` assignment keeps the stages. In 2.x, it removed them.
-- A diagram whose pipe is closed raises `TraitError` on `refresh()`.
+  `pipe`, `view`, `tools`, `toolbar`, `symbols` or `style` raise `ClosedError`.
+- On a closed `Pipe`, `schedule_run()` raises `ClosedError`. On a closed `Pipeline`,
+  `run()` and an assignment to `pipes` raise it too.
+- A refused `pipes` assignment keeps the stages. In 2.x, it removed them.
+- A diagram whose pipe is closed raises `ClosedError` on `refresh()`.
 - When a pipeline closes while it processes a diagram, it stops before the next stage.
+  The task that `refresh()` returned is then cancelled, so `await diagram.refresh()`
+  raises `asyncio.CancelledError`.
 - A second `close()` still does nothing.
 
-This change affects code that uses a diagram or a pipeline after `close()`.
+`ClosedError` is a subclass of `traitlets.TraitError` and of `RuntimeError`. Thus, an
+`except TraitError` clause or an `except RuntimeError` clause catches it. The new
+properties `Diagram.closed` and `Pipe.closed` are `True` after a call to `close()`.
+
+This change affects code that uses a diagram or a pipe after `close()`. The change is in
+[#202].
 
 ```python
 # both versions
-from ipyelk import Diagram
+from ipyelk import Diagram, from_element
+from ipyelk.elements import Node
 
-diagram = Diagram()
+diagram = from_element(Node(id="root"))
 diagram.close()
 ```
 
@@ -918,12 +928,13 @@ diagram.refresh()
 The 2.x code raises this error on 3.0:
 
 ```text
-TraitError: Diagram is closed and cannot refresh; build a new Diagram
+ClosedError: Diagram is closed and cannot refresh; build a new Diagram
 ```
 
 ```python
 # 3.0: make a new diagram from the source, which stays open
-diagram = Diagram(source=diagram.source)
+if diagram.closed:
+    diagram = Diagram(source=diagram.source)
 diagram.refresh()
 ```
 
@@ -969,7 +980,7 @@ Other option classes change too:
 This change affects code that uses these option classes, and code that writes the 2.x
 option ids in `layoutOptions`. The 2.x code does not raise an error. But the layout of a
 diagram that uses these option classes can change. ELK still ignores a 2.x option id in
-`layoutOptions`.
+`layoutOptions`. The change is in [#192].
 
 ```python
 # 2.x
@@ -1011,7 +1022,7 @@ This change is in [#192], which is not merged yet.
 ELK has no `spacing.labelPort` option, so ELK ignored `LabelPortSpacing`. In 3.0,
 `LabelPortSpacing` sets the horizontal spacing and shows a `DeprecationWarning`.
 
-This change affects code that uses `LabelPortSpacing`.
+This change affects code that uses `LabelPortSpacing`. The change is in [#192].
 
 ```python
 # 2.x
@@ -1047,20 +1058,35 @@ This change is in [#192], which is not merged yet.
 
 The choices of `LayoutAlgorithm` no longer include Draw2D
 (`org.eclipse.elk.conn.gmf.layouter.Draw2D`). `elkjs` does not have this algorithm, so a
-layout that used it failed. An import of `Draw2DLayout` raises `DeprecatedImportError`
-in every 3.x release.
+layout that used it failed. An import of `Draw2DLayout` from
+`ipyelk.elements.layout_options` or from `ipyelk.elements.layout_options.layout` raises
+`DeprecatedImportError` in every 3.x release.
 
 This change affects code that imports `Draw2DLayout` or selects the Draw2D algorithm.
+The change is in [#192].
 
 ```python
 # 2.x
-from ipyelk.elements.layout_options.layout import Draw2DLayout
+from ipyelk.elements.layout_options import Draw2DLayout
 ```
 
 The 2.x code raises this error on 3.0:
 
 ```text
 DeprecatedImportError: ipyelk.elements.layout_options.layout.Draw2DLayout was removed in ipyelk 3.0: elkjs has no Draw2D algorithm (org.eclipse.elk.conn.gmf.layouter.Draw2D), so a layout that selected it failed. Select another Algorithm, for example ELKLayered, ELKBox, ELKRadial or ELKRectanglePacking from ipyelk.elements.layout_options.layout: LayoutAlgorithm(value=ELKLayered.identifier). No alias: this error is raised throughout 3.x.
+```
+
+An import from the module `ipyelk.elements.layout_options.layout` fails too:
+
+```python
+# 2.x
+from ipyelk.elements.layout_options.layout import Draw2DLayout
+```
+
+The 2.x code raises the same error on 3.0. The message starts with this text:
+
+```text
+DeprecatedImportError: ipyelk.elements.layout_options.layout.Draw2DLayout was removed in ipyelk 3.0
 ```
 
 ```python
@@ -1083,19 +1109,22 @@ is `dict[str, str]`, as in the ELK JSON schema. When `ipyelk` validates an eleme
 changes the values:
 
 - A `bool` becomes `"true"` or `"false"`.
-- A number becomes a string.
-- A `float` with no fractional part loses its fraction: `2.0` becomes `"2"`. ELK ignores
-  an integer option with the value `"2.0"`.
+- An `int` becomes a string: `20` becomes `"20"`.
+- A `float` that has no fractional part and a magnitude less than `2**53` loses its
+  fraction: `2.0` becomes `"2"`. ELK ignores an integer option with the value `"2.0"`.
+- Another `float` becomes its `repr()`: `2.5` becomes `"2.5"`, and `1e16` becomes
+  `"1e+16"`.
 
 Validation raises `ValidationError` for `nan`, an infinity, `None`, a value of another
-type, or a key that is not a string. 2.x accepted these values. When `ipyelk` sends an
-element to ELK, it changes a `bool` or a number to a string too. Thus, a value that you
-set in place, for example `node.layoutOptions[key] = 20`, goes to ELK as `"20"`.
-`OptionsWidget.value` accepts only string keys and values.
+type, or a key that is not a string. 2.x accepted these values. When `ipyelk` serializes
+an element for ELK, it changes a `bool` or a number to a string too. Thus, a value that
+you set in place, for example `node.layoutOptions[key] = 20`, goes to ELK as `"20"`. A
+`None` that you set in place makes the serialization raise a `ValueError` that names the
+key. `OptionsWidget.value` accepts only string keys and values.
 
 This change affects code that puts `None`, `nan` or an object other than a string, a
 number or a `bool` in `layoutOptions`. Code that puts `2.0` there also changes: ELK now
-applies the option.
+applies the option. The change is in [#192].
 
 ```python
 # 2.x
@@ -1110,6 +1139,22 @@ The 2.x code raises this error on 3.0:
 ValidationError: 1 validation error for Node
 layoutOptions.`org.eclipse.elk.direction`
   Input should be a valid string [type=string_type, input_value=None, input_type=NoneType]
+```
+
+```python
+# 2.x: a None that you set in place
+from ipyelk.elements import Node
+
+node = Node(layoutOptions={})
+node.layoutOptions["org.eclipse.elk.direction"] = None
+node.model_dump()
+```
+
+On 3.0, the serialization raises `PydanticSerializationError`, a subclass of
+`ValueError`, with this message:
+
+```text
+PydanticSerializationError: Error calling function `serialize_layout_options`: ValueError: layoutOptions['org.eclipse.elk.direction'] is None: ELK cannot read it. Delete the key to unset the option.
 ```
 
 ```python
@@ -1136,7 +1181,7 @@ roots". An index with more than one root used the first root and showed no error
 the checks did not look at the other trees.
 
 This change affects code that catches `AssertionError` from these methods, or that
-indexes more than one tree.
+indexes more than one tree. The change is in [#206].
 
 ```python
 # both versions: an index with two roots
@@ -1172,11 +1217,10 @@ This change is in [#206], which is not merged yet.
 
 3.0 removes `ElkLabel.__eq__` and `ElkLabel.__hash__`. They served a cache of text sizes
 that is gone. `ElkLabel` now compares field by field, like the other classes in
-`ipyelk.elements.layout_options.model`. You cannot put an `ElkLabel` in a `set`. 3.0
-also removes the trait `GraphWrappingStrategy.horizontal`, which nothing read.
+`ipyelk.elements.layout_options.model`. You cannot put an `ElkLabel` in a `set`.
 
 This change affects code that puts `ElkLabel` objects in a `set` or uses them as `dict`
-keys, and code that sets `GraphWrappingStrategy.horizontal`.
+keys. The change is in [#206].
 
 ```python
 # both versions
@@ -1200,6 +1244,42 @@ TypeError: unhashable type: 'ElkLabel'
 # 3.0: keep labels in a list or index them by id
 labels = {label.id: label}
 print(label == ElkLabel(id="l1", text="hello"))
+```
+
+(migration-wrapping-horizontal)=
+
+### Do not set `GraphWrappingStrategy.horizontal`
+
+```{note}
+This change is in [#206], which is not merged yet.
+```
+
+3.0 removes the trait `GraphWrappingStrategy.horizontal`. No code read it, so it changed
+nothing. On 3.0, the keyword `horizontal=` shows a `DeprecationWarning` from
+`traitlets`. An assignment to `horizontal` makes a plain Python attribute and shows no
+error.
+
+This change affects code that sets `GraphWrappingStrategy.horizontal`. No other trait
+replaces it. The change is in [#206].
+
+```python
+# 2.x
+from ipyelk.elements.layout_options.wrapping_options import GraphWrappingStrategy
+
+GraphWrappingStrategy(horizontal="center")
+```
+
+The 2.x code shows this warning on 3.0:
+
+```text
+DeprecationWarning: Passing unrecognized arguments to super(GraphWrappingStrategy).__init__(horizontal='center').
+```
+
+```python
+# 3.0: leave out horizontal
+from ipyelk.elements.layout_options.wrapping_options import GraphWrappingStrategy
+
+GraphWrappingStrategy(value="OFF")
 ```
 
 ## Imports
@@ -1270,11 +1350,7 @@ This change is in [#206], which is not merged yet.
 3.0 removes the module `ipyelk.pipes.mappings`, because no code used it. An import of
 the module raises `ModuleNotFoundError`, not `DeprecatedImportError`.
 
-`ipyelk.elements.__all__` no longer names `ElementShape` and `check_ids`. Neither name
-was in `ipyelk.elements`, so `from ipyelk.elements import *` raised `AttributeError` in
-2.x. In 3.0, it works.
-
-This change affects code that imports `ipyelk.pipes.mappings`.
+This change affects code that imports `ipyelk.pipes.mappings`. The change is in [#206].
 
 ```python
 # 2.x
@@ -1308,6 +1384,7 @@ also removes the empty `change:interaction` listener, because no kernel class ha
 
 This change affects only TypeScript code that imports `NodeExpandTool` or
 `ExpandAction`. Python code does not change. The examples in this section are not run.
+The change is in [#206].
 
 ```typescript
 // 2.x
@@ -1326,4 +1403,3 @@ is gone. Thus, the 2.x imports fail.
 [#192]: https://github.com/jupyrdf/ipyelk/pull/192
 [#202]: https://github.com/jupyrdf/ipyelk/pull/202
 [#206]: https://github.com/jupyrdf/ipyelk/pull/206
-[changelog]: https://github.com/jupyrdf/ipyelk/tree/master/CHANGELOG.md

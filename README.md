@@ -91,7 +91,7 @@ derived from [other works][copyright].
 [examples]: https://github.com/jupyrdf/ipyelk/tree/master/examples/_index.ipynb
 [contributing]: https://github.com/jupyrdf/ipyelk/tree/master/CONTRIBUTING.md
 [changelog]: https://github.com/jupyrdf/ipyelk/tree/master/CHANGELOG.md
-[migration]: https://github.com/jupyrdf/ipyelk/tree/master/docs/migration.md
+[migration]: https://ipyelk.readthedocs.io/en/latest/migration.html
 [ci-badge]: https://github.com/jupyrdf/ipyelk/workflows/CI/badge.svg
 [ci]: https://github.com/jupyrdf/ipyelk/actions?query=workflow%3ACI+branch%3Amaster
 [elk-json]:

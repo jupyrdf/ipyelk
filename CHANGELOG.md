@@ -334,9 +334,10 @@ except ClosedError:  # also a TraitError and a RuntimeError
 
 ### Documentation
 
-- Add the page _Migrating from ipyelk 2.x to 3.0_ (`docs/migration.md`), linked from the
-  README and the docs index: a section for each breaking change, with the 2.x code, the
-  3.0 code and the error or symptom that the 2.x code shows on 3.0 ([#219])
+- Add the page [Migrating from ipyelk 2.x to 3.0][migration] (`docs/migration.md`),
+  linked from the README and the docs index: a section for each breaking change, with
+  the 2.x code, the 3.0 code and the error or symptom that the 2.x code shows on 3.0.
+  Tests check the page against the code and the CHANGELOG ([#219])
 
 ### `@jupyrdf/jupyter-elk 3.0.0`
 
@@ -373,6 +374,7 @@ except ClosedError:  # also a TraitError and a RuntimeError
 [#156]: https://github.com/jupyrdf/ipyelk/issues/156
 [#197]: https://github.com/jupyrdf/ipyelk/issues/197
 [#219]: https://github.com/jupyrdf/ipyelk/issues/219
+[migration]: https://ipyelk.readthedocs.io/en/latest/migration.html
 
 ## `2.1.3` (unreleased)
 
