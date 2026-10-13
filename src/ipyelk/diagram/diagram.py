@@ -274,15 +274,35 @@ class Diagram(StyledWidget):
     def register_tool(self, tool: Tool) -> Diagram:
         """Add a new tool to the diagram.
 
+        Each name in the tool's ``_dependencies`` that the diagram supplies is
+        bound: ``diagram``, ``pipe``, ``view`` and the view's ``selection``,
+        ``hover``, ``viewport`` and ``painter``. Any other dependency stays as
+        it is, and the tool names it in ``missing_dependencies()`` while it is
+        ``None``. A progress bar stops getting the reports of a pipe from
+        another diagram.
+
         :param tool: new tool instance to add to the diagram.
         :type tool: Tool
         :return: current Diagram instance
         """
+        view = self.view
         bindings = {
             "diagram": self,
-            "selection": self.view.selection,
             "pipe": self.pipe,
+            "view": view,
+            "selection": view.selection,
+            "hover": view.hover,
+            "viewport": view.viewport,
+            "painter": view.painter,
         }
+        if isinstance(tool, PipelineProgressBar):
+            old = tool.pipe  # a bar moved from another diagram leaves its pipe
+            if (
+                old is not None
+                and old is not self.pipe
+                and old.on_progress == tool.update
+            ):
+                old.set_trait("on_progress", None)
         # the declared dependencies, plus a `diagram` or `selection` trait (user tools)
         user = {"diagram", "selection"}.intersection(tool.trait_names())
         names = {*tool._dependencies, *user}
