@@ -332,6 +332,12 @@ except ClosedError:  # also a TraitError and a RuntimeError
     diagram = Diagram(source=diagram.source)  # the source stays open
 ```
 
+### Documentation
+
+- Add the page _Migrating from ipyelk 2.x to 3.0_ (`docs/migration.md`), linked from the
+  README and the docs index: a section for each breaking change, with the 2.x code, the
+  3.0 code and the error or symptom that the 2.x code shows on 3.0 ([#219])
+
 ### `@jupyrdf/jupyter-elk 3.0.0`
 
 - Write `hovered_id` back on pointer leave, but only when the departed element is still
@@ -366,6 +372,7 @@ except ClosedError:  # also a TraitError and a RuntimeError
 [#155]: https://github.com/jupyrdf/ipyelk/issues/155
 [#156]: https://github.com/jupyrdf/ipyelk/issues/156
 [#197]: https://github.com/jupyrdf/ipyelk/issues/197
+[#219]: https://github.com/jupyrdf/ipyelk/issues/219
 
 ## `2.1.3` (unreleased)
 
