@@ -3,6 +3,11 @@
 Copyright (c) 2021 Dane Freeman. Distributed under the terms of the Modified BSD
 License.
 
+The package also contains code under the Eclipse Public License 1.0 and 2.0, listed
+below, so its license expression is `BSD-3-Clause AND EPL-1.0 AND EPL-2.0`. The
+permissive licenses of the other bundled packages ask only for their notices, which
+`static/third-party-licenses.json` holds.
+
 ## Third-party Software
 
 ### Bundled JavaScript packages
