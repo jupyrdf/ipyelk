@@ -120,11 +120,15 @@
   raises `ipyelk.exceptions.NotFoundError` when every node in the index has a parent,
   and `NotUniqueError`, naming the roots, when more than one node has none. It used to
   fail an `assert` with the message "Multiple roots" for no root, and to take the first
-  of several roots without a word, so the checks skipped the other trees.
+  of several roots without a word, so the checks skipped the other trees
+  ([#217](https://github.com/jupyrdf/ipyelk/issues/217)).
 - Remove code that nothing used: the `ipyelk.pipes.mappings` module, the
   `GraphWrappingStrategy.horizontal` trait, and `ElkLabel.__eq__`/`__hash__`, which
   served a text sizer cache that is gone. `ElkLabel` now compares field by field like
   the other `layout_options.model` classes and, like them, cannot be put in a `set`.
+  Importing `ipyelk.pipes.mappings` raises `DeprecatedImportError`: nothing replaces its
+  `Edge` and `Port` classes or its `NodeMap`, `EdgeMap` and `PortMap` aliases
+  ([#217](https://github.com/jupyrdf/ipyelk/issues/217)).
 
 ### Migration
 
@@ -189,10 +193,11 @@ view.painter.styles  # {"n2": ("highlight",)}
 ```
 
 The removed names (`handler`, `on_run`, `disable`, `Hover.ids`, assigning `on_start` or
-`on_done`, the `contol_overlay` module, `Viewer.zoom`/`pan`/`viewed`,
-`ipyelk.tools.Zoom`/`Pan`, `Painter.cssClasses`/`marks`/`name`) raise
-`DeprecatedAPIError` -- or `DeprecatedImportError` for the module-level names --
-throughout 3.x with the replacement in the message.
+`on_done`, the `contol_overlay` and `ipyelk.pipes.mappings` modules,
+`Viewer.zoom`/`pan`/`viewed`, `ipyelk.tools.Zoom`/`Pan`,
+`Painter.cssClasses`/`marks`/`name`) raise `DeprecatedAPIError` -- or
+`DeprecatedImportError` for the module-level names -- throughout 3.x with the
+replacement in the message.
 
 ### `@jupyrdf/jupyter-elk 3.0.0`
 
@@ -219,7 +224,8 @@ throughout 3.x with the replacement in the message.
   the mouseover ([#156]).
 - Remove `NodeExpandTool` and its `ExpandAction`: its `wheel` handler returned before it
   did anything, and nothing sent the action. Remove the empty `change:interaction`
-  listener too: no kernel class has an `interaction` trait.
+  listener too: no kernel class has an `interaction` trait
+  ([#217](https://github.com/jupyrdf/ipyelk/issues/217)).
 
 [#155]: https://github.com/jupyrdf/ipyelk/issues/155
 [#156]: https://github.com/jupyrdf/ipyelk/issues/156
@@ -361,21 +367,27 @@ throughout 3.x with the replacement in the message.
 - `from ipyelk.elements import *` works. Its `__all__` named `ElementShape`, which the
   package did not import, and `check_ids`, which is an index method. Ruff rule `F822`
   (an undefined name in `__all__`) is on now, and a test star-imports every module that
-  has an `__all__`
+  has an `__all__` ([#217])
 - Stop `Record` from making six widgets for each child every time it is serialized, on
   every synced `value`, and never closing them: it writes the same size option strings
-  to its children without the option widgets
+  to its children without the option widgets. A `min_height` that is not a whole number
+  still fails to serialize, now with a `ValueError` that names it, where the widget's
+  `Int` trait raised a `TraitError` ([#217])
 - Export the wrapping layout options `GraphWrappingStrategy`,
   `AdditionalWrappedEdgesSpacing` and `CorrectionFactorForWrapping` from
-  `ipyelk.elements.layout_options`: no module imported them
+  `ipyelk.elements.layout_options`: no module imported them ([#217])
 - `Diagram.register_tool` binds each dependency in the tool's `_dependencies` that the
-  diagram supplies (`diagram`, `selection`, `pipe`), and still binds a `diagram` or
-  `selection` trait that a tool does not list. A `PipelineProgressBar` added this way is
-  bound to the pipe, and gets the progress reports when no other bar has them
+  diagram supplies (`diagram`, `pipe`, `view`, and the view's `selection`, `hover`,
+  `viewport` and `painter`), and still binds a `diagram` or `selection` trait that a
+  tool does not list. A `PipelineProgressBar` added this way is bound to the pipe, and
+  gets the progress reports when no other bar has them. A bar moved from another diagram
+  stops getting the reports of that diagram's pipe ([#217])
 - The NetworkX loader's error for a `port_key` that names some other element shows the
   key: the message had no `f` prefix. `logic_gates.Gate` passes `minimum_size` (it was
   `minimun_size`, which `traitlets` dropped with a warning). The text sizer sets the
-  style CSS as the text of its `<style>` element, not as markup
+  style CSS as the text of its `<style>` element, not as markup ([#217])
+- `iter_labels` yields every label of each element and its child nodes, each element's
+  own labels first. It yielded only the first label of each element ([#217])
 
 ### Development
 
@@ -422,12 +434,20 @@ throughout 3.x with the replacement in the message.
   restarts with every cell and fires after 30 s without a new cell ([#177])
 - Fail CI when the committed `elkschema.json` differs from what `jlpm schema` generates,
   and rebuild it when `elkgraph-json.ts` changes ([#187])
-- Fail the `lint` job when `pixi run fix` changes a committed file
-  (`git diff --exit-code`), and commit what it changes: `taplo` also formats
-  `scripts/*.toml`, and `ATEST_ARGS` in `ci.yml` is a literal block, which `prettier`
-  leaves alone. Ruff targets Python 3.10, the `requires-python` floor. `jlpm clean`
-  keeps the committed `elkschema.json`. `CONTRIBUTING.md` names `pixi run watch-js` and
-  `.github/workflows/ci.yml`. Delete obsolete `TODO` comments
+- Fail the `lint` job when `pixi run fix` changes a committed file or adds a file that
+  git does not ignore (`git diff --exit-code`, `git status --porcelain`), and commit
+  what it changes: `taplo` also formats `scripts/*.toml`, and `ATEST_ARGS` in `ci.yml`
+  is a literal block, which `prettier` leaves alone. Ruff targets Python 3.10, the
+  `requires-python` floor. `jlpm clean` keeps the committed `elkschema.json`.
+  `CONTRIBUTING.md` names `pixi run watch-js` and `.github/workflows/ci.yml` ([#217])
+- Track every work marker: a `TODO`, `FIXME`, `XXX` or `HACK` comment names its issue as
+  `TODO(#123): what to do`, as `CONTRIBUTING.md` describes. `scripts/check_todos.py`,
+  run by `pixi run lint-todos` as part of `pixi run lint`, fails on a marker in code
+  that names no issue, and on a `todo:` or `fixme:` in lower case. Delete the obsolete
+  markers, and file an issue for each of the others ([#217])
+- Skip the `16_Cervidae_Tree` notebook tests, with the reason, when
+  `examples/data/cervidae-tree.zip` is a git-lfs pointer file: a clone without git-lfs
+  failed them with `BadZipFile` ([#217])
 
 ### Documentation
 
@@ -452,6 +472,7 @@ throughout 3.x with the replacement in the message.
 [#187]: https://github.com/jupyrdf/ipyelk/issues/187
 [#191]: https://github.com/jupyrdf/ipyelk/issues/191
 [#200]: https://github.com/jupyrdf/ipyelk/issues/200
+[#217]: https://github.com/jupyrdf/ipyelk/issues/217
 
 ## `2.1.2`
 
