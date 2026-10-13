@@ -72,6 +72,10 @@ def untargeted_layout_options(keys: Iterable[str], targets: Iterable[str]) -> li
     ``EDGES``, ``PORTS`` or ``LABELS``. ELK does not report an option set on an
     element of another kind, for example a node option on an edge.
 
+    ipyelk's own label view reads ``org.eclipse.elk.spacing.labelLabel`` from an
+    icon label (the first label of a label) for the gap between the icon and the
+    text, so the result lists that option on an icon label although ipyelk uses it.
+
     :param keys: layout option keys, or a ``LayoutOptions`` dictionary
     :param targets: the kinds of the element the keys are set on
     :return: the keys of known options that apply to none of ``targets``, in their
