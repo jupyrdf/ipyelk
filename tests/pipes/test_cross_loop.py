@@ -274,6 +274,60 @@ async def test_close_before_a_cross_loop_cancel_lands_in_the_final_stage(subshel
     assert finished == ["running"]
 
 
+class _Counting(Pipe):
+    """A stage that counts its runs."""
+
+    runs = 0
+
+    async def run(self):
+        self.runs += 1
+        self.outlet.value = self.inlet.value
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("second", ["plain", "nested"])
+async def test_close_marks_the_pipeline_closed_before_its_stages(
+    subshell, second: str, monkeypatch: pytest.MonkeyPatch
+):
+    """``Pipeline.close()`` closes its stages before itself. A subshell runner
+    that reaches a stage boundary in between must still stop, so the pipeline
+    is marked closed before its stages are.
+    """
+    blocking = _Blocking(observes=(F.New,))
+    counting = _Counting(observes=(F.New,), reports=(F.Layout,))
+    stage = counting if second == "plain" else Pipeline(pipes=[counting])
+    pipeline = Pipeline(pipes=[blocking, stage])
+    errors = _watched(pipeline)
+    pipeline.inlet.record(F.New)
+    tasks: list[asyncio.Task] = []
+    settled = threading.Event()
+    close = stage.close
+
+    def schedule() -> None:
+        task = pipeline.schedule_run()
+        task.add_done_callback(lambda _task: settled.set())
+        tasks.append(task)
+
+    def stalled_close() -> None:
+        # hold close() after the stages closed, with the runner let into stage 2
+        close()
+        blocking.proceed.set()
+        settled.wait(timeout=5)
+
+    monkeypatch.setattr(stage, "close", stalled_close)
+    subshell.call_soon_threadsafe(schedule)
+    try:
+        assert await asyncio.to_thread(blocking.started.wait, 5)
+        pipeline.close()
+    finally:
+        blocking.proceed.set()
+    await _settled(tasks[0])
+
+    assert tasks[0].cancelled()
+    assert errors == []
+    assert counting.runs == 0
+
+
 @pytest.mark.asyncio
 async def test_close_before_a_cross_loop_runner_starts(subshell):
     """A close lands between ``schedule_run`` and the runner's first step."""

@@ -104,6 +104,8 @@ class Pipeline(SyncedOutletPipe):
 
     def close(self):
         """Close this pipeline, its sub-pipes and the widgets it created."""
+        # first, so a runner on another loop sees it at its next stage boundary
+        self._closed = True
         for pipe in self.pipes:
             pipe.close()
         super().close()

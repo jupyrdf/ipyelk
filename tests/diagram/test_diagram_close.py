@@ -277,6 +277,75 @@ async def test_closing_from_progress_cancels_before_a_nested_stage(
         diagram.close()
 
 
+class Counting(Pipe):
+    """A stage that counts its runs."""
+
+    runs = 0
+
+    async def run(self):
+        self.runs += 1
+        self.outlet.value = self.inlet.value
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("closing", ["pipeline", "diagram"])
+async def test_closing_from_progress_skips_a_plain_stage(
+    closing: str, caplog: pytest.LogCaptureFixture
+) -> None:
+    stage = Counting(observes=(F.New,), reports=(F.Layout,))
+    pipe = Pipeline(pipes=[stage])
+    errors = []
+    pipe.on_error = lambda _pipe, error: errors.append(error)
+    diagram = Diagram(source=make_source(), pipe=pipe)
+    pipe.on_progress = lambda _pipe: (
+        pipe.close() if closing == "pipeline" else diagram.close()
+    )
+
+    try:
+        task = diagram.refresh()
+        with pytest.raises(asyncio.CancelledError):
+            await task
+        assert task.cancelled()
+        assert stage.runs == 0
+        assert errors == []
+        assert [r for r in caplog.records if r.levelno >= logging.WARNING] == []
+    finally:
+        diagram.close()
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("closing", ["pipeline", "diagram"])
+async def test_closing_from_the_last_stages_finished_update_cancels(
+    closing: str,
+) -> None:
+    stage = Counting(observes=(F.New,), reports=(F.Layout,))
+    pipe = Pipeline(pipes=[stage])
+    errors = []
+    pipe.on_error = lambda _pipe, error: errors.append(error)
+    diagram = Diagram(source=make_source(), pipe=pipe)
+    states = []
+
+    def on_progress(_pipe: Pipe) -> None:
+        states.append(stage.status.state())
+        if stage.status.state() == "ok":
+            (pipe if closing == "pipeline" else diagram).close()
+
+    stage.on_progress = on_progress
+
+    try:
+        task = diagram.refresh()
+        with pytest.raises(asyncio.CancelledError):
+            await task
+        assert task.cancelled()
+        assert stage.runs == 1
+        assert states == ["running", "ok"]
+        assert pipe.status.state() != "ok"
+        assert diagram.source.flow == (F.New,), "a cancelled run hands its flow back"
+        assert errors == []
+    finally:
+        diagram.close()
+
+
 @pytest.mark.asyncio
 async def test_closed_diagram_ignores_a_queued_successful_view_update() -> None:
     diagram = Diagram(source=make_source(), pipe=Pipe())

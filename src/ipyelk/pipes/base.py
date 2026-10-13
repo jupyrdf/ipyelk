@@ -269,6 +269,7 @@ class Pipe(W.Widget):
         An inlet or outlet it was given, such as the source it was connected
         to, is left open.
         """
+        self._closed = True
         self.cancel()
         owned, self._owned = self._owned, []
         for widget in owned:
@@ -277,7 +278,6 @@ class Pipe(W.Widget):
         layout = self._trait_values.get("layout")
         if layout is not None:
             layout.close()
-        self._closed = True
 
     def _repr_mimebundle_(self, **kwargs):
         if self.status_widget is None:
