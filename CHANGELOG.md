@@ -141,12 +141,14 @@
     throughout 3.x, with the algorithms to use instead in the message.
 - `layoutOptions` on elements is typed `LayoutOptions` (`dict[str, str]`, from
   `ipyelk.elements`), like the ELK JSON schema. Validation writes `bool` values as
-  `"true"` or `"false"` and numbers as strings. A whole-number `float` loses its
-  fraction (`2.0` becomes `"2"`), because ELK ignores an integer option with the value
-  `"2.0"`. Validation raises `ValidationError` for `nan`, an infinity, `None`, any other
-  value, or a key that is not a string; 2.x accepted them. Serialization writes `bool`
-  values and numbers as strings too, so a value set in place
-  (`node.layoutOptions[key] = 20`) goes to ELK as `"20"`. `OptionsWidget.value` only
+  `"true"` or `"false"` and numbers as strings. A whole-number `float` below `2**53` in
+  magnitude loses its fraction (`2.0` becomes `"2"`), because ELK ignores an integer
+  option with the value `"2.0"`. A larger `float` keeps its exponent form (`1e16`
+  becomes `"1e+16"`). Validation raises `ValidationError` for `nan`, an infinity,
+  `None`, any other value, or a key that is not a string; 2.x accepted them.
+  Serialization writes `bool` values and numbers as strings too, so a value set in place
+  (`node.layoutOptions[key] = 20`) goes to ELK as `"20"`. A `None` set in place makes
+  serialization raise a `ValueError` that names the key. `OptionsWidget.value` only
   accepts string keys and values ([#31]).
 
 ### Migration
@@ -271,7 +273,8 @@ replacement in the message.
   `vitest` checks it against the installed `elkjs`, and a unit test checks the option
   classes against it ([#29]).
 - CI also regenerates `elk-catalog.json` and fails if it differs from the committed
-  file, and `jlpm schema` passes the real path of `elkschema.ts` ([#187]).
+  file, and `jlpm schema` passes the real path of `elkschema.ts`
+  ([#187](https://github.com/jupyrdf/ipyelk/issues/187)).
 
 ### `@jupyrdf/jupyter-elk 3.0.0`
 

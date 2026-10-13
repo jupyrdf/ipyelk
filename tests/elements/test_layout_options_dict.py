@@ -5,7 +5,10 @@
 from __future__ import annotations
 
 import json
+import re
 import warnings
+from collections.abc import Callable
+from functools import partial
 
 import pytest
 from pydantic import ValidationError
@@ -48,7 +51,17 @@ def test_bool_and_number_values_become_strings() -> None:
 
 @pytest.mark.parametrize(
     ("value", "expected"),
-    [(2.0, "2"), (-3.0, "-3"), (1e16, "10000000000000000"), (0.5, "0.5")],
+    [
+        (2.0, "2"),
+        (-3.0, "-3"),
+        (1e9, "1000000000"),
+        (2.0**53 - 1, "9007199254740991"),
+        (0.5, "0.5"),
+        # past 2**53 a float's digits are not exact: keep the exponent form
+        (2.0**53, "9007199254740992.0"),
+        (1e16, "1e+16"),
+        (-1e300, "-1e+300"),
+    ],
 )
 def test_whole_number_floats_lose_the_fraction(value: float, expected: str) -> None:
     # ELK's integer parser rejects "2.0" and then ignores the option
@@ -76,6 +89,31 @@ def test_in_place_values_serialize_as_strings_without_warnings() -> None:
         warnings.simplefilter("error", UserWarning)
         assert node.model_dump()["layoutOptions"] == expected
         assert json.loads(node.model_dump_json())["layoutOptions"] == expected
+
+
+@pytest.mark.parametrize(
+    "dump",
+    [Node.model_dump, Node.model_dump_json, partial(Node.model_dump, mode="json")],
+    ids=["python", "json", "python-json-mode"],
+)
+def test_in_place_none_raises_with_the_key(dump: Callable[[Node], object]) -> None:
+    # the elkjs importer throws "Severe implementation error" on a `null` value
+    parent = Node(id="p", children=[Node(id="n")])
+    parent.children[0].layoutOptions["elk.direction"] = None
+    message = (
+        "layoutOptions['elk.direction'] is None: ELK cannot read it. "
+        "Delete the key to unset the option."
+    )
+    with pytest.raises(ValueError, match=re.escape(message)):
+        dump(parent)
+
+
+def test_an_excluded_none_does_not_raise() -> None:
+    # the check runs after pydantic applies `include` and `exclude` to the keys
+    node = Node(id="n", layoutOptions={"elk.direction": "DOWN"})
+    node.layoutOptions["elk.spacing.nodeNode"] = None
+    dumped = node.model_dump(exclude={"layoutOptions": {"elk.spacing.nodeNode"}})
+    assert dumped["layoutOptions"] == {"elk.direction": "DOWN"}
 
 
 @pytest.mark.parametrize(
