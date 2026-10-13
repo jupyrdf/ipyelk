@@ -1,11 +1,97 @@
 # Copyright (c) 2024 ipyelk contributors.
 # Distributed under the terms of the Modified BSD License.
+import math
+import numbers
 from collections import namedtuple
+from decimal import Decimal
+from typing import Annotated
 
-from pydantic import SerializationInfo
+from pydantic import (
+    BeforeValidator,
+    PlainSerializer,
+    SerializationInfo,
+    SerializerFunctionWrapHandler,
+    WrapSerializer,
+)
+from typing_extensions import TypeAlias
 
 Sentinel = namedtuple("Sentinel", [])
 EMPTY_SENTINEL = Sentinel
+
+
+def elk_option_value(value: object) -> object:
+    """Write a ``bool`` or a number as the string ELK reads, keep anything else.
+
+    A ``bool`` (also ``numpy.bool_``) becomes ``"true"`` or ``"false"``. An integer
+    (any ``numbers.Integral``, for example ``numpy.int64``) becomes ``str(int(v))``.
+    Any other real number (``float``, ``numpy.float64``, ``Fraction``, ``Decimal``)
+    becomes a plain ``float`` first. A whole-number ``float`` below ``2**53`` in
+    magnitude loses its fraction (``2.0`` -> ``"2"``), because ELK's integer parser
+    rejects ``"2.0"`` and then ignores the option. A larger ``float`` keeps the form
+    ``repr`` gives it (``2.0**53`` -> ``"9007199254740992.0"``, ``1e16`` ->
+    ``"1e+16"``): its digits are not exact, and ELK's integer options cannot hold it.
+
+    :raises ValueError: for ``nan`` or an infinity
+    """
+    # before ``Integral``: ``bool`` is an ``int``. ``numpy.bool_`` is not a number
+    # type, so it is found by name, without importing ``numpy`` (optional)
+    if isinstance(value, bool) or (
+        type(value).__module__ == "numpy" and type(value).__name__ in {"bool", "bool_"}
+    ):
+        return "true" if value else "false"
+    if isinstance(value, numbers.Integral):
+        return str(int(value))
+    if isinstance(value, (numbers.Real, Decimal)):  # ``Decimal`` is not a ``Real``
+        number = float(value)
+        if not math.isfinite(number):
+            raise ValueError(f"ELK cannot read the layout option value {value!r}")
+        if number.is_integer() and abs(number) < 2**53:  # every such integer is exact
+            return str(int(number))
+        # ``float(...)``: a subclass's ``repr`` can add a wrapper, for example ``numpy`` 2
+        # gives ``"np.float64(12.5)"``, which ELK ignores
+        return repr(number)
+    return value
+
+
+def serialize_layout_options(
+    options: dict, handler: SerializerFunctionWrapHandler, info: SerializationInfo
+):
+    """Serialize a ``LayoutOptions`` dictionary, but not a ``None`` value.
+
+    A ``None`` value can only be set in place, because validation rejects it. With
+    ``exclude_none=True`` the key is dropped, so ELK uses the option's default.
+
+    :raises ValueError: for a ``None`` value without ``exclude_none=True``, because
+        the ELK importer cannot read it
+    """
+    data = handler(options)
+    if info.exclude_none:
+        return {key: value for key, value in data.items() if value is not None}
+    for key, value in data.items():
+        if value is None:
+            raise ValueError(
+                f"layoutOptions[{key!r}] is None: ELK cannot read it. "
+                "Delete the key to unset the option."
+            )
+    return data
+
+
+#: ELK layout options: option ids to values, both strings. Validation (on pydantic
+#: elements) writes ``bool`` and number values as strings and rejects other types.
+#: Serialization writes them as strings too, because a value set in place on the
+#: dictionary skips validation. It drops a ``None`` value with ``exclude_none=True``
+#: and raises ``ValueError`` for one without.
+LayoutOptions: TypeAlias = Annotated[
+    dict[
+        str,
+        Annotated[
+            str,
+            BeforeValidator(elk_option_value),
+            PlainSerializer(elk_option_value, return_type=object),
+        ],
+    ],
+    WrapSerializer(serialize_layout_options),
+]
 
 
 def serialize_value(data: dict, key: str, value, info: SerializationInfo) -> None:

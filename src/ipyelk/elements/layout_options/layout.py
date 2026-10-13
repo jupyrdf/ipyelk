@@ -8,7 +8,28 @@ from typing import ClassVar, cast
 import ipywidgets as W
 import traitlets as T
 
+from ...exceptions import DeprecatedImportError
 from .selection_widgets import LayoutOptionWidget
+
+#: removed class names raise :class:`~ipyelk.exceptions.DeprecatedImportError`
+#: through 3.x, here and in the ``layout_options`` package
+_REMOVED = {
+    "Draw2DLayout": (
+        "ipyelk.elements.layout_options.layout.Draw2DLayout was removed in ipyelk "
+        "3.0: elkjs has no Draw2D algorithm (org.eclipse.elk.conn.gmf.layouter.Draw2D), "
+        "so a layout that selected it failed. Select another Algorithm, for example "
+        "ELKLayered, ELKBox, ELKRadial or ELKRectanglePacking from "
+        "ipyelk.elements.layout_options.layout: "
+        "LayoutAlgorithm(value=ELKLayered.identifier). No alias: this error is raised "
+        "throughout 3.x."
+    ),
+}
+
+
+def __getattr__(name: str) -> object:
+    if name in _REMOVED:
+        raise DeprecatedImportError(_REMOVED[name])
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
 
 
 @dataclass
@@ -16,14 +37,6 @@ class Algorithm:
     identifier: ClassVar[str]
     metadata_provider: ClassVar[str]
     title: ClassVar[str]
-
-
-class Draw2DLayout(Algorithm):
-    """https://www.eclipse.org/elk/reference/algorithms/org-eclipse-elk-conn-gmf-layouter-Draw2D.html"""
-
-    identifier = "org.eclipse.elk.conn.gmf.layouter.Draw2D"
-    metadata_provider = "GmfMetaDataProvider"
-    title = "Draw2D Layout"
 
 
 class ELKBox(Algorithm):

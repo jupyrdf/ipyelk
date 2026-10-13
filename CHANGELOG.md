@@ -116,6 +116,44 @@
   `ipyelk.tools.contol_overlay` module raises it too, naming the new path; it re-exports
   nothing. Both flavors share the `ipyelk.exceptions.DeprecatedAPI` base, so one
   `except` catches either.
+- Layout options are checked against the options that the bundled `elkjs` knows, and the
+  option classes that ELK ignored without an error now take effect, so **layouts can
+  change** ([#29]):
+  - `EdgeSpacing`, `EdgeNodeSpacing`, `EdgeLabelSpacing`, `EdgeEdgeLayerSpacing` and
+    `EdgeNodeLayerSpacing` use the `spacing.edgeEdge`, `spacing.edgeNode`,
+    `spacing.edgeLabel`, `layered.spacing.edgeEdgeBetweenLayers` and
+    `layered.spacing.edgeNodeBetweenLayers` ids (they used `elk.edge.*` ids that do not
+    exist). Record nodes set `EdgeNodeSpacing(spacing=0)`, which now applies.
+  - `LayoutPartitioning` uses `partitioning.activate` (was `partitioning.active`).
+  - `ConsiderModelOrder` uses `layered.considerModelOrder.strategy` (was
+    `layered.considerModelOrder`), applies only to parents, and offers `PREFER_NODES`.
+  - `ContentAlignment` loses the tab character at the start of its id.
+  - `PortAlignmentEast`, `PortAlignmentWest`, `PortAlignmentNorth` and
+    `PortAlignmentSouth` subclass `PortAlignment`, so they have a value, a control and
+    apply to nodes.
+  - `LabelPortHorizontalSpacing` and `LabelPortVerticalSpacing` replace
+    `LabelPortSpacing`, because ELK has no `spacing.labelPort` option.
+    `LabelPortSpacing` still works, emits a `DeprecationWarning` and sets the horizontal
+    spacing.
+  - The `LayoutAlgorithm` choices no longer offer Draw2D
+    (`org.eclipse.elk.conn.gmf.layouter.Draw2D`), because `elkjs` does not have it and a
+    layout with it failed. Importing `Draw2DLayout` raises `DeprecatedImportError`
+    throughout 3.x, with the algorithms to use instead in the message.
+- `layoutOptions` on elements is typed `LayoutOptions` (`dict[str, str]`, from
+  `ipyelk.elements`), like the ELK JSON schema. Validation writes `bool` values as
+  `"true"` or `"false"` and numbers as strings. This includes the `numpy` scalars, for
+  example `np.bool_`, `np.int64` and `np.float64`, and `Fraction` and `Decimal`. A
+  number that is not an integer becomes a plain `float` first, so `np.float64(12.5)`
+  becomes `"12.5"`. A whole-number `float` below `2**53` in magnitude loses its fraction
+  (`2.0` becomes `"2"`), because ELK ignores an integer option with the value `"2.0"`. A
+  larger `float` keeps the form `repr` gives it (`1e16` becomes `"1e+16"`). Validation
+  raises `ValidationError` for `nan`, an infinity, `None`, any other value, or a key
+  that is not a string; 2.x accepted them. Serialization writes `bool` values and
+  numbers as strings too, so a value set in place (`node.layoutOptions[key] = 20`) goes
+  to ELK as `"20"`. A `None` set in place makes serialization raise a
+  `PydanticSerializationError` (a `ValueError`) that names the key. With
+  `exclude_none=True`, serialization drops that key instead, so ELK uses the option's
+  default. `OptionsWidget.value` only accepts string keys and values ([#31]).
 
 ### Migration
 
@@ -179,11 +217,69 @@ view.painter.clear()
 view.painter.styles  # {"n2": ("highlight",)}
 ```
 
+```python
+# 2.x: option ids that ELK ignored without an error
+{"org.eclipse.elk.edge.edgeEdge": "5"}
+{"org.eclipse.elk.edge.edgeNode": "5"}
+{"org.eclipse.elk.edge.edgeLabel": "5"}
+{"org.eclipse.elk.edge.edgeEdgeBetweenLayers": "5"}
+{"org.eclipse.elk.edge.edgeNodeBetweenLayers": "5"}
+{"org.eclipse.elk.partitioning.active": "true"}
+{"org.eclipse.elk.layered.considerModelOrder": "NODES_AND_EDGES"}
+# 3.0: the ids that ELK knows (the option classes use them)
+{"org.eclipse.elk.spacing.edgeEdge": "5"}
+{"org.eclipse.elk.spacing.edgeNode": "5"}
+{"org.eclipse.elk.spacing.edgeLabel": "5"}
+{"org.eclipse.elk.layered.spacing.edgeEdgeBetweenLayers": "5"}
+{"org.eclipse.elk.layered.spacing.edgeNodeBetweenLayers": "5"}
+{"org.eclipse.elk.partitioning.activate": "true"}
+{"org.eclipse.elk.layered.considerModelOrder.strategy": "NODES_AND_EDGES"}
+
+# both: from ipyelk.elements.layout_options import port_options as opt
+# 2.x                                   # 3.0
+opt.LabelPortSpacing(spacing=3)         opt.LabelPortHorizontalSpacing(spacing=3)
+                                        opt.LabelPortVerticalSpacing(spacing=3)
+from ipyelk.elements.layout_options.layout import Draw2DLayout
+                                        from ipyelk.elements.layout_options.layout import ELKLayered
+LayoutAlgorithm(value=Draw2DLayout.identifier)
+                                        LayoutAlgorithm(value=ELKLayered.identifier)
+# 2.x sent None to ELK; 3.0 raises ValidationError, so leave the key out
+Node(layoutOptions={"org.eclipse.elk.direction": None})
+                                        Node(layoutOptions={})
+# 2.x sent 2.0, 3.0 sends "2" (ELK ignores "2.0" for an integer option)
+Node(layoutOptions={"org.eclipse.elk.partitioning.partition": 2.0})
+```
+
 The removed names (`handler`, `on_run`, `disable`, `Hover.ids`, assigning `on_start` or
 `on_done`, the `contol_overlay` module, `Viewer.zoom`/`pan`/`viewed`,
-`ipyelk.tools.Zoom`/`Pan`, `Painter.cssClasses`/`marks`/`name`) raise
-`DeprecatedAPIError` -- or `DeprecatedImportError` for the module-level names --
-throughout 3.x with the replacement in the message.
+`ipyelk.tools.Zoom`/`Pan`, `Painter.cssClasses`/`marks`/`name`, `Draw2DLayout` from
+`ipyelk.elements.layout_options` or its `layout` module) raise `DeprecatedAPIError` --
+or `DeprecatedImportError` for the module-level names -- throughout 3.x with the
+replacement in the message.
+
+### Added
+
+- An opt-in check for layout option keys that ELK ignores without an error. ELK takes a
+  full option id, or the end of one that starts after a dot (`elk.direction`,
+  `spacing.nodeNode`), and the old ids of some options (`layered.northOrSouthPort`).
+  `ipyelk.schema.unknown_layout_options(keys)` returns the keys that end no id or more
+  than one: `direction` also ends `layered.priority.direction`.
+  `ipyelk.schema.untargeted_layout_options(keys, targets)` returns the keys whose option
+  does not apply to that kind of element, for example a node option on an edge.
+  `ValidationPipe(check_layout_options=True)` writes them per element id to
+  `layout_options_report` and `layout_options_target_report`, and emits one
+  `UserWarning`. The check is off by default, and turning it off clears both reports.
+  Refs [#115].
+
+### Development
+
+- `src/ipyelk/schema/elk-catalog.json` lists the layout options, algorithms and
+  categories of the bundled `elkjs`. `pixi run build-py-elk-catalog` writes it. A
+  `vitest` checks it against the installed `elkjs`, and a unit test checks the option
+  classes against it ([#29]).
+- CI also regenerates `elk-catalog.json` and fails if it differs from the committed
+  file, and `jlpm schema` passes the real path of `elkschema.ts`
+  ([#187](https://github.com/jupyrdf/ipyelk/issues/187)).
 
 ### `@jupyrdf/jupyter-elk 3.0.0`
 
@@ -209,6 +305,9 @@ throughout 3.x with the replacement in the message.
   over to the updated element, so a re-render under a resting pointer no longer drops
   the mouseover ([#156]).
 
+[#29]: https://github.com/jupyrdf/ipyelk/issues/29
+[#31]: https://github.com/jupyrdf/ipyelk/issues/31
+[#115]: https://github.com/jupyrdf/ipyelk/issues/115
 [#155]: https://github.com/jupyrdf/ipyelk/issues/155
 [#156]: https://github.com/jupyrdf/ipyelk/issues/156
 
@@ -352,6 +451,9 @@ throughout 3.x with the replacement in the message.
   that key instead. `ElementIndex` and `HierarchicalIndex` now support `key in index`,
   by id. A key that is the id of anything other than one of the endpoint's own ports
   still makes a new port with that key, as before ([#215])
+- Offset a label icon vertically by its `y`, not its `x`: `ElkLabelView` added
+  `icon.position.x` to the icon's `y`, so an icon's `x` also shifted it down and its `y`
+  was ignored ([#205])
 
 ### Development
 
@@ -422,6 +524,7 @@ throughout 3.x with the replacement in the message.
 [#187]: https://github.com/jupyrdf/ipyelk/issues/187
 [#191]: https://github.com/jupyrdf/ipyelk/issues/191
 [#200]: https://github.com/jupyrdf/ipyelk/issues/200
+[#205]: https://github.com/jupyrdf/ipyelk/issues/205
 [#215]: https://github.com/jupyrdf/ipyelk/issues/215
 
 ## `2.1.2`
