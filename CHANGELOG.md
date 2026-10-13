@@ -445,6 +445,9 @@ replacement in the message.
   `radius`. The `node:round` renderer takes its radii from the laid-out node, so a node
   larger than the circle drew the ellipse off center. `x` and `y` that you set are still
   serialized ([#200])
+- Offset a label icon vertically by its `y`, not its `x`: `ElkLabelView` added
+  `icon.position.x` to the icon's `y`, so an icon's `x` also shifted it down and its `y`
+  was ignored ([#205])
 
 ### Development
 
@@ -515,6 +518,7 @@ replacement in the message.
 [#187]: https://github.com/jupyrdf/ipyelk/issues/187
 [#191]: https://github.com/jupyrdf/ipyelk/issues/191
 [#200]: https://github.com/jupyrdf/ipyelk/issues/200
+[#205]: https://github.com/jupyrdf/ipyelk/issues/205
 
 ## `2.1.2`
 
