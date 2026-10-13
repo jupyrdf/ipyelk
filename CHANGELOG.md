@@ -141,15 +141,19 @@
     throughout 3.x, with the algorithms to use instead in the message.
 - `layoutOptions` on elements is typed `LayoutOptions` (`dict[str, str]`, from
   `ipyelk.elements`), like the ELK JSON schema. Validation writes `bool` values as
-  `"true"` or `"false"` and numbers as strings. A whole-number `float` below `2**53` in
-  magnitude loses its fraction (`2.0` becomes `"2"`), because ELK ignores an integer
-  option with the value `"2.0"`. A larger `float` keeps its exponent form (`1e16`
-  becomes `"1e+16"`). Validation raises `ValidationError` for `nan`, an infinity,
-  `None`, any other value, or a key that is not a string; 2.x accepted them.
-  Serialization writes `bool` values and numbers as strings too, so a value set in place
-  (`node.layoutOptions[key] = 20`) goes to ELK as `"20"`. A `None` set in place makes
-  serialization raise a `ValueError` that names the key. `OptionsWidget.value` only
-  accepts string keys and values ([#31]).
+  `"true"` or `"false"` and numbers as strings. This includes the `numpy` scalars, for
+  example `np.bool_`, `np.int64` and `np.float64`, and `Fraction` and `Decimal`. A
+  number that is not an integer becomes a plain `float` first, so `np.float64(12.5)`
+  becomes `"12.5"`. A whole-number `float` below `2**53` in magnitude loses its fraction
+  (`2.0` becomes `"2"`), because ELK ignores an integer option with the value `"2.0"`. A
+  larger `float` keeps the form `repr` gives it (`1e16` becomes `"1e+16"`). Validation
+  raises `ValidationError` for `nan`, an infinity, `None`, any other value, or a key
+  that is not a string; 2.x accepted them. Serialization writes `bool` values and
+  numbers as strings too, so a value set in place (`node.layoutOptions[key] = 20`) goes
+  to ELK as `"20"`. A `None` set in place makes serialization raise a `ValueError` that
+  names the key. With `exclude_none=True`, serialization drops that key instead, so ELK
+  uses the option's default. `OptionsWidget.value` only accepts string keys and values
+  ([#31]).
 
 ### Migration
 

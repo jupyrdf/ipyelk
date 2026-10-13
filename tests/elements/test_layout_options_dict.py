@@ -8,6 +8,8 @@ import json
 import re
 import warnings
 from collections.abc import Callable
+from decimal import Decimal
+from fractions import Fraction
 from functools import partial
 
 import pytest
@@ -57,7 +59,7 @@ def test_bool_and_number_values_become_strings() -> None:
         (1e9, "1000000000"),
         (2.0**53 - 1, "9007199254740991"),
         (0.5, "0.5"),
-        # past 2**53 a float's digits are not exact: keep the exponent form
+        # past 2**53 a float's digits are not exact: keep the form `repr` gives it
         (2.0**53, "9007199254740992.0"),
         (1e16, "1e+16"),
         (-1e300, "-1e+300"),
@@ -71,6 +73,62 @@ def test_whole_number_floats_lose_the_fraction(value: float, expected: str) -> N
 
 @pytest.mark.parametrize("value", [float("nan"), float("inf"), float("-inf")])
 def test_non_finite_numbers_are_rejected(value: float) -> None:
+    with pytest.raises(ValidationError, match="ELK cannot read"):
+        Node(layoutOptions={"elk.spacing.nodeNode": value})
+
+
+class WrappedFloat(float):
+    """A ``float`` with a decorated ``repr``, like ``numpy.float64`` in ``numpy`` 2."""
+
+    def __repr__(self) -> str:
+        return f"WrappedFloat({float(self)!r})"
+
+
+class WrappedInt(int):
+    """An ``int`` with a decorated ``repr``, like ``numpy.int64`` in ``numpy`` 2."""
+
+    def __repr__(self) -> str:
+        return f"WrappedInt({int(self)!r})"
+
+
+class WrappedBool:
+    """A stand-in for ``numpy.bool_``, which is found by its type's module and name."""
+
+    __module__ = "numpy"
+
+    def __bool__(self) -> bool:
+        return True
+
+
+WrappedBool.__name__ = "bool"
+
+
+@pytest.mark.parametrize(
+    ("value", "expected"),
+    [
+        (WrappedFloat(12.5), "12.5"),
+        (WrappedFloat(2.0), "2"),
+        (WrappedFloat(1e16), "1e+16"),
+        (WrappedInt(7), "7"),
+        (WrappedBool(), "true"),
+        (Fraction(5, 2), "2.5"),
+        (Fraction(4, 2), "2"),
+        (Decimal("12.5"), "12.5"),
+        (Decimal("2.0"), "2"),
+    ],
+)
+def test_other_number_types_become_strings(value: object, expected: str) -> None:
+    # a subclass's `repr` must not reach ELK: `numpy` 2 gives "np.float64(12.5)"
+    node = Node(id="n", layoutOptions={"elk.spacing.nodeNode": value})
+    assert node.layoutOptions == {"elk.spacing.nodeNode": expected}
+    node.layoutOptions["elk.spacing.nodeNode"] = value  # in place: the serializer
+    assert node.model_dump()["layoutOptions"] == {"elk.spacing.nodeNode": expected}
+    dumped = json.loads(node.model_dump_json())["layoutOptions"]
+    assert dumped == {"elk.spacing.nodeNode": expected}
+
+
+@pytest.mark.parametrize("value", [Decimal("NaN"), Decimal("Infinity")])
+def test_non_finite_decimals_are_rejected(value: Decimal) -> None:
     with pytest.raises(ValidationError, match="ELK cannot read"):
         Node(layoutOptions={"elk.spacing.nodeNode": value})
 
@@ -106,6 +164,23 @@ def test_in_place_none_raises_with_the_key(dump: Callable[[Node], object]) -> No
     )
     with pytest.raises(ValueError, match=re.escape(message)):
         dump(parent)
+
+
+@pytest.mark.parametrize(
+    "dump",
+    [
+        partial(Node.model_dump, exclude_none=True),
+        lambda node: json.loads(node.model_dump_json(exclude_none=True)),
+    ],
+    ids=["python", "json"],
+)
+def test_in_place_none_is_dropped_with_exclude_none(
+    dump: Callable[[Node], dict],
+) -> None:
+    # `exclude_none` drops the key, so ELK uses the option's default
+    parent = Node(id="p", children=[Node(id="n", layoutOptions={"elk.x": "1"})])
+    parent.children[0].layoutOptions["elk.direction"] = None
+    assert dump(parent)["children"][0]["layoutOptions"] == {"elk.x": "1"}
 
 
 def test_an_excluded_none_does_not_raise() -> None:
