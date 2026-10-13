@@ -119,14 +119,15 @@
 - Raise on a closed diagram or pipeline instead of silently accepting the call. A closed
   widget has no comm, so the call never reached the browser. `refresh()`,
   `register_tool()` and setting `source`, `pipe`, `view`, `tools`, `toolbar`, `symbols`
-  or `style` on a closed `Diagram` raise `TraitError` naming its class, as do
-  `schedule_run()` on a closed `Pipe` and setting `pipes` or calling `run()` on a closed
-  `Pipeline`. A refused `pipes` set
-  keeps the stages; it used to empty them. A diagram whose pipe was closed raises on
-  `refresh()`. A run in flight when its pipeline closes is cancelled before the next
-  stage or successful completion, even when a progress callback closes it or the cancel
-  comes from another event loop during the final stage. A queued refresh callback does
-  not update a closed diagram. Closing a diagram twice still does nothing ([#197]).
+  or `style` on a closed `Diagram` raise `ipyelk.exceptions.ClosedError` (a `TraitError`
+  and a `RuntimeError`) naming its class, as do `schedule_run()` on a closed `Pipe` and
+  setting `pipes` or calling `run()` on a closed `Pipeline`. `Diagram.closed` and
+  `Pipe.closed` say whether `close()` was called. A refused `pipes` set keeps the
+  stages; it used to empty them. A diagram whose pipe was closed raises on `refresh()`.
+  A run in flight when its pipeline closes is cancelled before the next stage or
+  successful completion, even when a progress callback closes it or the cancel comes
+  from another event loop during the final stage. A queued refresh callback does not
+  update a closed diagram. Closing a diagram twice still does nothing ([#197]).
 
 ### Migration
 
@@ -197,12 +198,19 @@ The removed names (`handler`, `on_run`, `disable`, `Hover.ids`, assigning `on_st
 throughout 3.x with the replacement in the message.
 
 A diagram or pipeline is dead once closed ([#197]): build a new one instead of reusing
-it.
+it. Check `closed` first, or catch `ClosedError`.
 
 ```python
+from ipyelk.exceptions import ClosedError
+
 diagram.close()
-diagram.refresh()  # TraitError: Diagram is closed and cannot refresh; build a new Diagram
-diagram = Diagram(source=diagram.source)  # the source stays open
+diagram.refresh()  # ClosedError: Diagram is closed and cannot refresh; build a new Diagram
+if not diagram.closed:
+    diagram.refresh()
+try:
+    diagram.refresh()
+except ClosedError:  # also a TraitError and a RuntimeError
+    diagram = Diagram(source=diagram.source)  # the source stays open
 ```
 
 ### `@jupyrdf/jupyter-elk 3.0.0`

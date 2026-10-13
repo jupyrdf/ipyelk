@@ -10,7 +10,7 @@ import ipywidgets as W
 import traitlets as T
 
 from ..elements import SymbolSpec, symbol_serialization
-from ..exceptions import NotFoundError, NotUniqueError
+from ..exceptions import ClosedError, NotFoundError, NotUniqueError
 from ..pipes import MarkElementWidget, Pipe
 from ..pipes import flows as F
 from ..pipes.util import iter_pipes
@@ -48,9 +48,9 @@ class Diagram(StyledWidget):
         additional shape definitions that can be used in rendering the diagram.
         For example unique arrow head shapes or custom node shapes.
 
-    A closed diagram raises ``TraitError`` on ``refresh()``, ``register_tool()``
-    and on setting ``source``, ``pipe``, ``view``, ``tools``, ``toolbar``,
-    ``symbols`` or ``style``.
+    A closed diagram (``closed`` is True) raises ``ClosedError`` on
+    ``refresh()``, ``register_tool()`` and on setting ``source``, ``pipe``,
+    ``view``, ``tools``, ``toolbar``, ``symbols`` or ``style``.
 
     """
 
@@ -138,11 +138,16 @@ class Diagram(StyledWidget):
         if pipe.on_progress is None and bars:
             pipe.on_progress = bars[0].update
 
+    @property
+    def closed(self) -> bool:
+        """Whether ``close()`` was called; a closed diagram refuses calls."""
+        return self._closed
+
     def _check_open(self, action: str) -> None:
         if self._closed:
             name = type(self).__name__
             msg = f"{name} is closed and cannot {action}; build a new {name}"
-            raise T.TraitError(msg)
+            raise ClosedError(msg)
 
     @T.validate("source", "view", "tools", "toolbar", "symbols", "style")
     def _validate_open(self, proposal: T.Bunch):

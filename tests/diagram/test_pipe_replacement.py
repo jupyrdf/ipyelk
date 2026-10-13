@@ -18,6 +18,7 @@ from ipywidgets.widgets import widget as widget_module
 from ipyelk import Diagram
 from ipyelk.diagram.flow import DefaultFlow
 from ipyelk.elements import Node
+from ipyelk.exceptions import ClosedError
 from ipyelk.pipes import (
     BrowserTextSizer,
     ElkJS,
@@ -461,12 +462,12 @@ def test_closing_a_diagram_closes_its_pipe() -> None:
     first.style = {" .a": {"fill": "red"}}
     first.close()
 
-    assert not is_open(pipe)
+    assert pipe.closed
     assert pipe.on_progress is None
     assert first._pipe_links == []
     with pytest.raises(T.TraitError, match="closed"):
         Diagram(source=make_source(), pipe=pipe)
-    with pytest.raises(T.TraitError, match="Diagram is closed"):
+    with pytest.raises(ClosedError, match="Diagram is closed"):
         first.style = {" .b": {"fill": "blue"}}
     assert sizer(pipe).style == {" .a": {"fill": "red"}}
 

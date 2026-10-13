@@ -17,6 +17,7 @@ from ipyelk import Diagram
 from ipyelk.diagram import SprottyViewer
 from ipyelk.diagram.flow import DefaultFlow
 from ipyelk.elements import SymbolSpec
+from ipyelk.exceptions import ClosedError
 from ipyelk.pipes import (
     BrowserTextSizer,
     ElkJS,
@@ -88,7 +89,7 @@ async def test_close_keeps_the_source_and_what_was_passed_in() -> None:
 
     diagram.close()
 
-    assert not is_open(diagram)
+    assert diagram.closed
     for widget in [*subs, *created, view, toolbar, *tools, *uis]:
         assert not is_open(widget), widget
     for widget in (source, source.index, given, given.index):
@@ -165,10 +166,32 @@ def test_a_closed_diagram_raises(action: str) -> None:
     before = {name: getattr(diagram, name) for name in TRAITS}
 
     msg = f"^Diagram is closed and cannot {action}; build a new Diagram$"
-    with pytest.raises(T.TraitError, match=msg):
+    with pytest.raises(ClosedError, match=msg):
         ENTRY_POINTS[action](diagram)
 
     assert {name: getattr(diagram, name) for name in TRAITS} == before
+
+
+def test_closed_is_a_trait_error_and_a_runtime_error() -> None:
+    assert issubclass(ClosedError, T.TraitError)
+    assert issubclass(ClosedError, RuntimeError)
+
+
+def test_closed_reports_what_was_closed() -> None:
+    diagram = Diagram(source=make_source())
+    pipe, stage = diagram.pipe, diagram.pipe.pipes[0]
+    assert not any(widget.closed for widget in (diagram, pipe, stage))
+
+    stage.close()
+    assert stage.closed
+    assert not pipe.closed
+    assert not diagram.closed
+
+    diagram.close()
+    assert diagram.closed
+    assert pipe.closed
+    with pytest.raises(AttributeError):
+        diagram.closed = False
 
 
 @pytest.mark.parametrize("owned", [True, False], ids=["diagram-pipe", "standalone"])
@@ -181,7 +204,7 @@ def test_a_closed_pipeline_refuses_pipes_and_keeps_them(owned: bool) -> None:
     msg = f"^{name} is closed and cannot set pipes; use a new pipe$"
 
     for pipes in ([ValidationPipe(), ValidationPipe()], [stages[0]], []):
-        with pytest.raises(T.TraitError, match=msg):
+        with pytest.raises(ClosedError, match=msg):
             pipe.pipes = pipes
         assert pipe.pipes == stages
 
@@ -195,12 +218,12 @@ async def test_a_closed_pipeline_refuses_runs(plain: bool) -> None:
     pipe.close()
     msg = f"^{type(pipe).__name__} is closed and cannot run; use a new pipe$"
 
-    with pytest.raises(T.TraitError, match=msg):
+    with pytest.raises(ClosedError, match=msg):
         diagram.refresh()
-    with pytest.raises(T.TraitError, match=msg):
+    with pytest.raises(ClosedError, match=msg):
         pipe.schedule_run()
     if isinstance(pipe, Pipeline):
-        with pytest.raises(T.TraitError, match=msg):
+        with pytest.raises(ClosedError, match=msg):
             await pipe.run()
     assert pipe._task is None
     diagram.close()
@@ -216,7 +239,7 @@ def test_closing_twice_is_a_silent_no_op() -> None:
     pipe.close()
 
     assert live_widgets() == widgets
-    assert not is_open(diagram)
+    assert diagram.closed
 
 
 class Closer(Pipe):

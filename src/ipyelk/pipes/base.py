@@ -14,6 +14,7 @@ import ipywidgets as W
 import traitlets as T
 from ipywidgets.widgets.trait_types import TypedTuple
 
+from ..exceptions import ClosedError
 from ..util import close_widget
 from .marks import MarkElementWidget
 from .util import resync_stale, settle
@@ -284,11 +285,16 @@ class Pipe(W.Widget):
             raise NotImplementedError
         return self.status_widget._repr_mimebundle_(**kwargs)
 
+    @property
+    def closed(self) -> bool:
+        """Whether ``close()`` was called; a closed pipe refuses runs."""
+        return self._closed
+
     def _check_open(self, action: str) -> None:
         if self._closed:
             name = type(self).__name__
             msg = f"{name} is closed and cannot {action}; use a new pipe"
-            raise T.TraitError(msg)
+            raise ClosedError(msg)
 
     def schedule_run(self, change: T.Bunch | None = None) -> asyncio.Task | None:
         """Request a run and return the task that will serve it; refused once

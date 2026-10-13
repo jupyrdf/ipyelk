@@ -5,6 +5,17 @@ from __future__ import annotations
 import types
 from collections.abc import Callable, Iterable
 
+import traitlets as T
+
+
+class ClosedError(T.TraitError, RuntimeError):
+    """A closed ``Diagram`` or ``Pipe`` was asked to do something.
+
+    A ``TraitError`` because most entry points are trait assignments, and a
+    ``RuntimeError`` like the other refused calls (``Tool.check_enabled``).
+    The message names the class and the remedy.
+    """
+
 
 class ElkDuplicateIDError(Exception):
     """Elk Ids must be unique"""

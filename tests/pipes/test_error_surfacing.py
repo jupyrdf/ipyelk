@@ -95,7 +95,7 @@ async def test_queued_close_before_error_callback_keeps_flow_and_skips_callback(
     pipeline.on_error = lambda pipe, exc: seen.append((pipe, exc))
     pipeline.observe(
         lambda change: (
-            updates_after_close.append(change.new) if pipeline._closed else None
+            updates_after_close.append(change.new) if pipeline.closed else None
         ),
         "status",
     )
@@ -106,7 +106,7 @@ async def test_queued_close_before_error_callback_keeps_flow_and_skips_callback(
             await task
         await asyncio.sleep(0)
 
-        assert pipeline._closed
+        assert pipeline.closed
         assert source.flow == (F.New,)
         assert seen == []
         assert updates_after_close == []
@@ -139,8 +139,6 @@ async def test_closed_pipe_consumes_error_without_reporting_it(pipe_type, caplog
     assert failed.retrieved
     assert seen == []
     assert pipe.status is status
-    warnings = [r for r in caplog.records if r.levelno == logging.WARNING]
-    assert [r.getMessage() for r in warnings] == [
-        f"{pipe_type.__name__} was closed before its run failed with "
-        "ValueError('completed before close')"
-    ]
+    warnings = [r.getMessage() for r in caplog.records if r.levelno == logging.WARNING]
+    expected = f"{pipe_type.__name__} was closed before its run failed with "
+    assert warnings == [expected + "ValueError('completed before close')"]
