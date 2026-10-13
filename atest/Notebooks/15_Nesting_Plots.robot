@@ -56,12 +56,17 @@ Click In A Widget Node Should Not Select It
     # the widget node's own shape takes the `selected` class: without it, nothing is tested
     ${shape} =    Set Variable    ${app}//*[local-name()="g"][@id="${id}"]/*[contains(@class,"elknode")]
     Wait Until Page Contains Element    ${shape}    timeout=30s
-    ${before} =    SeleniumLibrary.Get Element Count    ${selected}
+    # `expand_and_center` selected the four top-level nodes
+    Wait Until Keyword Succeeds    10x    0.5s    Element Count Should Be    ${selected}    ${4}
     ${el} =    Get WebElement    ${tick}
     Execute Javascript    ${JS CLICK}    ARGUMENTS    ${el}
     # a selection would render within a frame or two; give it time
     Sleep    1s
     Capture Page Screenshot    11b-clicked-widget-node.png
     Page Should Not Contain Element    ${shape}[contains(concat(" ", @class, " "), " selected ")]
-    ${after} =    SeleniumLibrary.Get Element Count    ${selected}
-    Should Be Equal As Integers    ${after}    ${before}    a click in a widget changed the selection
+    Element Count Should Be    ${selected}    ${4}
+
+Element Count Should Be
+    [Arguments]    ${locator}    ${expected}
+    ${count} =    SeleniumLibrary.Get Element Count    ${locator}
+    Should Be Equal As Integers    ${count}    ${expected}    ${locator} matched ${count}
