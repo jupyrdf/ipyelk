@@ -27,7 +27,12 @@ classifiers = [
   "Programming Language :: Python :: 3",
 ]
 license = "BSD-3-Clause"
-license-files = ["LICENSE.txt", "COPYRIGHT.md", "third-party/epl-v10.html"]
+license-files = [
+  "LICENSE.txt",
+  "COPYRIGHT.md",
+  "third-party/epl-v10.html",
+  "third-party/epl-v20.html",
+]
 requires-python = ">=3.10"
 dependencies = [
   "ipywidgets >=8.0.1,<9",
@@ -38,7 +43,7 @@ dependencies = [
 
 [project.urls]
 "Bug Tracker" = "https://github.com/jupyrdf/ipyelk/issues"
-"Changelog" = "https://github.com/jupyrdf/ipyelk/blob/main/CHANGELOG.md"
+"Changelog" = "https://github.com/jupyrdf/ipyelk/blob/master/CHANGELOG.md"
 "Documentation" = "https://ipyelk.rtfd.io"
 "Source" = "https://github.com/jupyrdf/ipyelk"
 

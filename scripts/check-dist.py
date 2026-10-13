@@ -15,21 +15,25 @@ DIST = ROOT / "dist"
 PPT = ROOT / "pyproject.toml"
 LICENSE = ROOT / "LICENSE.txt"
 COPYRIGHT = ROOT / "COPYRIGHT.md"
-EPL = ROOT / "third-party/epl-v10.html"
+EPL1 = ROOT / "third-party/epl-v10.html"
+EPL2 = ROOT / "third-party/epl-v20.html"
+#: the files ``project.license-files`` must list, so the wheel ships them (#133)
+LICENSE_FILES = [LICENSE, COPYRIGHT, EPL1, EPL2]
+LICENSE_FILE_NAMES = sorted(p.relative_to(ROOT).as_posix() for p in LICENSE_FILES)
 TPL_PATH = (
     "share/jupyter/labextensions/@jupyrdf/jupyter-elk/static/third-party-licenses.json"
 )
 TPL = ROOT / "src/_d" / TPL_PATH
 
-LICENSE_BYTES = {p: p.read_bytes() for p in [LICENSE, COPYRIGHT, EPL, TPL]}
+LICENSE_BYTES = {p: p.read_bytes() for p in [*LICENSE_FILES, TPL]}
 
 PROJECT = tomllib.loads(PPT.read_text(**UTF8))["project"]
 PY_VERSION = PROJECT["version"]
 PFX = f"ipyelk-{PY_VERSION}"
 #: the core-metadata license fields (PEP 639) that PyPI shows (#133)
 LICENSE_FIELDS = {
-    "License-Expression": [PROJECT["license"]],
-    "License-File": sorted(PROJECT["license-files"]),
+    "License-Expression": [PROJECT.get("license")],
+    "License-File": LICENSE_FILE_NAMES,
 }
 
 WHEEL_FILE_GROUPS = [
@@ -38,17 +42,29 @@ WHEEL_FILE_GROUPS = [
             (f"{PFX}.dist-info/licenses/{p.relative_to(ROOT).as_posix()}",),
             LICENSE_BYTES[p],
         )
-        for p in [LICENSE, COPYRIGHT, EPL]
+        for p in LICENSE_FILES
     ),
     ((f"{PFX}.data/data/{TPL_PATH}",), LICENSE_BYTES[TPL]),
 ]
 
 SDIST_FILES = {
-    f"{PFX}/LICENSE.txt": LICENSE_BYTES[LICENSE],
-    f"{PFX}/COPYRIGHT.md": LICENSE_BYTES[COPYRIGHT],
-    f"{PFX}/third-party/epl-v10.html": LICENSE_BYTES[EPL],
+    **{
+        f"{PFX}/{p.relative_to(ROOT).as_posix()}": LICENSE_BYTES[p]
+        for p in LICENSE_FILES
+    },
     f"{PFX}/src/_d/{TPL_PATH}": LICENSE_BYTES[TPL],
 }
+
+
+def check_pyproject() -> None:
+    """Fail unless ``pyproject.toml`` declares the license and its files."""
+    assert PROJECT.get("license"), "!!! pyproject.toml has no project.license"
+    files = sorted(PROJECT.get("license-files", []))
+    assert files == LICENSE_FILE_NAMES, (
+        f"!!! pyproject.toml project.license-files is {files}, "
+        f"expected {LICENSE_FILE_NAMES}"
+    )
+    print(f"OK pyproject.toml project.license-files: {', '.join(files)}")
 
 
 def check_license_fields(where: str, metadata: str) -> None:
@@ -91,13 +107,22 @@ def check_sdist(path: Path) -> None:
             print(f"OK sdist {fn}")
 
 
-def main() -> int:
-    for path in sorted(DIST.glob("*")):
-        if path.name.endswith(".whl"):
-            check_whl(path)
-        elif path.name.endswith(".tar.gz"):
-            check_sdist(path)
+def main(dist: Path = DIST) -> int:
+    """Check the one wheel and source distribution of this version in ``dist``."""
+    check_pyproject()
+    whl, sdist = dist / f"{PFX}-py3-none-any.whl", dist / f"{PFX}.tar.gz"
+    found = sorted(p.name for p in [*dist.glob("*.whl"), *dist.glob("*.tar.gz")])
+    if found != sorted([whl.name, sdist.name]):
+        print(
+            f"!!! {dist} has {found or 'no wheel or sdist'}, "
+            f"expected exactly {whl.name} and {sdist.name}",
+            file=sys.stderr,
+        )
+        return 1
+    check_whl(whl)
+    check_sdist(sdist)
+    return 0
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    sys.exit(main(*map(Path, sys.argv[1:])))
