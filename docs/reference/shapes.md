@@ -62,20 +62,28 @@ the layout. The renderers use it as follows:
 - If a `LabelShape` sets both `width` and `height`, and neither is 0, the frontend
   does not measure the text of the label.
 
-After each layout, ipyelk copies the laid-out `width` and `height` that come back from
+After each layout, ipyelk writes the laid-out `width` and `height` that come back from
 the frontend onto the element, where you can read them. A laid-out size is the output of
-a layout, not an input to the next one: at the next serialization, the size of the shape
-still wins over the laid-out size. So `node.properties.shape.radius = 20` after a layout
-changes the size of the node at the next layout. A `width` or `height` that you set on
-the element yourself wins over the shape, before and after a layout. An element whose
-shape has no size, or that has no shape, serializes the laid-out size again.
+a layout, not an input to the next one. The size that ipyelk serializes as the input to
+the next layout is, in this order:
+
+1. The `width` or `height` that you assigned to the element, also before the first
+   layout. The layout does not forget it: it is sent again after each layout. Assign
+   `None` to drop it.
+2. The size of the shape. So `node.properties.shape.radius = 20` after a layout changes
+   the size of the node at the next layout.
+3. The laid-out size, for an element whose shape has no size, or that has no shape.
+
+The same holds for the size that the frontend measures for a label: if the `LabelShape`
+sets `width` but not `height`, the next layout gets the `width` of the shape and the
+measured `height`.
 
 The shape keeps its class and its fields through a layout. The frontend does not change
-a shape, so ipyelk keeps the shape object of the element, for example a `Widget` with
-its widget, and does not replace it with what comes back. A layout can give a node a
-size other than the size of its shape, for example a `Circle` node with children. The
-`radius` then stays as you set it, and the `width` and `height` of the node hold the
-laid-out size.
+the `properties` of an element, so ipyelk keeps them, with the shape object, for example
+a `Widget` with its widget, and does not replace them with what comes back. A layout can
+give a node a size other than the size of its shape, for example a `Circle` node with
+children. The `radius` then stays as you set it, and the `width` and `height` of the
+node hold the laid-out size.
 
 ## The shapes
 

@@ -226,13 +226,82 @@ def test_radius_set_after_a_round_trip_resizes_the_node():
     assert size() == (12, 12)
     shape.radius = 20
     assert size() == (40, 40)
-    # a size set on the node wins over the shape, as before the first layout
+    # a size set on the node wins over the shape, as before the first layout,
+    # and the next layout (which echoes it) does not demote it
     child.width = 100
     assert size() == (100, 40)
-    # the next layout's size is laid out again, the user's width is not
     index.update(laid_out(root, 100, 90))
     assert (child.width, child.height) == (100, 90)
-    assert size() == (40, 40)
+    assert size() == (100, 40)
+
+
+def test_update_keeps_a_size_the_user_set():
+    """ELK echoes a leaf's size, so a user-set size must survive the echo (the
+    text sizer round trip echoes every node before ELK even sees it).
+    """
+    shape = shapes.Circle(radius=6)
+    child = Node(id="c", width=100, height=50, properties=NodeProperties(shape=shape))
+    root = Node(id="root", children=[child])
+    index = ElementIndex.from_els(root)
+
+    def size():
+        data = to_json(child, None)
+        return data["width"], data["height"]
+
+    assert size() == (100, 50)
+    index.update(laid_out(root, 100, 50))
+    assert size() == (100, 50)
+    # the element holds what the browser returned (#194: a visible port takes
+    # its layout), the user's size stays the input
+    index.update(laid_out(root, 100, 45))
+    assert (child.width, child.height) == (100, 45)
+    assert size() == (100, 50)
+    # ``None`` drops the user's size: the shape is the input again
+    child.height = None
+    index.update(laid_out(root, 100, 60))
+    assert (child.width, child.height) == (100, 60)
+    assert size() == (100, 12)
+    # assigning the laid-out size pins it
+    child.height = child.height
+    index.update(laid_out(root, 100, 70))
+    assert (child.width, child.height) == (100, 70)
+    assert size() == (100, 60)
+
+
+def test_a_label_shape_width_wins_over_the_measured_width():
+    """The frontend measures a label unless its shape sets both ``width`` and
+    ``height``; a dimension the shape sets is still the input to the layout.
+    """
+    label = Label(
+        id="l",
+        text="Point",
+        properties=LabelProperties(shape=shapes.LabelShape(width=100)),
+    )
+    root = Node(id="root", labels=[label])
+    index = ElementIndex.from_els(root)
+
+    index.update(laid_out(root, 57, 17))
+
+    assert (label.width, label.height) == (57, 17)
+    data = to_json(label, None)
+    assert (data["width"], data["height"]) == (100, 17)
+
+
+def test_update_keeps_properties_edited_while_a_layout_was_in_flight():
+    """``properties`` never change in the browser, so they are not copied back."""
+    root, child = shaped_node(shapes.Circle(radius=6))
+    index = ElementIndex.from_els(root)
+    wire = laid_out(root)
+
+    properties = child.properties
+    child.properties.cssClasses = "new"
+    child.properties.hidden = True
+    index.update(wire)
+
+    assert child.properties is properties
+    assert child.properties.cssClasses == "new"
+    assert child.properties.hidden is True
+    assert child.width == 80
 
 
 def test_update_keeps_the_laid_out_size_of_a_shape_without_one():

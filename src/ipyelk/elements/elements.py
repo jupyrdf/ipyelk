@@ -244,25 +244,38 @@ class BaseElement(IDElement, abc.ABC):
 class ShapeElement(BaseElement, abc.ABC):
     """An element with a position and a size.
 
-    ``width`` and ``height`` are the size you set. If one is ``None``, the element
-    serializes that dimension of its shape (``BaseShape.dimension``). A layout
-    writes the laid-out size onto the element (:meth:`set_laid_out`), where you
-    can read it, but a laid-out size is the output of a layout, not an input to
-    the next one: the shape's size still wins over it at the next serialization.
+    After a layout, ``width`` and ``height`` hold the laid-out size
+    (:meth:`set_laid_out`). The size serialized as the input to the next layout
+    is, in this order: the size you assigned to the element, the size of its
+    shape (``BaseShape.dimension``), the laid-out size; an element that never
+    had any of them serializes 0 without a shape. Assigning ``width`` or
+    ``height`` makes that value the input, and ``None`` drops your assignment.
     """
 
     x: float | None = None
     y: float | None = None
     width: float | None = None
     height: float | None = None
-    #: the ``width`` and ``height`` the last layout wrote (``ElementIndex.update``)
+    #: for each of ``width`` and ``height`` that holds a laid-out size, the
+    #: size you had assigned before (``None`` for none); assigning the field
+    #: removes its key
     _laid_out: dict[str, float | None] = PrivateAttr(default_factory=dict)
 
+    def __setattr__(self, name: str, value) -> None:
+        super().__setattr__(name, value)
+        if name in {"width", "height"} and name in self._laid_out:
+            self._laid_out = {k: v for k, v in self._laid_out.items() if k != name}
+
     def set_laid_out(self, width: float | None, height: float | None) -> Self:
-        """Record a laid-out size as this element's ``width`` and ``height``."""
-        self.width = width
-        self.height = height
-        self._laid_out = {"width": self.width, "height": self.height}
+        """Write the size the browser returned onto ``width`` and ``height``,
+        remembering a size you assigned as the input to the next layout.
+        """
+        laid_out = dict(self._laid_out)
+        for key, value in (("width", width), ("height", height)):
+            if key not in laid_out:
+                laid_out[key] = getattr(self, key)
+            setattr(self, key, value)
+        self._laid_out = laid_out
         return self
 
     @model_serializer(mode="wrap")
@@ -274,13 +287,12 @@ class ShapeElement(BaseElement, abc.ABC):
         laid_out = self._laid_out
         for key in ("width", "height"):
             own = getattr(self, key)
-            if own is None:
-                value = shape.dimension(key) if shape else 0
-            elif shape is not None and own == laid_out.get(key):
-                value = shape.dimension(key)
-            else:
-                continue
-            if value is not None:
+            value = laid_out.get(key, own)
+            if value is None:
+                value = shape.dimension(key) if shape else None
+                if value is None:
+                    value = own if key in laid_out else (None if shape else 0)
+            if value is not None and value is not own:
                 serialize_value(data, key, value, info)
         return data
 

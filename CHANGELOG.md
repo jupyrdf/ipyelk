@@ -393,14 +393,17 @@ throughout 3.x with the replacement in the message.
 - Fail CI when the committed `elkschema.json` differs from what `jlpm schema` generates,
   and rebuild it when `elkgraph-json.ts` changes ([#187])
 - Keep a typed shape through a layout round trip. `ElementIndex.update` replaced every
-  element's `properties.shape` with the browser's copy, which parses as the base class:
+  element's `properties` with the browser's copy, whose shape parses as the base class:
   a `Circle` came back as a `NodeShape` without its `radius`, an `Icon` as a
-  `LabelShape`, a `Widget` without its widget, and `shape.radius = 20` then raised. An
-  element now keeps its own shape object (the frontend never changes one). The laid-out
-  `width` and `height` are still copied onto the element, but no longer shadow the
-  shape's size at the next serialization: a `radius` set after a layout resizes the node
-  at the next one, while a size set on the element itself still wins over the shape
-  ([#201])
+  `LabelShape`, a `Widget` without its widget, and `shape.radius = 20` then raised. The
+  frontend never changes `properties`, so an element now keeps its own, with its shape
+  object, and an edit made while a layout was in flight is no longer reverted. The
+  laid-out `width` and `height` are still written onto the element, in place of a
+  dimension that was `None` or laid out before, but no longer shadow the shape's size at
+  the next serialization: a `radius` set after a layout resizes the node at the next
+  one, and a `LabelShape` that sets only `width` now sends that width, not the measured
+  one. A size assigned to the element itself stays the input to every later layout and
+  wins over the shape, as it did before the first layout ([#201])
 
 ### Documentation
 
