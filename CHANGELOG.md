@@ -346,10 +346,12 @@ throughout 3.x with the replacement in the message.
   `radius`. The `node:round` renderer takes its radii from the laid-out node, so a node
   larger than the circle drew the ellipse off center. `x` and `y` that you set are still
   serialized ([#200])
-- Treat a click anywhere inside a widget that a diagram shows in its control overlay or
-  in a widget node, such as on the icon of a button, as a widget click, which the select
-  tool ignores. Only a click on the widget's own element was. A diagram shown as a
-  widget node of another diagram still selects its own nodes ([#216])
+- Stop selecting a widget node on a click inside its widget, such as on the handle of a
+  slider or the icon of a button: such a click is a widget click, which the select tool
+  ignores, wherever it lands in the widget. Only a click on the widget's own element
+  was, so a widget node could be selected by clicking its widget's contents and no
+  longer can. A diagram shown as a widget node of another diagram still selects its own
+  nodes, and the outer diagram no longer selects the node that shows it ([#216])
 
 ### Development
 
