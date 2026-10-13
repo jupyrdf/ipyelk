@@ -494,6 +494,10 @@ replacement in the message.
   restarts with every cell and fires after 30 s without a new cell ([#177])
 - Fail CI when the committed `elkschema.json` differs from what `jlpm schema` generates,
   and rebuild it when `elkgraph-json.ts` changes ([#187])
+- Test the oldest environment on Firefox 140 ESR, the oldest ESR line still updated,
+  instead of 128 ESR, which no longer is. It is not yet known whether this changes the
+  out-of-memory kills of `01 Linking` and `02 Transformer` in
+  `test-oldest (ubuntu-latest)` ([#199])
 
 ### Documentation
 
@@ -517,6 +521,7 @@ replacement in the message.
 [#181]: https://github.com/jupyrdf/ipyelk/issues/181
 [#187]: https://github.com/jupyrdf/ipyelk/issues/187
 [#191]: https://github.com/jupyrdf/ipyelk/issues/191
+[#199]: https://github.com/jupyrdf/ipyelk/issues/199
 [#200]: https://github.com/jupyrdf/ipyelk/issues/200
 [#205]: https://github.com/jupyrdf/ipyelk/issues/205
 
