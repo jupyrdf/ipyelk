@@ -19,7 +19,6 @@ export interface IMouseTool {
   deregister(mouseListener: MouseListener): void;
 }
 
-// TODO make this an interface?
 @injectable()
 export class DiagramTool extends MouseTool {
   public elementTypeId: string = 'unknown';

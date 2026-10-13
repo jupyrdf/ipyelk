@@ -77,7 +77,7 @@ class Generalization(Edge):
 
 
 class BlockDiagram(Partition):
-    # TODO flesh out ideas of encapsulating diagram defs / styles / elements
+    # TODO(#211): carry these diagram defs and styles into a Diagram
     symbols: SymbolSpec = Field(
         SymbolSpec().add(
             connectors.Rhomb(identifier="composition", r=4),

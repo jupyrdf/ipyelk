@@ -59,12 +59,12 @@ the layout. The renderers use it as follows:
   it.
 - A parent label places its icon and its text with the `width` and `height` of the
   `Icon` shape, if they are set. It draws the icon at the laid-out size.
-- If a `LabelShape` sets both `width` and `height`, and neither is 0, the frontend
-  does not measure the text of the label.
+- If a `LabelShape` sets both `width` and `height`, and neither is 0, the frontend does
+  not measure the text of the label.
 
-The rule that the element serializes the size of its shape applies only until the
-first layout. The renderer rules above still apply after it. After each layout, ipyelk
-copies the `properties`, `width` and `height` that come back from the frontend onto the
+The rule that the element serializes the size of its shape applies only until the first
+layout. The renderer rules above still apply after it. After each layout, ipyelk copies
+the `properties`, `width` and `height` that come back from the frontend onto the
 element. The element then has the laid-out size as its own size, so a later change to
 the size of its shape has no effect.
 

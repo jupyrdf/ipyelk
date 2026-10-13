@@ -1,7 +1,9 @@
 # Copyright (c) 2024 ipyelk contributors.
 # Distributed under the terms of the Modified BSD License.
 
+from ipyelk.contrib.library.logic_gates import XOR_Gate
 from ipyelk.elements import Edge, Label, Node, Port, shapes
+from ipyelk.elements.layout_options import NodeSizeConstraints
 
 
 def test_node_instances():
@@ -69,3 +71,9 @@ def test_node_shape():
     n = Node(properties={"shape": shape})
     data = n.model_dump()
     assert data["properties"]["shape"].get("type") == shape.type
+
+
+def test_logic_gate_node_size_constraints():
+    """``Gate`` passes ``minimum_size``: an unknown keyword warns, so it would fail."""
+    options = XOR_Gate().get_layoutOptions()
+    assert options[NodeSizeConstraints.identifier] == "MINIMUM_SIZE"
