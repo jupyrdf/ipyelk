@@ -54,7 +54,10 @@ jobs:
           pixi run -e build jlpm schema
           pixi run -e build node scripts/elk_catalog.mjs
           pixi run -e build jlpm prettier --write src/ipyelk/schema/elk-catalog.json
-          git diff --exit-code src/ipyelk/schema/
+          git diff --exit-code src/ipyelk/schema/ || {
+            echo "::error::run pixi run build-py-schema build-py-elk-catalog and commit src/ipyelk/schema/"
+            exit 1
+          }
       - run: pixi run dist
       - uses: actions/upload-artifact@v4
         with:

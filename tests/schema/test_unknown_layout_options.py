@@ -15,6 +15,7 @@ from ipyelk.elements import Edge, Label, Node, Port
 from ipyelk.pipes import MarkElementWidget, ValidationPipe
 from ipyelk.pipes.valid import elk_targets
 from ipyelk.schema import (
+    catalog,
     elk_catalog,
     unknown_layout_options,
     untargeted_layout_options,
@@ -62,6 +63,28 @@ def test_unknown_layout_options() -> None:
     assert unknown_layout_options(KNOWN) == []
     assert unknown_layout_options([*KNOWN, *UNKNOWN]) == UNKNOWN
     assert unknown_layout_options({"elk.edge.edgeNode": "10"}) == ["elk.edge.edgeNode"]
+
+
+def test_old_id_ends_count_only_when_no_current_id_ends_the_key(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    # elkjs 0.12.0 has one old id and no key that ends both kinds: make one up
+    current = {"id": "org.eclipse.elk.spacing.gap", "targets": ["NODES"]}
+    renamed = {
+        "id": "org.eclipse.elk.renamed",
+        "legacyIds": ["org.eclipse.elk.old.gap"],
+    }
+    by_id = {o["id"]: o for o in (current, renamed)}
+    by_legacy_id = {"org.eclipse.elk.old.gap": renamed}
+    monkeypatch.setattr(catalog, "_options_by_id", lambda: (by_id, by_legacy_id))
+    catalog._resolve.cache_clear()
+    try:
+        # `gap` ends a current id and an old id: the current id wins, not ambiguous
+        assert catalog._resolve("gap") is current
+        assert catalog._resolve("old.gap") is renamed
+        assert catalog._resolve("org.eclipse.elk.old.gap") is renamed
+    finally:
+        catalog._resolve.cache_clear()
 
 
 def test_untargeted_layout_options() -> None:

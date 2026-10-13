@@ -7,10 +7,15 @@ import { describe, expect, it } from 'vitest';
 
 import { CATALOG_PATH, buildCatalog } from '../../scripts/elk_catalog.mjs';
 
+const REGENERATE = 'run `pixi run build-py-elk-catalog` and commit elk-catalog.json';
+
 describe('elk-catalog.json', () => {
   it('matches the installed elkjs (run `pixi run build-py-elk-catalog`)', async () => {
     const committed = JSON.parse(readFileSync(CATALOG_PATH, 'utf-8'));
-    expect(committed).toEqual(await buildCatalog());
+    // a round trip drops the `undefined` lists that JSON leaves out
+    const installed = JSON.parse(JSON.stringify(await buildCatalog()));
+    expect(committed.elkjs, `elkjs changed: ${REGENERATE}`).toBe(installed.elkjs);
+    expect(committed, `the catalog is stale: ${REGENERATE}`).toEqual(installed);
   });
 
   it('lists the old ids that ELK still accepts', async () => {
