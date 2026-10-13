@@ -150,10 +150,10 @@
   raises `ValidationError` for `nan`, an infinity, `None`, any other value, or a key
   that is not a string; 2.x accepted them. Serialization writes `bool` values and
   numbers as strings too, so a value set in place (`node.layoutOptions[key] = 20`) goes
-  to ELK as `"20"`. A `None` set in place makes serialization raise a `ValueError` that
-  names the key. With `exclude_none=True`, serialization drops that key instead, so ELK
-  uses the option's default. `OptionsWidget.value` only accepts string keys and values
-  ([#31]).
+  to ELK as `"20"`. A `None` set in place makes serialization raise a
+  `PydanticSerializationError` (a `ValueError`) that names the key. With
+  `exclude_none=True`, serialization drops that key instead, so ELK uses the option's
+  default. `OptionsWidget.value` only accepts string keys and values ([#31]).
 
 ### Migration
 
@@ -235,6 +235,7 @@ view.painter.styles  # {"n2": ("highlight",)}
 {"org.eclipse.elk.partitioning.activate": "true"}
 {"org.eclipse.elk.layered.considerModelOrder.strategy": "NODES_AND_EDGES"}
 
+# both: from ipyelk.elements.layout_options import port_options as opt
 # 2.x                                   # 3.0
 opt.LabelPortSpacing(spacing=3)         opt.LabelPortHorizontalSpacing(spacing=3)
                                         opt.LabelPortVerticalSpacing(spacing=3)
@@ -243,17 +244,17 @@ from ipyelk.elements.layout_options.layout import Draw2DLayout
 LayoutAlgorithm(value=Draw2DLayout.identifier)
                                         LayoutAlgorithm(value=ELKLayered.identifier)
 # 2.x sent None to ELK; 3.0 raises ValidationError, so leave the key out
-Node(layoutOptions={"elk.direction": None})
+Node(layoutOptions={"org.eclipse.elk.direction": None})
                                         Node(layoutOptions={})
 # 2.x sent 2.0, 3.0 sends "2" (ELK ignores "2.0" for an integer option)
-Node(layoutOptions={"elk.partitioning.partition": 2.0})
+Node(layoutOptions={"org.eclipse.elk.partitioning.partition": 2.0})
 ```
 
 The removed names (`handler`, `on_run`, `disable`, `Hover.ids`, assigning `on_start` or
 `on_done`, the `contol_overlay` module, `Viewer.zoom`/`pan`/`viewed`,
-`ipyelk.tools.Zoom`/`Pan`, `Painter.cssClasses`/`marks`/`name`,
-`ipyelk.elements.layout_options.layout.Draw2DLayout`) raise `DeprecatedAPIError` -- or
-`DeprecatedImportError` for the module-level names -- throughout 3.x with the
+`ipyelk.tools.Zoom`/`Pan`, `Painter.cssClasses`/`marks`/`name`, `Draw2DLayout` from
+`ipyelk.elements.layout_options` or its `layout` module) raise `DeprecatedAPIError` --
+or `DeprecatedImportError` for the module-level names -- throughout 3.x with the
 replacement in the message.
 
 ### Added
