@@ -74,6 +74,11 @@ the next layout is, in this order:
    the size of the node at the next layout.
 3. The laid-out size, for an element whose shape has no size, or that has no shape.
 
+This rule applies when ipyelk serializes the elements as the input to a layout, which the
+`VisibilityPipe` does under `exclude_layout`. Any other serialization, for example the
+one that shows the elements in the view after a refresh that runs no layout, or a plain
+`model_dump()`, carries the laid-out size.
+
 The same holds for the size that the frontend measures for a label: if the `LabelShape`
 sets `width` but not `height`, the next layout gets the `width` of the shape and the
 measured `height`.

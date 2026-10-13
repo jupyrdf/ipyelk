@@ -245,11 +245,13 @@ class ShapeElement(BaseElement, abc.ABC):
     """An element with a position and a size.
 
     After a layout, ``width`` and ``height`` hold the laid-out size
-    (:meth:`set_laid_out`). The size serialized as the input to the next layout
-    is, in this order: the size you assigned to the element, the size of its
-    shape (``BaseShape.dimension``), the laid-out size; an element that never
-    had any of them serializes 0 without a shape. Assigning ``width`` or
-    ``height`` makes that value the input, and ``None`` drops your assignment.
+    (:meth:`set_laid_out`). The size serialized as the input to a layout
+    (under ``exclude_layout``, as ``VisibilityPipe`` projects the tree) is, in
+    this order: the size you assigned to the element, the size of its shape
+    (``BaseShape.dimension``), the laid-out size. Any other serialization, for
+    example the view's, carries the laid-out size. An element that has none of
+    them serializes 0 without a shape. Assigning ``width`` or ``height`` makes
+    that value the input, and ``None`` drops your assignment.
     """
 
     x: float | None = None
@@ -284,7 +286,7 @@ class ShapeElement(BaseElement, abc.ABC):
     ):
         data = super().serialize_element(handler, info)
         shape = self.properties.shape
-        laid_out = self._laid_out
+        laid_out = self._laid_out if exclude_layout.active else {}
         for key in ("width", "height"):
             own = getattr(self, key)
             value = laid_out.get(key, own)

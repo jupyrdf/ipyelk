@@ -15,6 +15,7 @@ from ipyelk.elements import (
     PortProperties,
     Registry,
     convert_elkjson,
+    exclude_layout,
     shapes,
 )
 from ipyelk.elements.elements import ShapeElement
@@ -125,11 +126,21 @@ def laid_out(root: Node, width: float = 80.0, height: float = 80.0) -> ElementIn
     """What ``persist`` merges after a layout: the wire form of ``root`` parsed
     back, with a laid-out size on every node, port and label.
     """
-    back = convert_elkjson(json.loads(json.dumps(to_json(root, None))))
+    with exclude_layout:
+        back = convert_elkjson(json.loads(json.dumps(to_json(root, None))))
     for el in iter_elements(back):
         if isinstance(el, ShapeElement):
             el.width, el.height = width, height
     return ElementIndex.from_els(back)
+
+
+def layout_input(el: ShapeElement) -> tuple:
+    """The size ``el`` sends to a layout (``VisibilityPipe`` projects under
+    ``exclude_layout``).
+    """
+    with exclude_layout:
+        data = to_json(el, None)
+    return data.get("width"), data.get("height")
 
 
 def shaped_node(shape: shapes.NodeShape) -> tuple[Node, Node]:
@@ -218,12 +229,14 @@ def test_radius_set_after_a_round_trip_resizes_the_node():
     index.update(laid_out(root, 80, 60))
 
     def size():
-        data = to_json(child, None)
-        return data["width"], data["height"]
+        return layout_input(child)
 
     assert (child.width, child.height) == (80, 60)
     assert shape.radius == 6
     assert size() == (12, 12)
+    # any other serialization, such as the view's, carries the laid-out size
+    plain = to_json(child, None)
+    assert (plain["width"], plain["height"]) == (80, 60)
     shape.radius = 20
     assert size() == (40, 40)
     # a size set on the node wins over the shape, as before the first layout,
@@ -245,8 +258,7 @@ def test_update_keeps_a_size_the_user_set():
     index = ElementIndex.from_els(root)
 
     def size():
-        data = to_json(child, None)
-        return data["width"], data["height"]
+        return layout_input(child)
 
     assert size() == (100, 50)
     index.update(laid_out(root, 100, 50))
@@ -283,8 +295,7 @@ def test_a_label_shape_width_wins_over_the_measured_width():
     index.update(laid_out(root, 57, 17))
 
     assert (label.width, label.height) == (57, 17)
-    data = to_json(label, None)
-    assert (data["width"], data["height"]) == (100, 17)
+    assert layout_input(label) == (100, 17)
 
 
 def test_update_keeps_properties_edited_while_a_layout_was_in_flight():
@@ -324,10 +335,8 @@ def test_update_keeps_the_laid_out_size_of_a_shape_without_one():
     assert type(plain) is shapes.NodeShape
     for node in (plain_node, bare):
         assert (node.width, node.height) == (80, 70)
-        data = to_json(node, None)
-        assert (data["width"], data["height"]) == (80, 70)
-    data = to_json(sized, None)
-    assert (data["width"], data["height"]) == (30, 70)
+        assert layout_input(node) == (80, 70)
+    assert layout_input(sized) == (30, 70)
 
 
 def test_update_keeps_a_shape_replaced_between_layouts():
