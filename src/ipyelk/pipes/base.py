@@ -287,7 +287,7 @@ class Pipe(W.Widget):
 
     @property
     def closed(self) -> bool:
-        """Whether ``close()`` was called; a closed pipe refuses runs."""
+        """Whether ``close()`` was called; a closed pipe refuses ``schedule_run()``."""
         return self._closed
 
     def _check_open(self, action: str) -> None:
@@ -373,6 +373,11 @@ class Pipe(W.Widget):
                 await self.run()
             except Superseded:
                 self.log.debug("%s gave way to a newer request", type(self).__name__)
+            except ClosedError:
+                if not self._closed:
+                    raise
+                # closed between the check above and run()'s own
+                raise asyncio.CancelledError from None
             except Exception:
                 if not self.superseded():
                     raise

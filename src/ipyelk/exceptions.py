@@ -13,7 +13,9 @@ class ClosedError(T.TraitError, RuntimeError):
 
     A ``TraitError`` because most entry points are trait assignments, and a
     ``RuntimeError`` like the other refused calls (``Tool.check_enabled``).
-    The message names the class and the remedy.
+    The message names the class and the remedy. Assigning a closed pipe or
+    stage to an open diagram or pipeline raises a plain ``TraitError``: this
+    error is for a closed receiver.
     """
 
 

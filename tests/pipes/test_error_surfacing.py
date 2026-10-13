@@ -85,7 +85,37 @@ async def test_stage_error_after_close_is_cancellation(caplog):
 
 
 @pytest.mark.asyncio
-async def test_queued_close_before_error_callback_keeps_flow_and_skips_callback():
+async def test_close_in_the_run_entry_window_is_cancellation(caplog, monkeypatch):
+    """A close between the runner's own check and ``Pipeline.run``'s guard."""
+    pipeline = Pipeline(pipes=[Pipe(observes=(F.New,), reports=(F.Layout,))])
+    seen = []
+    pipeline.on_error = lambda pipe, exc: seen.append((pipe, exc))
+    pipeline.inlet.record(F.New)
+    run = pipeline.run
+
+    async def close_then_run(flow=None):
+        pipeline.close()
+        await run(flow)
+
+    monkeypatch.setattr(pipeline, "run", close_then_run)
+    try:
+        task = pipeline.schedule_run()
+        with pytest.raises(asyncio.CancelledError):
+            await task
+        await asyncio.sleep(0)
+
+        assert task.cancelled()
+        assert pipeline.inlet.flow == (F.New,)
+        assert seen == []
+        assert caplog.records == []
+    finally:
+        pipeline.close()
+
+
+@pytest.mark.asyncio
+async def test_queued_close_before_error_callback_keeps_flow_and_skips_callback(
+    caplog,
+):
     source = MarkElementWidget(flow=(F.New,))
     stage = _CloseThenBoom(observes=(F.New,))
     pipeline = Pipeline(inlet=source, pipes=[stage])
@@ -110,6 +140,12 @@ async def test_queued_close_before_error_callback_keeps_flow_and_skips_callback(
         assert source.flow == (F.New,)
         assert seen == []
         assert updates_after_close == []
+        warnings = [
+            r.getMessage() for r in caplog.records if r.levelno == logging.WARNING
+        ]
+        assert warnings == [
+            "Pipeline was closed before its run failed with ValueError('boom after close')"
+        ]
     finally:
         pipeline.close()
         source.close()
