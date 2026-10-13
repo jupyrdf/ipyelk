@@ -13,6 +13,7 @@ from pydantic import (
 
 from ..util import merge
 from . import layout_options as opt
+from .common import LayoutOptions
 from .elements import Edge, Label, LabelProperties, Node
 from .shapes import Icon
 
@@ -95,7 +96,7 @@ class Record(Node):
     number, such as ``33.7``, raises ``ValueError`` when it is serialized.
     """
 
-    layoutOptions: dict = Field(default_factory=lambda: {**record_opts})
+    layoutOptions: LayoutOptions = Field(default_factory=lambda: {**record_opts})
     width: float = Field(
         default=80, description="Width needs to be shared by all children "
     )

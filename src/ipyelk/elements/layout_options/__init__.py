@@ -5,6 +5,7 @@ https://www.eclipse.org/elk/reference/options.html
 # Copyright (c) 2024 ipyelk contributors.
 # Distributed under the terms of the Modified BSD License.
 
+from ...exceptions import DeprecatedImportError
 from .edge_options import (
     Direction,
     EadesRepulsion,
@@ -23,7 +24,7 @@ from .edge_options import (
     MergeEdges,
     MergeHierarchyCrossingEdges,
 )
-from .layout import ELKRectanglePacking, LayoutAlgorithm
+from .layout import _REMOVED, ELKRectanglePacking, LayoutAlgorithm
 from .node_options import (
     ActivateInsideSelfLoops,
     AspectRatio,
@@ -62,6 +63,13 @@ from .wrapping_options import (
     CorrectionFactorForWrapping,
     GraphWrappingStrategy,
 )
+
+
+def __getattr__(name: str) -> object:
+    if name in _REMOVED:
+        raise DeprecatedImportError(_REMOVED[name])
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
+
 
 __all__ = [
     "ActivateInsideSelfLoops",

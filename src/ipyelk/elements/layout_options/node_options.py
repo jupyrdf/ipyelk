@@ -29,6 +29,7 @@ MODEL_ORDER_OPTIONS = {
     "None": "NONE",
     "Nodes and Edges": "NODES_AND_EDGES",
     "Prefer Edges": "PREFER_EDGES",
+    "Prefer Nodes": "PREFER_NODES",
 }
 
 
@@ -383,7 +384,7 @@ class LayoutPartitioning(LayoutOptionWidget):
     https://www.eclipse.org/elk/reference/options/org-eclipse-elk-partitioning-activate.html
     """
 
-    identifier = "org.eclipse.elk.partitioning.active"
+    identifier = "org.eclipse.elk.partitioning.activate"
     metadata_provider = "core.options.CoreOptions"
     applies_to = ["parents"]
 
@@ -437,9 +438,9 @@ class ConsiderModelOrder(LayoutOptionWidget):
     lead to edge crossings or conflicts between the ordering or edges and nodes.
     """
 
-    identifier = "org.eclipse.elk.layered.considerModelOrder"
+    identifier = "org.eclipse.elk.layered.considerModelOrder.strategy"
     metadata_provider = "options.LayeredMetaDataProvider"
-    applies_to = ["parents", "nodes"]
+    applies_to = ["parents"]
 
     value = T.Enum(values=list(MODEL_ORDER_OPTIONS.values()), default_value="NONE")
 
@@ -505,7 +506,7 @@ class ContentAlignment(LayoutOptionWidget):
     https://www.eclipse.org/elk/reference/options/org-eclipse-elk-contentAlignment.html
     """
 
-    identifier = "	org.eclipse.elk.contentAlignment"
+    identifier = "org.eclipse.elk.contentAlignment"
     metadata_provider = "core.options.CoreOptions"
     applies_to = ["parents"]
     group = "nodeSize"

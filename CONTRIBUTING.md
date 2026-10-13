@@ -29,20 +29,21 @@ Presently, on GitHub:
 
 ## Important Paths
 
-| Path                               | Purpose                                              |
-| ---------------------------------- | ---------------------------------------------------- |
-| `atest/`                           | Robot Framework source for acceptance tests          |
-| `pixi.toml`                        | task automation tool                                 |
-| `pixi.lock`                        | pinned build/test/docs environments                  |
-| `js/`                              | TypeScript source for `@jupyrdf/jupyter-elk`         |
-| `package.json/`                    | `npm` package description for `@jupyrdf/jupyter-elk` |
-| `pyproject.toml`                   | package description for `ipyelk`                     |
-| `src/`                             | Python source for `ipyelk`                           |
-| `src/ipyelk/schema/elkschema.json` | JSON schema derived from the TypeScript source       |
-| `yarn.lock`                        | frozen `npm` dependencies                            |
-| `docs/`                            | documentation                                        |
-| `examples/`                        | examples, used in demo and test                      |
-| `lite/`                            | JupyterLite demo configuration                       |
+| Path                                 | Purpose                                              |
+| ------------------------------------ | ---------------------------------------------------- |
+| `atest/`                             | Robot Framework source for acceptance tests          |
+| `pixi.toml`                          | task automation tool                                 |
+| `pixi.lock`                          | pinned build/test/docs environments                  |
+| `js/`                                | TypeScript source for `@jupyrdf/jupyter-elk`         |
+| `package.json/`                      | `npm` package description for `@jupyrdf/jupyter-elk` |
+| `pyproject.toml`                     | package description for `ipyelk`                     |
+| `src/`                               | Python source for `ipyelk`                           |
+| `src/ipyelk/schema/elkschema.json`   | JSON schema derived from the TypeScript source       |
+| `src/ipyelk/schema/elk-catalog.json` | ELK layout options known to the bundled `elkjs`      |
+| `yarn.lock`                          | frozen `npm` dependencies                            |
+| `docs/`                              | documentation                                        |
+| `examples/`                          | examples, used in demo and test                      |
+| `lite/`                              | JupyterLite demo configuration                       |
 
 - Run `pixi run dev-ext` to get ready to develop
 - Most commands are run with `pixi run release` (this is what CI does)

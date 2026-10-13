@@ -373,7 +373,7 @@ export class ElkLabelView extends ShapeView {
       let labelDims = this.dimension(label);
       let iconPos: Point = {
         x: 0 + icon.position.x,
-        y: (height - iconDims.height) / 2 + icon.position.x,
+        y: (height - iconDims.height) / 2 + icon.position.y,
       };
       let opts = icon?.layoutOptions || {};
 
