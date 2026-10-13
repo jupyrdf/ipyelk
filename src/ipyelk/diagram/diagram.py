@@ -318,7 +318,8 @@ class Diagram(StyledWidget):
 
         ``sender`` is ignored; it lets ``refresh`` serve as a tool's ``on_done``
         callback (which receives the tool). Returns ``None`` when no event loop is
-        running (see ``Pipe.schedule_run``).
+        running (see ``Pipe.schedule_run``). The task resolves cancelled when the
+        diagram is closed mid-run, so awaiting it then raises ``CancelledError``.
         """
         self._check_open("refresh")
         self.log.debug("Refreshing diagram")

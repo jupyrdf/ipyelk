@@ -369,6 +369,46 @@ async def test_closing_from_the_last_stages_finished_update_cancels(
         diagram.close()
 
 
+class Parked(Pipe):
+    """A stage that waits on a future nobody resolves."""
+
+    gate: asyncio.Future | None = None
+
+    async def run(self):
+        self.gate = asyncio.get_running_loop().create_future()
+        await self.gate
+        self.outlet.value = self.inlet.value
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("closing", ["pipeline", "diagram"])
+async def test_awaiting_refresh_raises_cancelled_when_closed_mid_run(
+    closing: str,
+) -> None:
+    parked = Parked(observes=(F.New,), reports=(F.Layout,))
+    pipe = Pipeline(pipes=[parked])
+    errors = []
+    pipe.on_error = lambda _pipe, error: errors.append(error)
+    diagram = Diagram(source=make_source(), pipe=pipe)
+
+    try:
+        task = diagram.refresh()
+        for _ in range(10):
+            await asyncio.sleep(0)
+        assert parked.gate is not None, "the run is parked inside the stage"
+        (pipe if closing == "pipeline" else diagram).close()
+        with pytest.raises(asyncio.CancelledError):
+            await asyncio.wait_for(task, timeout=2)
+        assert task.cancelled()
+        current = asyncio.current_task()
+        if hasattr(current, "cancelling"):  # Python 3.11+
+            assert current.cancelling() == 0, "only the run was cancelled"
+        assert errors == []
+        assert diagram.source.flow == (F.New,), "the taken flow is handed back"
+    finally:
+        diagram.close()
+
+
 @pytest.mark.asyncio
 async def test_closed_diagram_ignores_a_queued_successful_view_update() -> None:
     diagram = Diagram(source=make_source(), pipe=Pipe())

@@ -126,8 +126,10 @@
   stages; it used to empty them. A diagram whose pipe was closed raises on `refresh()`.
   A run in flight when its pipeline closes is cancelled before the next stage or
   successful completion, even when a progress callback closes it or the cancel comes
-  from another event loop during the final stage. A queued refresh callback does not
-  update a closed diagram. Closing a diagram twice still does nothing ([#197]).
+  from another event loop during the final stage; the task `refresh()` returned then
+  resolves cancelled, so `await diagram.refresh()` raises `CancelledError`. A queued
+  refresh callback does not update a closed diagram. Closing a diagram twice still does
+  nothing ([#197]).
 
 ### Migration
 
