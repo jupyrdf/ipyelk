@@ -21,12 +21,15 @@ from ipyelk.pipes.elkjs import ElkJS
 from ipyelk.pipes.text_sizer import BrowserTextSizer
 
 
-def _browser_stage(sent: list | None = None):
+def _browser_stage(sent: list | None = None, grow: tuple | None = None):
     async def run(self):
         self.send({"action": "run"})
         wire = self.inlet.value.model_dump(mode="json", exclude_none=True)
         if sent is not None:
             sent.append({n["id"]: (n["width"], n["height"]) for n in wire["children"]})
+        if grow is not None:
+            for node in wire["children"]:
+                node["width"], node["height"] = grow
         self.outlet.set_state({"value": wire})
         self.outlet.persist()
 
@@ -66,4 +69,30 @@ async def test_shape_and_user_size_through_the_pipeline(monkeypatch):
     assert diagram.pipe.status.exception is None
     assert sent[-1] == {"round": (40, 40), "sized": (100, 50)}
     assert (round_node.width, round_node.height) == (40, 40)
+    diagram.close()
+
+
+@pytest.mark.asyncio
+async def test_a_refresh_without_a_layout_shows_the_laid_out_size(monkeypatch):
+    """A refresh that runs no stage hands the user's tree to the view, which
+    must show the size the layout gave a node, not the input size.
+    """
+    monkeypatch.setattr(BrowserTextSizer, "run", _browser_stage())
+    monkeypatch.setattr(ElkJS, "run", _browser_stage(grow=(200.0, 150.0)))
+    circle = shapes.Circle(radius=6)
+    node = Node(id="round", properties=NodeProperties(shape=circle))
+    root = Node(id="root", children=[node])
+    diagram = Diagram(source=MarkElementWidget(value=root))
+    await settle(diagram)
+    assert diagram.pipe.status.exception is None
+    assert node.properties.shape is circle
+    assert (node.width, node.height) == (200, 150)
+
+    node.add_class("highlight")
+    diagram.refresh()
+    await settle(diagram)
+    assert diagram.pipe.status.exception is None
+    assert diagram.view.source.value is root
+    shown = diagram.view.source.get_state(key="value")["value"]["children"][0]
+    assert (shown["width"], shown["height"]) == (200, 150)
     diagram.close()

@@ -89,7 +89,7 @@ class ElementShape(BaseShape):
         - ``width``, ``height`` (``float``): a size in pixels. The element serializes
           this size if it has no ``width`` or ``height`` of its own. After a layout,
           the element holds the laid-out size, and the shape's size still wins over
-          it at the next serialization. The *Width and height* section of the
+          it as the input to the next layout. The *Width and height* section of the
           *Shapes* page explains this.
         - ``use`` (``str``): each subclass gives ``use`` its own meaning.
         - ``delay`` (``int``): a time in milliseconds. Only :py:class:`Widget` uses it.
