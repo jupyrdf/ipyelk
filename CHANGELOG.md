@@ -350,8 +350,8 @@ throughout 3.x with the replacement in the message.
   the port's global id rather than its key. `ElementIndex` had no `__contains__`, so the
   loader's `port_key in el_map` check was always false and it added a second port with
   that key instead. `ElementIndex` and `HierarchicalIndex` now support `key in index`,
-  by id. A port key that is the id of another node's port raises `ValueError`; a key
-  that matches a node id still makes a new port ([#215])
+  by id. A key that is the id of anything other than one of the endpoint's own ports
+  still makes a new port with that key, as before ([#215])
 
 ### Development
 

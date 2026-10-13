@@ -47,27 +47,21 @@ def test_get_endpoint_finds_a_port_by_its_global_id():
     assert node.ports[0] is port
 
 
-def test_get_endpoint_rejects_another_nodes_port_id():
-    node = Node(id="n")
-    other = Node(id="m")
-    other.add_port(Port(id="m.p"))
-    el_map = HierarchicalIndex.from_els(node, other)
-    with pytest.raises(ValueError, match="consistent with the edge"):
-        get_endpoint(el_map, "n", port_key="m.p")
-    assert node.ports == []
-
-
-@pytest.mark.parametrize("port_key", ["n", "m", "n.c"])
-def test_get_endpoint_makes_a_port_for_a_key_that_names_a_node(port_key):
+@pytest.mark.parametrize("port_key", ["n", "m", "n.c", "m.p"])
+def test_get_endpoint_makes_a_port_for_a_global_id_of_anything_else(port_key):
+    """Only the endpoint's own port is found by global id; any other key is a key."""
     node = Node(id="n")
     node.add_child(Node(id="n.c"))
     other = Node(id="m")
+    other_port = other.add_port(Port(id="m.p"))
     el_map = HierarchicalIndex.from_els(node, other)
     port = get_endpoint(el_map, "n", port_key=port_key)
     assert isinstance(port, Port)
     assert len(node.ports) == 1
     assert node.ports[0] is port
     assert port.properties.key == port_key
+    assert len(other.ports) == 1
+    assert other.ports[0] is other_port
 
 
 def test_nx_port_keys_may_match_node_ids():
