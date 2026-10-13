@@ -39,10 +39,11 @@ ${JS CLICK}
 *** Keywords ***
 Click In A Widget Node Should Not Select It
     [Documentation]    A click inside the widget that a widget node shows, here on
-    ...    a tick label of a bqplot figure, belongs to the widget: the node stays
-    ...    unselected. It used to be selected, as the tick label is not the
-    ...    widget's own element. The events are dispatched on the tick label
-    ...    itself, so a pointer cannot land on a brush or on the figure instead.
+    ...    a tick label of a bqplot figure, belongs to the widget: the selection
+    ...    does not change. It used to select the widget node instead of the nodes
+    ...    that the expand selected, as the tick label is not the widget's own
+    ...    element. The events are dispatched on the tick label itself, so a
+    ...    pointer cannot land on a brush or on the figure instead.
     ${tick} =    Set Variable
     ...    xpath:(//div[contains(@class,"elkcontainer")]//*[contains(@class,"bqplot")]//*[local-name()="g"][contains(@class,"tick")]/*[local-name()="text"])[1]
     Wait Until Page Contains Element    ${tick}    timeout=30s
@@ -50,13 +51,17 @@ Click In A Widget Node Should Not Select It
     ${id} =    Get Element Attribute    ${container}    id
     Should Not Be Empty    ${id}    the widget node's container has no DOM id
     ${app} =    Set Variable    ${tick}/ancestor::div[contains(@class,"jp-ElkApp")][1]
+    ${selected} =    Set Variable
+    ...    ${app}//*[contains(@class,"elknode")][contains(concat(" ", @class, " "), " selected ")]
     # the widget node's own shape takes the `selected` class: without it, nothing is tested
-    Wait Until Page Contains Element
-    ...    ${app}//*[local-name()="g"][@id="${id}"]/*[contains(@class,"elknode")]    timeout=30s
+    ${shape} =    Set Variable    ${app}//*[local-name()="g"][@id="${id}"]/*[contains(@class,"elknode")]
+    Wait Until Page Contains Element    ${shape}    timeout=30s
+    ${before} =    SeleniumLibrary.Get Element Count    ${selected}
     ${el} =    Get WebElement    ${tick}
     Execute Javascript    ${JS CLICK}    ARGUMENTS    ${el}
     # a selection would render within a frame or two; give it time
     Sleep    1s
-    Capture Page Screenshot    11-clicked-widget-node.png
-    Page Should Not Contain Element
-    ...    ${app}//*[contains(@class,"elknode")][contains(concat(" ", @class, " "), " selected ")]
+    Capture Page Screenshot    11b-clicked-widget-node.png
+    Page Should Not Contain Element    ${shape}[contains(concat(" ", @class, " "), " selected ")]
+    ${after} =    SeleniumLibrary.Get Element Count    ${selected}
+    Should Be Equal As Integers    ${after}    ${before}    a click in a widget changed the selection
