@@ -118,7 +118,7 @@ describe('NodeSelectToolMouseListener', () => {
   }
 
   /** ids sprotty's own `MouseTool` selects after a mouseup on `pick(diagram)` */
-  function selectedAfterMouseUp(pick: (d: Diagram) => Element) {
+  function selectedAfterMouseUp(pick: (d: Diagram) => Element, button = 0) {
     const model = new SModelRootImpl();
     model.id = 'root';
     for (const id of ['n1', 'w1', 'h1']) node(model, id);
@@ -135,7 +135,7 @@ describe('NodeSelectToolMouseListener', () => {
     d.root.addEventListener('mouseup', (event) => tool.mouseUp(model, event), {
       once: true,
     });
-    mouseUp(pick(d));
+    pick(d).dispatchEvent(new MouseEvent('mouseup', { bubbles: true, button }));
     d.view.remove();
     return (dispatched as SelectAction[]).flatMap((a) => a.selectedElementsIDs);
   }
@@ -145,10 +145,16 @@ describe('NodeSelectToolMouseListener', () => {
     expect(selectedAfterMouseUp((d) => d.html)).toEqual(['h1']);
   });
 
+  it('selects nothing on a right click on a node', () => {
+    expect(selectedAfterMouseUp((d) => d.node, 2)).toEqual([]);
+  });
+
   it('selects nothing on a click inside the widget of a widget node', () => {
     expect(selectedAfterMouseUp((d) => d.handle)).toEqual([]);
   });
 
+  // the control overlay's container has no DOM id: sprotty resolves a click
+  // there to the unselectable root, so this held before #216 too
   it('selects nothing on a click on the icon of a control overlay button', () => {
     expect(selectedAfterMouseUp((d) => d.icon)).toEqual([]);
   });
