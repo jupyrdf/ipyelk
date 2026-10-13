@@ -148,6 +148,9 @@ class ElementIndex(BaseModel):
     def __getitem__(self, key):
         return self.get(key)
 
+    def __contains__(self, key) -> bool:
+        return str(key) in self.elements
+
     def items(self) -> Iterator[tuple[str, BaseElement]]:
         for key, value in self.elements.items():
             yield key, value

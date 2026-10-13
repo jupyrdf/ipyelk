@@ -103,3 +103,11 @@ def test_iteration_follows_child_order():
     nodes = [el.id for el in iter_elements(root) if isinstance(el, Node)]
     assert nodes[1:] == [c.id for c in children]
     assert [owner.id for owner, _ in iter_edges(root)] == [c.id for c in children]
+
+
+def test_element_index_membership_is_by_id():
+    node = Node(id="n")
+    index = ElementIndex.from_els(node)
+    assert "n" in index
+    assert "elements" not in index
+    assert "missing" not in index
