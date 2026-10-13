@@ -346,6 +346,18 @@ throughout 3.x with the replacement in the message.
   `radius`. The `node:round` renderer takes its radii from the laid-out node, so a node
   larger than the circle drew the ellipse off center. `x` and `y` that you set are still
   serialized ([#200])
+- Keep a typed shape through a layout round trip. `ElementIndex.update` replaced every
+  element's `properties` with the browser's copy, whose shape parses as the base class:
+  a `Circle` came back as a `NodeShape` without its `radius`, an `Icon` as a
+  `LabelShape`, a `Widget` without its widget, and `shape.radius = 20` then raised. The
+  frontend never changes `properties`, so an element now keeps its own, with its shape
+  object, and an edit made while a layout was in flight is no longer reverted. The
+  laid-out `width` and `height` are still written onto the element, where you can read
+  them, but no longer shadow the shape's size in the input to the next layout: a
+  `radius` set after a layout resizes the node at the next one, and a `LabelShape` that
+  sets only `width` now sends that width, not the measured one. A size assigned to the
+  element itself stays the input to every later layout and wins over the shape, as it
+  did before the first layout ([#201])
 
 ### Development
 
@@ -392,18 +404,6 @@ throughout 3.x with the replacement in the message.
   restarts with every cell and fires after 30 s without a new cell ([#177])
 - Fail CI when the committed `elkschema.json` differs from what `jlpm schema` generates,
   and rebuild it when `elkgraph-json.ts` changes ([#187])
-- Keep a typed shape through a layout round trip. `ElementIndex.update` replaced every
-  element's `properties` with the browser's copy, whose shape parses as the base class:
-  a `Circle` came back as a `NodeShape` without its `radius`, an `Icon` as a
-  `LabelShape`, a `Widget` without its widget, and `shape.radius = 20` then raised. The
-  frontend never changes `properties`, so an element now keeps its own, with its shape
-  object, and an edit made while a layout was in flight is no longer reverted. The
-  laid-out `width` and `height` are still written onto the element, where you can read
-  them, but no longer shadow the shape's size in the input to the next layout: a
-  `radius` set after a layout resizes the node at the next one, and a `LabelShape` that
-  sets only `width` now sends that width, not the measured one. A size assigned to the
-  element itself stays the input to every later layout and wins over the shape, as it
-  did before the first layout ([#201])
 
 ### Documentation
 
