@@ -9,7 +9,15 @@ from pydantic import BaseModel, Field, SerializeAsAny
 
 from ..exceptions import NotFoundError
 from .common import EMPTY_SENTINEL
-from .elements import BaseElement, Edge, HierarchicalElement, Label, Node, Port
+from .elements import (
+    BaseElement,
+    Edge,
+    HierarchicalElement,
+    Label,
+    Node,
+    Port,
+    ShapeElement,
+)
 from .registry import new_id
 
 
@@ -226,17 +234,15 @@ class ElementIndex(BaseModel):
         become addressable without discarding the index. A port that is hidden
         (or under a hidden node), or comes back as a slack port, is not updated:
         what comes back under its id is the projection's stand-in.
+
+        An element keeps its own ``properties.shape``: the browser never changes
+        a shape, and the one in ``other`` is parsed as the base class (a
+        ``Circle`` comes back as a ``NodeShape`` without its ``radius``). The
+        laid-out ``width`` and ``height`` are recorded as such
+        (``ShapeElement.set_laid_out``), so the shape's size still wins at the
+        next serialization.
         """
-        fields = [
-            "properties",
-            "layoutOptions",
-            "x",
-            "y",
-            "width",
-            "height",
-            "sections",
-            "text",
-        ]
+        fields = ["properties", "layoutOptions", "x", "y", "sections", "text"]
         for key, e2 in other.items():
             e1 = self.elements.get(key)
             if e1 is None:
@@ -246,9 +252,14 @@ class ElementIndex(BaseModel):
                     is_hidden(e1) or VisIndex.is_slack_port(e2)
                 ):
                     continue
+                shape = e1.properties.shape
                 for field in fields:
                     if hasattr(e1, field) and hasattr(e2, field):
                         setattr(e1, field, getattr(e2, field))
+                if e1.properties.shape is not shape:
+                    e1.properties.shape = shape
+                if isinstance(e1, ShapeElement) and isinstance(e2, ShapeElement):
+                    e1.set_laid_out(e2.width, e2.height)
 
     def check_ids(self, *els) -> IDReport:
         ids = {}

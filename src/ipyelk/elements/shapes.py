@@ -88,7 +88,9 @@ class ElementShape(BaseShape):
           :py:class:`Circle`, :py:class:`Ellipse` and :py:class:`SVG` use them.
         - ``width``, ``height`` (``float``): a size in pixels. The element serializes
           this size if it has no ``width`` or ``height`` of its own. After a layout,
-          the element has the laid-out size as its own size.
+          the element holds the laid-out size, and the shape's size still wins over
+          it at the next serialization. The *Width and height* section of the
+          *Shapes* page explains this.
         - ``use`` (``str``): each subclass gives ``use`` its own meaning.
         - ``delay`` (``int``): a time in milliseconds. Only :py:class:`Widget` uses it.
     """
@@ -185,11 +187,7 @@ class Icon(LabelShape):
 
 
 class NodeShape(ElementShape):
-    """The base class of the node shapes. With no ``type``, it draws a rectangle.
-
-    After a layout, the node gets back a ``NodeShape``, not the subclass that you set.
-    The *Width and height* section of the *Shapes* page explains this.
-    """
+    """The base class of the node shapes. With no ``type``, it draws a rectangle."""
 
 
 class Path(NodeShape):

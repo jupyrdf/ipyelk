@@ -242,10 +242,28 @@ class BaseElement(IDElement, abc.ABC):
 
 
 class ShapeElement(BaseElement, abc.ABC):
+    """An element with a position and a size.
+
+    ``width`` and ``height`` are the size you set. If one is ``None``, the element
+    serializes that dimension of its shape (``BaseShape.dimension``). A layout
+    writes the laid-out size onto the element (:meth:`set_laid_out`), where you
+    can read it, but a laid-out size is the output of a layout, not an input to
+    the next one: the shape's size still wins over it at the next serialization.
+    """
+
     x: float | None = None
     y: float | None = None
     width: float | None = None
     height: float | None = None
+    #: the ``width`` and ``height`` the last layout wrote (``ElementIndex.update``)
+    _laid_out: dict[str, float | None] = PrivateAttr(default_factory=dict)
+
+    def set_laid_out(self, width: float | None, height: float | None) -> Self:
+        """Record a laid-out size as this element's ``width`` and ``height``."""
+        self.width = width
+        self.height = height
+        self._laid_out = {"width": self.width, "height": self.height}
+        return self
 
     @model_serializer(mode="wrap")
     def serialize_element(
@@ -253,11 +271,17 @@ class ShapeElement(BaseElement, abc.ABC):
     ):
         data = super().serialize_element(handler, info)
         shape = self.properties.shape
+        laid_out = self._laid_out
         for key in ("width", "height"):
-            if getattr(self, key) is None:
+            own = getattr(self, key)
+            if own is None:
                 value = shape.dimension(key) if shape else 0
-                if value is not None:
-                    serialize_value(data, key, value, info)
+            elif shape is not None and own == laid_out.get(key):
+                value = shape.dimension(key)
+            else:
+                continue
+            if value is not None:
+                serialize_value(data, key, value, info)
         return data
 
 

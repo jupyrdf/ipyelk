@@ -392,6 +392,15 @@ throughout 3.x with the replacement in the message.
   restarts with every cell and fires after 30 s without a new cell ([#177])
 - Fail CI when the committed `elkschema.json` differs from what `jlpm schema` generates,
   and rebuild it when `elkgraph-json.ts` changes ([#187])
+- Keep a typed shape through a layout round trip. `ElementIndex.update` replaced every
+  element's `properties.shape` with the browser's copy, which parses as the base class:
+  a `Circle` came back as a `NodeShape` without its `radius`, an `Icon` as a
+  `LabelShape`, a `Widget` without its widget, and `shape.radius = 20` then raised. An
+  element now keeps its own shape object (the frontend never changes one). The laid-out
+  `width` and `height` are still copied onto the element, but no longer shadow the
+  shape's size at the next serialization: a `radius` set after a layout resizes the node
+  at the next one, while a size set on the element itself still wins over the shape
+  ([#201])
 
 ### Documentation
 
@@ -416,6 +425,7 @@ throughout 3.x with the replacement in the message.
 [#187]: https://github.com/jupyrdf/ipyelk/issues/187
 [#191]: https://github.com/jupyrdf/ipyelk/issues/191
 [#200]: https://github.com/jupyrdf/ipyelk/issues/200
+[#201]: https://github.com/jupyrdf/ipyelk/issues/201
 
 ## `2.1.2`
 
