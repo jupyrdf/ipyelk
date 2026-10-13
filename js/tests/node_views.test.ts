@@ -77,6 +77,30 @@ describe('ElkLabelView tooltip', () => {
   });
 });
 
+describe('ElkLabelView icon', () => {
+  it('offsets the icon by its own x and y (#205)', () => {
+    const root = new SGraphImpl();
+    const label = new ElkLabel();
+    label.id = 'l0';
+    label.type = 'label';
+    label.text = 'shown text';
+    label.size = { width: 40, height: 20 };
+    label.position = { x: 0, y: 0 };
+    const icon = new ElkLabel();
+    icon.id = 'i0';
+    icon.type = 'label:icon';
+    icon.size = { width: 10, height: 10 };
+    icon.position = { x: 7, y: 3 };
+    icon.properties = { shape: { type: 'label:icon', use: 'sym' } };
+    label.labels = [icon];
+    root.add(label);
+    const vnode = new ElkLabelView().render(label, asContext(context)) as VNode;
+    const use = (vnode.children as VNode[]).find((c) => c?.sel?.startsWith('use'));
+    // centered y is (20 - 10) / 2 = 5, plus the icon's y offset of 3
+    expect(use?.data?.attrs?.transform).toBe('translate(7 8)');
+  });
+});
+
 describe('ElkNodeView label separator', () => {
   function makeNode(
     width: number | undefined,
@@ -173,7 +197,8 @@ describe('ElkRoundNodeView', () => {
   }
 
   it('centers the ellipse in the node when the shape sets no x or y (#200)', () => {
-    const attrs = renderEllipse({ type: 'node:round', width: 12, height: 12 }).data?.attrs;
+    const attrs = renderEllipse({ type: 'node:round', width: 12, height: 12 }).data
+      ?.attrs;
     expect(attrs).toMatchObject({ rx: 50, ry: 25, cx: 50, cy: 25 });
   });
 
