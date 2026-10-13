@@ -373,12 +373,10 @@ class Pipe(W.Widget):
                 await self.run()
             except Superseded:
                 self.log.debug("%s gave way to a newer request", type(self).__name__)
-            except ClosedError:
-                if not self._closed:
-                    raise
-                # closed between the check above and run()'s own
-                raise asyncio.CancelledError from None
-            except Exception:
+            except Exception as err:
+                if self._closed and isinstance(err, ClosedError):
+                    # closed between the check above and run()'s own
+                    raise asyncio.CancelledError from None
                 if not self.superseded():
                     raise
                 self.log.warning(

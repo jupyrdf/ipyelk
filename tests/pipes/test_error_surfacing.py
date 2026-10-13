@@ -112,6 +112,53 @@ async def test_close_in_the_run_entry_window_is_cancellation(caplog, monkeypatch
         pipeline.close()
 
 
+class _PokeClosedThenRequest(Pipe):
+    """A stage that requests a newer run, then trips over another closed pipe."""
+
+    other = None
+    owner = None
+    calls = 0
+
+    async def run(self):
+        self.calls += 1
+        if self.calls == 1:
+            self.owner.schedule_run()
+            self.other.schedule_run()
+
+
+@pytest.mark.asyncio
+async def test_superseded_run_failing_with_a_foreign_closed_error_serves_newer(
+    caplog,
+):
+    """A ``ClosedError`` about another pipe is an ordinary failure: with a newer
+    request pending it is logged and the newer request is served.
+    """
+    other = Pipeline()
+    other.close()
+    source = MarkElementWidget(flow=(F.New,))
+    stage = _PokeClosedThenRequest(observes=(F.New,))
+    pipeline = Pipeline(inlet=source, pipes=[stage])
+    stage.other, stage.owner = other, pipeline
+    seen = []
+    pipeline.on_error = lambda pipe, exc: seen.append((pipe, exc))
+
+    try:
+        task = pipeline.schedule_run()
+        await task
+        await asyncio.sleep(0)
+
+        assert stage.calls == 2, "the newer request was not served"
+        assert seen == []
+        assert not pipeline.closed
+        warnings = [
+            r.getMessage() for r in caplog.records if r.levelno == logging.WARNING
+        ]
+        assert warnings == ["Pipeline run failed; serving the newer request"]
+    finally:
+        pipeline.close()
+        source.close()
+
+
 @pytest.mark.asyncio
 async def test_queued_close_before_error_callback_keeps_flow_and_skips_callback(
     caplog,
