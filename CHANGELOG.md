@@ -371,6 +371,18 @@ except ClosedError:  # also a TraitError and a RuntimeError
 
 ### Fixed
 
+- PyPI shows the license: the wheel and the source distribution declare
+  `License-Expression: BSD-3-Clause AND EPL-1.0 AND EPL-2.0` (PEP 639), because the
+  package contains code under each of these licenses, and list `LICENSE.txt`,
+  `COPYRIGHT.md` and the Eclipse Public License (EPL) 1.0 and 2.0 texts as
+  `License-File`s, which the wheel ships under `.dist-info/licenses/`. 2.1.x had only a
+  `License ::` classifier, so PyPI showed no license. The bundled elkjs and sprotty
+  packages are available under EPL-2.0, and some source files are derived from EPL-1.0
+  or EPL-2.0 code: `COPYRIGHT.md` names the license of each. The npm package's
+  `package.json` declares the same expression. `scripts/check-dist.py` fails the build
+  if the expression changes, if these fields or files go missing, or if `dist/` does not
+  hold exactly one wheel and one source distribution of this version. The PyPI
+  `Changelog` link points at the `master` branch ([#133])
 - Hiding a root-level node with visible edges no longer crashes elkjs: `iter_visible`
   reported every sibling after a hidden one as hidden and projected a hidden node's
   slack port onto its preceding sibling (for a hidden first child of the root, onto the
@@ -615,6 +627,7 @@ except ClosedError:  # also a TraitError and a RuntimeError
 [#66]: https://github.com/jupyrdf/ipyelk/issues/66
 [#95]: https://github.com/jupyrdf/ipyelk/issues/95
 [eclipse-sprotty/sprotty#573]: https://github.com/eclipse-sprotty/sprotty/issues/573
+[#133]: https://github.com/jupyrdf/ipyelk/issues/133
 [#147]: https://github.com/jupyrdf/ipyelk/issues/147
 [#160]: https://github.com/jupyrdf/ipyelk/issues/160
 [#161]: https://github.com/jupyrdf/ipyelk/issues/161
