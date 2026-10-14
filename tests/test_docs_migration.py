@@ -18,7 +18,6 @@ import io
 import logging
 import pkgutil
 import re
-import traceback
 import warnings
 from operator import itemgetter
 from pathlib import Path
@@ -210,8 +209,9 @@ class _ShowError(logging.Handler):
     """Print what a notebook shows for an error in a widget callback."""
 
     def emit(self, record: logging.LogRecord) -> None:
-        if record.exc_info and record.exc_info[1]:
-            print(traceback.format_exception_only(record.exc_info[1])[-1].strip())
+        error = record.exc_info and record.exc_info[1]
+        if error:  # the class name without its module, as IPython shows it
+            print(f"{type(error).__name__}: {error}")
 
 
 def _run(src: str) -> tuple[list[str], bool]:
