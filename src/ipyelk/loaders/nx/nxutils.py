@@ -65,16 +65,10 @@ def get_endpoint(
     # attempt to find port using `port_key`
     try:
         port = pt.get_port(key=port_key)
-    except NotFoundError as e:
-        # TODO(#215): `el_map` has no `__contains__`, so this is always false
-        if port_key in el_map:
-            el = el_map.get(port_key)  # port_key was a global id
-            if isinstance(el, Port) and el._parent is pt:
-                return el
-            raise ValueError(
-                f"Given `port_key:{port_key}` maps to an global element "
-                "that isn't consistent with the edge."
-            ) from e
+    except NotFoundError:
+        el = el_map.get(port_key) if port_key in el_map else None
+        if isinstance(el, Port) and el._parent is pt:
+            return el  # port_key was the global id of one of its ports
 
         # okay to make a new port?
         port = pt.add_port(Port(width=5, height=5), key=port_key)

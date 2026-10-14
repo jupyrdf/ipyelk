@@ -463,6 +463,12 @@ replacement in the message.
   `radius`. The `node:round` renderer takes its radii from the laid-out node, so a node
   larger than the circle drew the ellipse off center. `x` and `y` that you set are still
   serialized ([#200])
+- Find an existing port when a NetworkX edge's `sourcePort`, `targetPort` or `port` is
+  the port's global id rather than its key. `ElementIndex` had no `__contains__`, so the
+  loader's `port_key in el_map` check was always false and it added a second port with
+  that key instead. `ElementIndex` and `HierarchicalIndex` now support `key in index`,
+  by id. A key that is the id of anything other than one of the endpoint's own ports
+  still makes a new port with that key, as before ([#215])
 - `from ipyelk.elements import *` works. Its `__all__` named `ElementShape`, which the
   package did not import, and `check_ids`, which is an index method. Ruff rule `F822`
   (an undefined name in `__all__`) is on now, and a test star-imports every module that
@@ -481,10 +487,9 @@ replacement in the message.
   tool does not list. A `PipelineProgressBar` added this way is bound to the pipe, and
   gets the progress reports when no other bar has them. A bar moved from another diagram
   stops getting the reports of that diagram's pipe ([#217])
-- The NetworkX loader's error for a `port_key` that names some other element shows the
-  key: the message had no `f` prefix. `logic_gates.Gate` passes `minimum_size` (it was
-  `minimun_size`, which `traitlets` dropped with a warning). The text sizer sets the
-  style CSS as the text of its `<style>` element, not as markup ([#217])
+- `logic_gates.Gate` passes `minimum_size` (it was `minimun_size`, which `traitlets`
+  dropped with a warning). The text sizer sets the style CSS as the text of its
+  `<style>` element, not as markup ([#217])
 - `iter_labels` yields every label of each element and its child nodes, each element's
   own labels first. It yielded only the first label of each element ([#217])
 - Offset a label icon vertically by its `y`, not its `x`: `ElkLabelView` added
@@ -575,6 +580,7 @@ replacement in the message.
 [#191]: https://github.com/jupyrdf/ipyelk/issues/191
 [#200]: https://github.com/jupyrdf/ipyelk/issues/200
 [#205]: https://github.com/jupyrdf/ipyelk/issues/205
+[#215]: https://github.com/jupyrdf/ipyelk/issues/215
 [#217]: https://github.com/jupyrdf/ipyelk/issues/217
 
 ## `2.1.2`

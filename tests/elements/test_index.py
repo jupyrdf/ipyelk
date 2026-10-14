@@ -107,6 +107,15 @@ def test_iteration_follows_child_order():
     assert [owner.id for owner, _ in iter_edges(root)] == [c.id for c in children]
 
 
+def test_element_index_membership_is_by_id():
+    node = Node(id="n")
+    index = ElementIndex.from_els(node)
+    assert "n" in index
+    assert "elements" not in index
+    assert "missing" not in index
+    assert 1 in ElementIndex.from_els(Node(id="1"))
+
+
 def test_iter_labels_yields_every_label_in_tree_order():
     child = Node(id="c", labels=[Label(text="x"), Label(text="y")])
     root = Node(
