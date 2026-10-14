@@ -191,106 +191,10 @@
 
 ### Migration
 
-```python
-# 2.x: a Tool subclass that hand-rolled the merge to avoid clobbering the flow
-inlet.flow = tuple(dict.fromkeys((*inlet.flow, *self.reports)))
-# 3.0: the base class does this; drop the hand-rolled merge or call
-self.record_reports()
-
-# 2.x                                   # 3.0
-button.on_click(tool.handler)           button.on_click(tool.trigger)
-await tool.handler()                    await tool.trigger()
-FitTool(handler=lambda: view.fit())     FitTool(on_click=lambda tool: view.fit())
-tool.on_run(callback)                   tool.on_start(callback)   # when work starts
-                                        tool.on_done(callback)    # success only
-tool.on_done = callback                 tool.on_done(callback)    # + remove=True
-toolbar.on_close = lambda: ...          toolbar.on_close = lambda toolbar: ...
-tool.disable = True                     tool.disabled = True   # now actually disables
-# a Tool subclass that did its work synchronously and refreshed by hand:
-inlet.flow = (...); self.on_done()      self.trigger()  # run() may be a no-op
-```
-
-```python
-# 2.x
-hover.ids  # last hovered id, never reset
-# 3.0
-hover.hovered_id  # id under the pointer, or None
-hover.hovered_id = "n1"  # highlight from the kernel
-hover.hovered_id = None  # clear the highlight
-```
-
-```python
-# 2.x: every viewer allocated an overlay, rendered even when empty
-view.control_overlay.children = [button]
-# 3.0: opt in first
-from ipyelk.tools import ControlOverlay  # was ipyelk.tools.contol_overlay
-
-view.control_overlay = ControlOverlay()
-view.control_overlay.children = [button]
-view.control_overlay.children = []  # renders nothing
-```
-
-```python
-# 2.x: placeholders nothing ever wrote
-view.zoom.zoom, view.pan.origin, view.viewed
-# 3.0: the browser's latest report (None until a view reports), one snapshot
-view.viewport.zoom, view.viewport.origin, view.viewport.viewed_ids
-view.viewport.view_id  # which view reported
-view.viewport.observe(callback, "origin")  # every field is already updated
-# move a view (a command, not state)
-view.set_viewport(origin=(0, 0), zoom=1.5)  # every view, animated
-view.set_viewport(zoom=2, animate=False, view_id=view.viewport.view_id)
-```
-
-```python
-# 2.x: Painter(cssClasses=..., marks=..., name=...) painted nothing
-# 3.0: view-only classes per id, applied in every view, never in the model
-view.painter.paint(["n1", "n2"], "highlight")  # or elements
-view.painter.unpaint("n1", "highlight")  # drop a class; unpaint("n1") drops the id
-view.painter.clear()
-view.painter.styles  # {"n2": ("highlight",)}
-```
-
-```python
-# 2.x: option ids that ELK ignored without an error
-{"org.eclipse.elk.edge.edgeEdge": "5"}
-{"org.eclipse.elk.edge.edgeNode": "5"}
-{"org.eclipse.elk.edge.edgeLabel": "5"}
-{"org.eclipse.elk.edge.edgeEdgeBetweenLayers": "5"}
-{"org.eclipse.elk.edge.edgeNodeBetweenLayers": "5"}
-{"org.eclipse.elk.partitioning.active": "true"}
-{"org.eclipse.elk.layered.considerModelOrder": "NODES_AND_EDGES"}
-# 3.0: the ids that ELK knows (the option classes use them)
-{"org.eclipse.elk.spacing.edgeEdge": "5"}
-{"org.eclipse.elk.spacing.edgeNode": "5"}
-{"org.eclipse.elk.spacing.edgeLabel": "5"}
-{"org.eclipse.elk.layered.spacing.edgeEdgeBetweenLayers": "5"}
-{"org.eclipse.elk.layered.spacing.edgeNodeBetweenLayers": "5"}
-{"org.eclipse.elk.partitioning.activate": "true"}
-{"org.eclipse.elk.layered.considerModelOrder.strategy": "NODES_AND_EDGES"}
-
-# both: from ipyelk.elements.layout_options import port_options as opt
-# 2.x                                   # 3.0
-opt.LabelPortSpacing(spacing=3)         opt.LabelPortHorizontalSpacing(spacing=3)
-                                        opt.LabelPortVerticalSpacing(spacing=3)
-from ipyelk.elements.layout_options.layout import Draw2DLayout
-                                        from ipyelk.elements.layout_options.layout import ELKLayered
-LayoutAlgorithm(value=Draw2DLayout.identifier)
-                                        LayoutAlgorithm(value=ELKLayered.identifier)
-# 2.x sent None to ELK; 3.0 raises ValidationError, so leave the key out
-Node(layoutOptions={"org.eclipse.elk.direction": None})
-                                        Node(layoutOptions={})
-# 2.x sent 2.0, 3.0 sends "2" (ELK ignores "2.0" for an integer option)
-Node(layoutOptions={"org.eclipse.elk.partitioning.partition": 2.0})
-```
-
-The removed names (`handler`, `on_run`, `disable`, `Hover.ids`, assigning `on_start` or
-`on_done`, the `contol_overlay` and `ipyelk.pipes.mappings` modules,
-`Viewer.zoom`/`pan`/`viewed`, `ipyelk.tools.Zoom`/`Pan`,
-`Painter.cssClasses`/`marks`/`name`, `Draw2DLayout` from
-`ipyelk.elements.layout_options` or its `layout` module) raise `DeprecatedAPIError` --
-or `DeprecatedImportError` for the module-level names -- throughout 3.x with the
-replacement in the message.
+To change 2.x code for 3.0, read [Migrating from ipyelk 2.x to 3.0][migration]. It has a
+section with the 2.x code and the 3.0 code of each breaking change above. Its [table of
+removed names][migration-removed-names] lists every name that raises
+`DeprecatedAPIError` or `DeprecatedImportError`, with a link to its section.
 
 ### Added
 
@@ -315,22 +219,6 @@ replacement in the message.
 - CI also regenerates `elk-catalog.json` and fails if it differs from the committed
   file, and `jlpm schema` passes the real path of `elkschema.ts`
   ([#187](https://github.com/jupyrdf/ipyelk/issues/187)).
-
-A diagram or pipeline is dead once closed ([#197]): build a new one instead of reusing
-it. Check `closed` first, or catch `ClosedError`.
-
-```python
-from ipyelk.exceptions import ClosedError
-
-diagram.close()
-diagram.refresh()  # ClosedError: Diagram is closed and cannot refresh; build a new Diagram
-if not diagram.closed:
-    diagram.refresh()
-try:
-    diagram.refresh()
-except ClosedError:  # also a TraitError and a RuntimeError
-    diagram = Diagram(source=diagram.source)  # the source stays open
-```
 
 ### Documentation
 
@@ -375,6 +263,8 @@ except ClosedError:  # also a TraitError and a RuntimeError
 [#197]: https://github.com/jupyrdf/ipyelk/issues/197
 [#219]: https://github.com/jupyrdf/ipyelk/issues/219
 [migration]: https://ipyelk.readthedocs.io/en/latest/migration.html
+[migration-removed-names]:
+  https://ipyelk.readthedocs.io/en/latest/migration.html#migration-removed-names
 
 ## `2.1.3` (unreleased)
 

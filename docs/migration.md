@@ -15,12 +15,6 @@ Each section tells you:
 The {doc}`changelog` lists every change, including the changes that do not break 2.x
 code.
 
-```{note}
-Some sections describe changes from pull requests that are not merged yet. A note at
-the start of each such section names its pull request. Until that pull request is
-merged, the 2.x code in that section still works.
-```
-
 ## Find the changes that affect you
 
 Do these steps before you change your code:
@@ -106,7 +100,7 @@ that tells you what to use instead.
 | `ipyelk.tools.Zoom`, `ipyelk.tools.Pan`                                                             | `DeprecatedImportError` | {ref}`migration-zoom-pan-import`  |
 | `ipyelk.tools.contol_overlay`                                                                       | `DeprecatedImportError` | {ref}`migration-control-module`   |
 | `ipyelk.elements.layout_options.Draw2DLayout`, `ipyelk.elements.layout_options.layout.Draw2DLayout` | `DeprecatedImportError` | {ref}`migration-draw2d`           |
-| `ipyelk.pipes.mappings`, in [#206], which is not merged yet                                         | `DeprecatedImportError` | {ref}`migration-mappings`         |
+| `ipyelk.pipes.mappings`                                                                             | `DeprecatedImportError` | {ref}`migration-mappings`         |
 
 ## Tools
 
@@ -261,6 +255,60 @@ DeprecatedAPIError: Tool.on_done is a registration method in ipyelk 3.0, not an 
 tool.on_start(lambda tool: print("started"))
 tool.on_done(lambda tool: print("done"))
 await tool.trigger()
+```
+
+In 2.x, a tool could call `self.on_done()` to refresh its diagram, because the `Diagram`
+assigned its `refresh()` method to `on_done`. A tool that did its work outside `run()`
+used this call. In 3.0, the call raises `TypeError`, because `on_done` registers a
+callback. This change affects subclasses of `Tool` that call `self.on_done()`.
+
+```python
+# 2.x: a tool that did its work outside run() and refreshed the diagram
+from ipyelk import from_element
+from ipyelk.elements import Node
+from ipyelk.pipes import flows as F
+
+
+class Hide(Tool):
+    def hide(self):
+        self.tee.inlet.flow = self.reports  # change the elements here
+        self.on_done()
+
+
+hide = Hide(reports=(F.Node.hidden,))
+from_element(Node(id="root")).register_tool(hide)
+hide.hide()
+```
+
+The 2.x code raises this error on 3.0:
+
+```text
+TypeError: Tool.on_done() missing 1 required positional argument: 'callback'
+```
+
+In 3.0, call `self.trigger()` instead. After a successful run, the tool records its
+change reports and calls its `on_done` callbacks, which include `Diagram.refresh()`. If
+the work stays outside `run()`, give the tool a `run()` that does nothing.
+
+```python
+# 3.0: trigger() records the change reports and refreshes the diagram
+from ipyelk import from_element
+from ipyelk.elements import Node
+from ipyelk.pipes import flows as F
+
+
+class Hide(Tool):
+    def hide(self):
+        # change the elements here
+        return self.trigger()
+
+    async def run(self):
+        pass  # the work is in hide()
+
+
+hide = Hide(reports=(F.Node.hidden,))
+from_element(Node(id="root")).register_tool(hide)
+await hide.hide()
 ```
 
 (migration-callback-argument)=
@@ -668,7 +716,8 @@ CSS classes to the elements in each view of the viewer. The painted classes are
 temporary. They do not change `properties.cssClasses` or the JSON that `ipyelk` sends to
 the Eclipse Layout Kernel (ELK), the library that lays out the diagram.
 
-- `paint(ids, *css_classes)` adds classes to the elements.
+- `paint(ids, *css_classes)` adds classes to the elements. `ids` is one id, one element,
+  or a sequence of ids and elements.
 - `unpaint(ids, *css_classes)` removes classes. With no classes, it removes the ids.
 - `clear()` removes every class that the painter added. It never removes a class that is
   in `properties.cssClasses`.
@@ -818,8 +867,9 @@ and `Pan` tools and the `Viewer.viewed` trait. No code wrote to these 2.x names.
 - `viewed_ids` is the ids of the elements that the view shows, in diagram order. Edges
   are not in `viewed_ids`.
 
-Each trait is `None` until the first camera report. Kernel code cannot set the traits.
-Each view keeps its own camera, and each camera report names its view.
+Each trait is `None` until the first camera report. When an observer of one trait runs,
+the other traits already hold the values of the same camera report. Kernel code cannot
+set the traits. Each view keeps its own camera, and each camera report names its view.
 
 This change affects code that reads `view.zoom`, `view.pan` or `view.viewed`. The change
 is in [#157].
@@ -885,10 +935,6 @@ view.set_viewport(zoom=2, animate=False, view_id=view.viewport.view_id)
 
 ### Make a new diagram after you close one
 
-```{note}
-This change is in [#202], which is not merged yet.
-```
-
 A closed `Diagram` or `Pipe` raises `ipyelk.exceptions.ClosedError` when you use it. A
 `Pipeline` is a pipe that runs a list of other pipes, its stages. A closed widget has no
 connection to the browser, so a call to it cannot reach the browser. In 2.x, the call
@@ -906,14 +952,16 @@ did nothing, and no error showed.
 - When a run fails just before its pipe closes, the task keeps the exception. The closed
   pipe does not call its `on_error` callback. It logs a warning that names the
   exception.
+- A diagram closes its tools when it closes. On a closed tool, `trigger()` raises
+  `ClosedError`. In a notebook, a click on a closed `ToolButton` shows the error.
 - A second `close()` still does nothing.
 
 `ClosedError` is a subclass of `traitlets.TraitError` and of `RuntimeError`. Thus, an
 `except TraitError` clause or an `except RuntimeError` clause catches it. The new
 properties `Diagram.closed` and `Pipe.closed` are `True` after a call to `close()`.
 
-This change affects code that uses a diagram or a pipe after `close()`. The change is in
-[#202].
+This change affects code that uses a diagram, a pipe or a tool after `close()`. The
+change is in [#202].
 
 ```python
 # both versions
@@ -940,6 +988,34 @@ ClosedError: Diagram is closed and cannot refresh; build a new Diagram
 if diagram.closed:
     diagram = Diagram(source=diagram.source)
 diagram.refresh()
+```
+
+```{note}
+This change is in [#226], which is not merged yet.
+```
+
+The `ClosedError` of a closed tool names the class of the tool, as the `ClosedError` of
+a closed diagram does. The new property `Tool.closed` is `True` after a call to
+`close()`. The change is in [#226].
+
+```python
+# 2.x
+diagram.view.fit_tool.ui.click()
+```
+
+In a notebook, the click shows this error on 3.0:
+
+```text
+ClosedError: FitTool is closed and cannot run; build a new FitTool
+```
+
+```python
+# 3.0: make a new diagram, which makes new tools
+fit = diagram.view.fit_tool
+if fit.closed:
+    diagram = Diagram(source=diagram.source)
+    fit = diagram.view.fit_tool
+fit.ui.click()
 ```
 
 ## Elements and layout options
@@ -1160,10 +1236,6 @@ print(node.layoutOptions)
 
 ### Expect `NotFoundError` or `NotUniqueError` from `ElementIndex.root()`
 
-```{note}
-This change is in [#206], which is not merged yet.
-```
-
 A root is a node that has no parent. `ElementIndex.root()` raises
 `ipyelk.exceptions.NotFoundError` when the index has no root. It raises `NotUniqueError`
 when the index has more than one root, and the message names the roots. `check_ids()`,
@@ -1204,10 +1276,6 @@ print(index.root().id)
 
 ### Compare `ElkLabel` objects field by field
 
-```{note}
-This change is in [#206], which is not merged yet.
-```
-
 3.0 removes `ElkLabel.__eq__` and `ElkLabel.__hash__`. They served a cache of text sizes
 that is gone. `ElkLabel` now compares field by field, like the other classes in
 `ipyelk.elements.layout_options.model`. You cannot put an `ElkLabel` in a `set`.
@@ -1242,10 +1310,6 @@ print(label == ElkLabel(id="l1", text="hello"))
 (migration-wrapping-horizontal)=
 
 ### Do not use `GraphWrappingStrategy.horizontal`
-
-```{note}
-This change is in [#206], which is not merged yet.
-```
 
 3.0 removes the trait `GraphWrappingStrategy.horizontal`. No code read it, so it changed
 nothing. On 3.0, `GraphWrappingStrategy(horizontal=...)` ignores the keyword and shows
@@ -1343,10 +1407,6 @@ print(ControlOverlay is SameClass)
 
 ### Do not import `ipyelk.pipes.mappings`
 
-```{note}
-This change is in [#206], which is not merged yet.
-```
-
 3.0 removes the module `ipyelk.pipes.mappings`, because no code used it. The module had
 its own classes `Edge` and `Port`, which are not the classes of `ipyelk.elements`. It
 also had the type aliases `NodeMap`, `EdgeMap` and `PortMap`. 3.0 has no replacement for
@@ -1380,10 +1440,6 @@ print(len(root.edges))
 
 ### Do not import `NodeExpandTool` in TypeScript
 
-```{note}
-This change is in [#206], which is not merged yet.
-```
-
 The browser part of `ipyelk` is the npm package `@jupyrdf/jupyter-elk`. 3.0 removes its
 TypeScript class `NodeExpandTool` and its `ExpandAction`. The `wheel` handler of
 `NodeExpandTool` returned before it did anything, and no code sent `ExpandAction`. 3.0
@@ -1411,3 +1467,4 @@ is gone. Thus, the 2.x imports fail.
 [#192]: https://github.com/jupyrdf/ipyelk/pull/192
 [#202]: https://github.com/jupyrdf/ipyelk/pull/202
 [#206]: https://github.com/jupyrdf/ipyelk/pull/206
+[#226]: https://github.com/jupyrdf/ipyelk/pull/226
