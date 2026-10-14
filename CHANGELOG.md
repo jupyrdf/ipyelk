@@ -116,6 +116,27 @@
   `ipyelk.tools.contol_overlay` module raises it too, naming the new path; it re-exports
   nothing. Both flavors share the `ipyelk.exceptions.DeprecatedAPI` base, so one
   `except` catches either.
+- Raise on a closed diagram or pipeline instead of silently accepting the call. A closed
+  widget has no comm, so the call never reached the browser. `refresh()`,
+  `register_tool()` and setting `source`, `pipe`, `view`, `tools`, `toolbar`, `symbols`
+  or `style` on a closed `Diagram` raise `ipyelk.exceptions.ClosedError` (a `TraitError`
+  and a `RuntimeError`) naming its class, as do `schedule_run()` on a closed `Pipe` and
+  setting `pipes` or calling `run()` on a closed `Pipeline`. `Diagram.closed` and
+  `Pipe.closed` say whether `close()` was called. A refused `pipes` set keeps the
+  stages; it used to empty them. A diagram whose pipe was closed raises on `refresh()`.
+  A run in flight when its pipeline closes is cancelled before the next stage or
+  successful completion, even when a progress callback closes it or the cancel comes
+  from another event loop during the final stage; the task `refresh()` returned then
+  resolves cancelled, so `await diagram.refresh()` raises `CancelledError`. The closed
+  pipe and its interrupted stages report `cancelled` instead of staying `running`,
+  without firing progress callbacks or updating closed widgets. An error raised by a
+  stage after its pipeline closes is treated as cancellation, including a `ClosedError`
+  from another closed widget. A run that failed just before the close keeps its
+  exception, and the closed pipe logs a warning naming it instead of calling `on_error`.
+  A queued refresh callback does not update a closed diagram. Closed tools that
+  implement `run()` reject `trigger()`, and closed `ToolButton`s reject button callbacks
+  with `ClosedError`, including tools closed with their diagram. Closing a diagram twice
+  still does nothing ([#197]).
 - `ElementIndex.root()`, and so `check_ids()`, `check_edges()` and `MarkIndex.root()`,
   raises `ipyelk.exceptions.NotFoundError` when every node in the index has a parent,
   and `NotUniqueError`, naming the roots, when more than one node has none. It used to
@@ -295,6 +316,22 @@ replacement in the message.
   file, and `jlpm schema` passes the real path of `elkschema.ts`
   ([#187](https://github.com/jupyrdf/ipyelk/issues/187)).
 
+A diagram or pipeline is dead once closed ([#197]): build a new one instead of reusing
+it. Check `closed` first, or catch `ClosedError`.
+
+```python
+from ipyelk.exceptions import ClosedError
+
+diagram.close()
+diagram.refresh()  # ClosedError: Diagram is closed and cannot refresh; build a new Diagram
+if not diagram.closed:
+    diagram.refresh()
+try:
+    diagram.refresh()
+except ClosedError:  # also a TraitError and a RuntimeError
+    diagram = Diagram(source=diagram.source)  # the source stays open
+```
+
 ### `@jupyrdf/jupyter-elk 3.0.0`
 
 - Write `hovered_id` back on pointer leave, but only when the departed element is still
@@ -328,6 +365,7 @@ replacement in the message.
 [#115]: https://github.com/jupyrdf/ipyelk/issues/115
 [#155]: https://github.com/jupyrdf/ipyelk/issues/155
 [#156]: https://github.com/jupyrdf/ipyelk/issues/156
+[#197]: https://github.com/jupyrdf/ipyelk/issues/197
 
 ## `2.1.3` (unreleased)
 

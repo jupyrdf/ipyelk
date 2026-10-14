@@ -10,6 +10,7 @@ import traitlets as T
 from ipywidgets.widgets.trait_types import TypedTuple
 
 from ..exceptions import (
+    ClosedError,
     DeprecatedAPIError,
     RemovedAPI,
     check_removed,
@@ -155,6 +156,8 @@ class Tool(W.Widget):
     def check_enabled(self) -> None:
         """Raise ``RuntimeError`` if an invocation must be rejected right now."""
         name = type(self).__name__
+        if self.comm is None:
+            raise ClosedError(f"{name} is closed and cannot run; use a new tool")
         if self.disabled:
             raise RuntimeError(f"{name} is disabled")
         missing = self.missing_dependencies()
@@ -179,9 +182,16 @@ class Tool(W.Widget):
         for control in _controls(change.value):
             control.disabled = self._controls_disabled()
 
+    def _cancel_if_closed(self) -> None:
+        if self.comm is None:
+            raise asyncio.CancelledError
+
     async def _execute(self) -> None:
-        self._on_start_handlers(self)
+        # A trigger may already be queued when the diagram closes its tools.
+        self._cancel_if_closed()
         try:
+            self._on_start_handlers(self)
+            self._cancel_if_closed()
             await self.run()
         finally:
             # success, error or cancellation: the work may have changed the model

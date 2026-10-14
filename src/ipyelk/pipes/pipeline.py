@@ -2,6 +2,7 @@
 # Distributed under the terms of the Modified BSD License.
 from __future__ import annotations
 
+import asyncio
 from datetime import datetime
 
 import ipywidgets as W
@@ -103,15 +104,22 @@ class Pipeline(SyncedOutletPipe):
 
     def close(self):
         """Close this pipeline, its sub-pipes and the widgets it created."""
+        # first, so a runner on another loop sees it at its next stage boundary
+        self._closed = True
         for pipe in self.pipes:
             pipe.close()
         super().close()
 
+    def _cancel_if_closed(self) -> None:
+        if self._closed:
+            raise asyncio.CancelledError
+
     @T.validate("pipes")
     def _validate_pipes(self, proposal: T.Bunch) -> list[Pipe]:
-        """Refuse a closed stage, a stage listed twice, or a new stage that is
-        part of an open diagram's pipe.
+        """Refuse any change once closed, a closed stage, a stage listed twice,
+        or a new stage that is part of an open diagram's pipe.
         """
+        self._check_open("set pipes")
         pipes = proposal["value"]
         kept = {id(pipe) for pipe in self._stages}
         seen: set[int] = set()
@@ -186,6 +194,7 @@ class Pipeline(SyncedOutletPipe):
         ``flow`` is passed by a parent pipeline to a nested one, since the
         parent already took it.
         """
+        self._check_open("run")
         start = datetime.now()
         if flow is None:
             self._taken = taken = self.inlet.take()
@@ -193,6 +202,7 @@ class Pipeline(SyncedOutletPipe):
             taken = flow
         try:
             await self._run_pipes(taken)
+            self._cancel_if_closed()
         except BaseException:
             if flow is None and self._taken is taken:
                 self._release_taken()
@@ -207,13 +217,16 @@ class Pipeline(SyncedOutletPipe):
 
         # Look at enabled pipes
         for i, pipe in enumerate(self.pipes):
+            self._cancel_if_closed()
             if i and self.superseded():
                 raise Superseded(f"superseded before stage {i}")
             pipe_start_time = datetime.now()
             p_name = f"pipe {i}: {type(pipe)}"
             try:
                 await self._run_pipe(i, pipe, flow)
+                self._cancel_if_closed()
             except Exception as err:
+                self._cancel_if_closed()
                 self.log.exception(f"Error running {p_name}")
                 self.status_update(
                     PipeStatus.error(
@@ -231,6 +244,8 @@ class Pipeline(SyncedOutletPipe):
             pipe.outlet.value = pipe.inlet.value
             return
         self.status_update(PipeStatus.running(), pipe=pipe)
+        # A progress callback may have closed this pipeline and its stages.
+        self._cancel_if_closed()
         if isinstance(pipe, Pipeline):
             await pipe.run(flow=flow if i == 0 else pipe.inlet.flow)
         else:
@@ -240,8 +255,11 @@ class Pipeline(SyncedOutletPipe):
         # check pipes and propagate flow to downstream pipes
         observes = set()
         reports = set()
+        self._cancel_if_closed()
         for i, pipe in enumerate(self.pipes):
-            if pipe.check_dirty(flow if i == 0 else None):
+            dirty = pipe.check_dirty(flow if i == 0 else None)
+            self._cancel_if_closed()
+            if dirty:
                 observes |= set(pipe.observes)
                 reports |= set(pipe.reports)
         # pipeline is dirty if flows are added to reports from subpipes

@@ -10,7 +10,7 @@ import ipywidgets as W
 import traitlets as T
 
 from ..elements import SymbolSpec, symbol_serialization
-from ..exceptions import NotFoundError, NotUniqueError
+from ..exceptions import ClosedError, NotFoundError, NotUniqueError
 from ..pipes import MarkElementWidget, Pipe
 from ..pipes import flows as F
 from ..pipes.util import iter_pipes
@@ -48,6 +48,10 @@ class Diagram(StyledWidget):
         additional shape definitions that can be used in rendering the diagram.
         For example unique arrow head shapes or custom node shapes.
 
+    A closed diagram (``closed`` is True) raises ``ClosedError`` on
+    ``refresh()``, ``register_tool()`` and on setting ``source``, ``pipe``,
+    ``view``, ``tools``, ``toolbar``, ``symbols`` or ``style``.
+
     """
 
     source = T.Instance(MarkElementWidget, kw={}, help="Syncs Elk JSON Elements")
@@ -61,6 +65,7 @@ class Diagram(StyledWidget):
     symbols = T.Instance(SymbolSpec, kw={}).tag(sync=True, **symbol_serialization)
     #: the runner ``refresh`` last registered ``_update_view`` on
     _refresh_task: asyncio.Future | None = None
+    _closed: bool = False
 
     def __init__(self, *args, **kwargs):
         #: ``(pipe, link)`` for each link ``_claim`` made to a pipe in the tree
@@ -133,8 +138,25 @@ class Diagram(StyledWidget):
         if pipe.on_progress is None and bars:
             pipe.on_progress = bars[0].update
 
+    @property
+    def closed(self) -> bool:
+        """Whether ``close()`` was called; a closed diagram refuses calls."""
+        return self._closed
+
+    def _check_open(self, action: str) -> None:
+        if self._closed:
+            name = type(self).__name__
+            msg = f"{name} is closed and cannot {action}; build a new {name}"
+            raise ClosedError(msg)
+
+    @T.validate("source", "view", "tools", "toolbar", "symbols", "style")
+    def _validate_open(self, proposal: T.Bunch):
+        self._check_open(f"set {proposal['trait'].name}")
+        return proposal["value"]
+
     @T.validate("pipe")
     def _validate_pipe(self, proposal: T.Bunch) -> Pipe:
+        self._check_open("set pipe")
         pipe = proposal["value"]
         current = self._trait_values.get("pipe")
         replacing = current is not None and pipe is not current
@@ -178,7 +200,9 @@ class Diagram(StyledWidget):
         """Close the diagram with its pipe, view, tools and toolbar.
 
         ``source`` and any inlet or outlet passed to a pipe stay open.
+        Closing again does nothing.
         """
+        self._closed = True
         pipe = self._trait_values.get("pipe")
         if pipe is not None and pipe._diagram and pipe._diagram() is self:
             self._release_pipe(pipe)
@@ -285,6 +309,7 @@ class Diagram(StyledWidget):
         :type tool: Tool
         :return: current Diagram instance
         """
+        self._check_open("register a tool")
         view = self.view
         bindings = {
             "diagram": self,
@@ -319,8 +344,10 @@ class Diagram(StyledWidget):
 
         ``sender`` is ignored; it lets ``refresh`` serve as a tool's ``on_done``
         callback (which receives the tool). Returns ``None`` when no event loop is
-        running (see ``Pipe.schedule_run``).
+        running (see ``Pipe.schedule_run``). The task resolves cancelled when the
+        diagram is closed mid-run, so awaiting it then raises ``CancelledError``.
         """
+        self._check_open("refresh")
         self.log.debug("Refreshing diagram")
         task = self.pipe.schedule_run()
         if task is None:
@@ -335,6 +362,8 @@ class Diagram(StyledWidget):
         try:
             exception = future.exception()
         except asyncio.CancelledError:
+            return
+        if self._closed:
             return
         if exception is not None:
             self.log.warning("Diagram refresh failed: %r", exception)
