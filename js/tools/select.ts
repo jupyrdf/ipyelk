@@ -120,6 +120,6 @@ export class NodeSelectToolMouseListener extends DragAwareHoverMouseListener {
  * Test is given dom element is a jupyter lab widget
  */
 function isJLWidget(target: Element): boolean {
-  // TODO is this sufficiently robust?
+  // TODO(#216): misses a click on a child element of the widget
   return target?.classList?.contains('jupyter-widgets');
 }

@@ -89,31 +89,42 @@ class Partition(Node):
 
 
 class Record(Node):
+    """A node whose children are compartments of one shared width.
+
+    Serializing a ``Record`` sets each child's minimum size to ``width`` (cut to
+    a whole number) and ``min_height``. A ``min_height`` that is not a whole
+    number, such as ``33.7``, raises ``ValueError`` when it is serialized.
+    """
+
     layoutOptions: LayoutOptions = Field(default_factory=lambda: {**record_opts})
     width: float = Field(
         default=80, description="Width needs to be shared by all children "
     )
     min_height: float = Field(
-        default=20, exclude=True, description="Minimum height of a compartment"
+        default=20,
+        exclude=True,
+        description="Minimum height of a compartment, a whole number",
     )
 
     @model_serializer(mode="wrap")
     def serialize_element(
         self, handler: SerializerFunctionWrapHandler, info: SerializationInfo
     ):
-        # TODO need ability to resize the min width based on label/child max width
+        # TODO(#209): size the min width from the widest label or child
+        # the strings the option widgets would make: a widget built on every dump
+        # is never closed
+        constraints = "NODE_LABELS PORTS PORT_LABELS MINIMUM_SIZE"
+        if not float(self.min_height).is_integer():
+            # the `Int` trait of the old `NodeSizeMinimum` widget rejected it too
+            msg = f"Record.min_height must be a whole number, not {self.min_height!r}"
+            raise ValueError(msg)
+        minimum = f"({int(self.width)}, {int(self.min_height)})"
+        size = {
+            opt.NodeSizeConstraints.identifier: constraints,
+            opt.NodeSizeMinimum.identifier: minimum,
+        }
         for child in self.children:
-            child.layoutOptions = merge(
-                opt.OptionsWidget(
-                    options=[
-                        opt.NodeSizeConstraints(),
-                        opt.NodeSizeMinimum(
-                            width=int(self.width), height=self.min_height
-                        ),
-                    ]
-                ).value,
-                child.layoutOptions,
-            )
+            child.layoutOptions = merge(size, child.layoutOptions)
         return super().serialize_element(handler, info)
 
 

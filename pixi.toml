@@ -34,6 +34,7 @@ lint = {depends-on = [
   "lint-robot-dryrun",
   "lint-actionlint",
   "lint-ast-grep",
+  "lint-todos",
   "lint-audit",
   "lint-vale",
 ]}
@@ -413,6 +414,7 @@ outputs = [
 [feature.tasks-lint.tasks.fix-taplo]
 cmd = """taplo fmt
   *.toml
+  scripts/*.toml
   --option=array_auto_collapse=true
   --option=compact_inline_tables=true
   --option=column_width=88"""
@@ -488,6 +490,16 @@ inputs = ["examples/", "!**/{.ipynb_checkpoints,__pycache__}/"]
 [feature.tasks-lint.tasks.lint-actionlint]
 cmd = "actionlint -shellcheck=shellcheck -pyflakes=pyflakes"
 inputs = [".github/workflows"]
+
+[feature.tasks-lint.tasks.lint-todos]
+cmd = "python scripts/check_todos.py"
+inputs = [
+  "scripts/check_todos.py",
+  "{scripts,src,tests,docs,atest,examples,js,style,third-party,.github}/**/*",
+  "*.{toml,yml,yaml,ini,cfg,js,cjs,mjs}",
+  ".*.{yml,yaml}",
+  "!**/{.ipynb_checkpoints,__pycache__,node_modules}/",
+]
 
 [feature.tasks-lint.tasks.lint-ast-grep]
 cmd = """ast-grep test --skip-snapshot-tests

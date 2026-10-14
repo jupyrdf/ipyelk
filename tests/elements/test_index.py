@@ -25,9 +25,11 @@ from ipyelk.elements.index import (
     VisIndex,
     iter_edges,
     iter_elements,
+    iter_labels,
     iter_visible,
 )
 from ipyelk.elements.serialization import to_json
+from ipyelk.exceptions import NotFoundError, NotUniqueError
 
 
 def test_id_report_message_interpolates_duplicated_ids():
@@ -354,3 +356,70 @@ def test_update_keeps_a_shape_replaced_between_layouts():
     index.update(laid_out(root))
     assert child.properties.shape is None
     assert not child.properties.cssClasses
+
+
+def test_element_index_membership_is_by_id():
+    node = Node(id="n")
+    index = ElementIndex.from_els(node)
+    assert "n" in index
+    assert "elements" not in index
+    assert "missing" not in index
+    assert 1 in ElementIndex.from_els(Node(id="1"))
+
+
+def test_iter_labels_yields_every_label_in_tree_order():
+    child = Node(id="c", labels=[Label(text="x"), Label(text="y")])
+    root = Node(
+        id="n",
+        labels=[Label(text="a"), Label(text="b"), Label(text="c")],
+        children=[child],
+    )
+    pairs = [(el.id, label.text) for el, label in iter_labels(root)]
+    assert pairs == [("n", "a"), ("n", "b"), ("n", "c"), ("c", "x"), ("c", "y")]
+
+
+def test_root_without_a_parentless_node_is_not_found():
+    root = Node(id="root", children=[Node(id="child")])
+    index = ElementIndex.from_els(root)
+    index.elements.pop("root")  # leaves only `child`, whose parent is `root`
+    with pytest.raises(NotFoundError, match="no root"):
+        index.root()
+
+
+def test_root_of_several_parentless_nodes_is_not_unique():
+    index = ElementIndex.from_els(Node(id="a"), Node(id="b"))
+    with pytest.raises(NotUniqueError, match="2 roots"):
+        index.root()
+
+
+@pytest.mark.parametrize("deep", [False, True])
+def test_assigning_a_copied_size_does_not_change_the_original_input(deep):
+    _, node = shaped_node(shapes.Circle(radius=6))
+    node.set_laid_out(80, 70)
+    copied = node.model_copy(deep=deep)
+
+    copied.width = 100
+
+    assert layout_input(copied) == (100, 12)
+    assert layout_input(node) == (12, 12)
+    node.height = 50
+    assert layout_input(node) == (12, 50)
+    assert layout_input(copied) == (100, 12)
+
+
+@pytest.mark.parametrize("deep", [False, True])
+@pytest.mark.parametrize("update", [{"width": 100}, {"width": None}, {"height": 50}])
+def test_model_copy_size_update_becomes_the_copys_input(deep, update):
+    _, node = shaped_node(shapes.Circle(radius=6))
+    node.width = 30
+    node.set_laid_out(80, 70)
+
+    copied = node.model_copy(update=update, deep=deep)
+
+    expected = {"width": 30, "height": 12} | update
+    expected = {
+        key: (12 if value is None else value) for key, value in expected.items()
+    }
+    assert layout_input(copied) == (expected["width"], expected["height"])
+    assert layout_input(node) == (30, 12)
+    assert (node.width, node.height) == (80, 70)

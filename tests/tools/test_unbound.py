@@ -3,10 +3,20 @@
 """Tools construct unbound (explicit ``None`` dependencies) and bind later."""
 
 import pytest
+import traitlets as T
 
-from ipyelk.diagram import Diagram
+from ipyelk.diagram import Diagram, Viewer
 from ipyelk.pipes import Pipe
-from ipyelk.tools import PipelineProgressBar, Selection, SetTool, ToggleCollapsedTool
+from ipyelk.tools import (
+    Hover,
+    Painter,
+    PipelineProgressBar,
+    Selection,
+    SetTool,
+    ToggleCollapsedTool,
+    Tool,
+    Viewport,
+)
 
 
 def test_unbound_tools_construct_with_none_dependencies():
@@ -64,3 +74,49 @@ def test_register_tool_binds_the_selection():
     assert bar.pipe is None
     bar.update(diagram.pipe)
     assert bar.pipe is diagram.pipe
+
+
+def test_register_tool_binds_a_progress_bar_to_the_pipe():
+    diagram = Diagram(tools=())
+    bar = PipelineProgressBar()
+    diagram.register_tool(bar)
+    assert bar.pipe is diagram.pipe
+    assert bar.missing_dependencies() == ()
+    assert diagram.pipe.on_progress == bar.update  # the free slot reports to it
+    other = PipelineProgressBar()
+    diagram.register_tool(other)
+    assert other.pipe is diagram.pipe
+    assert diagram.pipe.on_progress == bar.update  # a taken slot is kept
+
+
+def test_register_tool_moves_a_progress_bar_off_the_old_pipe():
+    old, new = Diagram(tools=()), Diagram(tools=())
+    bar = PipelineProgressBar()
+    old.register_tool(bar)
+    assert old.pipe.on_progress == bar.update
+    new.register_tool(bar)
+    assert bar.pipe is new.pipe
+    assert new.pipe.on_progress == bar.update
+    assert old.pipe.on_progress is None  # the old pipe no longer reports to it
+
+
+def test_register_tool_binds_the_view_and_its_tools():
+    class ViewTool(Tool):
+        view = T.Instance(Viewer, allow_none=True, default_value=None)
+        hover = T.Instance(Hover, allow_none=True, default_value=None)
+        viewport = T.Instance(Viewport, allow_none=True, default_value=None)
+        painter = T.Instance(Painter, allow_none=True, default_value=None)
+        _dependencies = ("view", "hover", "viewport", "painter")
+
+    diagram = Diagram(tools=())
+    tool = ViewTool()
+    assert tool.missing_dependencies() == tool._dependencies
+    diagram.register_tool(tool)
+    assert tool.missing_dependencies() == ()
+    view = diagram.view
+    assert (tool.view, tool.hover, tool.viewport, tool.painter) == (
+        view,
+        view.hover,
+        view.viewport,
+        view.painter,
+    )

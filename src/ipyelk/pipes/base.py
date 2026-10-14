@@ -14,6 +14,7 @@ import ipywidgets as W
 import traitlets as T
 from ipywidgets.widgets.trait_types import TypedTuple
 
+from ..exceptions import ClosedError
 from ..util import close_widget
 from .marks import MarkElementWidget
 from .util import resync_stale, settle
@@ -34,6 +35,7 @@ class PipeDisposition(Enum):
     running = "running"
     done = "finished"
     error = "error"
+    cancelled = "cancelled"
 
 
 @dataclass(frozen=True, eq=False)
@@ -54,6 +56,7 @@ class PipeStatus:
         PipeDisposition.running: 0.5,
         PipeDisposition.done: 1,
         PipeDisposition.error: 1,
+        PipeDisposition.cancelled: 0,
     }
 
     STATES: ClassVar[dict[PipeDisposition, str]] = {
@@ -61,6 +64,7 @@ class PipeStatus:
         PipeDisposition.running: "running",
         PipeDisposition.done: "ok",
         PipeDisposition.error: "error",
+        PipeDisposition.cancelled: "cancelled",
     }
 
     @classmethod
@@ -70,6 +74,10 @@ class PipeStatus:
     @classmethod
     def running(cls) -> PipeStatus:
         return cls(disposition=PipeDisposition.running)
+
+    @classmethod
+    def cancelled(cls) -> PipeStatus:
+        return cls(disposition=PipeDisposition.cancelled)
 
     @classmethod
     def finished(cls, start_time: datetime | None = None) -> PipeStatus:
@@ -220,6 +228,7 @@ class Pipe(W.Widget):
     _generation: int = 0
     #: the diagram that owns this pipe (see ``Diagram.pipe``)
     _diagram: weakref.ref | None = None
+    _closed: bool = False
     _requested: int = 0
     status = T.Instance(PipeStatus, kw={})
     status_widget = T.Instance(W.DOMWidget, allow_none=True)
@@ -268,6 +277,15 @@ class Pipe(W.Widget):
         An inlet or outlet it was given, such as the source it was connected
         to, is left open.
         """
+        self._closed = True
+        task = self._task
+        if self.status.disposition in {
+            PipeDisposition.waiting,
+            PipeDisposition.running,
+        } or (task is not None and not task.done()):
+            # Keep a terminal snapshot without notifying closed status widgets
+            # or progress observers. Preserve an already finished/error result.
+            self._trait_values["status"] = PipeStatus.cancelled()
         self.cancel()
         owned, self._owned = self._owned, []
         for widget in owned:
@@ -282,8 +300,20 @@ class Pipe(W.Widget):
             raise NotImplementedError
         return self.status_widget._repr_mimebundle_(**kwargs)
 
+    @property
+    def closed(self) -> bool:
+        """Whether ``close()`` was called; a closed pipe refuses ``schedule_run()``."""
+        return self._closed
+
+    def _check_open(self, action: str) -> None:
+        if self._closed:
+            name = type(self).__name__
+            msg = f"{name} is closed and cannot {action}; use a new pipe"
+            raise ClosedError(msg)
+
     def schedule_run(self, change: T.Bunch | None = None) -> asyncio.Task | None:
-        """Request a run and return the task that will serve it.
+        """Request a run and return the task that will serve it; refused once
+        closed.
 
         Requests coalesce on the trailing edge: one runner task serves every
         request made while it is alive, so ten calls in one tick cost one run and
@@ -301,6 +331,7 @@ class Pipe(W.Widget):
         construction (``Diagram(source=...)`` refreshes from a trait observer).
         The request still counts and is served by the next runner.
         """
+        self._check_open("run")
         self._requested += 1
         task = self._task
         try:
@@ -348,13 +379,19 @@ class Pipe(W.Widget):
         while self._generation < self._requested:
             if served:
                 await asyncio.sleep(0)
+            if self._closed:
+                # closed before a cancel from another loop landed
+                raise asyncio.CancelledError
             served = True
             self._generation = self._requested
             try:
                 await self.run()
             except Superseded:
                 self.log.debug("%s gave way to a newer request", type(self).__name__)
-            except Exception:
+            except Exception as err:
+                if self._closed and isinstance(err, ClosedError):
+                    # closed between the check above and run()'s own
+                    raise asyncio.CancelledError from None
                 if not self.superseded():
                     raise
                 self.log.warning(
@@ -362,6 +399,9 @@ class Pipe(W.Widget):
                     type(self).__name__,
                     exc_info=True,
                 )
+            if self._closed:
+                # A plain pipe may return before cross-loop cancellation lands.
+                raise asyncio.CancelledError
 
     def cancel(self) -> bool:
         """Cancel the runner and drop its pending requests; ``True`` if one was alive.
@@ -390,6 +430,14 @@ class Pipe(W.Widget):
         except asyncio.CancelledError:
             return
         if exception is None:
+            return
+        if self._closed:
+            # not an on_error call or a status change: nobody views them now
+            self.log.warning(
+                "%s was closed before its run failed with %r",
+                type(self).__name__,
+                exception,
+            )
             return
         if (
             not isinstance(self.status, PipeStatus)
@@ -436,9 +484,16 @@ class Pipe(W.Widget):
         status: PipeStatus,
         pipe: Pipe | None = None,
     ):
+        if self._closed:
+            return
         if isinstance(pipe, Pipe):
             pipe.status_update(status=status)
+        if self._closed:
+            # A stage's progress callback may have closed its parent.
+            return
         self.status = status
+        if self._closed:
+            return
 
         if callable(self.on_progress):
             try:

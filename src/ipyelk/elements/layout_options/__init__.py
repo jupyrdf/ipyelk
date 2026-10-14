@@ -58,6 +58,11 @@ from .spacing_options import (
     NodeSpacing,
     SeparateConnectedComponents,
 )
+from .wrapping_options import (
+    AdditionalWrappedEdgesSpacing,
+    CorrectionFactorForWrapping,
+    GraphWrappingStrategy,
+)
 
 
 def __getattr__(name: str) -> object:
@@ -69,12 +74,14 @@ def __getattr__(name: str) -> object:
 __all__ = [
     "ActivateInsideSelfLoops",
     "AdditionalPortSpace",
+    "AdditionalWrappedEdgesSpacing",
     "AspectRatio",
     "CommentCommentSpacing",
     "CommentNodeSpacing",
     "ComponentsSpacing",
     "ConsiderModelOrder",
     "ContentAlignment",
+    "CorrectionFactorForWrapping",
     "Direction",
     "EadesRepulsion",
     "EdgeCenterLabelPlacementStrategy",
@@ -91,6 +98,7 @@ __all__ = [
     "ELKRectanglePacking",
     "ExpandNodes",
     "FeedbackEdges",
+    "GraphWrappingStrategy",
     "HierarchyHandling",
     "LabelNodeSpacing",
     "LabelSpacing",

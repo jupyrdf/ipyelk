@@ -56,7 +56,7 @@ in the extension's source and automatically rebuild the extension and applicatio
 - Run:
 
 ```bash
-pixi run watch
+pixi run watch-js
 ```
 
 - Open a tab with the provided URL in a standards-compliant browser of choice
@@ -105,7 +105,7 @@ pixi run test
   - Potentially add some unit `./tests`
   - Add appropriate Robot Framework in `./atest`
 - Ensure coverage doesn't degrade from the `ALL_PY_COV_FAIL_UNDER` baseline in
-  `.github/ci.yml`
+  `.github/workflows/ci.yml`
 
 ### Structural Lint Rules
 
@@ -134,6 +134,13 @@ accepted as unlikely: `window['eval']`, `Reflect.apply(eval, ...)` and `const e 
 `el['insertAdjacentHTML']`, `contentDocument.write`, `srcdoc` and
 `DOMParser.parseFromString`; `console.log.call`/`.apply`; and an `Instance` nested in
 `T.Tuple(...)` next to a JSON one.
+
+### Work Markers
+
+A `TODO`, `FIXME`, `XXX` or `HACK` comment names the GitHub issue that tracks it:
+`TODO(#123): what to do`. `pixi run lint-todos` (part of `pixi run lint`) fails on a
+marker without an issue number, and on a `todo:` or `fixme:` in lower case. Open the
+issue first, then write the marker. `git grep "TODO(#"` lists them all.
 
 ### Prose
 

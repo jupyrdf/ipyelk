@@ -5,6 +5,19 @@ from __future__ import annotations
 import types
 from collections.abc import Callable, Iterable
 
+import traitlets as T
+
+
+class ClosedError(T.TraitError, RuntimeError):
+    """A closed ``Diagram``, ``Pipe`` or ``Tool`` was asked to do something.
+
+    A ``TraitError`` because most entry points are trait assignments, and a
+    ``RuntimeError`` like the other refused calls (``Tool.check_enabled``).
+    The message names the class and the remedy. Assigning a closed pipe or
+    stage to an open diagram or pipeline raises a plain ``TraitError``: this
+    error is for a closed receiver.
+    """
+
 
 class ElkDuplicateIDError(Exception):
     """Elk Ids must be unique"""

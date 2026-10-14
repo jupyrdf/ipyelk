@@ -7,7 +7,7 @@ from collections.abc import Iterator
 
 from pydantic import BaseModel, Field, SerializeAsAny
 
-from ..exceptions import NotFoundError
+from ..exceptions import NotFoundError, NotUniqueError
 from .common import EMPTY_SENTINEL
 from .elements import (
     BaseElement,
@@ -156,6 +156,9 @@ class ElementIndex(BaseModel):
     def __getitem__(self, key):
         return self.get(key)
 
+    def __contains__(self, key) -> bool:
+        return str(key) in self.elements
+
     def items(self) -> Iterator[tuple[str, BaseElement]]:
         for key, value in self.elements.items():
             yield key, value
@@ -212,8 +215,11 @@ class ElementIndex(BaseModel):
         for key, node in self.nodes():
             if not node._parent:
                 roots.append(node)
-        # TODO handle multiple roots by making one higher level root?
-        assert len(roots) >= 1, "Multiple roots"
+        if not roots:
+            raise NotFoundError("The index has no root: every node has a parent")
+        if len(roots) > 1:
+            ids = ", ".join(str(r.get_id()) for r in roots)
+            raise NotUniqueError(f"The index has {len(roots)} roots: {ids}")
         root = roots[0]
         assert isinstance(root, Node), f"Root is not of type Node. Not {type(root)}."
         assert len(root.ports) == 0, (
@@ -626,18 +632,19 @@ def iter_hierarchy(
 
 def iter_labels(
     *els: BaseElement,
-) -> Iterator[tuple[Node, Label]]:
-    """Iterate over BaseElements that follow the `Node` hierarchy
+) -> Iterator[tuple[BaseElement, Label]]:
+    """Iterate over every label of the elements and their child nodes
+
+    An element's own labels come before those of its children (tree order).
 
     :param els: iterable of elements
     :yield: element and label pair
     """
     for el in els:
+        for label in el.labels:
+            yield el, label
         if isinstance(el, Node):
-            yield from iter_labels(
-                *el.children,
-            )
-        yield from zip([el], el.labels)
+            yield from iter_labels(*el.children)
 
 
 def get_ancestor(element: HierarchicalElement) -> HierarchicalElement:

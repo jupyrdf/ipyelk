@@ -14,7 +14,7 @@ import asyncio
 import pytest
 
 from ipyelk import Diagram
-from ipyelk.elements import Node, NodeProperties, shapes
+from ipyelk.elements import Label, LabelProperties, Node, NodeProperties, shapes
 from ipyelk.pipes import MarkElementWidget
 from ipyelk.pipes import flows as F
 from ipyelk.pipes.elkjs import ElkJS
@@ -96,3 +96,60 @@ async def test_a_refresh_without_a_layout_shows_the_laid_out_size(monkeypatch):
     shown = diagram.view.source.get_state(key="value")["value"]["children"][0]
     assert (shown["width"], shown["height"]) == (200, 150)
     diagram.close()
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    ("label", "expected"),
+    [
+        (Label(id="l", text="Point", width=80), (80, 17)),
+        (Label(id="l", text="Point", height=40), (57, 40)),
+        (
+            Label(
+                id="l",
+                text="Point",
+                properties=LabelProperties(shape=shapes.LabelShape(width=100)),
+            ),
+            (100, 17),
+        ),
+    ],
+)
+async def test_label_input_size_wins_over_measurement_from_the_first_layout(
+    monkeypatch, label, expected
+):
+    sent = []
+
+    async def measure(self):
+        wire = self.inlet.value.model_dump(mode="json", exclude_none=True)
+        wire["children"][0]["labels"][0].update(width=57, height=17)
+        self.outlet.set_state({"value": wire})
+        self.outlet.persist()
+
+    async def layout(self):
+        wire = self.inlet.value.model_dump(mode="json", exclude_none=True)
+        sent.append((
+            wire["children"][0]["labels"][0]["width"],
+            wire["children"][0]["labels"][0]["height"],
+        ))
+        self.outlet.set_state({"value": wire})
+        self.outlet.persist()
+
+    monkeypatch.setattr(BrowserTextSizer, "run", measure)
+    monkeypatch.setattr(ElkJS, "run", layout)
+    root = Node(id="root", children=[Node(id="child", labels=[label])])
+    diagram = Diagram(source=MarkElementWidget(value=root))
+    try:
+        await settle(diagram)
+        assert diagram.pipe.status.exception is None
+        assert sent == [expected]
+        assert (label.width, label.height) == expected
+
+        label.text = "A longer label"
+        diagram.source.record(F.Layout)
+        diagram.refresh()
+        await settle(diagram)
+        assert diagram.pipe.status.exception is None
+        assert sent == [expected, expected]
+        assert (label.width, label.height) == expected
+    finally:
+        diagram.close()

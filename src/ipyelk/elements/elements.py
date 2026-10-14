@@ -4,7 +4,8 @@ from __future__ import annotations
 
 import abc
 import textwrap
-from typing import Type, TypeVar, cast, get_args
+from collections.abc import Mapping
+from typing import Any, Type, TypeVar, cast, get_args
 
 from pydantic import (
     BaseModel,
@@ -266,7 +267,21 @@ class ShapeElement(BaseElement, abc.ABC):
     def __setattr__(self, name: str, value) -> None:
         super().__setattr__(name, value)
         if name in {"width", "height"} and name in self._laid_out:
+            # Shallow model copies share this dict; rebind to keep their inputs independent.
             self._laid_out = {k: v for k, v in self._laid_out.items() if k != name}
+
+    def model_copy(
+        self, *, update: Mapping[str, Any] | None = None, deep: bool = False
+    ) -> Self:
+        copied = super().model_copy(update=update, deep=deep)
+        if update:
+            # Pydantic applies updates without __setattr__ (or validation).
+            copied._laid_out = {
+                key: value
+                for key, value in copied._laid_out.items()
+                if key not in update
+            }
+        return copied
 
     def set_laid_out(self, width: float | None, height: float | None) -> Self:
         """Write the size the browser returned onto ``width`` and ``height``,
@@ -525,7 +540,6 @@ class Node(HierarchicalElement):
         # common ancestor of the two endpoints the actual proper owner of the
         # edge may be calculated later
         edge = cls(source=source, target=target)
-        # TODO uniqueness of edge?
         self.edges.append(edge)
         return edge
 
