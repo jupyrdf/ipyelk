@@ -268,6 +268,9 @@ removed names][migration-removed-names] lists every name that raises
 
 ## `2.1.3` (unreleased)
 
+> 2.1.3 will not be released. These changes ship in 3.0.0, and this section folds into
+> it at release time ([#227]).
+
 ### Fixed
 
 - Hiding a root-level node with visible edges no longer crashes elkjs: `iter_visible`
@@ -519,6 +522,7 @@ removed names][migration-removed-names] lists every name that raises
 [#205]: https://github.com/jupyrdf/ipyelk/issues/205
 [#215]: https://github.com/jupyrdf/ipyelk/issues/215
 [#217]: https://github.com/jupyrdf/ipyelk/issues/217
+[#227]: https://github.com/jupyrdf/ipyelk/issues/227
 
 ## `2.1.2`
 
