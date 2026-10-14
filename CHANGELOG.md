@@ -268,8 +268,8 @@ removed names][migration-removed-names] lists every name that raises
 
 ## `2.1.3` (unreleased)
 
-> 2.1.3 will not be released. These changes ship in 3.0.0, and this section folds into
-> it at release time ([#227]).
+> 2.1.3 and 2.1.2 will not be released. Their changes ship in 3.0.0, and both sections
+> fold into it at release time ([#227]).
 
 ### Fixed
 
