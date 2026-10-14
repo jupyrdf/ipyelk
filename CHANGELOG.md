@@ -1,8 +1,10 @@
 # Changelog
 
-## `3.0.0` (unreleased)
+## `3.0.0a0` (unreleased)
 
-### Breaking changes
+### `ipyelk 3.0.0a0`
+
+#### Breaking changes
 
 - Tools no longer replace the pipe's pending flow when they run. `Tool` merges its
   `reports` into `tee.inlet.flow` (order preserved, duplicates dropped) through the new
@@ -189,14 +191,14 @@
   `exclude_none=True`, serialization drops that key instead, so ELK uses the option's
   default. `OptionsWidget.value` only accepts string keys and values ([#31]).
 
-### Migration
+#### Migration
 
 To change 2.x code for 3.0, read [Migrating from ipyelk 2.x to 3.0][migration]. It has a
 section with the 2.x code and the 3.0 code of each breaking change above. Its [table of
 removed names][migration-removed-names] lists every name that raises
 `DeprecatedAPIError` or `DeprecatedImportError`, with a link to its section.
 
-### Added
+#### Added
 
 - An opt-in check for layout option keys that ELK ignores without an error. ELK takes a
   full option id, or the end of one that starts after a dot (`elk.direction`,
@@ -227,7 +229,7 @@ removed names][migration-removed-names] lists every name that raises
   the 2.x code, the 3.0 code and the error or symptom that the 2.x code shows on 3.0.
   Tests check the page against the code and the CHANGELOG ([#219])
 
-### `@jupyrdf/jupyter-elk 3.0.0`
+### `@jupyrdf/jupyter-elk 3.0.0-alpha0`
 
 - Write `hovered_id` back on pointer leave, but only when the departed element is still
   the hovered one, so a stale leave cannot erase a newer enter; never dispatch `null` to
@@ -524,7 +526,7 @@ removed names][migration-removed-names] lists every name that raises
 [#217]: https://github.com/jupyrdf/ipyelk/issues/217
 [#227]: https://github.com/jupyrdf/ipyelk/issues/227
 
-## `2.1.2`
+## `2.1.2` (unreleased)
 
 ### Development
 
