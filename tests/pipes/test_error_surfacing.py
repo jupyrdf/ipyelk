@@ -5,8 +5,10 @@ import logging
 
 import pytest
 
+from ipyelk.exceptions import ClosedError
 from ipyelk.pipes import MarkElementWidget, Pipe, Pipeline
 from ipyelk.pipes import flows as F
+from ipyelk.pipes.base import PipeStatus
 
 
 class _BoomPipe(Pipe):
@@ -52,18 +54,21 @@ async def test_pipe_cancellation_does_not_trigger_on_error():
 
 class _CloseThenBoom(Pipe):
     hook = None
+    error_type = ValueError
 
     async def run(self):
         self.hook()
-        raise ValueError("boom after close")
+        raise self.error_type("boom after close")
 
 
 @pytest.mark.asyncio
-async def test_stage_error_after_close_is_cancellation(caplog):
+@pytest.mark.parametrize("error_type", [ValueError, ClosedError])
+async def test_stage_error_after_close_is_cancellation(caplog, error_type):
     source = MarkElementWidget(flow=(F.New,))
     stage = _CloseThenBoom(observes=(F.New,))
     pipeline = Pipeline(inlet=source, pipes=[stage])
     stage.hook = pipeline.close
+    stage.error_type = error_type
     seen = []
     pipeline.on_error = lambda pipe, exc: seen.append((pipe, exc))
 
@@ -225,3 +230,18 @@ async def test_closed_pipe_consumes_error_without_reporting_it(pipe_type, caplog
     warnings = [r.getMessage() for r in caplog.records if r.levelno == logging.WARNING]
     expected = f"{pipe_type.__name__} was closed before its run failed with "
     assert warnings == [expected + "ValueError('completed before close')"]
+
+
+def test_status_observer_close_suppresses_progress_callback():
+    pipe = Pipe()
+    progress = []
+    updates = []
+    pipe.observe(lambda change: (updates.append(change.new), pipe.close()), "status")
+    pipe.on_progress = progress.append
+
+    pipe.status_update(PipeStatus.running())
+    pipe.status_update(PipeStatus.finished())
+
+    assert pipe.status.state() == "cancelled"
+    assert len(updates) == 1
+    assert progress == []

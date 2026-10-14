@@ -9,7 +9,7 @@ import traitlets as T
 
 
 class ClosedError(T.TraitError, RuntimeError):
-    """A closed ``Diagram`` or ``Pipe`` was asked to do something.
+    """A closed ``Diagram``, ``Pipe`` or ``Tool`` was asked to do something.
 
     A ``TraitError`` because most entry points are trait assignments, and a
     ``RuntimeError`` like the other refused calls (``Tool.check_enabled``).

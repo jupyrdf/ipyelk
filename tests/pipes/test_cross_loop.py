@@ -352,3 +352,23 @@ async def test_close_before_a_cross_loop_runner_starts(subshell):
 
     assert tasks[0].cancelled()
     assert errors == []
+
+
+@pytest.mark.asyncio
+async def test_plain_pipe_close_before_cross_loop_cancel_lands(subshell):
+    """A plain pipe returning synchronously still cancels after another loop closes it."""
+    pipe = _Blocking()
+    errors = []
+    pipe.on_error = lambda _pipe, error: errors.append(error)
+    tasks = []
+    subshell.call_soon_threadsafe(lambda: tasks.append(pipe.schedule_run()))
+    try:
+        assert await asyncio.to_thread(pipe.started.wait, 5)
+        pipe.close()
+    finally:
+        pipe.proceed.set()
+    await _settled(tasks[0])
+
+    assert tasks[0].cancelled()
+    assert pipe.status.state() == "cancelled"
+    assert errors == []

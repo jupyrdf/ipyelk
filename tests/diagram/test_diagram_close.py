@@ -362,7 +362,7 @@ async def test_closing_from_the_last_stages_finished_update_cancels(
         assert task.cancelled()
         assert stage.runs == 1
         assert states == ["running", "ok"]
-        assert pipe.status.state() != "ok"
+        assert pipe.status.state() == "cancelled"
         assert diagram.source.flow == (F.New,), "a cancelled run hands its flow back"
         assert errors == []
     finally:
@@ -400,6 +400,8 @@ async def test_awaiting_refresh_raises_cancelled_when_closed_mid_run(
         with pytest.raises(asyncio.CancelledError):
             await asyncio.wait_for(task, timeout=2)
         assert task.cancelled()
+        assert pipe.status.state() == "cancelled"
+        assert parked.status.state() == "cancelled"
         current = asyncio.current_task()
         if hasattr(current, "cancelling"):  # Python 3.11+
             assert current.cancelling() == 0, "only the run was cancelled"
@@ -424,3 +426,58 @@ async def test_closed_diagram_ignores_a_queued_successful_view_update() -> None:
     await asyncio.sleep(0)
 
     assert displayed.value is before
+
+
+@pytest.mark.asyncio
+async def test_stage_progress_closing_parent_keeps_cancelled_status() -> None:
+    stage = Counting(observes=(F.New,), reports=(F.Layout,))
+    pipe = Pipeline(pipes=[stage])
+    stage.on_progress = lambda _stage: pipe.close()
+    try:
+        task = pipe.schedule_run()
+        pipe.inlet.record(F.New)
+        with pytest.raises(asyncio.CancelledError):
+            await task
+        assert pipe.status.state() == "cancelled"
+        assert stage.status.state() == "cancelled"
+        assert stage.runs == 0
+    finally:
+        pipe.close()
+
+
+@pytest.mark.asyncio
+async def test_closed_diagram_tool_refuses_trigger_before_scheduling() -> None:
+    class Runnable(Tool):
+        async def run(self):
+            raise AssertionError("a closed diagram's tool must not run")
+
+    tool = Runnable()
+    diagram = Diagram(source=make_source(), pipe=Pipe())
+    diagram.register_tool(tool)
+    events = []
+    tool.on_start(events.append)
+    tool.on_done(events.append)
+    diagram.close()
+    with pytest.raises(ClosedError, match="use a new tool"):
+        tool.trigger()
+    assert tool._task is None
+    await asyncio.sleep(0)
+    assert events == []
+
+
+@pytest.mark.asyncio
+async def test_stage_waiting_observer_closing_parent_keeps_cancelled_status() -> None:
+    stage = Counting(observes=(F.New,), reports=(F.Layout,))
+    pipe = Pipeline(pipes=[stage])
+    stage.observe(lambda _change: pipe.close(), "status")
+    try:
+        pipe.inlet.record(F.New)
+        task = pipe.schedule_run()
+        with pytest.raises(asyncio.CancelledError):
+            await task
+        assert pipe.status.state() == "cancelled"
+        assert stage.status.state() == "cancelled"
+        assert stage.runs == 0
+        assert pipe.inlet.flow == (F.New,)
+    finally:
+        pipe.close()

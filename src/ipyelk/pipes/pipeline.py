@@ -220,7 +220,6 @@ class Pipeline(SyncedOutletPipe):
             self._cancel_if_closed()
             if i and self.superseded():
                 raise Superseded(f"superseded before stage {i}")
-            # TODO use i and num_steps for reporting processing stage
             pipe_start_time = datetime.now()
             p_name = f"pipe {i}: {type(pipe)}"
             try:
@@ -256,8 +255,11 @@ class Pipeline(SyncedOutletPipe):
         # check pipes and propagate flow to downstream pipes
         observes = set()
         reports = set()
+        self._cancel_if_closed()
         for i, pipe in enumerate(self.pipes):
-            if pipe.check_dirty(flow if i == 0 else None):
+            dirty = pipe.check_dirty(flow if i == 0 else None)
+            self._cancel_if_closed()
+            if dirty:
                 observes |= set(pipe.observes)
                 reports |= set(pipe.reports)
         # pipeline is dirty if flows are added to reports from subpipes

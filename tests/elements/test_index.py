@@ -2,15 +2,17 @@
 # Distributed under the terms of the Modified BSD License.
 import pytest
 
-from ipyelk.elements import Node, NodeProperties, Registry
+from ipyelk.elements import Label, Node, NodeProperties, Registry
 from ipyelk.elements.index import (
     ElementIndex,
     IDReport,
     VisIndex,
     iter_edges,
     iter_elements,
+    iter_labels,
     iter_visible,
 )
+from ipyelk.exceptions import NotFoundError, NotUniqueError
 
 
 def test_id_report_message_interpolates_duplicated_ids():
@@ -103,3 +105,37 @@ def test_iteration_follows_child_order():
     nodes = [el.id for el in iter_elements(root) if isinstance(el, Node)]
     assert nodes[1:] == [c.id for c in children]
     assert [owner.id for owner, _ in iter_edges(root)] == [c.id for c in children]
+
+
+def test_element_index_membership_is_by_id():
+    node = Node(id="n")
+    index = ElementIndex.from_els(node)
+    assert "n" in index
+    assert "elements" not in index
+    assert "missing" not in index
+    assert 1 in ElementIndex.from_els(Node(id="1"))
+
+
+def test_iter_labels_yields_every_label_in_tree_order():
+    child = Node(id="c", labels=[Label(text="x"), Label(text="y")])
+    root = Node(
+        id="n",
+        labels=[Label(text="a"), Label(text="b"), Label(text="c")],
+        children=[child],
+    )
+    pairs = [(el.id, label.text) for el, label in iter_labels(root)]
+    assert pairs == [("n", "a"), ("n", "b"), ("n", "c"), ("c", "x"), ("c", "y")]
+
+
+def test_root_without_a_parentless_node_is_not_found():
+    root = Node(id="root", children=[Node(id="child")])
+    index = ElementIndex.from_els(root)
+    index.elements.pop("root")  # leaves only `child`, whose parent is `root`
+    with pytest.raises(NotFoundError, match="no root"):
+        index.root()
+
+
+def test_root_of_several_parentless_nodes_is_not_unique():
+    index = ElementIndex.from_els(Node(id="a"), Node(id="b"))
+    with pytest.raises(NotUniqueError, match="2 roots"):
+        index.root()

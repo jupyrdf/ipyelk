@@ -35,6 +35,7 @@ class PipeDisposition(Enum):
     running = "running"
     done = "finished"
     error = "error"
+    cancelled = "cancelled"
 
 
 @dataclass(frozen=True, eq=False)
@@ -55,6 +56,7 @@ class PipeStatus:
         PipeDisposition.running: 0.5,
         PipeDisposition.done: 1,
         PipeDisposition.error: 1,
+        PipeDisposition.cancelled: 0,
     }
 
     STATES: ClassVar[dict[PipeDisposition, str]] = {
@@ -62,6 +64,7 @@ class PipeStatus:
         PipeDisposition.running: "running",
         PipeDisposition.done: "ok",
         PipeDisposition.error: "error",
+        PipeDisposition.cancelled: "cancelled",
     }
 
     @classmethod
@@ -71,6 +74,10 @@ class PipeStatus:
     @classmethod
     def running(cls) -> PipeStatus:
         return cls(disposition=PipeDisposition.running)
+
+    @classmethod
+    def cancelled(cls) -> PipeStatus:
+        return cls(disposition=PipeDisposition.cancelled)
 
     @classmethod
     def finished(cls, start_time: datetime | None = None) -> PipeStatus:
@@ -271,6 +278,14 @@ class Pipe(W.Widget):
         to, is left open.
         """
         self._closed = True
+        task = self._task
+        if self.status.disposition in {
+            PipeDisposition.waiting,
+            PipeDisposition.running,
+        } or (task is not None and not task.done()):
+            # Keep a terminal snapshot without notifying closed status widgets
+            # or progress observers. Preserve an already finished/error result.
+            self._trait_values["status"] = PipeStatus.cancelled()
         self.cancel()
         owned, self._owned = self._owned, []
         for widget in owned:
@@ -384,6 +399,9 @@ class Pipe(W.Widget):
                     type(self).__name__,
                     exc_info=True,
                 )
+            if self._closed:
+                # A plain pipe may return before cross-loop cancellation lands.
+                raise asyncio.CancelledError
 
     def cancel(self) -> bool:
         """Cancel the runner and drop its pending requests; ``True`` if one was alive.
@@ -466,9 +484,16 @@ class Pipe(W.Widget):
         status: PipeStatus,
         pipe: Pipe | None = None,
     ):
+        if self._closed:
+            return
         if isinstance(pipe, Pipe):
             pipe.status_update(status=status)
+        if self._closed:
+            # A stage's progress callback may have closed its parent.
+            return
         self.status = status
+        if self._closed:
+            return
 
         if callable(self.on_progress):
             try:

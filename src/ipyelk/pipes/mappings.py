@@ -1,43 +1,16 @@
 # Copyright (c) 2024 ipyelk contributors.
 # Distributed under the terms of the Modified BSD License.
-from __future__ import annotations
+"""Removed in 3.0: nothing used the module, and nothing replaces it.
 
-from collections.abc import Hashable
-from dataclasses import dataclass
-from typing import TYPE_CHECKING
+This guard exists only to turn a stale import into an actionable error; it
+defines nothing.
+"""
 
-from ..elements.layout_options.model import ElkNode, ElkPort
+from ..exceptions import DeprecatedImportError
 
-if TYPE_CHECKING:
-    from .. import elements
-
-
-@dataclass(frozen=True)
-class Edge:
-    source: Hashable
-    source_port: Hashable | None
-    target: Hashable
-    target_port: Hashable | None
-    owner: Hashable
-    data: dict
-    mark: elements.Mark | None
-
-    def __hash__(self):
-        return hash((self.source, self.source_port, self.target, self.target_port))
-
-
-@dataclass(frozen=True)
-class Port:
-    node: Hashable
-    elkport: ElkPort
-    mark: elements.Mark | None
-
-    def __hash__(self):
-        return hash(tuple([hash(self.node), hash(self.elkport.id)]))
-
-
-# TODO investigating following pattern for various map
-# https://github.com/pandas-dev/pandas/issues/33025#issuecomment-699636759
-NodeMap = dict[Hashable, ElkNode]
-EdgeMap = dict[Hashable, list[Edge]]
-PortMap = dict[Hashable, Port]
+raise DeprecatedImportError(
+    "ipyelk.pipes.mappings was removed in ipyelk 3.0: nothing in ipyelk used its "
+    "Edge and Port dataclasses or its NodeMap, EdgeMap and PortMap aliases, and "
+    "nothing replaces them. Build graphs from ipyelk.elements.Node, Edge and Port. "
+    "No alias: this error is raised throughout 3.x."
+)
