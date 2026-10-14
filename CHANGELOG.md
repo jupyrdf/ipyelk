@@ -2,6 +2,8 @@
 
 ## `3.0.0a0` (unreleased)
 
+> 2.1.2 and 2.1.3 were not released: their changes are in this release ([#227]).
+
 ### `ipyelk 3.0.0a0`
 
 #### Breaking changes
@@ -211,69 +213,18 @@ removed names][migration-removed-names] lists every name that raises
   `layout_options_report` and `layout_options_target_report`, and emits one
   `UserWarning`. The check is off by default, and turning it off clears both reports.
   Refs [#115].
+- Allow diagram construction without a running event loop. `Pipe.schedule_run()` and
+  `Diagram.refresh()` return `None` when they cannot schedule a task.
+- Add optional `LabelProperties.tooltip` and `LabelProperties.separator` fields.
+- Re-send widget state after a browser reports missing state, with throttling.
+- Echo terminal progress state twice, cancelling pending echoes on updates and close.
+- Surface pipe/diagram exceptions via an `on_error` callback instead of silently
+  dropping them in the asyncio done-callback (F4)
+- Add a configurable `timeout` and a browser→kernel error channel to
+  `ElkJS`/`BrowserTextSizer` so a failed or silent browser layout no longer hangs the
+  diagram (F6)
 
-### Development
-
-- `src/ipyelk/schema/elk-catalog.json` lists the layout options, algorithms and
-  categories of the bundled `elkjs`. `pixi run build-py-elk-catalog` writes it. A
-  `vitest` checks it against the installed `elkjs`, and a unit test checks the option
-  classes against it ([#29]).
-- CI also regenerates `elk-catalog.json` and fails if it differs from the committed
-  file, and `jlpm schema` passes the real path of `elkschema.ts`
-  ([#187](https://github.com/jupyrdf/ipyelk/issues/187)).
-
-### Documentation
-
-- Add the page [Migrating from ipyelk 2.x to 3.0][migration] (`docs/migration.md`),
-  linked from the README and the docs index: a section for each breaking change, with
-  the 2.x code, the 3.0 code and the error or symptom that the 2.x code shows on 3.0.
-  Tests check the page against the code and the CHANGELOG ([#219])
-
-### `@jupyrdf/jupyter-elk 3.0.0-alpha0`
-
-- Write `hovered_id` back on pointer leave, but only when the departed element is still
-  the hovered one, so a stale leave cannot erase a newer enter; never dispatch `null` to
-  sprotty as an element id; re-wiring the hover tool releases the previous tool's
-  listener ([#155]).
-- Skip the control overlay when the viewer's `control_overlay` is `null` or has no
-  `children`, and re-render when its `children` change ([#156]).
-- Report the viewport: every `ELKViewerView` owns a stable `view_id` and, 100 ms after
-  the last `SetViewport`/`Center`/`FitToScreen`/`InitializeCanvasBounds` action (plus
-  sprotty's animation time for an animated move) or re-layout, writes `view_id`,
-  `origin`, `zoom`, `canvas_size` and `viewed_ids` to the kernel's `viewport` tool in
-  one state update. A gather superseded by a newer one is dropped, a snapshot the kernel
-  could not tell from the last write is skipped, and a detached view never reports. The
-  `viewport` custom message applies `SprottyViewer.set_viewport` to the addressed view
-  (or every view) ([#156]).
-- Apply the kernel `painter.styles` at transform time: the ELK -> sprotty transform
-  merges the painted classes after each element's model classes (no duplicates, symbols
-  excluded), so every render -- including re-layouts -- carries them, and a
-  `change:styles` re-renders the same layout through sprotty's model update, which keeps
-  the selection and the camera. `UpdateModelCommand2` now also carries `hoverFeedback`
-  over to the updated element, so a re-render under a resting pointer no longer drops
-  the mouseover ([#156]).
-- Remove `NodeExpandTool` and its `ExpandAction`: its `wheel` handler returned before it
-  did anything, and nothing sent the action. Remove the empty `change:interaction`
-  listener too: no kernel class has an `interaction` trait
-  ([#217](https://github.com/jupyrdf/ipyelk/issues/217)).
-
-[#29]: https://github.com/jupyrdf/ipyelk/issues/29
-[#31]: https://github.com/jupyrdf/ipyelk/issues/31
-[#115]: https://github.com/jupyrdf/ipyelk/issues/115
-[#155]: https://github.com/jupyrdf/ipyelk/issues/155
-[#156]: https://github.com/jupyrdf/ipyelk/issues/156
-[#197]: https://github.com/jupyrdf/ipyelk/issues/197
-[#219]: https://github.com/jupyrdf/ipyelk/issues/219
-[migration]: https://ipyelk.readthedocs.io/en/latest/migration.html
-[migration-removed-names]:
-  https://ipyelk.readthedocs.io/en/latest/migration.html#migration-removed-names
-
-## `2.1.3` (unreleased)
-
-> 2.1.3 and 2.1.2 will not be released. Their changes ship in 3.0.0, and both sections
-> fold into it at release time ([#227]).
-
-### Fixed
+#### Fixed
 
 - Hiding a root-level node with visible edges no longer crashes elkjs: `iter_visible`
   reported every sibling after a hidden one as hidden and projected a hidden node's
@@ -290,13 +241,6 @@ removed names][migration-removed-names] lists every name that raises
   generated id onto every line (#160, #169)
 - Add nested label spacing regardless of the sublabel width: `size_nested_label` parsed
   `ls.width or 0 + spacing` as `ls.width or (0 + spacing)` (#161, #169)
-- Fix the first-frame culling bug while culling stays off: `validCanvasBounds` was the
-  inverse of its comment, so nothing was culled on a sized canvas and almost everything
-  on the `0x0` canvas before the first `InitializeCanvasBoundsAction`; the guard now
-  skips culling while the canvas size is unknown, behind an explicit `CULLING_ENABLED`
-  constant (turning it on is #170). The SVG exporter sizes its `viewBox` from the
-  model's content extent instead of the live group's bounding rect, which under-sized by
-  the layout's left margin and made the export viewport-dependent (#161, #169)
 - Stop echoing browser-written state back to the frontends: the selection, the hover and
   the laid-out graph were re-sent to every attached frontend as soon as the browser
   wrote them, and the graph was then sent a _second_ time as a re-serialized copy, so
@@ -345,15 +289,6 @@ removed names][migration-removed-names] lists every name that raises
     notifies `status` observers
   - `PipelineStatusView.statuses` is removed. It held the view's row widgets, was never
     synced, and is now a private list; the rows still reach the frontend as `children`
-- Stop a diagram from freezing for good on an update that removes elements. Sprotty's
-  fade-out removed the faded elements when the _eased_ animation time reached 1, which
-  `easeInOut` rounds to within 1e-8 of the end, while the animation only stops at the
-  _raw_ time 1. A frame landing a hair before the end (evenly spaced frame timestamps,
-  15 frames of 1000/60 ms for the 250 ms animation) removed them early, and the real
-  last frame removed them again and threw. The throw happened inside an animation-frame
-  callback, so the animation never finished and sprotty's command stack waited on it
-  forever: every later layout reached the browser and was never drawn ([#95]). Reported
-  upstream as [eclipse-sprotty/sprotty#573]; the workaround can go once that is fixed
 - Close the old pipeline when `diagram.pipe` is replaced. Only its run was cancelled:
   its sub-pipes, intermediate marks and status views stayed open, and the diagram's
   `style` link kept it alive, so every replacement left 37 widgets behind, 99 with the
@@ -434,12 +369,44 @@ removed names][migration-removed-names] lists every name that raises
   `<style>` element, not as markup ([#217])
 - `iter_labels` yields every label of each element and its child nodes, each element's
   own labels first. It yielded only the first label of each element ([#217])
-- Offset a label icon vertically by its `y`, not its `x`: `ElkLabelView` added
-  `icon.position.x` to the icon's `y`, so an icon's `x` also shifted it down and its `y`
-  was ignored ([#205])
+- Fix `IDReport.message()` printing literal `{eid}`/`{el}` placeholders (F1)
+- Fix `Pipeline.check()` / `get_progress_value()` crashing on an empty pipeline (F2)
+- Give each `Tool` its own `on_run` callback dispatcher (was shared across all tools)
+  (F3)
+- Re-send the browser `run` request with backoff until a frontend answers, so a pipe run
+  before its diagram is displayed no longer waits on a message nobody received; a
+  browser-reported layout error stops the retries immediately (F10)
+- Treat an errored run as terminal for progress reporting: `PipeStatus.step()` returned
+  `None` for errored pipes, so `Pipeline.get_progress_value()` raised `TypeError` inside
+  the error path — `on_error` saw the `TypeError` instead of the layout error, and the
+  `PipelineProgressBar` sat "in progress" forever; the bar now fills as a visible
+  warning (F10)
+- Keep hidden elements in the shared `MarkIndex` across browser round trips:
+  `Node.dict()` always drops hidden children, so rebuilding the index from a value that
+  has been through the browser erased them and `ToggleCollapsedTool` could never reveal
+  them again — nested widgets (such as the `15_Nesting_Plots` figures) never appeared.
+  `ElementIndex.update()` now merges instead of requiring every id to be known: existing
+  ids update in place, unknown ids are added, which also fixes a `NotFoundError` when
+  slack ports introduced by `VisibilityPipe` come back from a layout (F12)
+- Log a failed layout in `Diagram.refresh()` instead of returning silently: a silently
+  failed pipeline is indistinguishable from a hung diagram (F12)
+- Fix the local `TextSizer` fallback, which read `self.source.value`, assigned
+  `self.outlet.changes` and returned `self.value` — none of which exist on `Pipe` — and
+  therefore raised on its first statement (F13)
+- Do not wait on a browser that cannot answer: with `IPYELK_NO_BROWSER` set (as
+  `nbconvert --execute` does) a pipe gives up its roundtrip immediately instead of
+  keeping a task alive across cell boundaries re-sending `run` requests for 30 s, which
+  wedged kernels on slower CI runners (F15)
 
 ### Development
 
+- `src/ipyelk/schema/elk-catalog.json` lists the layout options, algorithms and
+  categories of the bundled `elkjs`. `pixi run build-py-elk-catalog` writes it. A
+  `vitest` checks it against the installed `elkjs`, and a unit test checks the option
+  classes against it ([#29]).
+- CI also regenerates `elk-catalog.json` and fails if it differs from the committed
+  file, and `jlpm schema` passes the real path of `elkschema.ts`
+  ([#187](https://github.com/jupyrdf/ipyelk/issues/187)).
 - Add `scripts/bench_pipeline.py`, a headless benchmark of `Diagram.refresh()`: it runs
   the real kernel pipeline and real `elkjs` in `node` with only the two browser stages
   stubbed, over deterministic graphs from `scripts/bench_graphs.py`, and reports wall
@@ -497,39 +464,6 @@ removed names][migration-removed-names] lists every name that raises
 - Skip the `16_Cervidae_Tree` notebook tests, with the reason, when
   `examples/data/cervidae-tree.zip` is a git-lfs pointer file: a clone without git-lfs
   failed them with `BadZipFile` ([#217])
-
-### Documentation
-
-- Document the shape API: a docstring for each class in `ipyelk.elements.shapes`, and a
-  _Shapes_ page in the API reference with one table row for each shape ([#66])
-
-[#66]: https://github.com/jupyrdf/ipyelk/issues/66
-[#95]: https://github.com/jupyrdf/ipyelk/issues/95
-[eclipse-sprotty/sprotty#573]: https://github.com/eclipse-sprotty/sprotty/issues/573
-[#147]: https://github.com/jupyrdf/ipyelk/issues/147
-[#160]: https://github.com/jupyrdf/ipyelk/issues/160
-[#161]: https://github.com/jupyrdf/ipyelk/issues/161
-[#164]: https://github.com/jupyrdf/ipyelk/issues/164
-[#167]: https://github.com/jupyrdf/ipyelk/issues/167
-[#171]: https://github.com/jupyrdf/ipyelk/issues/171
-[#176]: https://github.com/jupyrdf/ipyelk/issues/176
-[#177]: https://github.com/jupyrdf/ipyelk/issues/177
-[ipykernel#1529]: https://github.com/ipython/ipykernel/pull/1529
-[#178]: https://github.com/jupyrdf/ipyelk/issues/178
-[#180]: https://github.com/jupyrdf/ipyelk/issues/180
-[#181]: https://github.com/jupyrdf/ipyelk/issues/181
-[#187]: https://github.com/jupyrdf/ipyelk/issues/187
-[#191]: https://github.com/jupyrdf/ipyelk/issues/191
-[#200]: https://github.com/jupyrdf/ipyelk/issues/200
-[#205]: https://github.com/jupyrdf/ipyelk/issues/205
-[#215]: https://github.com/jupyrdf/ipyelk/issues/215
-[#217]: https://github.com/jupyrdf/ipyelk/issues/217
-[#227]: https://github.com/jupyrdf/ipyelk/issues/227
-
-## `2.1.2` (unreleased)
-
-### Development
-
 - Migrate to native Pydantic 2 validation and serialization; require
   `pydantic >=2.12,<3`. Use `model_dump()` / `model_dump_json()` instead of `dict()` /
   `json()`. Custom models now use `model_config`, `Field(exclude=True)`, and native
@@ -547,8 +481,61 @@ removed names][migration-removed-names] lists every name that raises
   (`build-js-ext-cov`), which emptied it and left `pixi run build` with an unloadable
   extension (`_build.load: "static"`)
 
-### `@jupyrdf/jupyter-elk 2.1.2`
+### Documentation
 
+- Add the page [Migrating from ipyelk 2.x to 3.0][migration] (`docs/migration.md`),
+  linked from the README and the docs index: a section for each breaking change, with
+  the 2.x code, the 3.0 code and the error or symptom that the 2.x code shows on 3.0.
+  Tests check the page against the code and the CHANGELOG ([#219])
+- Document the shape API: a docstring for each class in `ipyelk.elements.shapes`, and a
+  _Shapes_ page in the API reference with one table row for each shape ([#66])
+
+### `@jupyrdf/jupyter-elk 3.0.0-alpha0`
+
+- Write `hovered_id` back on pointer leave, but only when the departed element is still
+  the hovered one, so a stale leave cannot erase a newer enter; never dispatch `null` to
+  sprotty as an element id; re-wiring the hover tool releases the previous tool's
+  listener ([#155]).
+- Skip the control overlay when the viewer's `control_overlay` is `null` or has no
+  `children`, and re-render when its `children` change ([#156]).
+- Report the viewport: every `ELKViewerView` owns a stable `view_id` and, 100 ms after
+  the last `SetViewport`/`Center`/`FitToScreen`/`InitializeCanvasBounds` action (plus
+  sprotty's animation time for an animated move) or re-layout, writes `view_id`,
+  `origin`, `zoom`, `canvas_size` and `viewed_ids` to the kernel's `viewport` tool in
+  one state update. A gather superseded by a newer one is dropped, a snapshot the kernel
+  could not tell from the last write is skipped, and a detached view never reports. The
+  `viewport` custom message applies `SprottyViewer.set_viewport` to the addressed view
+  (or every view) ([#156]).
+- Apply the kernel `painter.styles` at transform time: the ELK -> sprotty transform
+  merges the painted classes after each element's model classes (no duplicates, symbols
+  excluded), so every render -- including re-layouts -- carries them, and a
+  `change:styles` re-renders the same layout through sprotty's model update, which keeps
+  the selection and the camera. `UpdateModelCommand2` now also carries `hoverFeedback`
+  over to the updated element, so a re-render under a resting pointer no longer drops
+  the mouseover ([#156]).
+- Remove `NodeExpandTool` and its `ExpandAction`: its `wheel` handler returned before it
+  did anything, and nothing sent the action. Remove the empty `change:interaction`
+  listener too: no kernel class has an `interaction` trait
+  ([#217](https://github.com/jupyrdf/ipyelk/issues/217)).
+- Fix the first-frame culling bug while culling stays off: `validCanvasBounds` was the
+  inverse of its comment, so nothing was culled on a sized canvas and almost everything
+  on the `0x0` canvas before the first `InitializeCanvasBoundsAction`; the guard now
+  skips culling while the canvas size is unknown, behind an explicit `CULLING_ENABLED`
+  constant (turning it on is #170). The SVG exporter sizes its `viewBox` from the
+  model's content extent instead of the live group's bounding rect, which under-sized by
+  the layout's left margin and made the export viewport-dependent (#161, #169)
+- Stop a diagram from freezing for good on an update that removes elements. Sprotty's
+  fade-out removed the faded elements when the _eased_ animation time reached 1, which
+  `easeInOut` rounds to within 1e-8 of the end, while the animation only stops at the
+  _raw_ time 1. A frame landing a hair before the end (evenly spaced frame timestamps,
+  15 frames of 1000/60 ms for the 250 ms animation) removed them early, and the real
+  last frame removed them again and threw. The throw happened inside an animation-frame
+  callback, so the animation never finished and sprotty's command stack waited on it
+  forever: every later layout reached the browser and was never drawn ([#95]). Reported
+  upstream as [eclipse-sprotty/sprotty#573]; the workaround can go once that is fixed
+- Offset a label icon vertically by its `y`, not its `x`: `ElkLabelView` added
+  `icon.position.x` to the icon's `y`, so an icon's `x` also shifted it down and its `y`
+  was ignored ([#205])
 - Add optional label tooltips and full-width separators above labels.
 - Observe source rewiring and apply initial kernel selections after model submission
   completes.
@@ -600,48 +587,39 @@ removed names][migration-removed-names] lists every name that raises
   to it. Its `elkjs ^0.8.2` range was the only thing that conflicted with ELK.js
   `0.12.0`, so the `resolutions.elkjs` override goes with it ([#140]).
 
-### `ipyelk 2.1.2`
-
-- Allow diagram construction without a running event loop. `Pipe.schedule_run()` and
-  `Diagram.refresh()` return `None` when they cannot schedule a task.
-- Add optional `LabelProperties.tooltip` and `LabelProperties.separator` fields.
-- Re-send widget state after a browser reports missing state, with throttling.
-- Echo terminal progress state twice, cancelling pending echoes on updates and close.
-- Fix `IDReport.message()` printing literal `{eid}`/`{el}` placeholders (F1)
-- Fix `Pipeline.check()` / `get_progress_value()` crashing on an empty pipeline (F2)
-- Give each `Tool` its own `on_run` callback dispatcher (was shared across all tools)
-  (F3)
-- Surface pipe/diagram exceptions via an `on_error` callback instead of silently
-  dropping them in the asyncio done-callback (F4)
-- Add a configurable `timeout` and a browser→kernel error channel to
-  `ElkJS`/`BrowserTextSizer` so a failed or silent browser layout no longer hangs the
-  diagram (F6)
-- Re-send the browser `run` request with backoff until a frontend answers, so a pipe run
-  before its diagram is displayed no longer waits on a message nobody received; a
-  browser-reported layout error stops the retries immediately (F10)
-- Treat an errored run as terminal for progress reporting: `PipeStatus.step()` returned
-  `None` for errored pipes, so `Pipeline.get_progress_value()` raised `TypeError` inside
-  the error path — `on_error` saw the `TypeError` instead of the layout error, and the
-  `PipelineProgressBar` sat "in progress" forever; the bar now fills as a visible
-  warning (F10)
-- Keep hidden elements in the shared `MarkIndex` across browser round trips:
-  `Node.dict()` always drops hidden children, so rebuilding the index from a value that
-  has been through the browser erased them and `ToggleCollapsedTool` could never reveal
-  them again — nested widgets (such as the `15_Nesting_Plots` figures) never appeared.
-  `ElementIndex.update()` now merges instead of requiring every id to be known: existing
-  ids update in place, unknown ids are added, which also fixes a `NotFoundError` when
-  slack ports introduced by `VisibilityPipe` come back from a layout (F12)
-- Log a failed layout in `Diagram.refresh()` instead of returning silently: a silently
-  failed pipeline is indistinguishable from a hung diagram (F12)
-- Fix the local `TextSizer` fallback, which read `self.source.value`, assigned
-  `self.outlet.changes` and returned `self.value` — none of which exist on `Pipe` — and
-  therefore raised on its first statement (F13)
-- Do not wait on a browser that cannot answer: with `IPYELK_NO_BROWSER` set (as
-  `nbconvert --execute` does) a pipe gives up its roundtrip immediately instead of
-  keeping a task alive across cell boundaries re-sending `run` requests for 30 s, which
-  wedged kernels on slower CI runners (F15)
-
+[#29]: https://github.com/jupyrdf/ipyelk/issues/29
+[#31]: https://github.com/jupyrdf/ipyelk/issues/31
+[#66]: https://github.com/jupyrdf/ipyelk/issues/66
+[#95]: https://github.com/jupyrdf/ipyelk/issues/95
+[#115]: https://github.com/jupyrdf/ipyelk/issues/115
 [#140]: https://github.com/jupyrdf/ipyelk/issues/140
+[#147]: https://github.com/jupyrdf/ipyelk/issues/147
+[#155]: https://github.com/jupyrdf/ipyelk/issues/155
+[#156]: https://github.com/jupyrdf/ipyelk/issues/156
+[#160]: https://github.com/jupyrdf/ipyelk/issues/160
+[#161]: https://github.com/jupyrdf/ipyelk/issues/161
+[#164]: https://github.com/jupyrdf/ipyelk/issues/164
+[#167]: https://github.com/jupyrdf/ipyelk/issues/167
+[#171]: https://github.com/jupyrdf/ipyelk/issues/171
+[#176]: https://github.com/jupyrdf/ipyelk/issues/176
+[#177]: https://github.com/jupyrdf/ipyelk/issues/177
+[#178]: https://github.com/jupyrdf/ipyelk/issues/178
+[#180]: https://github.com/jupyrdf/ipyelk/issues/180
+[#181]: https://github.com/jupyrdf/ipyelk/issues/181
+[#187]: https://github.com/jupyrdf/ipyelk/issues/187
+[#191]: https://github.com/jupyrdf/ipyelk/issues/191
+[#197]: https://github.com/jupyrdf/ipyelk/issues/197
+[#200]: https://github.com/jupyrdf/ipyelk/issues/200
+[#205]: https://github.com/jupyrdf/ipyelk/issues/205
+[#215]: https://github.com/jupyrdf/ipyelk/issues/215
+[#217]: https://github.com/jupyrdf/ipyelk/issues/217
+[#219]: https://github.com/jupyrdf/ipyelk/issues/219
+[#227]: https://github.com/jupyrdf/ipyelk/issues/227
+[eclipse-sprotty/sprotty#573]: https://github.com/eclipse-sprotty/sprotty/issues/573
+[ipykernel#1529]: https://github.com/ipython/ipykernel/pull/1529
+[migration]: https://ipyelk.readthedocs.io/en/latest/migration.html
+[migration-removed-names]:
+  https://ipyelk.readthedocs.io/en/latest/migration.html#migration-removed-names
 
 ## `2.1.1`
 

@@ -53,11 +53,14 @@ def _guide() -> str:
 
 
 def _breaking_entries() -> list[str]:
-    """The top-level entries under ``3.0.0`` > ``Breaking changes``."""
+    """The top-level entries under ``3.0.0`` > ``ipyelk`` > ``Breaking changes``."""
     release = CHANGELOG_MD.read_text(**UTF8).split("\n## ")[1]
-    assert release.startswith("`3.0.0`"), "the first release is no longer 3.0.0"
-    section = release.split("### Breaking changes\n", 1)[1].split("\n### ", 1)[0]
-    return re.split(r"\n(?=- )", section.strip())
+    assert release.startswith("`3.0.0"), "the first release is no longer 3.0.0"
+    section = release.split("\n#### Breaking changes\n", 1)[1]
+    section = re.split(r"\n#{2,4} ", section, maxsplit=1)[0]  # to the next heading
+    entries = re.split(r"\n(?=- )", section.strip())
+    assert all(entry.startswith("- ") for entry in entries), entries[0][:80]
+    return entries
 
 
 def _api_names(text: str) -> set[str]:
