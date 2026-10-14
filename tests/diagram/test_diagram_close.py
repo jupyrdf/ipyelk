@@ -458,7 +458,8 @@ async def test_closed_diagram_tool_refuses_trigger_before_scheduling() -> None:
     tool.on_start(events.append)
     tool.on_done(events.append)
     diagram.close()
-    with pytest.raises(ClosedError, match="use a new tool"):
+    msg = "^Runnable is closed and cannot run; build a new Runnable$"
+    with pytest.raises(ClosedError, match=msg):
         tool.trigger()
     assert tool._task is None
     await asyncio.sleep(0)
