@@ -501,6 +501,19 @@ except ClosedError:  # also a TraitError and a RuntimeError
   `radius`. The `node:round` renderer takes its radii from the laid-out node, so a node
   larger than the circle drew the ellipse off center. `x` and `y` that you set are still
   serialized ([#200])
+- Keep a typed shape through a layout round trip. `ElementIndex.update` replaced every
+  element's `properties` with the browser's copy, whose shape parses as the base class:
+  a `Circle` came back as a `NodeShape` without its `radius`, an `Icon` as a
+  `LabelShape`, a `Widget` without its widget, and `shape.radius = 20` then raised. The
+  frontend never changes `properties`, so an element now keeps its own, with its shape
+  object, and an edit made while a layout was in flight is no longer reverted. The
+  laid-out `width` and `height` are still written onto the element, where you can read
+  them, but no longer shadow the shape's size in the input to the next layout: a
+  `radius` set after a layout resizes the node at the next one, and a `LabelShape` that
+  sets only `width` now sends that width, not the measured one, starting with the first
+  layout. A `width` or `height` assigned to a `Label` is now sent to the layout instead
+  of the measured size, starting with the first layout. A size assigned to the element
+  itself stays the input to every later layout and wins over the shape ([#201])
 - Find an existing port when a NetworkX edge's `sourcePort`, `targetPort` or `port` is
   the port's global id rather than its key. `ElementIndex` had no `__contains__`, so the
   loader's `port_key in el_map` check was always false and it added a second port with
@@ -617,6 +630,7 @@ except ClosedError:  # also a TraitError and a RuntimeError
 [#187]: https://github.com/jupyrdf/ipyelk/issues/187
 [#191]: https://github.com/jupyrdf/ipyelk/issues/191
 [#200]: https://github.com/jupyrdf/ipyelk/issues/200
+[#201]: https://github.com/jupyrdf/ipyelk/issues/201
 [#205]: https://github.com/jupyrdf/ipyelk/issues/205
 [#215]: https://github.com/jupyrdf/ipyelk/issues/215
 [#217]: https://github.com/jupyrdf/ipyelk/issues/217
