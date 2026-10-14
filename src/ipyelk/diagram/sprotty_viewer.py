@@ -14,7 +14,7 @@ from ..elements import SymbolSpec, symbol_serialization
 from ..tools import CenterTool, FitTool
 from .viewer import Viewer
 
-# TODO reconnect schema check after adding edge type
+# TODO(#131): reconnect the schema check after adding the edge type
 # from ..schema import ElkSchemaValidator
 # from ..trait_types import Schema
 

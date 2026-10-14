@@ -116,6 +116,19 @@
   `ipyelk.tools.contol_overlay` module raises it too, naming the new path; it re-exports
   nothing. Both flavors share the `ipyelk.exceptions.DeprecatedAPI` base, so one
   `except` catches either.
+- `ElementIndex.root()`, and so `check_ids()`, `check_edges()` and `MarkIndex.root()`,
+  raises `ipyelk.exceptions.NotFoundError` when every node in the index has a parent,
+  and `NotUniqueError`, naming the roots, when more than one node has none. It used to
+  fail an `assert` with the message "Multiple roots" for no root, and to take the first
+  of several roots without a word, so the checks skipped the other trees
+  ([#217](https://github.com/jupyrdf/ipyelk/issues/217)).
+- Remove code that nothing used: the `ipyelk.pipes.mappings` module, the
+  `GraphWrappingStrategy.horizontal` trait, and `ElkLabel.__eq__`/`__hash__`, which
+  served a text sizer cache that is gone. `ElkLabel` now compares field by field like
+  the other `layout_options.model` classes and, like them, cannot be put in a `set`.
+  Importing `ipyelk.pipes.mappings` raises `DeprecatedImportError`: nothing replaces its
+  `Edge` and `Port` classes or its `NodeMap`, `EdgeMap` and `PortMap` aliases
+  ([#217](https://github.com/jupyrdf/ipyelk/issues/217)).
 - Layout options are checked against the options that the bundled `elkjs` knows, and the
   option classes that ELK ignored without an error now take effect, so **layouts can
   change** ([#29]):
@@ -251,8 +264,9 @@ Node(layoutOptions={"org.eclipse.elk.partitioning.partition": 2.0})
 ```
 
 The removed names (`handler`, `on_run`, `disable`, `Hover.ids`, assigning `on_start` or
-`on_done`, the `contol_overlay` module, `Viewer.zoom`/`pan`/`viewed`,
-`ipyelk.tools.Zoom`/`Pan`, `Painter.cssClasses`/`marks`/`name`, `Draw2DLayout` from
+`on_done`, the `contol_overlay` and `ipyelk.pipes.mappings` modules,
+`Viewer.zoom`/`pan`/`viewed`, `ipyelk.tools.Zoom`/`Pan`,
+`Painter.cssClasses`/`marks`/`name`, `Draw2DLayout` from
 `ipyelk.elements.layout_options` or its `layout` module) raise `DeprecatedAPIError` --
 or `DeprecatedImportError` for the module-level names -- throughout 3.x with the
 replacement in the message.
@@ -304,6 +318,10 @@ replacement in the message.
   the selection and the camera. `UpdateModelCommand2` now also carries `hoverFeedback`
   over to the updated element, so a re-render under a resting pointer no longer drops
   the mouseover ([#156]).
+- Remove `NodeExpandTool` and its `ExpandAction`: its `wheel` handler returned before it
+  did anything, and nothing sent the action. Remove the empty `change:interaction`
+  listener too: no kernel class has an `interaction` trait
+  ([#217](https://github.com/jupyrdf/ipyelk/issues/217)).
 
 [#29]: https://github.com/jupyrdf/ipyelk/issues/29
 [#31]: https://github.com/jupyrdf/ipyelk/issues/31
@@ -411,20 +429,20 @@ replacement in the message.
     of the current pipe (wrapping it, or reusing its stages), raises `TraitError` too:
     build a new pipe instead
   - The rule also holds when a pipeline's `pipes` changes in place, and before a
-    `Pipeline` is wired. Adding another open diagram's stage to an assigned pipeline
-    was accepted, so the stage ran in both, and `Pipeline(pipes=[...])` rewired a live
+    `Pipeline` is wired. Adding another open diagram's stage to an assigned pipeline was
+    accepted, so the stage ran in both, and `Pipeline(pipes=[...])` rewired a live
     diagram's stage before anything could refuse it. Both now raise `TraitError` and
     change nothing, as does a `pipes` list with a closed stage or a stage listed twice
-    (it was wired into a cycle). A stage added in place belongs to the diagram (and
-    gets its `style`); a stage removed in place is released, not closed ([#191])
+    (it was wired into a cycle). A stage added in place belongs to the diagram (and gets
+    its `style`); a stage removed in place is released, not closed ([#191])
 - Close what a diagram owns when the diagram is closed. `Diagram.close()` only released
   its pipe, so the pipe tree, the view, the tools and the toolbar stayed open: every
   closed diagram left 68 widgets behind, 130 with the status view shown. It now closes
-  them with their layout and style widgets and drops its links to them, and leaves
-  open `diagram.source`, an inlet or outlet passed to a pipe, the viewer's
-  `control_overlay`, and a `layout` or tool `ui` passed in. A closed diagram's pipe is
-  closed, so another diagram can no longer take it. `Tool.close()` also closes the
-  `ui` the tool built, and `Viewer.close()` its tools ([#191])
+  them with their layout and style widgets and drops its links to them, and leaves open
+  `diagram.source`, an inlet or outlet passed to a pipe, the viewer's `control_overlay`,
+  and a `layout` or tool `ui` passed in. A closed diagram's pipe is closed, so another
+  diagram can no longer take it. `Tool.close()` also closes the `ui` the tool built, and
+  `Viewer.close()` its tools ([#191])
 - Log the routine "fixing N ids" message from `ValidationPipe` at debug level instead of
   warning: assigning ids to id-less elements is the normal path (`fix_null_id=True`), so
   every diagram built from id-less elements logged it
@@ -433,11 +451,11 @@ replacement in the message.
     and properties. The slack port that stands in for it in the layout used to overwrite
     them with its own 5×5 geometry, permanently. Any other port, including one that
     moved to another node, still takes its layout from the browser.
-  - Each line of a wrapped label gets its own ids, and so do its sub-labels. The lines of
-    a label with id `L` get the ids `L#0`, `L#1`, … (sub-label `sub` gets `sub#0`, …).
-    If another element already uses one of these derived ids, indexing gives that line
-    a fresh id; ids you set yourself never change. Before, every line had the same id
-    (`L`, or one generated id) and the same sub-label ids. A wrapped line shares its
+  - Each line of a wrapped label gets its own ids, and so do its sub-labels. The lines
+    of a label with id `L` get the ids `L#0`, `L#1`, … (sub-label `sub` gets `sub#0`,
+    …). If another element already uses one of these derived ids, indexing gives that
+    line a fresh id; ids you set yourself never change. Before, every line had the same
+    id (`L`, or one generated id) and the same sub-label ids. A wrapped line shares its
     label's `metadata`.
   - The ELK JSON schema accepts the slack-port `key` and `hidden` properties, so a
     projection validates after a collapse and an expand.
@@ -451,6 +469,29 @@ replacement in the message.
   that key instead. `ElementIndex` and `HierarchicalIndex` now support `key in index`,
   by id. A key that is the id of anything other than one of the endpoint's own ports
   still makes a new port with that key, as before ([#215])
+- `from ipyelk.elements import *` works. Its `__all__` named `ElementShape`, which the
+  package did not import, and `check_ids`, which is an index method. Ruff rule `F822`
+  (an undefined name in `__all__`) is on now, and a test star-imports every module that
+  has an `__all__` ([#217])
+- Stop `Record` from making six widgets for each child every time it is serialized, on
+  every synced `value`, and never closing them: it writes the same size option strings
+  to its children without the option widgets. A `min_height` that is not a whole number
+  still fails to serialize, now with a `ValueError` that names it, where the widget's
+  `Int` trait raised a `TraitError` ([#217])
+- Export the wrapping layout options `GraphWrappingStrategy`,
+  `AdditionalWrappedEdgesSpacing` and `CorrectionFactorForWrapping` from
+  `ipyelk.elements.layout_options`: no module imported them ([#217])
+- `Diagram.register_tool` binds each dependency in the tool's `_dependencies` that the
+  diagram supplies (`diagram`, `pipe`, `view`, and the view's `selection`, `hover`,
+  `viewport` and `painter`), and still binds a `diagram` or `selection` trait that a
+  tool does not list. A `PipelineProgressBar` added this way is bound to the pipe, and
+  gets the progress reports when no other bar has them. A bar moved from another diagram
+  stops getting the reports of that diagram's pipe ([#217])
+- `logic_gates.Gate` passes `minimum_size` (it was `minimun_size`, which `traitlets`
+  dropped with a warning). The text sizer sets the style CSS as the text of its
+  `<style>` element, not as markup ([#217])
+- `iter_labels` yields every label of each element and its child nodes, each element's
+  own labels first. It yielded only the first label of each element ([#217])
 - Offset a label icon vertically by its `y`, not its `x`: `ElkLabelView` added
   `icon.position.x` to the icon's `y`, so an icon's `x` also shifted it down and its `y`
   was ignored ([#205])
@@ -487,8 +528,8 @@ replacement in the message.
   shell replies raw on the socket their shell stream reads from, which can swallow the
   wake-up for a request that arrives during the send. The request then waits unread
   while the kernel idles. In nbconvert that happens when a cell prints into an
-  `ipywidgets.Output`: `nbclient` answers with a `comm_msg` just as the cell's reply goes
-  out, and the next cell never runs.
+  `ipywidgets.Output`: `nbclient` answers with a `comm_msg` just as the cell's reply
+  goes out, and the next cell never runs.
   - The `itest` and `atest` environments now lock ipykernel 7.4, which fixed it
     ([ipykernel#1529]).
   - ipykernel 7.4 needs Python 3.11 or newer. For the Python 3.10 environments, the
@@ -500,6 +541,20 @@ replacement in the message.
   restarts with every cell and fires after 30 s without a new cell ([#177])
 - Fail CI when the committed `elkschema.json` differs from what `jlpm schema` generates,
   and rebuild it when `elkgraph-json.ts` changes ([#187])
+- Fail the `lint` job when `pixi run fix` changes a committed file or adds a file that
+  git does not ignore (`git diff --exit-code`, `git status --porcelain`), and commit
+  what it changes: `taplo` also formats `scripts/*.toml`, and `ATEST_ARGS` in `ci.yml`
+  is a literal block, which `prettier` leaves alone. Ruff targets Python 3.10, the
+  `requires-python` floor. `jlpm clean` keeps the committed `elkschema.json`.
+  `CONTRIBUTING.md` names `pixi run watch-js` and `.github/workflows/ci.yml` ([#217])
+- Track every work marker: a `TODO`, `FIXME`, `XXX` or `HACK` comment names its issue as
+  `TODO(#123): what to do`, as `CONTRIBUTING.md` describes. `scripts/check_todos.py`,
+  run by `pixi run lint-todos` as part of `pixi run lint`, fails on a marker in code
+  that names no issue, and on a `todo:` or `fixme:` in lower case. Delete the obsolete
+  markers, and file an issue for each of the others ([#217])
+- Skip the `16_Cervidae_Tree` notebook tests, with the reason, when
+  `examples/data/cervidae-tree.zip` is a git-lfs pointer file: a clone without git-lfs
+  failed them with `BadZipFile` ([#217])
 
 ### Documentation
 
@@ -526,6 +581,7 @@ replacement in the message.
 [#200]: https://github.com/jupyrdf/ipyelk/issues/200
 [#205]: https://github.com/jupyrdf/ipyelk/issues/205
 [#215]: https://github.com/jupyrdf/ipyelk/issues/215
+[#217]: https://github.com/jupyrdf/ipyelk/issues/217
 
 ## `2.1.2`
 
