@@ -59,20 +59,51 @@ the layout. The renderers use it as follows:
   it.
 - A parent label places its icon and its text with the `width` and `height` of the
   `Icon` shape, if they are set. It draws the icon at the laid-out size.
-- If a `LabelShape` sets both `width` and `height`, and neither is 0, the frontend
-  does not measure the text of the label.
+- If a `LabelShape` sets both `width` and `height`, and neither is 0, the frontend does
+  not measure the text of the label.
 
-The rule that the element serializes the size of its shape applies only until the
-first layout. The renderer rules above still apply after it. After each layout, ipyelk
-copies the `properties`, `width` and `height` that come back from the frontend onto the
-element. The element then has the laid-out size as its own size, so a later change to
-the size of its shape has no effect.
+After each layout, ipyelk writes the laid-out `width` and `height` that come back from
+the frontend onto the element, where you can read them. A laid-out size is the output of
+a layout, not an input to the next one unless nothing else gives the element a size. The
+size that ipyelk serializes as the input to the next layout is, in this order:
 
-The shape also loses its subclass. For example, a `Circle` becomes a `NodeShape`, and an
-`Icon` becomes a `LabelShape`. After that, `node.properties.shape.radius = 20` raises a
-`ValueError`. To change the shape after a layout, assign a new shape and set the `width`
-and `height` of the element to `None`. This caveat is tracked in
-[#201](https://github.com/jupyrdf/ipyelk/issues/201), and goes away when it is fixed.
+1. The `width` or `height` that you assigned to the element, also before the first
+   layout. The layout does not forget it: it is sent again after each layout. Assign
+   `None` to drop it.
+2. The size of the shape. So `node.properties.shape.radius = 20` after a layout changes
+   the size of the node at the next layout.
+3. The laid-out size, for an element whose shape has no size, or that has no shape.
+
+This rule applies when ipyelk serializes the elements as the input to a layout, which
+the `VisibilityPipe` does under `exclude_layout`. Any other serialization, for example
+the one that shows the elements in the view after a refresh that runs no layout, or a
+plain `model_dump()`, carries the laid-out size. So does a pipeline that you compose
+without a `VisibilityPipe`.
+
+A change to a shape's size needs a layout to update the view. After changing the radius
+of a node in `diagram.source`, request that layout before refreshing:
+
+```python
+from ipyelk.pipes import flows as F
+
+node.properties.shape.radius = 20
+diagram.source.record(F.Layout)
+diagram.refresh()
+```
+
+A bare `diagram.refresh()` does not request a layout after this edit.
+
+The same holds for the size that the frontend measures for a label: if the `LabelShape`
+sets `width` but not `height`, the layout gets the `width` of the shape and the measured
+`height`, starting with the first layout. A `width` or `height` assigned to a `Label` is
+also sent to the layout instead of the measured size, starting with the first layout.
+
+The shape keeps its class and its fields through a layout. The frontend does not change
+the `properties` of an element, so ipyelk keeps them, with the shape object, for example
+a `Widget` with its widget, and does not replace them with what comes back. A layout can
+give a node a size other than the size of its shape, for example a `Circle` node with
+children. The `radius` then stays as you set it, and the `width` and `height` of the
+node hold the laid-out size.
 
 ## The shapes
 

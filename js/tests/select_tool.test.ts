@@ -5,7 +5,7 @@
  * Distributed under the terms of the Modified BSD License.
  */
 import 'reflect-metadata';
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it } from 'vitest';
 
 import { Action, SelectAction } from 'sprotty-protocol';
 
@@ -62,6 +62,8 @@ function seenBy(root: Element, target: Element) {
   return seen;
 }
 
+afterEach(() => document.body.replaceChildren());
+
 describe('isJLWidget', () => {
   it('sees a click on an element inside an overlay widget', () => {
     const d = diagram('a');
@@ -117,11 +119,16 @@ describe('NodeSelectToolMouseListener', () => {
     model.add(n);
   }
 
-  /** ids sprotty's own `MouseTool` selects after a mouseup on `pick(diagram)` */
-  function selectedAfterMouseUp(pick: (d: Diagram) => Element, button = 0) {
+  /** Selection changes sprotty's `MouseTool` dispatches after the mouseup. */
+  function selectionAfterMouseUp(
+    pick: (d: Diagram) => Element,
+    button = 0,
+    selectedIDs: string[] = [],
+  ) {
     const model = new SModelRootImpl();
     model.id = 'root';
     for (const id of ['n1', 'w1', 'h1']) node(model, id);
+    for (const id of selectedIDs) (model.index.getById(id) as ElkNode).selected = true;
     const dispatched: Action[] = [];
     const tool = Object.assign(
       new MouseTool([new NodeSelectToolMouseListener('node', {} as any)]),
@@ -132,30 +139,59 @@ describe('NodeSelectToolMouseListener', () => {
     );
     const d = diagram('c');
     // as `MouseTool.decorate` binds it on the root's vnode
-    d.root.addEventListener('mouseup', (event) => tool.mouseUp(model, event), {
-      once: true,
-    });
+    d.root.addEventListener(
+      'mouseup',
+      (event) => tool.mouseUp(model, event as MouseEvent),
+      { once: true },
+    );
     pick(d).dispatchEvent(new MouseEvent('mouseup', { bubbles: true, button }));
-    d.view.remove();
-    return (dispatched as SelectAction[]).flatMap((a) => a.selectedElementsIDs);
+    return {
+      actionCount: dispatched.length,
+      selectedElementsIDs: (dispatched as SelectAction[]).flatMap(
+        (a) => a.selectedElementsIDs,
+      ),
+      deselectedElementsIDs: (dispatched as SelectAction[]).flatMap(
+        (a) => a.deselectedElementsIDs,
+      ),
+    };
   }
 
   it('selects the node under a click on the diagram', () => {
-    expect(selectedAfterMouseUp((d) => d.node)).toEqual(['n1']);
-    expect(selectedAfterMouseUp((d) => d.html)).toEqual(['h1']);
+    expect(selectionAfterMouseUp((d) => d.node)).toEqual({
+      actionCount: 1,
+      selectedElementsIDs: ['n1'],
+      deselectedElementsIDs: [],
+    });
+    expect(selectionAfterMouseUp((d) => d.html)).toEqual({
+      actionCount: 1,
+      selectedElementsIDs: ['h1'],
+      deselectedElementsIDs: [],
+    });
   });
 
   it('selects nothing on a right click on a node', () => {
-    expect(selectedAfterMouseUp((d) => d.node, 2)).toEqual([]);
+    expect(selectionAfterMouseUp((d) => d.node, 2)).toEqual({
+      actionCount: 1,
+      selectedElementsIDs: [],
+      deselectedElementsIDs: [],
+    });
   });
 
-  it('selects nothing on a click inside the widget of a widget node', () => {
-    expect(selectedAfterMouseUp((d) => d.handle)).toEqual([]);
+  it('preserves the existing selection on a click inside a widget node', () => {
+    expect(selectionAfterMouseUp((d) => d.handle, 0, ['n1'])).toEqual({
+      actionCount: 1,
+      selectedElementsIDs: [],
+      deselectedElementsIDs: [],
+    });
   });
 
   // the control overlay's container has no DOM id: sprotty resolves a click
   // there to the unselectable root, so this held before #216 too
-  it('selects nothing on a click on the icon of a control overlay button', () => {
-    expect(selectedAfterMouseUp((d) => d.icon)).toEqual([]);
+  it('preserves the existing selection on a control overlay button icon click', () => {
+    expect(selectionAfterMouseUp((d) => d.icon, 0, ['n1'])).toEqual({
+      actionCount: 0,
+      selectedElementsIDs: [],
+      deselectedElementsIDs: [],
+    });
   });
 });

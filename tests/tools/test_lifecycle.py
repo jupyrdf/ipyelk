@@ -15,7 +15,7 @@ import traitlets as T
 
 import ipyelk.tools
 from ipyelk.elements import Node
-from ipyelk.exceptions import DeprecatedAPI, DeprecatedAPIError, RemovedAPI
+from ipyelk.exceptions import ClosedError, DeprecatedAPI, DeprecatedAPIError, RemovedAPI
 from ipyelk.pipes import Pipe
 from ipyelk.tools import SetTool, Tool, ToolButton
 from ipyelk.tools.toolbar import Toolbar
@@ -349,3 +349,45 @@ def test_removed_module_names_keep_their_message_through_from_import():
         _ = ipyelk.tools.Zoom
     with pytest.raises(DeprecatedAPI):
         _ = Tool().handler
+
+
+def test_closed_tool_button_rejects_queued_click():
+    calls = []
+    tool = ToolButton(on_click=calls.append)
+    button = tool.ui
+    tool.close()
+    with pytest.raises(ClosedError, match="use a new tool"):
+        tool.check_enabled()
+    button.click()  # ipywidgets catches callback exceptions
+    assert calls == []
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("close_on_start", [False, True])
+async def test_tool_close_before_execution_cancels_without_running(close_on_start):
+    tool, pipe = _wired()
+    node = Node()
+    pipe.inlet.value = node
+
+    def change_and_close(_tool):
+        node.properties.cssClasses = "changed-before-close"
+        tool.close()
+
+    if close_on_start:
+        tool.on_start(change_and_close)
+    task = tool.trigger()
+    if not close_on_start:
+        tool.close()
+    with pytest.raises(asyncio.CancelledError):
+        await task
+    await asyncio.sleep(0)
+    assert "run" not in tool.events
+    assert "done:True" not in tool.events
+    if close_on_start:
+        assert node.properties.cssClasses == "changed-before-close"
+        assert pipe.inlet.flow == ("pending", "r")
+    else:
+        assert not node.properties.cssClasses
+        assert pipe.inlet.flow == ("pending",)
+        assert tool.events == []
+    pipe.close()
