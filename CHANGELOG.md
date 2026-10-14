@@ -1,8 +1,10 @@
 # Changelog
 
-## `3.0.0` (unreleased)
+## `3.0.0a0` (unreleased)
 
-### Breaking changes
+### `ipyelk 3.0.0a0`
+
+#### Breaking changes
 
 - Tools no longer replace the pipe's pending flow when they run. `Tool` merges its
   `reports` into `tee.inlet.flow` (order preserved, duplicates dropped) through the new
@@ -189,7 +191,7 @@
   `exclude_none=True`, serialization drops that key instead, so ELK uses the option's
   default. `OptionsWidget.value` only accepts string keys and values ([#31]).
 
-### Migration
+#### Migration
 
 ```python
 # 2.x: a Tool subclass that hand-rolled the merge to avoid clobbering the flow
@@ -292,7 +294,7 @@ The removed names (`handler`, `on_run`, `disable`, `Hover.ids`, assigning `on_st
 or `DeprecatedImportError` for the module-level names -- throughout 3.x with the
 replacement in the message.
 
-### Added
+#### Added
 
 - An opt-in check for layout option keys that ELK ignores without an error. ELK takes a
   full option id, or the end of one that starts after a dot (`elk.direction`,
@@ -332,7 +334,7 @@ except ClosedError:  # also a TraitError and a RuntimeError
     diagram = Diagram(source=diagram.source)  # the source stays open
 ```
 
-### `@jupyrdf/jupyter-elk 3.0.0`
+### `@jupyrdf/jupyter-elk 3.0.0-alpha0`
 
 - Write `hovered_id` back on pointer leave, but only when the departed element is still
   the hovered one, so a stale leave cannot erase a newer enter; never dispatch `null` to
@@ -621,7 +623,7 @@ except ClosedError:  # also a TraitError and a RuntimeError
 [#215]: https://github.com/jupyrdf/ipyelk/issues/215
 [#217]: https://github.com/jupyrdf/ipyelk/issues/217
 
-## `2.1.2`
+## `2.1.2` (unreleased)
 
 ### Development
 
