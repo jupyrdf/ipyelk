@@ -1,6 +1,7 @@
 """Check for files in dist archives."""
 
 import json
+import re
 import sys
 import tarfile
 import zipfile
@@ -28,8 +29,19 @@ LICENSE_EXPRESSION = "BSD-3-Clause AND EPL-1.0 AND EPL-2.0"
 NPM_LICENSE = f"({LICENSE_EXPRESSION})"
 EXT_PATH = "share/jupyter/labextensions/@jupyrdf/jupyter-elk"
 EXT_PKG_PATH = f"{EXT_PATH}/package.json"
-TPL_PATH = f"{EXT_PATH}/static/third-party-licenses.json"
+STATIC_PATH = f"{EXT_PATH}/static"
+TPL_PATH = f"{STATIC_PATH}/third-party-licenses.json"
 TPL = ROOT / "src/_d" / TPL_PATH
+JS = ROOT / "js"
+#: the TypeScript the bundle never sees: unit tests and their runner config
+JS_SKIP = [JS / "tests", JS / "vitest.config.ts"]
+#: a top-level declaration of runtime code; type-only and re-export files have none
+RUNTIME_DECL = re.compile(
+    r"^(export\s+(default\s+)?)?(abstract\s+)?(async\s+)?"
+    r"(const|let|var|function|class|enum)\b",
+    re.MULTILINE,
+)
+MAP_URL = "//# sourceMappingURL="
 
 LICENSE_BYTES = {p: p.read_bytes() for p in [*LICENSE_FILES, TPL]}
 
@@ -101,6 +113,50 @@ def check_npm_license(where: str, package_json: bytes) -> None:
     print(f"OK {where} license: {found}")
 
 
+def runtime_ts() -> list[str]:
+    """List the ``js/`` TypeScript files that compile to runtime code."""
+    return sorted(
+        p.relative_to(ROOT).as_posix()
+        for p in [*JS.rglob("*.ts"), *JS.rglob("*.tsx")]
+        if not p.name.endswith(".d.ts")
+        and not any(p == s or s in p.parents for s in JS_SKIP)
+        and RUNTIME_DECL.search(p.read_text(**UTF8))
+    )
+
+
+def check_source_maps(whl: zipfile.ZipFile, names: set[str]) -> None:
+    """Fail unless every labextension script ships a map with our TypeScript (#83)."""
+    static = f"{PFX}.data/data/{STATIC_PATH}/"
+    scripts = sorted(n for n in names if n.startswith(static) and n.endswith(".js"))
+    assert scripts, f"!!! wheel has no {static}*.js"
+    mapped: set[str] = set()
+    for script in scripts:
+        name = script.removeprefix(static)
+        assert f"{script}.map" in names, f"!!! wheel {name} has no {name}.map"
+        last = whl.read(script).rstrip().rsplit(b"\n", 1)[-1].decode("utf-8")
+        assert last.partition("?")[0] == f"{MAP_URL}{name}.map", (
+            f"!!! wheel {name} does not end with a {MAP_URL}{name}.map, "
+            f"but with {last[-80:]!r}"
+        )
+        smap = json.loads(whl.read(f"{script}.map"))
+        # webpack names our sources webpack://@jupyrdf/jupyter-elk/./js/...
+        mapped |= {
+            src.partition("/./")[2].partition("?")[0]
+            for src, content in zip(
+                smap["sources"], smap.get("sourcesContent") or [], strict=False
+            )
+            if content
+        }
+    print(f"OK wheel {len(scripts)} labextension scripts name their source maps")
+    expected = runtime_ts()
+    assert expected, f"!!! no runtime TypeScript found in {JS}"
+    missing = [ts for ts in expected if ts not in mapped]
+    assert not missing, (
+        f"!!! wheel source maps lack the sourcesContent of {', '.join(missing)}"
+    )
+    print(f"OK wheel source maps hold all {len(expected)} runtime js/ TypeScript files")
+
+
 def check_whl(path: Path) -> None:
     with zipfile.ZipFile(path, "r") as whl:
         names = set(whl.namelist())
@@ -118,6 +174,7 @@ def check_whl(path: Path) -> None:
         ext_pkg = f"{PFX}.data/data/{EXT_PKG_PATH}"
         assert ext_pkg in names, f"!!! wheel missing {ext_pkg}"
         check_npm_license(f"wheel {ext_pkg}", whl.read(ext_pkg))
+        check_source_maps(whl, names)
 
 
 def check_sdist(path: Path) -> None:

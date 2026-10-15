@@ -432,6 +432,11 @@ removed names][migration-removed-names] lists every name that raises
 
 ### Development
 
+- Check the source maps in the wheel: `scripts/check-dist.py` fails unless every
+  labextension `static/*.js` has a `.map` beside it and ends with a `sourceMappingURL`
+  that names it, and unless the maps hold the TypeScript (`sourcesContent`) of every
+  `js/` file that compiles to runtime code. A change to the JS build can no longer drop
+  them without notice ([#83])
 - `src/ipyelk/schema/elk-catalog.json` lists the layout options, algorithms and
   categories of the bundled `elkjs`. `pixi run build-py-elk-catalog` writes it. A
   `vitest` checks it against the installed `elkjs`, and a unit test checks the option
@@ -630,6 +635,7 @@ removed names][migration-removed-names] lists every name that raises
 [#29]: https://github.com/jupyrdf/ipyelk/issues/29
 [#31]: https://github.com/jupyrdf/ipyelk/issues/31
 [#66]: https://github.com/jupyrdf/ipyelk/issues/66
+[#83]: https://github.com/jupyrdf/ipyelk/issues/83
 [#95]: https://github.com/jupyrdf/ipyelk/issues/95
 [#115]: https://github.com/jupyrdf/ipyelk/issues/115
 [#133]: https://github.com/jupyrdf/ipyelk/issues/133
