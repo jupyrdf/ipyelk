@@ -356,7 +356,8 @@ def test_closed_tool_button_rejects_queued_click():
     tool = ToolButton(on_click=calls.append)
     button = tool.ui
     tool.close()
-    with pytest.raises(ClosedError, match="use a new tool"):
+    msg = "^ToolButton is closed and cannot run; build a new ToolButton$"
+    with pytest.raises(ClosedError, match=msg):
         tool.check_enabled()
     button.click()  # ipywidgets catches callback exceptions
     assert calls == []

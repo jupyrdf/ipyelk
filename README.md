@@ -81,8 +81,10 @@ pip uninstall ipyelk
 
 ## Open Source
 
-This work is licensed under the [BSD-3-Clause License][license]. It contains pieces
-derived from [other works][copyright].
+This work is licensed under the [BSD-3-Clause License][license]. Some of its source
+files are derived from [other works][copyright] under the Eclipse Public License 1.0 or
+2.0, and it bundles JavaScript packages under the Eclipse Public License 2.0. So the
+package's license expression is `BSD-3-Clause AND EPL-1.0 AND EPL-2.0`.
 
 [copyright]: https://github.com/jupyrdf/ipyelk/tree/master/COPYRIGHT.md
 [license]: https://github.com/jupyrdf/ipyelk/tree/master/LICENSE.txt

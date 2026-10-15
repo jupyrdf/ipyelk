@@ -34,6 +34,7 @@ Do these steps before you change your code:
    - {ref}`migration-option-ids`
    - {ref}`migration-layout-options`
    - {ref}`migration-wrapping-horizontal`
+   - {ref}`migration-label-size`
 
 (migration-removed-names)=
 
@@ -933,12 +934,12 @@ view.set_viewport(origin=(0, 0), zoom=1.5)  # every view, animated
 view.set_viewport(zoom=2, animate=False, view_id=view.viewport.view_id)
 ```
 
-### Make a new diagram after you close one
+### Make a new diagram or tool after you close one
 
-A closed `Diagram` or `Pipe` raises `ipyelk.exceptions.ClosedError` when you use it. A
-`Pipeline` is a pipe that runs a list of other pipes, its stages. A closed widget has no
-connection to the browser, so a call to it cannot reach the browser. In 2.x, the call
-did nothing, and no error showed.
+A closed `Diagram`, `Pipe` or tool raises `ipyelk.exceptions.ClosedError` when you use
+it. A `Pipeline` is a pipe that runs a list of other pipes, its stages. A closed widget
+has no connection to the browser, so a call to it cannot reach the browser. In 2.x, the
+call did nothing, and no error showed.
 
 - On a closed `Diagram`, `refresh()`, `register_tool()` and an assignment to `source`,
   `pipe`, `view`, `tools`, `toolbar`, `symbols` or `style` raise `ClosedError`.
@@ -988,10 +989,6 @@ ClosedError: Diagram is closed and cannot refresh; build a new Diagram
 if diagram.closed:
     diagram = Diagram(source=diagram.source)
 diagram.refresh()
-```
-
-```{note}
-This change is in [#226], which is not merged yet.
 ```
 
 The `ClosedError` of a closed tool names the class of the tool, as the `ClosedError` of
@@ -1344,6 +1341,55 @@ from ipyelk.elements.layout_options.wrapping_options import GraphWrappingStrateg
 GraphWrappingStrategy(value="OFF")
 ```
 
+(migration-label-size)=
+
+### Expect a label to have the size that you assign
+
+In 3.0, the layout uses the `width` and the `height` that you assign to a `Label`.
+Unless the `LabelShape` of a label sets both `width` and `height`, the browser measures
+the text of the label. In 2.x, the measured size then replaced the size that you
+assigned. In 3.0, the layout uses the measured size only for a dimension that has no
+other value.
+
+For each dimension of a label, the layout uses the first of these values:
+
+1. the `width` or `height` that you assigned to the `Label`
+2. the `width` or `height` of its `LabelShape`
+3. the size that the browser measured
+
+This change affects code that assigns a `width` or a `height` to a `Label`. It also
+affects code that sets only one of the two on a `LabelShape`. The 2.x code does not
+raise an error. But the layout of the label can change. The change is in [#223].
+
+```python
+# 2.x
+from ipyelk.elements import Label, LabelProperties
+from ipyelk.elements.shapes import LabelShape
+
+label = Label(text="A long label", width=40)
+other = Label(
+    text="A long label", properties=LabelProperties(shape=LabelShape(width=40))
+)
+```
+
+On 3.0, the layout makes both labels 40 pixels wide. On 2.x, both labels had the width
+of their text.
+
+```python
+# 3.0: leave out the width to lay out the label at the width of its text
+from ipyelk.elements import Label
+
+label = Label(text="A long label")
+```
+
+In 3.0, a shape also keeps its class and its fields through a layout. In 2.x, the shape
+came back from the browser as its base class, for example a `Circle` as a `NodeShape`.
+The element also kept its laid-out size, so a later change to the size of its shape had
+no effect. In 3.0, a change to the size of a shape changes the size of the element at
+the next layout. 2.x code that assigns `None` to `width` and `height` after it changes
+the shape still works. The {doc}`reference/shapes` page tells you how to request that
+layout.
+
 ## Imports
 
 (migration-zoom-pan-import)=
@@ -1467,4 +1513,5 @@ is gone. Thus, the 2.x imports fail.
 [#192]: https://github.com/jupyrdf/ipyelk/pull/192
 [#202]: https://github.com/jupyrdf/ipyelk/pull/202
 [#206]: https://github.com/jupyrdf/ipyelk/pull/206
+[#223]: https://github.com/jupyrdf/ipyelk/pull/223
 [#226]: https://github.com/jupyrdf/ipyelk/pull/226

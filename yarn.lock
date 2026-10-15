@@ -723,6 +723,7 @@ __metadata:
     "@types/lodash": ^4.14.162
     "@types/node": ^22.8.6
     elkjs: 0.12.0
+    happy-dom: 20.14.5
     inversify: 6.2.2
     nyc: ^17.1.0
     prettier: ^3.3.0
@@ -2270,7 +2271,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/node@npm:*, @types/node@npm:^22.8.6":
+"@types/node@npm:*, @types/node@npm:>=20.0.0, @types/node@npm:^22.8.6":
   version: 22.20.1
   resolution: "@types/node@npm:22.20.1"
   dependencies:
@@ -2333,6 +2334,22 @@ __metadata:
   version: 1.13.0
   resolution: "@types/underscore@npm:1.13.0"
   checksum: 1411cbeb1b743629d504fcb2037b393d11eb207459b9d560f71304183115e30ba145f83b819ffcc8a0d5d4eccfb76bebb0ef7aab8f96a04d88d99ff9dfe503c6
+  languageName: node
+  linkType: hard
+
+"@types/whatwg-mimetype@npm:^3.0.2":
+  version: 3.0.2
+  resolution: "@types/whatwg-mimetype@npm:3.0.2"
+  checksum: 30e2599ae02c539a6dd08b58de255aad24a41cdabeebc0293814884f1301f1328443b9915f2e990e4f484fa7f226ca8718991b63d2d387287f898c36390ef856
+  languageName: node
+  linkType: hard
+
+"@types/ws@npm:^8.18.1":
+  version: 8.18.2
+  resolution: "@types/ws@npm:8.18.2"
+  dependencies:
+    "@types/node": "*"
+  checksum: 6b92ac97d46f9f7c87c209c28d7c10fc762dd8604e2e5440239ff6eb33410dc142a16d84c76943295f35f29294e67f97f8390f785c60f30308c4c302368b85ee
   languageName: node
   linkType: hard
 
@@ -2974,6 +2991,15 @@ __metadata:
   languageName: node
   linkType: hard
 
+"buffer-image-size@npm:^0.6.4":
+  version: 0.6.4
+  resolution: "buffer-image-size@npm:0.6.4"
+  dependencies:
+    "@types/node": "*"
+  checksum: de18f469bfff95bd959ebd4b02fd21cb40d65b0f285b7c292977be9bda5543791880518a857a2048d909b03a8027ee5f8aa6bf8469fee3e1639c363440fb5cfc
+  languageName: node
+  linkType: hard
+
 "cacheable-lookup@npm:^5.0.3":
   version: 5.0.4
   resolution: "cacheable-lookup@npm:5.0.4"
@@ -3550,6 +3576,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"entities@npm:^7.0.1":
+  version: 7.0.1
+  resolution: "entities@npm:7.0.1"
+  checksum: 5ee49e52e64eafc63251585f74eae50f259ea2169dbbf5380843dcd97c79bfe430a58e7f34012ab67a8e258f6ef9f92d721d149ffc88c89039e155f1bcf48a53
+  languageName: node
+  linkType: hard
+
 "env-paths@npm:^2.2.0":
   version: 2.2.1
   resolution: "env-paths@npm:2.2.1"
@@ -3988,6 +4021,21 @@ __metadata:
   version: 1.0.4
   resolution: "grapheme-splitter@npm:1.0.4"
   checksum: 0c22ec54dee1b05cd480f78cf14f732cb5b108edc073572c4ec205df4cd63f30f8db8025afc5debc8835a8ddeacf648a1c7992fe3dcd6ad38f9a476d84906620
+  languageName: node
+  linkType: hard
+
+"happy-dom@npm:20.14.5":
+  version: 20.14.5
+  resolution: "happy-dom@npm:20.14.5"
+  dependencies:
+    "@types/node": ">=20.0.0"
+    "@types/whatwg-mimetype": ^3.0.2
+    "@types/ws": ^8.18.1
+    buffer-image-size: ^0.6.4
+    entities: ^7.0.1
+    whatwg-mimetype: ^3.0.0
+    ws: ^8.21.0
+  checksum: 62b3f893a28de9184cd988faff57570c94364816087fda1e821ac422f45e4ab0496df1bfeb03a46e9fc31f47a0d833cad397faa469e64b1275a286c4ad46aea8
   languageName: node
   linkType: hard
 
@@ -6888,6 +6936,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"whatwg-mimetype@npm:^3.0.0":
+  version: 3.0.0
+  resolution: "whatwg-mimetype@npm:3.0.0"
+  checksum: ce08bbb36b6aaf64f3a84da89707e3e6a31e5ab1c1a2379fd68df79ba712a4ab090904f0b50e6693b0dafc8e6343a6157e40bf18fdffd26e513cf95ee2a59824
+  languageName: node
+  linkType: hard
+
 "which-module@npm:^2.0.0":
   version: 2.0.1
   resolution: "which-module@npm:2.0.1"
@@ -7000,9 +7055,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"ws@npm:^8.11.0":
-  version: 8.18.0
-  resolution: "ws@npm:8.18.0"
+"ws@npm:^8.11.0, ws@npm:^8.21.0":
+  version: 8.22.0
+  resolution: "ws@npm:8.22.0"
   peerDependencies:
     bufferutil: ^4.0.1
     utf-8-validate: ">=5.0.2"
@@ -7011,7 +7066,7 @@ __metadata:
       optional: true
     utf-8-validate:
       optional: true
-  checksum: 91d4d35bc99ff6df483bdf029b9ea4bfd7af1f16fc91231a96777a63d263e1eabf486e13a2353970efc534f9faa43bdbf9ee76525af22f4752cbc5ebda333975
+  checksum: ba8819b01815b2f76e4d54024010e661e38174c2e4a5b196c39d1c1b745046d23c6b4d84470a46cc1921079e397abd61b18a4b934ba3c3f4f77659b0c7ca22d2
   languageName: node
   linkType: hard
 

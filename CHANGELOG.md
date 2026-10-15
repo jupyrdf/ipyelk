@@ -141,6 +141,13 @@
   implement `run()` reject `trigger()`, and closed `ToolButton`s reject button callbacks
   with `ClosedError`, including tools closed with their diagram. Closing a diagram twice
   still does nothing ([#197]).
+- A closed tool names its class in the `ClosedError` from `trigger()` and button clicks,
+  as a closed diagram or pipe does: "ToggleCollapsedTool is closed and cannot run; build
+  a new ToggleCollapsedTool". It used to say "use a new tool". `Tool.closed` says
+  whether `close()` was called, like `Diagram.closed` and `Pipe.closed`. The refusal
+  depends on the tool only: a tool that left a diagram's `tools` before the diagram
+  closed stays open and still runs. The view's own tools, such as `Selection` and
+  `FitTool`, close with the view ([#218]).
 - `ElementIndex.root()`, and so `check_ids()`, `check_edges()` and `MarkIndex.root()`,
   raises `ipyelk.exceptions.NotFoundError` when every node in the index has a parent,
   and `NotUniqueError`, naming the roots, when more than one node has none. It used to
@@ -226,6 +233,18 @@ removed names][migration-removed-names] lists every name that raises
 
 #### Fixed
 
+- PyPI shows the license: the wheel and the source distribution declare
+  `License-Expression: BSD-3-Clause AND EPL-1.0 AND EPL-2.0` (PEP 639), because the
+  package contains code under each of these licenses, and list `LICENSE.txt`,
+  `COPYRIGHT.md` and the Eclipse Public License (EPL) 1.0 and 2.0 texts as
+  `License-File`s, which the wheel ships under `.dist-info/licenses/`. 2.1.x had only a
+  `License ::` classifier, so PyPI showed no license. The bundled elkjs and sprotty
+  packages are available under EPL-2.0, and some source files are derived from EPL-1.0
+  or EPL-2.0 code: `COPYRIGHT.md` names the license of each. The npm package's
+  `package.json` declares the same expression. `scripts/check-dist.py` fails the build
+  if the expression changes, if these fields or files go missing, or if `dist/` does not
+  hold exactly one wheel and one source distribution of this version. The PyPI
+  `Changelog` link points at the `master` branch ([#133])
 - Hiding a root-level node with visible edges no longer crashes elkjs: `iter_visible`
   reported every sibling after a hidden one as hidden and projected a hidden node's
   slack port onto its preceding sibling (for a hidden first child of the root, onto the
@@ -340,6 +359,19 @@ removed names][migration-removed-names] lists every name that raises
   `radius`. The `node:round` renderer takes its radii from the laid-out node, so a node
   larger than the circle drew the ellipse off center. `x` and `y` that you set are still
   serialized ([#200])
+- Keep a typed shape through a layout round trip. `ElementIndex.update` replaced every
+  element's `properties` with the browser's copy, whose shape parses as the base class:
+  a `Circle` came back as a `NodeShape` without its `radius`, an `Icon` as a
+  `LabelShape`, a `Widget` without its widget, and `shape.radius = 20` then raised. The
+  frontend never changes `properties`, so an element now keeps its own, with its shape
+  object, and an edit made while a layout was in flight is no longer reverted. The
+  laid-out `width` and `height` are still written onto the element, where you can read
+  them, but no longer shadow the shape's size in the input to the next layout: a
+  `radius` set after a layout resizes the node at the next one, and a `LabelShape` that
+  sets only `width` now sends that width, not the measured one, starting with the first
+  layout. A `width` or `height` assigned to a `Label` is now sent to the layout instead
+  of the measured size, starting with the first layout. A size assigned to the element
+  itself stays the input to every later layout and wins over the shape ([#201])
 - Find an existing port when a NetworkX edge's `sourcePort`, `targetPort` or `port` is
   the port's global id rather than its key. `ElementIndex` had no `__contains__`, so the
   loader's `port_key in el_map` check was always false and it added a second port with
@@ -450,6 +482,8 @@ removed names][migration-removed-names] lists every name that raises
   restarts with every cell and fires after 30 s without a new cell ([#177])
 - Fail CI when the committed `elkschema.json` differs from what `jlpm schema` generates,
   and rebuild it when `elkgraph-json.ts` changes ([#187])
+- Run the JS unit tests that need a DOM under `happy-dom`, chosen per file with a
+  `@vitest-environment happy-dom` comment ([#216])
 - Fail the `lint` job when `pixi run fix` changes a committed file or adds a file that
   git does not ignore (`git diff --exit-code`, `git status --porcelain`), and commit
   what it changes: `taplo` also formats `scripts/*.toml`, and `ATEST_ARGS` in `ci.yml`
@@ -536,6 +570,12 @@ removed names][migration-removed-names] lists every name that raises
 - Offset a label icon vertically by its `y`, not its `x`: `ElkLabelView` added
   `icon.position.x` to the icon's `y`, so an icon's `x` also shifted it down and its `y`
   was ignored ([#205])
+- Stop selecting a widget node on a click inside its widget, such as on the handle of a
+  slider or the icon of a button: such a click is a widget click, which the select tool
+  ignores, wherever it lands in the widget. Before, only a click on the widget's own
+  element counted, so a widget node could be selected by clicking its widget's contents
+  and no longer can. A diagram shown as a widget node of another diagram still selects
+  its own nodes, and the outer diagram no longer selects the node that shows it ([#216])
 - Add optional label tooltips and full-width separators above labels.
 - Observe source rewiring and apply initial kernel selections after model submission
   completes.
@@ -592,6 +632,7 @@ removed names][migration-removed-names] lists every name that raises
 [#66]: https://github.com/jupyrdf/ipyelk/issues/66
 [#95]: https://github.com/jupyrdf/ipyelk/issues/95
 [#115]: https://github.com/jupyrdf/ipyelk/issues/115
+[#133]: https://github.com/jupyrdf/ipyelk/issues/133
 [#140]: https://github.com/jupyrdf/ipyelk/issues/140
 [#147]: https://github.com/jupyrdf/ipyelk/issues/147
 [#155]: https://github.com/jupyrdf/ipyelk/issues/155
@@ -610,9 +651,12 @@ removed names][migration-removed-names] lists every name that raises
 [#191]: https://github.com/jupyrdf/ipyelk/issues/191
 [#197]: https://github.com/jupyrdf/ipyelk/issues/197
 [#200]: https://github.com/jupyrdf/ipyelk/issues/200
+[#201]: https://github.com/jupyrdf/ipyelk/issues/201
 [#205]: https://github.com/jupyrdf/ipyelk/issues/205
 [#215]: https://github.com/jupyrdf/ipyelk/issues/215
+[#216]: https://github.com/jupyrdf/ipyelk/issues/216
 [#217]: https://github.com/jupyrdf/ipyelk/issues/217
+[#218]: https://github.com/jupyrdf/ipyelk/issues/218
 [#219]: https://github.com/jupyrdf/ipyelk/issues/219
 [#227]: https://github.com/jupyrdf/ipyelk/issues/227
 [eclipse-sprotty/sprotty#573]: https://github.com/eclipse-sprotty/sprotty/issues/573
