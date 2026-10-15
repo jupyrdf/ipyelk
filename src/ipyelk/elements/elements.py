@@ -4,7 +4,8 @@ from __future__ import annotations
 
 import abc
 import textwrap
-from typing import Type, TypeVar, cast, get_args
+from collections.abc import Mapping
+from typing import Any, Type, TypeVar, cast, get_args
 
 from pydantic import (
     BaseModel,
@@ -242,10 +243,57 @@ class BaseElement(IDElement, abc.ABC):
 
 
 class ShapeElement(BaseElement, abc.ABC):
+    """An element with a position and a size.
+
+    After a layout, ``width`` and ``height`` hold the laid-out size
+    (:meth:`set_laid_out`). The size serialized as the input to a layout
+    (under ``exclude_layout``, as ``VisibilityPipe`` projects the tree) is, in
+    this order: the size you assigned to the element, the size of its shape
+    (``BaseShape.dimension``), the laid-out size. Any other serialization, for
+    example the view's, carries the laid-out size. An element that has none of
+    them serializes 0 without a shape. Assigning ``width`` or ``height`` makes
+    that value the input, and ``None`` drops your assignment.
+    """
+
     x: float | None = None
     y: float | None = None
     width: float | None = None
     height: float | None = None
+    #: for each of ``width`` and ``height`` that holds a laid-out size, the
+    #: size you had assigned before (``None`` for none); assigning the field
+    #: removes its key
+    _laid_out: dict[str, float | None] = PrivateAttr(default_factory=dict)
+
+    def __setattr__(self, name: str, value) -> None:
+        super().__setattr__(name, value)
+        if name in {"width", "height"} and name in self._laid_out:
+            # Shallow model copies share this dict; rebind to keep their inputs independent.
+            self._laid_out = {k: v for k, v in self._laid_out.items() if k != name}
+
+    def model_copy(
+        self, *, update: Mapping[str, Any] | None = None, deep: bool = False
+    ) -> Self:
+        copied = super().model_copy(update=update, deep=deep)
+        if update:
+            # Pydantic applies updates without __setattr__ (or validation).
+            copied._laid_out = {
+                key: value
+                for key, value in copied._laid_out.items()
+                if key not in update
+            }
+        return copied
+
+    def set_laid_out(self, width: float | None, height: float | None) -> Self:
+        """Write the size the browser returned onto ``width`` and ``height``,
+        remembering a size you assigned as the input to the next layout.
+        """
+        laid_out = dict(self._laid_out)
+        for key, value in (("width", width), ("height", height)):
+            if key not in laid_out:
+                laid_out[key] = getattr(self, key)
+            setattr(self, key, value)
+        self._laid_out = laid_out
+        return self
 
     @model_serializer(mode="wrap")
     def serialize_element(
@@ -253,11 +301,16 @@ class ShapeElement(BaseElement, abc.ABC):
     ):
         data = super().serialize_element(handler, info)
         shape = self.properties.shape
+        laid_out = self._laid_out if exclude_layout.active else {}
         for key in ("width", "height"):
-            if getattr(self, key) is None:
-                value = shape.dimension(key) if shape else 0
-                if value is not None:
-                    serialize_value(data, key, value, info)
+            own = getattr(self, key)
+            value = laid_out.get(key, own)
+            if value is None:
+                value = shape.dimension(key) if shape else None
+                if value is None:
+                    value = own if key in laid_out else (None if shape else 0)
+            if value is not None and value is not own:
+                serialize_value(data, key, value, info)
         return data
 
 
@@ -487,7 +540,6 @@ class Node(HierarchicalElement):
         # common ancestor of the two endpoints the actual proper owner of the
         # edge may be calculated later
         edge = cls(source=source, target=target)
-        # TODO uniqueness of edge?
         self.edges.append(edge)
         return edge
 

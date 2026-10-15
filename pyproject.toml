@@ -2,7 +2,7 @@
 # Distributed under the terms of the Modified BSD License.
 
 [build-system]
-requires = ["flit_core >=3.9.0,<4"]
+requires = ["flit_core >=3.12,<4"]
 build-backend = "flit_core.buildapi"
 
 [project]
@@ -19,7 +19,6 @@ classifiers = [
   "Framework :: Jupyter",
   "Intended Audience :: Developers",
   "Intended Audience :: Science/Research",
-  "License :: OSI Approved :: BSD License",
   "Programming Language :: Python :: 3 :: Only",
   "Programming Language :: Python :: 3.10",
   "Programming Language :: Python :: 3.11",
@@ -27,7 +26,13 @@ classifiers = [
   "Programming Language :: Python :: 3.13",
   "Programming Language :: Python :: 3",
 ]
-license.text = "BSD-3-Clause"
+license = "BSD-3-Clause AND EPL-1.0 AND EPL-2.0"
+license-files = [
+  "LICENSE.txt",
+  "COPYRIGHT.md",
+  "third-party/epl-v10.html",
+  "third-party/epl-v20.html",
+]
 requires-python = ">=3.10"
 dependencies = [
   "ipywidgets >=8.0.1,<9",
@@ -38,7 +43,7 @@ dependencies = [
 
 [project.urls]
 "Bug Tracker" = "https://github.com/jupyrdf/ipyelk/issues"
-"Changelog" = "https://github.com/jupyrdf/ipyelk/blob/main/CHANGELOG.md"
+"Changelog" = "https://github.com/jupyrdf/ipyelk/blob/master/CHANGELOG.md"
 "Documentation" = "https://ipyelk.rtfd.io"
 "Source" = "https://github.com/jupyrdf/ipyelk"
 
@@ -98,7 +103,7 @@ testpaths = ["tests"]
 # ruff #################################################################################
 [tool.ruff]
 preview = true
-target-version = "py39"
+target-version = "py310"
 include = ["{scripts,src,tests,docs,atest,examples}/**/*.{py,ipynb}"]
 cache-dir = "build/.cache/ruff"
 
@@ -110,7 +115,7 @@ select = ["ALL"]
 flake8-copyright.notice-rgx = '(?i)Copyright \(c\) ipyelk contributors'
 isort.known-first-party = ["ipyelk"]
 ignore = [
-  # TOOD: #121 fix these on a follow-on PR
+  # TODO(#213): triage this list, left over from #121
   "A002",
   "A005",
   "ANN001",
@@ -151,7 +156,6 @@ ignore = [
   "EM101",
   "EM102",
   "ERA001",
-  "F822",
   "F841",
   "FA100",
   "FBT002",

@@ -7,13 +7,36 @@ from pathlib import Path
 
 import pytest
 
+EXAMPLES = Path(__file__).resolve().parents[1] / "examples"
+ARCHIVE = EXAMPLES / "data" / "cervidae-tree.zip"
+#: the first bytes of the text file git-lfs leaves when it is not installed
+LFS_POINTER = b"version https://git-lfs"
+
+
+def is_lfs_pointer(path: Path) -> bool:
+    with path.open("rb") as file:
+        return file.read(len(LFS_POINTER)) == LFS_POINTER
+
+
+def test_is_lfs_pointer(tmp_path):
+    pointer = tmp_path / "pointer.zip"
+    pointer.write_bytes(LFS_POINTER + b".github.com/spec/v1\noid sha256:0\nsize 1\n")
+    archive = tmp_path / "archive.zip"
+    archive.write_bytes(b"PK\x03\x04")
+    assert is_lfs_pointer(pointer)
+    assert not is_lfs_pointer(archive)
+
 
 @pytest.fixture
 def scope(monkeypatch):
-    examples = Path(__file__).resolve().parents[1] / "examples"
-    monkeypatch.chdir(examples)
+    if is_lfs_pointer(ARCHIVE):
+        pytest.skip(
+            "examples/data/cervidae-tree.zip is a git-lfs pointer, not the archive: "
+            "install git-lfs, then run `git lfs pull`"
+        )
+    monkeypatch.chdir(EXAMPLES)
     notebook = json.loads(
-        (examples / "16_Cervidae_Tree.ipynb").read_text(encoding="utf-8")
+        (EXAMPLES / "16_Cervidae_Tree.ipynb").read_text(encoding="utf-8")
     )
     scope = {"__name__": "cervidae_test"}
     for cell in notebook["cells"]:

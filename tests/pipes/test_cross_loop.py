@@ -199,3 +199,176 @@ async def test_cancel_from_another_thread_lands_on_the_runners_loop(subshell):
     assert elapsed < PROMPT, f"cancel only landed at a timer, after {elapsed:.3f}s"
     assert pipeline.inlet.flow == (F.New,), "the taken flow is handed back"
     assert pipeline._task is None
+
+
+class _Blocking(Pipe):
+    """A stage that blocks its loop's thread until ``proceed`` is set."""
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.started = threading.Event()
+        self.proceed = threading.Event()
+
+    async def run(self):
+        self.started.set()
+        assert self.proceed.wait(timeout=5)
+        self.outlet.value = self.inlet.value
+
+
+async def _settled(task: asyncio.Task) -> None:
+    for _ in range(500):
+        if task.done():
+            return
+        await asyncio.sleep(0.01)
+    raise AssertionError("task never settled")
+
+
+def _watched(pipeline: Pipeline) -> list:
+    errors: list = []
+    pipeline.on_error = lambda _pipe, error: errors.append(error)
+    return errors
+
+
+@pytest.mark.asyncio
+async def test_close_before_a_cross_loop_cancel_lands_mid_run(subshell):
+    """A close from the main loop while a subshell runner is inside a stage:
+    the cancel is queued behind the stage, so the runner must stop at the next
+    stage boundary instead of running the closed nested pipeline.
+    """
+    blocking = _Blocking(observes=(F.New,))
+    nested = Pipeline(pipes=[Pipe(observes=(F.New,), reports=(F.Layout,))])
+    pipeline = Pipeline(pipes=[blocking, nested])
+    errors = _watched(pipeline)
+    pipeline.inlet.record(F.New)
+
+    tasks: list[asyncio.Task] = []
+    subshell.call_soon_threadsafe(lambda: tasks.append(pipeline.schedule_run()))
+    try:
+        assert await asyncio.to_thread(blocking.started.wait, 5)
+        pipeline.close()
+    finally:
+        blocking.proceed.set()
+    await _settled(tasks[0])
+
+    assert tasks[0].cancelled()
+    assert errors == []
+
+
+@pytest.mark.asyncio
+async def test_close_before_a_cross_loop_cancel_lands_in_the_final_stage(subshell):
+    blocking = _Blocking(observes=(F.New,), reports=(F.Layout,))
+    pipeline = Pipeline(pipes=[blocking])
+    errors = _watched(pipeline)
+    finished = []
+    blocking.on_progress = lambda pipe: finished.append(pipe.status.state())
+    pipeline.inlet.record(F.New)
+    tasks: list[asyncio.Task] = []
+    subshell.call_soon_threadsafe(lambda: tasks.append(pipeline.schedule_run()))
+    try:
+        assert await asyncio.to_thread(blocking.started.wait, 5)
+        pipeline.close()
+    finally:
+        blocking.proceed.set()
+    await _settled(tasks[0])
+
+    assert tasks[0].cancelled()
+    assert errors == []
+    assert finished == ["running"]
+
+
+class _Counting(Pipe):
+    """A stage that counts its runs."""
+
+    runs = 0
+
+    async def run(self):
+        self.runs += 1
+        self.outlet.value = self.inlet.value
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("second", ["plain", "nested"])
+async def test_close_marks_the_pipeline_closed_before_its_stages(
+    subshell, second: str, monkeypatch: pytest.MonkeyPatch
+):
+    """``Pipeline.close()`` closes its stages before itself. A subshell runner
+    that reaches a stage boundary in between must still stop, so the pipeline
+    is marked closed before its stages are.
+    """
+    blocking = _Blocking(observes=(F.New,))
+    counting = _Counting(observes=(F.New,), reports=(F.Layout,))
+    stage = counting if second == "plain" else Pipeline(pipes=[counting])
+    pipeline = Pipeline(pipes=[blocking, stage])
+    errors = _watched(pipeline)
+    pipeline.inlet.record(F.New)
+    tasks: list[asyncio.Task] = []
+    settled = threading.Event()
+    close = stage.close
+
+    def schedule() -> None:
+        task = pipeline.schedule_run()
+        task.add_done_callback(lambda _task: settled.set())
+        tasks.append(task)
+
+    def stalled_close() -> None:
+        # hold close() after the stages closed, with the runner let into stage 2
+        close()
+        blocking.proceed.set()
+        settled.wait(timeout=5)
+
+    monkeypatch.setattr(stage, "close", stalled_close)
+    subshell.call_soon_threadsafe(schedule)
+    try:
+        assert await asyncio.to_thread(blocking.started.wait, 5)
+        pipeline.close()
+    finally:
+        blocking.proceed.set()
+    await _settled(tasks[0])
+
+    assert tasks[0].cancelled()
+    assert errors == []
+    assert counting.runs == 0
+
+
+@pytest.mark.asyncio
+async def test_close_before_a_cross_loop_runner_starts(subshell):
+    """A close lands between ``schedule_run`` and the runner's first step."""
+    pipeline = Pipeline(pipes=[Pipe(observes=(F.New,), reports=(F.Layout,))])
+    errors = _watched(pipeline)
+    pipeline.inlet.record(F.New)
+    scheduled, proceed = threading.Event(), threading.Event()
+    tasks: list[asyncio.Task] = []
+
+    def schedule_and_block() -> None:
+        tasks.append(pipeline.schedule_run())
+        scheduled.set()
+        assert proceed.wait(timeout=5)
+
+    subshell.call_soon_threadsafe(schedule_and_block)
+    await asyncio.to_thread(scheduled.wait, 5)
+    pipeline.close()
+    proceed.set()
+    await _settled(tasks[0])
+
+    assert tasks[0].cancelled()
+    assert errors == []
+
+
+@pytest.mark.asyncio
+async def test_plain_pipe_close_before_cross_loop_cancel_lands(subshell):
+    """A plain pipe returning synchronously still cancels after another loop closes it."""
+    pipe = _Blocking()
+    errors = []
+    pipe.on_error = lambda _pipe, error: errors.append(error)
+    tasks = []
+    subshell.call_soon_threadsafe(lambda: tasks.append(pipe.schedule_run()))
+    try:
+        assert await asyncio.to_thread(pipe.started.wait, 5)
+        pipe.close()
+    finally:
+        pipe.proceed.set()
+    await _settled(tasks[0])
+
+    assert tasks[0].cancelled()
+    assert pipe.status.state() == "cancelled"
+    assert errors == []

@@ -22,7 +22,6 @@ import {
   // HtmlRootView,
   // PreRenderedElement,
   // PreRenderedView,
-  // ExpandButtonView,
   // IssueMarkerView,
   // RoutableView,
   // getSubType
