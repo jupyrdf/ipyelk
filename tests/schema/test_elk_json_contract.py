@@ -232,8 +232,39 @@ def loaded_shape(root: Node, kind: str) -> shapes.BaseShape | None:
     return (elements or getattr(child, kind))[0].properties.shape
 
 
+#: the class that JSON loads for each type string of ipyelk
+BUILT_IN_TYPES = {
+    "edge": shapes.EdgeShape,
+    "port": shapes.PortShape,
+    "label": shapes.LabelShape,
+    "label:icon": shapes.Icon,
+    "node": shapes.Rect,
+    "node:path": shapes.Path,
+    "node:svg": shapes.SVG,
+    "node:round": shapes.Ellipse,
+    "node:diamond": shapes.Diamond,
+    "node:comment": shapes.Comment,
+    "node:use": shapes.Use,
+    "node:image": shapes.Image,
+    "node:foreignobject": shapes.ForeignObject,
+    "node:widget": shapes.Widget,
+    "node:html": shapes.HTML,
+}
+
+
+@pytest.fixture
+def json_classes() -> Iterator[dict[str, type[shapes.BaseShape]]]:
+    """``SHAPE_TYPES``. At the end of the test, it removes the classes the test added."""
+    before = dict(shapes.SHAPE_TYPES)
+    yield shapes.SHAPE_TYPES
+    shapes.SHAPE_TYPES.clear()
+    shapes.SHAPE_TYPES.update(before)
+
+
 def test_every_shape_class_has_a_json_type():
-    """A new shape class needs an entry in ``SHAPE_TYPES`` to load from JSON."""
+    """Each shape class with a type string adds itself to ``SHAPE_TYPES``, so JSON
+    loads it, except ``Circle``.
+    """
     found = {
         cls
         for cls in subclasses(shapes.BaseShape)
@@ -241,6 +272,58 @@ def test_every_shape_class_has_a_json_type():
         and cls.model_fields["type"].default is not None
     }
     assert found - set(shapes.SHAPE_TYPES.values()) == {shapes.Circle}
+    assert shapes.SHAPE_TYPES is shapes.BaseShape.json_classes
+
+
+def test_each_built_in_type_has_its_class():
+    built_in = {
+        tag: cls
+        for tag, cls in shapes.SHAPE_TYPES.items()
+        if cls.__module__ == shapes.__name__
+    }
+    assert built_in == BUILT_IN_TYPES
+    assert shapes.Circle not in shapes.SHAPE_TYPES.values()
+
+
+def test_a_subclass_with_the_type_of_its_parent_does_not_add_itself(json_classes):
+    class MyRect(shapes.Rect):
+        pass
+
+    class MyEllipse(shapes.Ellipse):
+        type: str = "node:round"
+
+    assert json_classes == BUILT_IN_TYPES
+
+
+def test_a_class_that_does_not_load_from_json_does_not_add_itself(json_classes):
+    class Star(shapes.NodeShape):
+        type: str = "node:star"
+        loads_from_json = False
+
+    assert json_classes == BUILT_IN_TYPES
+
+
+def test_a_second_class_for_a_type_raises(json_classes):
+    message = (
+        r"\.Oval has the shape type 'node:round' of ipyelk\.elements\.shapes\.Ellipse\."
+    )
+    with pytest.raises(TypeError, match=message):
+
+        class Oval(shapes.NodeShape):
+            type: str = "node:round"
+
+    assert json_classes == BUILT_IN_TYPES
+
+
+def test_a_new_shape_class_loads_from_json(json_classes):
+    class Star(shapes.NodeShape):
+        type: str = "node:star"
+
+    assert json_classes == {**BUILT_IN_TYPES, "node:star": Star}
+    loaded = loaded_shape(
+        convert_elkjson(to_json(shaped("children", Star()), None)), "children"
+    )
+    assert type(loaded) is Star
 
 
 def test_json_loads_the_class_of_every_shape(widget: IntSlider):

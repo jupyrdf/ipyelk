@@ -7,6 +7,9 @@ The *Shapes* page of the API reference describes the shapes and the terms used h
 
 from __future__ import annotations
 
+import builtins
+from typing import ClassVar
+
 from ipywidgets import DOMWidget, widget_serialization
 from pydantic import (
     BaseModel,
@@ -32,9 +35,10 @@ class Point(BaseModel):
     x: float = 0
     y: float = 0
 
-    # shortcut: a Point ignores an unknown key, also in user code, because pydantic
-    # validates it through this __init__, outside the from_wire context. Make it
-    # forbid when the positional __init__ goes, in a major release.
+    # BaseModel.__init__ takes keyword arguments only. This one allows Point(x, y). But
+    # pydantic also calls it to validate a nested Point from a dict, as a new validation
+    # without the lenient extra and context of from_wire(). So Point keeps the default
+    # extra="ignore": it is the one model that does not forbid unknown keys.
     def __init__(self, x=0, y=0, **data):
         super().__init__(x=x, y=y, **data)
 
@@ -45,12 +49,56 @@ class BaseShape(BaseModel):
     Fields:
         - ``type`` (``str`` or ``None``): the type string, which selects the renderer.
           Each subclass sets its own default. ``None`` selects the default renderer.
+
+    A subclass whose ``type`` default is a string that differs from the ``type``
+    default of its parent adds itself to :py:attr:`json_classes` when Python defines
+    it. So JSON loads a shape with that type string as that class. This also applies
+    to a subclass outside ipyelk, when its module is imported. A subclass that keeps
+    the ``type`` of its parent does not add itself, so the parent class still loads
+    that type string. If a second class has a type string that is already in
+    ``json_classes``, its definition raises ``TypeError``, unless it sets
+    :py:attr:`loads_from_json` to ``False``.
     """
 
     type: str | None = None
 
+    # builtins.type: the `type` field hides the builtin in the class body
+    #: The class that loads each type string from JSON. ``SHAPE_TYPES`` is the same dict.
+    json_classes: ClassVar[dict[str, builtins.type[BaseShape]]] = {}
+
+    #: ``False`` keeps the class out of ``json_classes``. A subclass does not inherit it.
+    loads_from_json: ClassVar[bool] = True
+
     #: an unknown key is a typo, or a field of another shape class
     model_config = ConfigDict(extra="forbid")
+
+    @classmethod
+    def __pydantic_init_subclass__(cls, **kwargs: object) -> None:
+        """Add ``cls`` to ``json_classes`` if it has a type string of its own."""
+        super().__pydantic_init_subclass__(**kwargs)
+        tag = cls.model_fields["type"].default
+        inherited = {
+            base.model_fields["type"].default
+            for base in cls.__bases__
+            if issubclass(base, BaseShape)
+        }
+        if not isinstance(tag, str) or tag in inherited:
+            return
+        if not cls.__dict__.get("loads_from_json", True):
+            return
+        taken = BaseShape.json_classes.get(tag)
+        # the same class defined again, for example by a module reload, replaces it
+        if taken is not None and (taken.__module__, taken.__qualname__) != (
+            cls.__module__,
+            cls.__qualname__,
+        ):
+            msg = (
+                f"{cls.__module__}.{cls.__qualname__} has the shape type {tag!r} of"
+                f" {taken.__module__}.{taken.__qualname__}. Give it another type, or"
+                " set `loads_from_json = False` on it."
+            )
+            raise TypeError(msg)
+        BaseShape.json_classes[tag] = cls
 
     def dimension(self, key: str) -> float | None:
         """Return the value of ``x``, ``y``, ``width`` or ``height`` to serialize.
@@ -248,6 +296,8 @@ class Circle(NodeShape):
     """
 
     type: str = "node:round"
+    # it writes the same `node:round` as Ellipse, so JSON loads it as an Ellipse
+    loads_from_json = False
     radius: float = Field(0, exclude=True, description="Radius in pixels")
 
     def dimension(self, key: str) -> float | None:
@@ -436,29 +486,8 @@ class HTML(NodeShape):
 Widget.model_rebuild()
 
 
-#: The class that loads each shape ``type`` from JSON. ``Circle`` is not here: it
-#: writes the same ``node:round`` as ``Ellipse``, without its ``radius``, and the
-#: renderer draws both from the width and height. So JSON loads it as an ``Ellipse``.
-SHAPE_TYPES: dict[str, type[BaseShape]] = {
-    cls.model_fields["type"].default: cls
-    for cls in (
-        EdgeShape,
-        PortShape,
-        LabelShape,
-        Icon,
-        Rect,
-        Path,
-        SVG,
-        Ellipse,
-        Diamond,
-        Comment,
-        Use,
-        Image,
-        ForeignObject,
-        Widget,
-        HTML,
-    )
-}
+#: The class that loads each shape ``type`` from JSON: :py:attr:`BaseShape.json_classes`.
+SHAPE_TYPES: dict[str, type[BaseShape]] = BaseShape.json_classes
 
 
 def shape_class(family: type[BaseShape], data: object) -> type[BaseShape]:

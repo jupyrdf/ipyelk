@@ -206,7 +206,7 @@ renderer, which has no shape class.
 ```{eval-rst}
 .. currentmodule:: ipyelk.elements.shapes
 .. autoclass:: BaseShape
-    :members: dimension
+    :members: dimension, json_classes, loads_from_json
 .. autoclass:: ElementShape
 .. autoclass:: NodeShape
 .. autoclass:: Point
