@@ -138,16 +138,20 @@ class Compartment(Node):
             headings = []
         if content is None:
             content = []
-        bullet_label = []
-        if self.bullet_shape:
-            bullet_label = [
+
+        def bullet() -> list[Label]:
+            # a new label for each line: one label in two lines has a duplicate id
+            if not self.bullet_shape:
+                return []
+            return [
                 Label(
                     properties=LabelProperties(
-                        shape=self.bullet_shape, selectable=True
+                        shape=self.bullet_shape.model_copy(), selectable=True
                     ),
                     layoutOptions=bullet_opts,
                 )
             ]
+
         if headings and not content:
             heading_label_opts = center_label_opts
             heading_cls = "compartment_title"
@@ -164,7 +168,7 @@ class Compartment(Node):
             Label(
                 text=text,
                 layoutOptions=content_label_opts,
-                labels=bullet_label,
+                labels=bullet(),
                 properties=LabelProperties(selectable=True),
             )
             for text in content
