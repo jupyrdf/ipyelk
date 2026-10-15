@@ -558,6 +558,12 @@ except ClosedError:  # also a TraitError and a RuntimeError
 - Offset a label icon vertically by its `y`, not its `x`: `ElkLabelView` added
   `icon.position.x` to the icon's `y`, so an icon's `x` also shifted it down and its `y`
   was ignored ([#205])
+- Stop selecting a widget node on a click inside its widget, such as on the handle of a
+  slider or the icon of a button: such a click is a widget click, which the select tool
+  ignores, wherever it lands in the widget. Before, only a click on the widget's own
+  element counted, so a widget node could be selected by clicking its widget's contents
+  and no longer can. A diagram shown as a widget node of another diagram still selects
+  its own nodes, and the outer diagram no longer selects the node that shows it ([#216])
 
 ### Development
 
@@ -604,6 +610,8 @@ except ClosedError:  # also a TraitError and a RuntimeError
   restarts with every cell and fires after 30 s without a new cell ([#177])
 - Fail CI when the committed `elkschema.json` differs from what `jlpm schema` generates,
   and rebuild it when `elkgraph-json.ts` changes ([#187])
+- Run the JS unit tests that need a DOM under `happy-dom`, chosen per file with a
+  `@vitest-environment happy-dom` comment ([#216])
 - Fail the `lint` job when `pixi run fix` changes a committed file or adds a file that
   git does not ignore (`git diff --exit-code`, `git status --porcelain`), and commit
   what it changes: `taplo` also formats `scripts/*.toml`, and `ATEST_ARGS` in `ci.yml`
@@ -645,6 +653,7 @@ except ClosedError:  # also a TraitError and a RuntimeError
 [#200]: https://github.com/jupyrdf/ipyelk/issues/200
 [#201]: https://github.com/jupyrdf/ipyelk/issues/201
 [#205]: https://github.com/jupyrdf/ipyelk/issues/205
+[#216]: https://github.com/jupyrdf/ipyelk/issues/216
 [#215]: https://github.com/jupyrdf/ipyelk/issues/215
 [#217]: https://github.com/jupyrdf/ipyelk/issues/217
 
