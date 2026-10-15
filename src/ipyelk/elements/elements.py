@@ -3,9 +3,12 @@
 from __future__ import annotations
 
 import abc
+import copy
 import textwrap
+import weakref
 from collections.abc import Mapping
 from typing import Any, Type, TypeVar, cast, get_args
+from weakref import WeakKeyDictionary
 
 from pydantic import (
     BaseModel,
@@ -41,6 +44,7 @@ from .shapes import (
     PortShape,
     shape_class,
 )
+from .shapes import Widget as WidgetShape
 
 exclude_hidden = CounterContextManager()
 exclude_layout = CounterContextManager()
@@ -201,9 +205,10 @@ class IDElement(BaseModel, abc.ABC):
     def get_id(self) -> str | None:
         """The element's id: explicit, else the active ``Registry``'s, else ``None``.
 
-        The Registry is seeded with the id this element has already put on the
-        wire (see ``wire_id``), and an id the Registry mints becomes the wire
-        id, so the index keys and the wire agree whichever comes first.
+        ``Registry`` is deprecated, and ipyelk never enters one: use ``wire_id``
+        for the id that the element serializes with, which ``Document.index``
+        pins. A Registry is seeded with that wire id, and an id it mints becomes
+        the wire id, so the two agree whichever comes first.
         """
         if self.id is not None:
             return self.id
@@ -250,6 +255,15 @@ class BaseElement(IDElement, abc.ABC):
     properties: SerializeAsAny[BaseProperties] = Field(default_factory=BaseProperties)
 
     model_config = ConfigDict(validate_assignment=True)
+
+    def model_post_init(self, context) -> None:
+        super().model_post_init(context)
+        _claim_labels(self)
+
+    def __setattr__(self, name: str, value) -> None:
+        super().__setattr__(name, value)
+        if name == "labels":
+            _claim_labels(self)
 
     def add_class(self, *className: str) -> Self:
         """Adds a class to the top level element of the widget.
@@ -355,10 +369,15 @@ class HierarchicalElement(ShapeElement, abc.ABC):
     _parent: Node | None = PrivateAttr(None)
 
     def set_parent(self, parent: Node | None = None):
-        if parent is not None:
-            assert self._parent is None or self._parent is parent, (
-                f"{self.__class__.__name__} owned by different node"
-            )
+        """Make ``parent`` the parent; ``None`` detaches.
+
+        Raises ``ValueError``, naming both parents, if another node still
+        holds this element in its ``children`` or ``ports``.
+        """
+        old = self._parent
+        if parent is not None and old is not None and old is not parent:
+            if any(el is self for el in (*old.children, *old.ports)):
+                raise _second_parent(self, old, parent)
         self._parent = parent
         return self
 
@@ -567,6 +586,33 @@ class Node(HierarchicalElement):
             raise NotFoundError("Port not found")
         raise NotUniqueError(f"{key} is not unique. Found {found} matching ports.")
 
+    def clone(self, prefix: str) -> Self:
+        """A copy of this node and everything under it, with fresh ids.
+
+        Use it to reuse a fragment: one element cannot be under two parents.
+        The copy of an element with the id ``X`` has the id ``"<prefix>.X"``,
+        where ``X`` is the id that the element serializes with (its ``id``, or
+        its ``wire_id``). So the same fragment and prefix always give the same
+        ids, and every id of the copy is set. The copies have their own
+        parents, layout options and ``properties``. An edge between two
+        elements of the fragment connects their copies, and an edge to an
+        element outside the fragment still connects that element. ``metadata``
+        and the widget of a ``Widget`` shape are shared, not copied.
+        """
+        copies: dict[int, BaseElement] = {}
+        cloned = cast("Self", _clone(self, prefix, copies))
+        cloned._parent = None
+        for el in copies.values():
+            _claim_labels(el)
+            if isinstance(el, Edge):
+                el.source = cast(
+                    "HierarchicalElement", copies.get(id(el.source), el.source)
+                )
+                el.target = cast(
+                    "HierarchicalElement", copies.get(id(el.target), el.target)
+                )
+        return cloned
+
     def add_edge(
         self,
         source: Node | Port,
@@ -589,6 +635,68 @@ class Node(HierarchicalElement):
             self.add_child(child=value, key=key)
         else:
             super().__setattr__(key, value)
+
+
+#: label -> its parent element, both weakly: outside the model, so copies and
+#: pickles of an element do not carry it
+_LABEL_PARENTS: WeakKeyDictionary[Label, weakref.ref[BaseElement]] = WeakKeyDictionary()
+
+
+def _claim_labels(parent: BaseElement) -> None:
+    """Record ``parent`` as the parent of its labels.
+
+    Raises ``ValueError``, naming both parents, for a label that another
+    element still holds in its ``labels``. A label appended to ``labels`` in
+    place is not checked here, but ``ValidationPipe`` still reports its id.
+    """
+    for label in parent.labels:
+        ref = _LABEL_PARENTS.get(label)
+        old = None if ref is None else ref()
+        if old is not None and old is not parent:
+            if any(el is label for el in old.labels):
+                raise _second_parent(label, old, parent)
+        _LABEL_PARENTS[label] = weakref.ref(parent)
+
+
+def _second_parent(el: BaseElement, old: BaseElement, new: BaseElement) -> ValueError:
+    def name(element: BaseElement) -> str:
+        return f"{type(element).__name__} {element.wire_id()!r}"
+
+    return ValueError(
+        f"{name(el)} is already under {name(old)}, so it cannot also be under "
+        f"{name(new)}. An element has one parent: detach it first, or use a copy "
+        "(Node.clone(prefix) for a fragment, model_copy() for a label)."
+    )
+
+
+def _clone(el: BaseElement, prefix: str, copies: dict[int, BaseElement]) -> BaseElement:
+    """Copy ``el`` and its sub elements for ``Node.clone``; ``copies`` maps the
+    ``id()`` of each original to its copy.
+    """
+    shape = el.properties.shape
+    shared = {id(shape.widget): shape.widget} if isinstance(shape, WidgetShape) else {}
+    update: dict[str, Any] = {
+        "id": f"{prefix}.{el.wire_id()}",
+        "labels": [_clone(label, prefix, copies) for label in el.labels],
+        "layoutOptions": dict(el.layoutOptions),
+        "properties": copy.deepcopy(el.properties, shared),
+    }
+    if isinstance(el, Node):
+        for name in ("ports", "children", "edges"):
+            update[name] = [_clone(sub, prefix, copies) for sub in getattr(el, name)]
+    if isinstance(el, Edge) and el.sections:
+        update["sections"] = [
+            section.model_copy(
+                deep=True, update={"id": f"{prefix}.{section.wire_id()}"}
+            )
+            for section in el.sections
+        ]
+    cloned = el.model_copy(update=update)
+    if isinstance(cloned, Node):
+        for sub in (*cloned.ports, *cloned.children):
+            sub._parent = cloned
+    copies[id(el)] = cloned
+    return cloned
 
 
 Label.model_rebuild()

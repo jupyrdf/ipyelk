@@ -63,7 +63,8 @@ def test_hidden_compound_child_gets_slack_port_on_compound():
     assert edge.id == "e_zy"
     assert SLACK_EDGE in edge.properties.cssClasses.split()
     port = edge.target
-    assert port.id == "y"
+    assert port.id == "y.slack"
+    assert port.properties.key == "y"
     projected = {node.id: node for node in visible.children[0].children}
     assert projected["x"].ports == []
     assert projected["w"].ports == []
@@ -269,3 +270,27 @@ def test_moved_port_takes_the_layout():
     assert (port.x, port.y) == (3.0, 4.0)
     assert widget.index.elements["p"] is port
     widget.close()
+
+
+@pytest.mark.asyncio
+async def test_visibility_pipe_keeps_the_indexed_ids():
+    """The projection is built from the wire ids: it mints none of its own."""
+    from ipyelk.elements import Label, iter_elements
+    from ipyelk.pipes import VisibilityPipe
+
+    root = Node(
+        children=[
+            Node(labels=[Label(text="a")], ports=[Port()]),
+            Node(),
+        ]
+    )
+    root.add_edge(root.children[0].ports[0], root.children[1])
+    pipe = VisibilityPipe()
+    pipe.inlet.value = root
+    pipe.inlet.build_index()
+    await pipe.run()
+
+    projected = list(iter_elements(pipe.outlet.value))
+    assert all(el.id is not None for el in projected)
+    assert {el.id for el in projected} == {el.id for el in iter_elements(root)}
+    pipe.close()

@@ -517,19 +517,31 @@ class Pipe(W.Widget):
 
 
 class SyncedInletPipe(Pipe):
+    """A pipe whose browser side reads ``inlet.value``, so that value is synced."""
+
     inlet = T.Instance(MarkElementWidget).tag(sync=True, **W.widget_serialization)
 
     @T.default("inlet")
     def _default_inlet(self):
-        return self._new_mark()
+        return self._new_mark().sync_value()
+
+    @T.observe("inlet")
+    def _sync_inlet_value(self, change: T.Bunch) -> None:
+        change.new.sync_value()
 
 
 class SyncedOutletPipe(Pipe):
+    """A pipe whose browser side writes ``outlet.value``, so that value is synced."""
+
     outlet = T.Instance(MarkElementWidget).tag(sync=True, **W.widget_serialization)
 
     @T.default("outlet")
     def _default_outlet(self):
-        return self._new_mark()
+        return self._new_mark().sync_value()
+
+    @T.observe("outlet")
+    def _sync_outlet_value(self, change: T.Bunch) -> None:
+        change.new.sync_value()
 
 
 class SyncedPipe(SyncedOutletPipe, SyncedInletPipe):

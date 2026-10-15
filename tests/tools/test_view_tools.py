@@ -30,7 +30,9 @@ def capture_sends(widget, monkeypatch):
 )
 def test_browser_written_traits_are_tagged_echo_off(cls, name):
     widget = cls()
-    assert widget.trait_metadata(name, "sync") is True
+    if cls is MarkElementWidget:
+        widget.sync_value()  # synced only where a browser stage uses it
+    assert name in widget.keys
     assert widget.trait_metadata(name, "echo_update") is False
 
 
@@ -76,7 +78,7 @@ def test_outlet_value_write_from_browser_does_not_echo(monkeypatch):
     wire = root.model_dump()
     wire["children"][0]["labels"][0]["width"] = 12.5  # browser measured
     wire["$H"] = 123  # elkjs internals never round-trip through pydantic
-    outlet = MarkElementWidget()
+    outlet = MarkElementWidget().sync_value()
     sent = capture_sends(outlet, monkeypatch)
 
     outlet.set_state({"value": wire})

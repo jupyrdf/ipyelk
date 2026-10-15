@@ -24,8 +24,8 @@ export interface IViewportReport {
 
 /**
  * Classes assigned by the kernel's `VisIndex` to synthetic ports and edges for
- * hidden elements. A slack port carries the hidden element's id, so it does not
- * itself make that element visible.
+ * hidden elements. A slack port stands in for a hidden element (its id is the
+ * hidden element's id plus `.slack`), so it does not make that element visible.
  */
 export const SLACK_CLASSES = ['slack-port', 'slack-edge'];
 
