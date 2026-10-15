@@ -166,6 +166,25 @@ def as_in_hierarchy(
     raise NotFoundError(f"Unable to find {node} in the hierarchy")
 
 
+def tree_lca(hierarchy: nx.DiGraph, node1: Hashable, node2: Hashable) -> Hashable:
+    """Lowest common ancestor of two nodes of a tree, by walking up their parents.
+
+    ``O(depth)`` per call, where ``nx.lowest_common_ancestor`` is ``O(N + E)``.
+    Returns ``None`` if the nodes share no ancestor, as networkx does.
+    """
+
+    def up(node: Hashable) -> dict[Hashable, None]:
+        # an ordered set of the node and its ancestors, which stops on a cycle
+        path: dict[Hashable, None] = {}
+        while node is not None and node not in path:
+            path[node] = None
+            node = next(iter(hierarchy.pred[node]), None)
+        return path
+
+    ancestors = up(node1)
+    return next((node for node in up(node2) if node in ancestors), None)
+
+
 def lca(
     hierarchy: nx.DiGraph,
     node1: HierarchicalElement,
@@ -194,7 +213,7 @@ def lca(
             node = node1
         ancestor = node.get_parent()
     else:
-        ancestor = nx.lowest_common_ancestor(hierarchy, node1, node2)
+        ancestor = tree_lca(hierarchy, node1, node2)
     if not isinstance(ancestor, HierarchicalElement):
         ancestor = el_map[ancestor]
     return ancestor
