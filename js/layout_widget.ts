@@ -2,7 +2,6 @@
  * Copyright (c) 2024 ipyelk contributors.
  * Distributed under the terms of the Modified BSD License.
  */
-// import Worker from '!!worker-loader!elkjs/lib/elk-worker.min.js';
 import * as ELK from 'elkjs/lib/elk-api';
 
 import { Signal } from '@lumino/signaling';
@@ -20,7 +19,8 @@ import {
 } from './layout_widget_util';
 import { ELK_DEBUG, IRunMessage, NAME, VERSION } from './tokens';
 
-import Worker from '!!worker-loader!elkjs/lib/elk-worker.js';
+// the compact build of the worker: 1.6 MB, where `elk-worker.js` is 4.8 MB
+import Worker from '!!worker-loader!elkjs/lib/elk-worker.min.js';
 
 export { ELKTextSizerModel, ELKTextSizerView } from './measure_text';
 
