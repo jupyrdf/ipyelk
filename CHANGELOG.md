@@ -232,8 +232,8 @@
   for example `Diagram.source`, keeps `value` in the kernel, so the browser no longer
   receives the tree the user built (at 100 nodes, the comm-open state of the source fell
   from 59 kB to 376 B). `flow` is never synced: no browser code reads it, and each
-  refresh sends up to five fewer messages. Browser code that reads `value` of another mark
-  must call `sync_value()` on it first ([#161]).
+  refresh sends up to five fewer messages. Browser code that reads `value` of another
+  mark must call `sync_value()` on it first ([#161]).
 - A `Registry` holds its elements weakly, so it no longer keeps every element that it
   saw alive. Its keys must support `weakref`, as the elements do ([#160]).
 - A `Document` (`ipyelk.elements.Document`) owns the ids of an element tree. It replaces
@@ -261,15 +261,15 @@
   browser answer to the index ([#160]).
 - An element under a second parent raises `ValueError` when it is attached, and the
   message names both parents. While the new parent is constructed, the error is a
-  `pydantic.ValidationError`, which is a `ValueError` too. This applies to a label (`Node(labels=[label])`,
-  `element.labels = [...]`), a child node and a port (`Node(children=..., ports=...)`,
-  `add_child`, `add_port`). In 2.x a shared label failed later, in `ValidationPipe`,
-  with `Nonunique Element Ids`, and a child or port failed an `assert` (`owned by
-  different node`). An element that its old parent no longer holds attaches without an
-  error. A label that is appended to `labels` in place is not checked at attach;
-  `ValidationPipe` still reports its id. `Compartment(bullet_shape=...)` gives each
-  content line its own bullet label. It used to share one label, which failed validation
-  ([#160]).
+  `pydantic.ValidationError`, which is a `ValueError` too. This applies to a label
+  (`Node(labels=[label])`, `element.labels = [...]`), a child node and a port
+  (`Node(children=..., ports=...)`, `add_child`, `add_port`). In 2.x a shared label
+  failed later, in `ValidationPipe`, with `Nonunique Element Ids`, and a child or port
+  failed an `assert` (`owned by different node`). An element that its old parent no
+  longer holds attaches without an error. A label that is appended to `labels` in place
+  is not checked at attach; `ValidationPipe` still reports its id.
+  `Compartment(bullet_shape=...)` gives each content line its own bullet label. It used
+  to share one label, which failed validation ([#160]).
 - `ipyelk.elements.Registry` is deprecated and will be removed in 4.0. Constructing one
   emits a `DeprecationWarning` that names `Document` and the removal version, and a
   `Registry` keeps working through 3.x. `MarkIndex.context` is deprecated in the same
