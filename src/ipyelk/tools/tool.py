@@ -58,6 +58,11 @@ class Tool(W.Widget):
       ``on_done``, but it never touches the tool's task state, which the newer
       request owns.
 
+    * A closed tool (:attr:`closed` is True, including every tool closed with its
+      diagram) rejects :meth:`trigger` and button clicks with
+      :class:`~ipyelk.exceptions.ClosedError`, and a request still queued when it
+      closes is cancelled before its work starts.
+
     Both hooks are registration methods -- ``tool.on_start(callback)``,
     ``tool.on_done(callback)`` -- so several listeners (the owning
     :py:class:`~ipyelk.diagram.Diagram` registers its refresh on ``on_done``) can
@@ -73,6 +78,7 @@ class Tool(W.Widget):
     )
     reports = TypedTuple(T.Unicode(), kw={})
     _task: asyncio.Task | None = None
+    _closed: bool = False
     #: the ``ui`` the tool built for itself, closed with it
     _default_ui: W.DOMWidget | None = None
     ui = T.Instance(W.DOMWidget, allow_none=True)
@@ -118,11 +124,20 @@ class Tool(W.Widget):
             self.observe(self._update_controls, list(self._dependencies))
 
     def close(self):
-        """Close the tool and the default ``ui`` it built, not one passed in."""
+        """Close the tool and the default ``ui`` it built, not one passed in.
+
+        Closing again does nothing.
+        """
+        self._closed = True
         ui = self._trait_values.get("ui")
         if ui is not None and ui is self._default_ui:
             close_tree(ui)
         super().close()
+
+    @property
+    def closed(self) -> bool:
+        """Whether ``close()`` was called; a closed tool refuses ``trigger()``."""
+        return self._closed
 
     def trigger(self, *_: object) -> asyncio.Task:
         """Request execution: schedule :meth:`run` and return its task.
@@ -156,8 +171,9 @@ class Tool(W.Widget):
     def check_enabled(self) -> None:
         """Raise ``RuntimeError`` if an invocation must be rejected right now."""
         name = type(self).__name__
-        if self.comm is None:
-            raise ClosedError(f"{name} is closed and cannot run; use a new tool")
+        if self._closed or self.comm is None:
+            msg = f"{name} is closed and cannot run; build a new {name}"
+            raise ClosedError(msg)
         if self.disabled:
             raise RuntimeError(f"{name} is disabled")
         missing = self.missing_dependencies()
@@ -183,7 +199,7 @@ class Tool(W.Widget):
             control.disabled = self._controls_disabled()
 
     def _cancel_if_closed(self) -> None:
-        if self.comm is None:
+        if self._closed or self.comm is None:
             raise asyncio.CancelledError
 
     async def _execute(self) -> None:

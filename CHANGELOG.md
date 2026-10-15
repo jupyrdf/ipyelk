@@ -137,6 +137,12 @@
   implement `run()` reject `trigger()`, and closed `ToolButton`s reject button callbacks
   with `ClosedError`, including tools closed with their diagram. Closing a diagram twice
   still does nothing ([#197]).
+- A closed tool names its class in the `ClosedError` from `trigger()` and button clicks,
+  as a closed diagram or pipe does: "ToggleCollapsedTool is closed and cannot run; build
+  a new ToggleCollapsedTool". It used to say "use a new tool". `Tool.closed` says
+  whether `close()` was called, like `Diagram.closed` and `Pipe.closed`. The refusal
+  depends on the tool only: a tool that left a diagram's `tools` before the diagram
+  closed stays open and still runs ([#218]).
 - `ElementIndex.root()`, and so `check_ids()`, `check_edges()` and `MarkIndex.root()`,
   raises `ipyelk.exceptions.NotFoundError` when every node in the index has a parent,
   and `NotUniqueError`, naming the roots, when more than one node has none. It used to
@@ -316,8 +322,8 @@ replacement in the message.
   file, and `jlpm schema` passes the real path of `elkschema.ts`
   ([#187](https://github.com/jupyrdf/ipyelk/issues/187)).
 
-A diagram or pipeline is dead once closed ([#197]): build a new one instead of reusing
-it. Check `closed` first, or catch `ClosedError`.
+A diagram, pipeline or tool is dead once closed ([#197], [#218]): build a new one
+instead of reusing it. Check `closed` first, or catch `ClosedError`.
 
 ```python
 from ipyelk.exceptions import ClosedError
@@ -366,6 +372,7 @@ except ClosedError:  # also a TraitError and a RuntimeError
 [#155]: https://github.com/jupyrdf/ipyelk/issues/155
 [#156]: https://github.com/jupyrdf/ipyelk/issues/156
 [#197]: https://github.com/jupyrdf/ipyelk/issues/197
+[#218]: https://github.com/jupyrdf/ipyelk/issues/218
 
 ## `2.1.3` (unreleased)
 
