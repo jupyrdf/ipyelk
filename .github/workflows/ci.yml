@@ -233,17 +233,15 @@ jobs:
           key: ${{ env.CACHE_EPOCH }}-${{ hashFiles('yarn.lock') }}-node-modules
       - env:
           # 04_Interactive's slider bursts (tag `gh:95`) report a skip and a
-          # warning instead of failing where they still hang now and then:
-          # - macOS: the page keeps the previous graph (#95; exit once the fix
-          #   for sprotty 1.4's FadeAnimation wedging the command stack lands),
-          #   or the kernel stops running cells (#177; exit once understood);
-          #   drop this only when both are met
-          # - test-oldest (ubuntu-latest): the kernel stops running cells (#177);
-          #   drop this once that stall is understood
+          # warning instead of failing on macOS `test` only, where the kernel's
+          # slider values still lag the browser now and then (#232). The #95 fade
+          # wedge (#190) and the #177 stall (#203) are fixed, and test-oldest on
+          # ubuntu and macOS passed 04_Interactive in every finished run of the
+          # 72 since #203. Drop this once #232 is fixed.
           # a literal block: prettier rewraps a folded (`>-`) one past 88 columns
           ATEST_ARGS: |-
             ${{ matrix.atest-args }}
-            ${{ (startsWith(matrix.vm, 'macos') || (matrix.task == 'test-oldest' && matrix.vm == 'ubuntu-latest')) && '--skiponfailure gh:95' || '' }}
+            ${{ (startsWith(matrix.vm, 'macos') && matrix.task == 'test') && '--skiponfailure gh:95' || '' }}
         # a browser that dies mid-test (Firefox 128 ESR went out of memory after
         # a kernel restart in 02_Transformer) leaves geckodriver unreachable, and
         # the teardown then spends ~10 minutes per Selenium call on urllib3

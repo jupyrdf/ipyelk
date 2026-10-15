@@ -432,6 +432,10 @@ removed names][migration-removed-names] lists every name that raises
 
 ### Development
 
+- Skip a failing `04_Interactive` (tag `gh:95`) only on macOS `test`, where the kernel's
+  slider values still lag the browser now and then ([#232]). `test-oldest` on Ubuntu and
+  macOS passed it in every finished run since the #177 fix, so a failure there fails the
+  job again
 - Check the source maps in the wheel: `scripts/check-dist.py` fails unless every
   labextension `static/*.js` has a `.map` beside it and ends with a `sourceMappingURL`
   that names it, and unless the maps hold the TypeScript (`sourcesContent`) of every
@@ -665,6 +669,7 @@ removed names][migration-removed-names] lists every name that raises
 [#218]: https://github.com/jupyrdf/ipyelk/issues/218
 [#219]: https://github.com/jupyrdf/ipyelk/issues/219
 [#227]: https://github.com/jupyrdf/ipyelk/issues/227
+[#232]: https://github.com/jupyrdf/ipyelk/issues/232
 [eclipse-sprotty/sprotty#573]: https://github.com/eclipse-sprotty/sprotty/issues/573
 [ipykernel#1529]: https://github.com/ipython/ipykernel/pull/1529
 [migration]: https://ipyelk.readthedocs.io/en/latest/migration.html
