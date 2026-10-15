@@ -633,6 +633,11 @@ except ClosedError:  # also a TraitError and a RuntimeError
 - Skip the `16_Cervidae_Tree` notebook tests, with the reason, when
   `examples/data/cervidae-tree.zip` is a git-lfs pointer file: a clone without git-lfs
   failed them with `BadZipFile` ([#217])
+- Test the oldest environment on Firefox 153 ESR, the current ESR line, instead of 128
+  ESR, which is no longer updated. 140 ESR reached end of life on 2026-10-13, and
+  crashes at launch on macOS arm64 (`binary is not a Firefox executable`). It is not yet
+  known whether this changes the out-of-memory kills of `01 Linking` and
+  `02 Transformer` in `test-oldest (ubuntu-latest)` ([#199])
 
 ### Documentation
 
@@ -657,6 +662,7 @@ except ClosedError:  # also a TraitError and a RuntimeError
 [#181]: https://github.com/jupyrdf/ipyelk/issues/181
 [#187]: https://github.com/jupyrdf/ipyelk/issues/187
 [#191]: https://github.com/jupyrdf/ipyelk/issues/191
+[#199]: https://github.com/jupyrdf/ipyelk/issues/199
 [#200]: https://github.com/jupyrdf/ipyelk/issues/200
 [#201]: https://github.com/jupyrdf/ipyelk/issues/201
 [#205]: https://github.com/jupyrdf/ipyelk/issues/205

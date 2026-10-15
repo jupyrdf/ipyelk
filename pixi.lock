@@ -811,7 +811,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/defusedxml-0.7.1-pyhd8ed1ab_0.tar.bz2
       - conda: https://conda.anaconda.org/conda-forge/noarch/exceptiongroup-1.3.1-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/executing-2.2.1-pyhd8ed1ab_0.conda
-      - conda: https://conda.anaconda.org/conda-forge/linux-64/firefox-128.13.0esr-h54a6638_0.conda
+      - conda: https://conda.anaconda.org/conda-forge/linux-64/firefox-153.4.0esr-hee9eb32_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/flit-core-3.12.0-pyhcf101f3_2.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/fqdn-1.5.1-pyhd8ed1ab_1.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/geckodriver-0.37.1-hbf1d777_0.conda
@@ -1003,7 +1003,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/defusedxml-0.7.1-pyhd8ed1ab_0.tar.bz2
       - conda: https://conda.anaconda.org/conda-forge/noarch/exceptiongroup-1.3.1-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/executing-2.2.1-pyhd8ed1ab_0.conda
-      - conda: https://conda.anaconda.org/conda-forge/osx-64/firefox-128.13.0esr-ha059160_0.conda
+      - conda: https://conda.anaconda.org/conda-forge/osx-64/firefox-153.4.0esr-hc569e58_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/flit-core-3.12.0-pyhcf101f3_2.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/fqdn-1.5.1-pyhd8ed1ab_1.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-64/geckodriver-0.37.1-h1f87f1c_0.conda
@@ -1191,7 +1191,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/defusedxml-0.7.1-pyhd8ed1ab_0.tar.bz2
       - conda: https://conda.anaconda.org/conda-forge/noarch/exceptiongroup-1.3.1-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/executing-2.2.1-pyhd8ed1ab_0.conda
-      - conda: https://conda.anaconda.org/conda-forge/osx-arm64/firefox-128.13.0esr-h81086ad_0.conda
+      - conda: https://conda.anaconda.org/conda-forge/osx-arm64/firefox-153.4.0esr-hdca3b7d_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/flit-core-3.12.0-pyhcf101f3_2.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/fqdn-1.5.1-pyhd8ed1ab_1.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/geckodriver-0.37.1-hd76582c_0.conda
@@ -1378,7 +1378,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/defusedxml-0.7.1-pyhd8ed1ab_0.tar.bz2
       - conda: https://conda.anaconda.org/conda-forge/noarch/exceptiongroup-1.3.1-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/executing-2.2.1-pyhd8ed1ab_0.conda
-      - conda: https://conda.anaconda.org/conda-forge/win-64/firefox-128.13.0esr-h5112557_0.conda
+      - conda: https://conda.anaconda.org/conda-forge/win-64/firefox-153.4.0esr-h5112557_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/flit-core-3.12.0-pyhcf101f3_2.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/fqdn-1.5.1-pyhd8ed1ab_1.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/geckodriver-0.37.1-h0ab9823_0.conda
@@ -8773,17 +8773,17 @@ packages:
   license_family: MIT
   size: 30753
   timestamp: 1756729456476
-- conda: https://conda.anaconda.org/conda-forge/linux-64/firefox-128.13.0esr-h54a6638_0.conda
-  sha256: c4fb2ef26678170b65f03a35a919952afccb407c2550512c1b9319c832e9d8ef
-  md5: 19aa19f61e0139e97fe89a81bbe7bef9
+- conda: https://conda.anaconda.org/conda-forge/linux-64/firefox-153.4.0esr-hee9eb32_0.conda
+  sha256: b03526189dcb4783891d626b87bac9d6674352638d8bbbff52e980e1191d1319
+  md5: 3fae2a913378b252ae81b5bfb8cd5e30
   depends:
   - __glibc >=2.17,<3.0.a0
-  - libstdcxx >=14
-  - libgcc >=14
+  - libstdcxx >=15
+  - libgcc >=15
   license: MPL-2.0
   license_family: MOZILLA
-  size: 83271931
-  timestamp: 1753715520634
+  size: 104926680
+  timestamp: 1790607493782
 - conda: https://conda.anaconda.org/conda-forge/linux-64/firefox-155.0-hee9eb32_0.conda
   sha256: 532c2464c2cc9fa41405d3077959637f044ceddb74babf38bcd5cf13b5ceff38
   md5: affccc096ee27c5d2bad10fe11c183c4
@@ -8795,16 +8795,16 @@ packages:
   license_family: MOZILLA
   size: 106178670
   timestamp: 1788213760603
-- conda: https://conda.anaconda.org/conda-forge/osx-64/firefox-128.13.0esr-ha059160_0.conda
-  sha256: 604f5ddc94d3c462f1781257d88185399f01875016a74c9e7234577f866ec8a3
-  md5: 4b51520df822dca4b8a0991a0b4c4c50
+- conda: https://conda.anaconda.org/conda-forge/osx-64/firefox-153.4.0esr-hc569e58_0.conda
+  sha256: 3d43e9ccda9751ba510f82e976272b0b5ee0d5e6a27bc19a7c4d824579c32b37
+  md5: e063c1269edace06363fd3df818043f1
   depends:
-  - libcxx >=19
-  - __osx >=10.13
+  - __osx >=11.0
+  - libcxx >=21
   license: MPL-2.0
   license_family: MOZILLA
-  size: 132521988
-  timestamp: 1753715495797
+  size: 168243408
+  timestamp: 1790607547747
 - conda: https://conda.anaconda.org/conda-forge/osx-64/firefox-155.0-hc569e58_0.conda
   sha256: 8bfeeef93a6d68adbc1e2d05738c2cce62dfa430f4fddd6f25edd7b567852061
   md5: 9a1366558aab27990ac59836789f328e
@@ -8815,16 +8815,16 @@ packages:
   license_family: MOZILLA
   size: 172951527
   timestamp: 1788213985423
-- conda: https://conda.anaconda.org/conda-forge/osx-arm64/firefox-128.13.0esr-h81086ad_0.conda
-  sha256: ee18b798a9e3cb441bb1b2b2b47082e12814ae4e00c1717e3ae49f9a5771cb95
-  md5: 252b57e3edcc95247a2aad494b844982
+- conda: https://conda.anaconda.org/conda-forge/osx-arm64/firefox-153.4.0esr-hdca3b7d_0.conda
+  sha256: 7e0c871315b56601ee609d6a77c8e4743d72943d93e302de16e0e871c2f31d06
+  md5: d371990ee2a48e9754c5dc4d0a488f38
   depends:
+  - libcxx >=21
   - __osx >=11.0
-  - libcxx >=19
   license: MPL-2.0
   license_family: MOZILLA
-  size: 132522266
-  timestamp: 1753715504190
+  size: 168243521
+  timestamp: 1790607479510
 - conda: https://conda.anaconda.org/conda-forge/osx-arm64/firefox-155.0-hdca3b7d_0.conda
   sha256: d0b42981c805bae62d900911a165de5e2374737a52c02459a7ba332bb4c6fba3
   md5: 47bf9f0f0e6b4c73ad655cc265089461
@@ -8835,20 +8835,17 @@ packages:
   license_family: MOZILLA
   size: 172951538
   timestamp: 1788213802720
-- conda: https://conda.anaconda.org/conda-forge/win-64/firefox-128.13.0esr-h5112557_0.conda
-  sha256: 26ab7d6660b55d6ece5412a6f68b5ac6f86d90ad8062bda26ffe8debd7eb951d
-  md5: 2e21eaba680111e37e904e9757ca2032
+- conda: https://conda.anaconda.org/conda-forge/win-64/firefox-153.4.0esr-h5112557_0.conda
+  sha256: 2ee712aecf4863062dfd47dcae214bef12a2d1aa0f00c37af20bef7f9aadd255
+  md5: cb9f983f1a7c33e131905fd20722b61e
   depends:
-  - vc >=14.3,<15
-  - vc14_runtime >=14.44.35208
-  - ucrt >=10.0.20348.0
   - vc >=14.3,<15
   - vc14_runtime >=14.44.35208
   - ucrt >=10.0.20348.0
   license: MPL-2.0
   license_family: MOZILLA
-  size: 84282548
-  timestamp: 1753715547400
+  size: 116658823
+  timestamp: 1790607467406
 - conda: https://conda.anaconda.org/conda-forge/win-64/firefox-155.0-h5112557_0.conda
   sha256: 68929c76fb26168f4db3b68536c087dea6797f84bf2d3ba322d923fbbd918721
   md5: e678f7b6712f7c53734b3250485d0a78

@@ -707,11 +707,11 @@ robotframework-seleniumlibrary = "*"
 robotframework-tidy = "*"
 
 [feature.deps-firefox.dependencies]
-firefox = ">=128"
+firefox = ">=153"
 geckodriver = "*"
 
 [feature.deps-firefox-oldest.dependencies]
-firefox = "128.*"
+firefox = "153.*"
 
 [feature.deps-lite.dependencies]
 jupyterlite-core = "==0.4.3"
