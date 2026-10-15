@@ -8,7 +8,7 @@ from collections.abc import Iterator
 from pydantic import BaseModel, Field, SerializeAsAny
 
 from ..exceptions import NotFoundError, NotUniqueError
-from .common import EMPTY_SENTINEL
+from .common import EMPTY_SENTINEL, from_wire
 from .elements import (
     BaseElement,
     Edge,
@@ -127,7 +127,8 @@ class VisIndex(BaseModel):
         return port
 
     def edge_factory(self, *, slack_edge=False, **kwargs) -> Edge:
-        edge = Edge(**kwargs)
+        """Make an edge from ELK JSON, which can have keys that ``Edge`` does not have."""
+        edge = from_wire(Edge, kwargs)
         if slack_edge:
             edge.add_class(*self.slack_edge_style)
         return edge
@@ -243,10 +244,9 @@ class ElementIndex(BaseModel):
 
         An element keeps its own ``properties``: the browser strips them before
         the layout and puts them back unchanged, and ``other`` holds a copy
-        parsed as the base classes (a ``Circle`` comes back as a ``NodeShape``
-        without its ``radius``, a ``Widget`` without its widget). The returned
-        ``width`` and ``height`` go through ``ShapeElement.set_laid_out``, which
-        keeps a size the user assigned.
+        loaded from JSON (a ``Circle`` comes back as an ``Ellipse`` without its
+        ``radius``). The returned ``width`` and ``height`` go through
+        ``ShapeElement.set_laid_out``, which keeps a size the user assigned.
         """
         fields = ["layoutOptions", "x", "y", "sections", "text"]
         for key, e2 in other.items():

@@ -5,6 +5,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from .common import from_wire
 from .elements import Node
 from .index import HierarchicalIndex, VisIndex
 
@@ -36,7 +37,7 @@ def apply_edges(data: dict, edges: dict) -> dict:
 def convert_elkjson(data: dict, vis_index: VisIndex | None = None) -> Node:
     # pop_edges currently mutates `data` by popping the edge dict
     edges_map = pop_edges(data)  # dict of node.id to edge list
-    root = Node.model_validate(data)  # new element hierarchy without edges
+    root = from_wire(Node, data)  # new element hierarchy without edges
     el_map = HierarchicalIndex.from_els(
         root, vis_index=vis_index
     )  # get mapping of ids to elements

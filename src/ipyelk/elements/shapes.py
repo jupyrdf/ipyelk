@@ -7,7 +7,7 @@ The *Shapes* page of the API reference describes the shapes and the terms used h
 
 from __future__ import annotations
 
-from ipywidgets import DOMWidget
+from ipywidgets import DOMWidget, widget_serialization
 from pydantic import (
     BaseModel,
     ConfigDict,
@@ -16,6 +16,7 @@ from pydantic import (
     SerializerFunctionWrapHandler,
     field_validator,
     model_serializer,
+    model_validator,
 )
 
 from .common import serialize_value
@@ -31,8 +32,11 @@ class Point(BaseModel):
     x: float = 0
     y: float = 0
 
-    def __init__(self, x=0, y=0):
-        super().__init__(x=x, y=y)
+    # shortcut: a Point ignores an unknown key, also in user code, because pydantic
+    # validates it through this __init__, outside the from_wire context. Make it
+    # forbid when the positional __init__ goes, in a major release.
+    def __init__(self, x=0, y=0, **data):
+        super().__init__(x=x, y=y, **data)
 
 
 class BaseShape(BaseModel):
@@ -44,6 +48,9 @@ class BaseShape(BaseModel):
     """
 
     type: str | None = None
+
+    #: an unknown key is a typo, or a field of another shape class
+    model_config = ConfigDict(extra="forbid")
 
     def dimension(self, key: str) -> float | None:
         """Return the value of ``x``, ``y``, ``width`` or ``height`` to serialize.
@@ -225,7 +232,8 @@ class Circle(NodeShape):
 
     The ``node:round`` renderer does not read ``radius``. It draws an ellipse with half
     the laid-out width and height of the node as its radii. If the laid-out width and
-    height differ, the ellipse is not a circle.
+    height differ, the ellipse is not a circle. JSON loads a ``Circle`` as an
+    :py:class:`Ellipse` of the same size, because JSON does not hold ``radius``.
 
     Fields:
         - ``radius`` (``float``, default ``0``): the radius in pixels, not serialized.
@@ -374,7 +382,7 @@ class Widget(NodeShape):
     Fields:
         - ``widget`` (ipywidgets ``DOMWidget``, required): the widget to draw.
           Serialization writes its ``model_id`` to ``use``, so a value in ``use`` has
-          no effect.
+          no effect. JSON loads the widget that has the ``model_id`` in ``use``.
         - ``delay`` (``int`` or ``None``, default ``None``): a time in milliseconds.
           If it is set and not 0, the frontend applies the diagram zoom to the widget
           only after ``delay``. ``None`` and 0 apply the zoom at once. The ``15_Nesting_Plots`` example uses it.
@@ -390,6 +398,16 @@ class Widget(NodeShape):
     )
 
     model_config = ConfigDict(arbitrary_types_allowed=True)
+
+    @model_validator(mode="before")
+    @classmethod
+    def find_widget(cls, data):
+        """Load JSON, which has the ``model_id`` of the widget in ``use``."""
+        if isinstance(data, dict) and "widget" not in data and data.get("use"):
+            found = widget_serialization["from_json"](f"IPY_MODEL_{data['use']}", None)
+            if isinstance(found, DOMWidget):
+                data = {**data, "widget": found}
+        return data
 
     @model_serializer(mode="wrap")
     def serialize_shape(
@@ -416,3 +434,39 @@ class HTML(NodeShape):
 
 
 Widget.model_rebuild()
+
+
+#: The class that loads each shape ``type`` from JSON. ``Circle`` is not here: it
+#: writes the same ``node:round`` as ``Ellipse``, without its ``radius``, and the
+#: renderer draws both from the width and height. So JSON loads it as an ``Ellipse``.
+SHAPE_TYPES: dict[str, type[BaseShape]] = {
+    cls.model_fields["type"].default: cls
+    for cls in (
+        EdgeShape,
+        PortShape,
+        LabelShape,
+        Icon,
+        Rect,
+        Path,
+        SVG,
+        Ellipse,
+        Diamond,
+        Comment,
+        Use,
+        Image,
+        ForeignObject,
+        Widget,
+        HTML,
+    )
+}
+
+
+def shape_class(family: type[BaseShape], data: object) -> type[BaseShape]:
+    """Return the class that loads the JSON ``data`` of a shape of ``family``.
+
+    It is the class of the ``type`` in ``data``, if that class is ``family`` or a
+    subclass of it, else ``family``.
+    """
+    tag = data.get("type") if isinstance(data, dict) else None
+    cls = SHAPE_TYPES.get(tag) if isinstance(tag, str) else None
+    return cls if cls is not None and issubclass(cls, family) else family

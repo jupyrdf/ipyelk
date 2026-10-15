@@ -14,6 +14,7 @@ from ...elements import (
     HierarchicalIndex,
     Node,
     Port,
+    from_wire,
 )
 from ...exceptions import NotFoundError
 
@@ -43,7 +44,8 @@ def process_endpoints(
                 ends[key] = port
                 break  # don't try other attr combinations
     edge_dict = {**data, **ends}
-    return Edge(**edge_dict)
+    # networkx attributes pass through: an edge ignores those that it does not have
+    return from_wire(Edge, edge_dict)
 
 
 def get_endpoint(
@@ -79,8 +81,8 @@ def from_nx_node(n: Hashable, g: nx.Graph) -> Node:
     if isinstance(n, Node):
         el = n
     else:
-        d = g.nodes[n]
-        el = Node(**d)
+        # networkx attributes pass through: a node ignores those that it does not have
+        el = from_wire(Node, g.nodes[n])
         if el.id is None:
             el.id = str(n)
     return el

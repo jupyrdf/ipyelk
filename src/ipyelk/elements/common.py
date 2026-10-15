@@ -4,9 +4,10 @@ import math
 import numbers
 from collections import namedtuple
 from decimal import Decimal
-from typing import Annotated
+from typing import Annotated, TypeVar
 
 from pydantic import (
+    BaseModel,
     BeforeValidator,
     PlainSerializer,
     SerializationInfo,
@@ -17,6 +18,22 @@ from typing_extensions import TypeAlias
 
 Sentinel = namedtuple("Sentinel", [])
 EMPTY_SENTINEL = Sentinel
+
+ModelT = TypeVar("ModelT", bound=BaseModel)
+
+#: The validation context of ``from_wire``.
+WIRE_CONTEXT = {"ipyelk": "wire"}
+
+
+def from_wire(model: type[ModelT], data: dict) -> ModelT:
+    """Validate ``data`` as ``model``, and ignore the keys that the models do not have.
+
+    The elements, their properties and their shapes reject an unknown key, which is
+    usually a typo. ELK JSON from the frontend, from ELK or from a file can have keys that
+    the models do not have, for example ``junctionPoints`` on an edge. So can the
+    attributes of a ``networkx`` graph, which the ``networkx`` loader passes through.
+    """
+    return model.model_validate(data, extra="ignore", context=WIRE_CONTEXT)
 
 
 def elk_option_value(value: object) -> object:
