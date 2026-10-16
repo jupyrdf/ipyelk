@@ -220,6 +220,69 @@
   ignores an unknown key, also in user code, and no longer raises `TypeError` for one in
   ELK JSON. The `15_Nesting_Plots` example no longer passes `key=None` to `Node`, which
   now rejects it ([#153]).
+- `ipyelk.elements.Mark` and `ipyelk.elements.MarkFactory` are removed. They served the
+  `networkx` transformer that 2.0 removed, and nothing used them since. Importing either
+  name, or the `ipyelk.elements.mark_factory` module, raises `DeprecatedImportError`
+  throughout 3.x. To load a `networkx` graph, use `ipyelk.from_nx` or
+  `ipyelk.loaders.NXLoader` ([#160]).
+- A `MarkElementWidget` syncs `value` with the browser only when a browser stage reads
+  or writes it: the inlet of a `SyncedInletPipe`, the outlet of a `SyncedOutletPipe`
+  (`ElkJS` and `BrowserTextSizer` are both), and the `source` of a viewer. These call
+  the new `MarkElementWidget.sync_value()` when they take the mark. Every other mark,
+  for example `Diagram.source`, keeps `value` in the kernel, so the browser no longer
+  receives the tree the user built (at 100 nodes, the comm-open state of the source fell
+  from 59 kB to 376 B). `flow` is never synced: no browser code reads it, and each
+  refresh sends up to five fewer messages. Browser code that reads `value` of another
+  mark must call `sync_value()` on it first ([#161]).
+- A `Registry` holds its elements weakly, so it no longer keeps every element that it
+  saw alive. A key that cannot be weakly referenced, such as a `str`, is held strongly,
+  as in 2.x ([#160]).
+- A `Document` (`ipyelk.elements.Document`) owns the ids of an element tree. It replaces
+  the global stack of `Registry` contexts: no ipyelk code enters a `Registry` any more.
+  `Document(root)` writes onto each element without an `id` the id that it serializes
+  with (`wire_id`), `resolve(id)` returns a `Resolved(element, via_slack)` or `None`,
+  `document[id]` returns the element or raises `NotFoundError`, `missing(ids)` lists the
+  ids that do not resolve, and `lookup(ids, strict=True)` yields the elements. The index
+  of a pipeline is `MarkIndex.document`, and `MarkIndex.elements` is the id map of that
+  document. `MarkIndex.elements` and `MarkIndex.context` are properties now, not traits:
+  `MarkIndex(elements=...)` and assignment still work, but
+  `observe(callback, "elements")` never calls the callback. `ElementIndex.from_els`,
+  `VisIndex.from_els` and `HierarchicalIndex.from_els` index an element without an `id`
+  by its `wire_id`. In 2.x they raised `ValueError` ("Cannot index element without an
+  id") outside a `Registry`. `Selection` and `Painter` resolve their ids through the
+  document (the new `get_document()`), and `elements()` and `missing_ids()` keep their
+  behavior. `Painter.paint(element)` stores the `wire_id` of an element that is not
+  indexed yet. In 2.x it raised `ValueError` ([#160]).
+- A slack port has its own id: the id of its hidden element plus `.slack` (plus another
+  `.slack` while that id is in use). A slack port is the port that the projection adds
+  to the nearest visible ancestor of a hidden element, so that an edge to the hidden
+  element keeps an endpoint. In 2.x it had the id of the hidden element, so two elements
+  had one id. Selecting a slack port still selects the hidden element:
+  `Selection.elements()` returns it, and `Document.resolve` returns it with
+  `via_slack=True`. The `properties.key` of the slack port is still the id of the hidden
+  element. Code that compares the id of a slack port with the id of a hidden element
+  must use `Document.resolve`. `Painter.paint` of a hidden element no longer styles its
+  slack port, which had the same id in 2.x; paint the slack port id to style it.
+  `ElementIndex.update` no longer adds the slack ports of a browser answer to the index
+  ([#160]).
+- An element under a second parent raises `ValueError` when it is attached, and the
+  message names both parents. While the new parent is constructed, the error is a
+  `pydantic.ValidationError`, which is a `ValueError` too. This applies to a label
+  (`Node(labels=[label])`, `element.labels = [...]`), a child node and a port
+  (`Node(children=..., ports=...)`, `add_child`, `add_port`). In 2.x a shared label
+  failed later, in `ValidationPipe`, with `Nonunique Element Ids`, and a child or port
+  failed an `assert` (`owned by different node`). An element that its old parent no
+  longer holds attaches without an error. A label that is appended to `labels` in place
+  is not checked at attach; `ValidationPipe` still reports its id.
+  `Compartment(bullet_shape=...)` gives each content line its own bullet label. It used
+  to share one label, which failed validation ([#160]).
+- `ipyelk.elements.Registry` is deprecated and will be removed in 4.0. Constructing one
+  emits a `DeprecationWarning` that names `Document` and the removal version, and a
+  `Registry` keeps working through 3.x. `MarkIndex.context` is deprecated in the same
+  way: reading or assigning it warns, and it holds a `Registry` that ipyelk does not
+  read. This is the second tier of the 3.0 policy: a name that worked warns and keeps
+  working, and a name that never worked raises. The `11_Logic_Gates` example uses
+  `Document` ([#160]).
 
 ### Migration
 
@@ -316,8 +379,42 @@ Node(layoutOptions={"org.eclipse.elk.direction": None})
 Node(layoutOptions={"org.eclipse.elk.partitioning.partition": 2.0})
 ```
 
+```python
+# 2.x: a Registry context minted the ids
+from ipyelk.elements import ElementIndex, Registry
+
+with Registry():
+    el_map = ElementIndex.from_els(*nodes)
+node = el_map["n1"]
+# 3.0: the Document gives each element without an id its wire id
+from ipyelk.elements import Document
+
+doc = Document(*nodes)
+node = doc["n1"]  # NotFoundError for an unknown id; doc.resolve("n1") gives None
+
+# 2.x: one fragment in several places shared one object, or ids by hand
+gate = gate_template  # a second parent failed late, or raised AssertionError
+# 3.0: copy it; every id of the copy is "<prefix>.<id of the original>"
+gate = gate_template.clone("nor1")
+
+# 2.x: a slack port had the id of its hidden element
+selection.ids  # ("hidden",) after a click on the slack port
+# 3.0: it has its own id, which resolves to the hidden element
+selection.ids  # ("hidden.slack",)
+list(selection.elements())  # [hidden], as in 2.x
+diagram.pipe.inlet.index.document.resolve("hidden.slack")  # Resolved(hidden, True)
+```
+
+```python
+# 2.x: every mark sent value and flow to the browser
+mark.value  # also in the browser model of any MarkElementWidget
+# 3.0: only the marks of a browser stage, and the viewer's source, sync value
+mark.sync_value()  # opt in, for browser code that reads another mark
+```
+
 The removed names (`handler`, `on_run`, `disable`, `Hover.ids`, assigning `on_start` or
-`on_done`, the `contol_overlay` and `ipyelk.pipes.mappings` modules,
+`on_done`, the `contol_overlay`, `ipyelk.pipes.mappings` and
+`ipyelk.elements.mark_factory` modules, `ipyelk.elements.Mark`/`MarkFactory`,
 `Viewer.zoom`/`pan`/`viewed`, `ipyelk.tools.Zoom`/`Pan`,
 `Painter.cssClasses`/`marks`/`name`, `Draw2DLayout` from
 `ipyelk.elements.layout_options` or its `layout` module) raise `DeprecatedAPIError` --
@@ -326,6 +423,15 @@ replacement in the message.
 
 ### Added
 
+- `Node.clone(prefix)` copies a node with everything under it, for a fragment that is
+  used in several places. The copy of an element with the id `X` has the id
+  `"<prefix>.X"`, where `X` is the id or the `wire_id` of the original. So two clones
+  with one prefix get the same ids if they copy the same fragment object, or a fragment
+  whose elements all have an `id`. An element without an `id` gets a new `wire_id` each
+  time its fragment is built again, and so does its copy. The copies have their own
+  parents, `layoutOptions` and `properties`. Edges inside the fragment connect the
+  copies, and an edge to an element outside the fragment keeps that endpoint. `metadata`
+  and the widget of a `Widget` shape are shared ([#160]).
 - An opt-in check for layout option keys that ELK ignores without an error. ELK takes a
   full option id, or the end of one that starts after a dot (`elk.direction`,
   `spacing.nodeNode`), and the old ids of some options (`layered.northOrSouthPort`).

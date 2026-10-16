@@ -2,11 +2,12 @@
 # Distributed under the terms of the Modified BSD License.
 """Element ids are assigned when the index is built and stay put.
 
-The index's ``Registry`` is the id authority. Building the index writes those ids
-onto the elements, so every later serialization -- which happens outside the
-Registry -- emits the same ids the index is keyed by. Those ids are the join key
-for ``ElementIndex.update`` (hidden elements never reach the wire), browser
-selection, and slack ports, which reuse a hidden element's id.
+The index's ``Document`` is the id authority. Building the index writes the id
+that each element serializes with onto it, so every later serialization emits
+the same ids the index is keyed by. Those ids are the join key for
+``ElementIndex.update`` (hidden elements never reach the wire) and browser
+selection. A slack port has its own id, which the document resolves to the
+hidden element.
 """
 
 import asyncio
@@ -108,9 +109,9 @@ def test_mixed_ids_stay_distinct_and_stable():
     assert to_json(widget.value, None) == first
 
 
-def test_slack_port_keeps_hidden_elements_id_and_object():
-    """A slack port comes back from the browser carrying a hidden element's id;
-    the hidden element -- not the port -- must stay what that id resolves to.
+def test_slack_port_has_its_own_id_and_resolves_to_the_hidden_element():
+    """A slack port has its own id (#160 defect 4); the merge leaves the hidden
+    element at its id, and the document resolves the slack id to it.
     """
     root = Node(id="r")
     n1 = root.add_child(Node(id="n1"))
@@ -127,7 +128,9 @@ def test_slack_port_keeps_hidden_elements_id_and_object():
         data = root.model_dump()
     visible = convert_elkjson(data, vis_index)
     slack = visible.children[0].ports[0]
-    assert slack.id == "h"
+    assert slack.id == "h.slack"
+    assert slack.properties.key == "h"
+    assert vis_index.slack_ports == {"h.slack": "h"}
     assert visible.edges[0].target is slack
 
     widget.value = convert_elkjson(json.loads(json.dumps(to_json(visible, None))))
@@ -137,6 +140,10 @@ def test_slack_port_keeps_hidden_elements_id_and_object():
     assert widget.index.elements.get("n1") is n1
     assert widget.index.elements.get("e").target is hidden
     assert widget.index.root is root
+    assert "h.slack" not in widget.index.elements, "the merge skips slack ports"
+    widget.index.document.slack = vis_index.slack_ports
+    assert widget.index.document.resolve("h.slack") == (hidden, True)
+    assert widget.index.document.resolve("h") == (hidden, False)
 
 
 def test_slack_port_does_not_overwrite_hidden_port_geometry():
@@ -188,11 +195,11 @@ def test_validation_pipe_fix_null_id_false_still_rejects_unassigned_ids():
     assert pipe.inlet.index.elements.get(root.children[0].id) is root.children[0]
 
 
-def test_new_idless_elements_need_a_rebuild_not_a_merge():
-    """Ids are assigned when indexed; the merge path (``persist()``) only accepts
-    elements that already have one.  Adding to the Python-side hierarchy means
-    rebuilding from it -- same Registry, so existing ids and objects (hidden ones
-    included) are kept.
+def test_new_idless_elements_are_merged_by_wire_id_and_pinned_by_a_rebuild():
+    """Ids are assigned when indexed; the merge path (``persist()``) keys a new
+    id-less element by its wire id without assigning it.  Rebuilding from the
+    Python-side hierarchy pins that id, and keeps the existing ids and objects
+    (hidden ones included).
     """
     root = Node()
     a = root.add_child(Node(), key="a")
@@ -204,9 +211,9 @@ def test_new_idless_elements_need_a_rebuild_not_a_merge():
 
     new = root.add_child(Node(), key="new")
     widget.value = root
-    with pytest.raises(ValueError, match="without an id"):
-        widget.persist()
+    widget.persist()
     assert new.id is None
+    assert widget.index.elements.get(new.wire_id()) is new
 
     widget.persist(rebuild_index=True)
     assert new.id

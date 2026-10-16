@@ -69,8 +69,9 @@ def test_elements_are_accepted_and_stored_as_ids():
     painter.paint(n1, "hl")
     painter.paint([n2, "n1"], "warn")
     assert painter.styles == {"n1": ("hl", "warn"), "n2": ("warn",)}
-    with pytest.raises(ValueError, match="no id"):
-        painter.paint(Node(), "hl")  # an unregistered element has no id yet
+    unindexed = Node()
+    painter.paint(unindexed, "hl")  # the id that it serializes with, and keeps
+    assert unindexed.wire_id() in painter.styles
 
 
 def test_browser_update_arrives_as_lists_and_is_stored_as_tuples():

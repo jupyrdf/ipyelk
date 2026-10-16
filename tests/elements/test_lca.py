@@ -21,7 +21,6 @@ from ipyelk.elements import (
     HierarchicalElement,
     Node,
     Port,
-    Registry,
     iter_edges,
     iter_hierarchy,
 )
@@ -114,8 +113,7 @@ def random_hierarchy(seed: int, n_nodes: int, n_edges: int) -> tuple[Node, int]:
 def test_parent_walk_matches_networkx(seed):
     """Random hierarchies: same owner for every edge as ``nx.lowest_common_ancestor``."""
     root, n_edges = random_hierarchy(seed, n_nodes=120, n_edges=200)
-    with Registry():
-        report, checked = assert_matches_networkx(root)
+    report, checked = assert_matches_networkx(root)
 
     assert checked == n_edges, "every edge should have been compared"
     assert report.lca_mismatch, "a random hierarchy should need some re-owning"
@@ -125,8 +123,7 @@ def test_parent_walk_matches_networkx(seed):
     for edge, (old_owner, new_owner) in report.lca_mismatch.items():
         old_owner.edges.remove(edge)
         new_owner.edges.append(edge)
-    with Registry():
-        settled, checked = assert_matches_networkx(root)
+    settled, checked = assert_matches_networkx(root)
     assert checked == n_edges
     assert not settled.lca_mismatch
 
@@ -158,8 +155,7 @@ def test_self_loop_owned_by_parent():
     already_owned = group.add_edge(port1, port2)
     already_owned.id = "already_owned"
 
-    with Registry():
-        report, _ = assert_matches_networkx(root)
+    report, _ = assert_matches_networkx(root)
 
     assert mismatch_ids(report) == {
         "to_self": ("node", "group"),
@@ -188,8 +184,7 @@ def test_port_endpoints_resolve_to_parents():
     mixed = root.add_edge(a, b_port)
     mixed.id = "mixed"
 
-    with Registry():
-        report, _ = assert_matches_networkx(root)
+    report, _ = assert_matches_networkx(root)
 
     assert mismatch_ids(report) == {
         "siblings": ("root", "left"),
@@ -215,8 +210,7 @@ def test_orphan_adoption_unchanged():
     within_orphan = root.add_edge(stray_child, stray_other)
     within_orphan.id = "within_orphan"
 
-    with Registry():
-        report, _ = assert_matches_networkx(root)
+    report, _ = assert_matches_networkx(root)
 
     assert report.orphans == {stray}, "the topmost ancestor is the orphan"
     assert mismatch_ids(report) == {
@@ -233,10 +227,9 @@ def test_self_loop_on_a_parentless_node_still_raises():
     root.add_child(Node(id="child"))
     root.add_edge(root, root).id = "loop"
 
-    with Registry():
-        index = ElementIndex.from_els(root)
-        with pytest.raises(NotFoundError):
-            index.check_edges()
+    index = ElementIndex.from_els(root)
+    with pytest.raises(NotFoundError):
+        index.check_edges()
 
 
 def test_depths_counts_from_the_root_and_adopts_orphans():

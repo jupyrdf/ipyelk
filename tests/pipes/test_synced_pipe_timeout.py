@@ -101,9 +101,9 @@ async def test_no_browser_env_skips_the_roundtrip(monkeypatch):
 
 
 def test_persist_merges_ids_assigned_by_validation_pipe():
-    """Un-id'd hierarchies get ids from ``ValidationPipe`` (inside the index's
-    Registry) before they reach the wire; from there the browser roundtrip and the
-    ``persist`` merge path work without a Registry context (PR #145 review).
+    """Un-id'd hierarchies get ids from ``ValidationPipe`` (the wire ids, which
+    the index's Document pins) before they reach the wire; from there the browser
+    roundtrip and the ``persist`` merge path keep them (PR #145 review).
     """
     from ipyelk.elements.serialization import to_json
     from ipyelk.pipes import ValidationPipe

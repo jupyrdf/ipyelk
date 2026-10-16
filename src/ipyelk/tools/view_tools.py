@@ -1,18 +1,15 @@
 # Copyright (c) 2024 ipyelk contributors.
 # Distributed under the terms of the Modified BSD License.
-from collections.abc import Iterator
-
 import ipywidgets as W
 import traitlets as T
 from ipywidgets.widgets.trait_types import TypedTuple
 
 from ..elements import BaseElement
 from ..exceptions import RemovedAPI
-from ..pipes import MarkIndex
-from .tool import Tool, ToolButton
+from .tool import ResolvingTool, Tool, ToolButton
 
 
-class Selection(Tool):
+class Selection(ResolvingTool):
     """Tool exposing the ids and elements for selected marks in the
     diagram.
 
@@ -29,38 +26,8 @@ class Selection(Tool):
 
     ids = TypedTuple(trait=T.Unicode()).tag(sync=True, echo_update=False)
 
-    def get_index(self) -> MarkIndex:
-        """The attached pipe's element index, built on first use.
-
-        Raises ``ValueError`` when the selection has no ``tee`` to resolve against.
-        """
-        if self.tee is None:
-            raise ValueError("Tool not attached to a pipe")
-        inlet = self.tee.inlet
-        if inlet.index.elements is None and inlet.value is not None:
-            inlet.build_index()  # the MarkIndex always exists; its elements may not
-        return inlet.index
-
-    def elements(self, *, strict: bool = True) -> Iterator[BaseElement]:
-        """The selected elements, in ``ids`` order.
-
-        :param strict: when True (default) an id the index does not know raises
-            :py:class:`~ipyelk.exceptions.NotFoundError` naming it; when False such
-            ids are skipped (see :meth:`missing_ids` to report them).
-        """
-        index = self.get_index()
-        if strict:
-            yield from map(index.from_id, self.ids)  # ``NotFoundError`` names the id
-            return
-        missing = set(self.missing_ids())
-        yield from (index.from_id(el_id) for el_id in self.ids if el_id not in missing)
-
-    def missing_ids(self) -> tuple[str, ...]:
-        """The selected ids the index does not know, in ``ids`` order."""
-        known = self.get_index().elements
-        if known is None:  # nothing has been indexed yet (no value on the inlet)
-            return tuple(self.ids)
-        return tuple(el_id for el_id in self.ids if el_id not in known.elements)
+    def _held_ids(self) -> tuple[str, ...]:
+        return tuple(self.ids)
 
 
 class Hover(Tool):

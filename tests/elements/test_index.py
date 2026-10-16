@@ -31,6 +31,11 @@ from ipyelk.elements.index import (
 from ipyelk.elements.serialization import to_json
 from ipyelk.exceptions import NotFoundError, NotUniqueError
 
+#: the Registry tests pin the deprecated tier: it warns and keeps working
+REGISTRY_COMPAT = pytest.mark.filterwarnings(
+    "ignore:ipyelk.elements.Registry is deprecated:DeprecationWarning"
+)
+
 
 def test_id_report_message_interpolates_duplicated_ids():
     node = Node(id="dup")
@@ -48,15 +53,16 @@ def test_id_report_message_interpolates_null_ids():
     assert str(node) in message
 
 
-def test_element_index_rejects_unresolved_missing_id():
+def test_element_index_keys_an_idless_element_by_its_wire_id():
     root = Node(children=[Node(children=[Node()])])
-    with pytest.raises(ValueError, match="without an id") as excinfo:
-        ElementIndex.from_els(root)
-    # the message names the element type, not the (recursive) element repr
-    assert str(excinfo.value).startswith("Cannot index element without an id (Node)")
-    assert "children" not in str(excinfo.value)
+    index = ElementIndex.from_els(root)
+    leaf = root.children[0].children[0]
+    assert index.elements[leaf.wire_id()] is leaf
+    assert leaf.id is None, "indexing alone does not assign ids"
+    assert root.model_dump()["children"][0]["children"][0]["id"] == leaf.wire_id()
 
 
+@REGISTRY_COMPAT
 def test_element_index_keeps_registry_generated_ids():
     node = Node()
     with Registry():
@@ -67,6 +73,7 @@ def test_element_index_keeps_registry_generated_ids():
     assert index.elements[node_id] is node
 
 
+@REGISTRY_COMPAT
 def test_vis_index_keeps_registry_generated_ids():
     root = Node(children=[Node(properties=NodeProperties(hidden=True))])
     hidden = root.children[0]

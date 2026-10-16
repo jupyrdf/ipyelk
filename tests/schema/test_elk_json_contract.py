@@ -460,6 +460,7 @@ def test_a_layout_result_with_a_closed_widget_loads():
     wire = closed_widget_json()
     wire["children"][0]["x"] = 15  # laid out
     outlet = MarkElementWidget()
+    outlet.sync_value()  # as the outlet of a browser stage does (#235)
     with pytest.warns(UserWarning, match="No open widget has the model_id"):
         outlet.set_state({"value": wire})
     assert outlet.value.children[0].x == 15

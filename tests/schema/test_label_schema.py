@@ -46,7 +46,7 @@ def test_schema_accepts_a_slack_port_lookup_key():
     wire = project(root)
 
     (port,) = wire["children"][0]["ports"]
-    assert port["id"] == "hc"
+    assert port["id"] == "hc.slack"
     assert port["properties"]["key"] == "hc"
     ElkSchemaValidator.validate(wire)
 

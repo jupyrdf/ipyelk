@@ -155,7 +155,7 @@ def as_in_hierarchy(
         return nx_node_map[parent]
 
     if isinstance(parent, HierarchicalElement):
-        node_id = parent.get_id()
+        node_id = parent.wire_id()
         if node_id in hierarchy:
             return node_id
     else:
