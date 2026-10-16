@@ -574,19 +574,19 @@ except ClosedError:  # also a TraitError and a RuntimeError
 - `NXLoader` finds the owner of each edge by walking up the parents of its two ends, not
   with `networkx.lowest_common_ancestor`, which searches the whole hierarchy for each
   edge. The owners do not change. Loading a random tree of 3,000 nodes and 3,000 edges
-  falls from 3.3 s to 0.4 s ([#160])
+  falls from 3.3 s to 0.4 s. A cycle in the hierarchy still raises a `NetworkXError`,
+  which now names the cycle. It raises also if no edge joins two different nodes, where
+  the loader dropped the nodes of the cycle ([#160])
 - The browser text sizer measures a label again only if its text or its CSS classes
-  change, or the CSS of the sizer or the label font of the theme. It measured every
-  label on every run: it skipped only a label whose shape has a size, and it writes the
-  size onto the label, not onto the shape. A run with no label to measure answers at
-  once, without the DOM ([#161])
+  change, or the CSS of the sizer or the label font of the theme, or after the page
+  loads a font. It keeps the 0 size of a label with no text. It measured every label on
+  every run: it skipped only a label whose shape has a size, and it writes the size onto
+  the label, not onto the shape. A run with no label to measure answers at once, without
+  the DOM ([#161])
 - Bundle `elkjs/lib/elk-worker.min.js`, the compact build of the elkjs worker, not
   `elk-worker.js`. The worker in the lab extension falls from 1.92 MB to 1.46 MB, and
   its source map from 7.7 MB to 4.2 MB. This makes the wheel about 0.4 MB smaller
   ([#161])
-- `Compartment(bullet_shape=...).make_labels()` gives each line of content its own
-  bullet label, with its own copy of the shape. All the lines shared one bullet label,
-  so the validation failed with `Nonunique Element Ids` ([#160])
 
 ### Development
 

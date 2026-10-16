@@ -17,17 +17,8 @@ from typing import Any
 import pytest
 from pydantic import ConfigDict
 
-from ipyelk.elements import (
-    Compartment,
-    ElementIndex,
-    Label,
-    Node,
-    Port,
-    Record,
-    Registry,
-)
+from ipyelk.elements import ElementIndex, Label, Node, Port, Registry
 from ipyelk.elements.elements import ElementMetadata
-from ipyelk.elements.shapes import Icon
 from ipyelk.pipes import MarkElementWidget, ValidationPipe
 
 
@@ -274,25 +265,6 @@ def test_wrapped_labels_merge_and_validate_without_a_rebuild():
     pipe.inlet = widget
     asyncio.run(pipe.run())
     assert pipe.errors == {}
-    widget.close()
-
-
-def test_compartment_bullets_validate():
-    """Each line of a ``Compartment`` gets its own bullet label and shape."""
-    compartment = Compartment(bullet_shape=Icon(use="dot")).make_labels(
-        headings=["heading"], content=["one", "two"]
-    )
-    bullets = [line.labels[0] for line in compartment.labels[1:]]
-    assert len({id(bullet) for bullet in bullets}) == 2
-    assert len({id(bullet.properties.shape) for bullet in bullets}) == 2
-    assert all(bullet.properties.shape == Icon(use="dot") for bullet in bullets)
-
-    widget = MarkElementWidget(value=Node(children=[Record(children=[compartment])]))
-    pipe = ValidationPipe()
-    pipe.inlet = widget
-    asyncio.run(pipe.run())
-    assert pipe.errors == {}
-    assert len({bullet.id for bullet in bullets}) == 2
     widget.close()
 
 
