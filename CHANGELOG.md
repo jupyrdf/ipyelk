@@ -194,6 +194,32 @@
   `PydanticSerializationError` (a `ValueError`) that names the key. With
   `exclude_none=True`, serialization drops that key instead, so ELK uses the option's
   default. `OptionsWidget.value` only accepts string keys and values ([#31]).
+- ELK JSON loads each shape as the class of its type string, through `convert_elkjson`,
+  `from_elkjson` and the value that comes back from the frontend. So a `Path`, `Comment`
+  or `Widget` keeps its class and its fields. 2.x loaded every shape as the shape class
+  of its element, for example `NodeShape`. `Circle` and `Ellipse` share the type string
+  `node:round`, and the JSON does not hold their radii, so a `node:round` shape loads as
+  an `Ellipse` of the same size. A `node:widget` shape loads with the widget that has
+  the `model_id` in `use`. If no open widget has that `model_id`, for example because
+  the widget closed, the shape loads as a `NodeShape` with the same JSON, and ipyelk
+  warns. JSON that the class of its type string rejects now raises `ValidationError`,
+  where 2.x loaded it: for example a `node:path` shape without `use`. A second shape
+  class with a type string that is already taken warns and replaces the first class
+  ([#153]).
+- The elements, their properties and their shapes raise `ValidationError` (type
+  `extra_forbidden`) for a key that they do not have, at construction. 2.x ignored the
+  key, so a typo such as `Node(hieght=5)` did nothing. Assignment does not change. For
+  an unknown key, an element and its properties already raised `ValidationError` (type
+  `no_such_attribute`) in 2.x, and a shape still raises `ValueError`. The classes are
+  `Node`, `Port`, `Label`, `Edge`, `EdgeSection` and their subclasses, the properties
+  classes and the shape classes. A shape also rejects a field of another shape class,
+  for example `Rect(start="arrow")`. `layoutOptions` stays open. ELK JSON still loads:
+  `convert_elkjson`, `from_elkjson`, the value that comes back from the frontend and the
+  `networkx` loader ignore the keys that the models do not have. The new
+  `ipyelk.elements.from_wire(Node, data)` loads a dictionary in the same way. A `Point`
+  ignores an unknown key, also in user code, and no longer raises `TypeError` for one in
+  ELK JSON. The `15_Nesting_Plots` example no longer passes `key=None` to `Node`, which
+  now rejects it ([#153]).
 
 ### Migration
 
@@ -321,6 +347,16 @@ replacement in the message.
 - CI also regenerates `elk-catalog.json` and fails if it differs from the committed
   file, and `jlpm schema` passes the real path of `elkschema.ts`
   ([#187](https://github.com/jupyrdf/ipyelk/issues/187)).
+- A unit test checks the models against `src/ipyelk/schema/elkschema.json`, which the
+  TypeScript types of the frontend generate. Every key that a model, or a subclass in
+  `ipyelk`, can write must be in the schema. A graph with every kind of element, every
+  shape and hidden elements must validate, as the view gets it and as ELK gets it. The
+  view types that `js/sprotty/di-config.ts` registers must be the type strings of the
+  shape classes and four types that only the frontend uses: `graph`, `junction`,
+  `symbol` and `node:compartment`. The pipeline does not validate: on 1000 nodes,
+  validation takes about 5 times as long as the serialization that it checks. To check a
+  payload while you debug, call `ipyelk.schema.validate_elk_json(to_json(node, None))`
+  ([#131], [#153]).
 
 A diagram, pipeline or tool is dead once closed ([#197], [#218]): build a new one
 instead of reusing it. Check `closed` first, or catch `ClosedError`.
@@ -369,6 +405,8 @@ except ClosedError:  # also a TraitError and a RuntimeError
 [#29]: https://github.com/jupyrdf/ipyelk/issues/29
 [#31]: https://github.com/jupyrdf/ipyelk/issues/31
 [#115]: https://github.com/jupyrdf/ipyelk/issues/115
+[#131]: https://github.com/jupyrdf/ipyelk/issues/131
+[#153]: https://github.com/jupyrdf/ipyelk/issues/153
 [#155]: https://github.com/jupyrdf/ipyelk/issues/155
 [#156]: https://github.com/jupyrdf/ipyelk/issues/156
 [#197]: https://github.com/jupyrdf/ipyelk/issues/197

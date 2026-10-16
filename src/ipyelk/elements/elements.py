@@ -15,16 +15,32 @@ from pydantic import (
     SerializationInfo,
     SerializeAsAny,
     SerializerFunctionWrapHandler,
+    ValidationInfo,
     computed_field,
     field_serializer,
+    field_validator,
     model_serializer,
 )
 from typing_extensions import Self
 
 from ..exceptions import NotFoundError, NotUniqueError
-from .common import CounterContextManager, LayoutOptions, serialize_value
+from .common import (
+    WIRE_CONTEXT,
+    CounterContextManager,
+    LayoutOptions,
+    from_wire,
+    serialize_value,
+)
 from .registry import Registry, new_id
-from .shapes import BaseShape, EdgeShape, LabelShape, NodeShape, Point, PortShape
+from .shapes import (
+    BaseShape,
+    EdgeShape,
+    LabelShape,
+    NodeShape,
+    Point,
+    PortShape,
+    shape_class,
+)
 
 exclude_hidden = CounterContextManager()
 exclude_layout = CounterContextManager()
@@ -48,7 +64,26 @@ class BaseProperties(BaseModel):
         None, description="Specifies if the element and it's nested elements are hidden"
     )
 
-    model_config = ConfigDict(validate_assignment=True)
+    model_config = ConfigDict(validate_assignment=True, extra="forbid")
+
+    @classmethod
+    def shape_family(cls) -> type[BaseShape]:
+        """The shape class of the ``shape`` field, for example ``NodeShape``."""
+        annotation = cls.model_fields["shape"].annotation
+        return next(
+            t for t in get_args(annotation) or (annotation,) if t is not type(None)
+        )
+
+    @field_validator("shape", mode="before")
+    @classmethod
+    def load_shape_class(cls, value, info: ValidationInfo):
+        """Load a shape from JSON as the class of its ``type`` (``shape_class``)."""
+        if not isinstance(value, dict):
+            return value
+        model = shape_class(cls.shape_family(), value)
+        if info.context == WIRE_CONTEXT:
+            return from_wire(model, value)
+        return model.model_validate(value, context=info.context)
 
     def get_shape(self) -> BaseShape:
         if self.shape is None:
@@ -58,8 +93,7 @@ class BaseProperties(BaseModel):
                     call_default_factory=True, validated_data=self.__dict__
                 )
             else:
-                cls = next(t for t in get_args(field.annotation) if t is not type(None))
-                self.shape = cls()
+                self.shape = self.shape_family()()
         return cast("BaseShape", self.shape)
 
 
@@ -120,6 +154,9 @@ IDElementT = TypeVar("IDElementT", bound="IDElement")
 
 
 class IDElement(BaseModel, abc.ABC):
+    #: an unknown key is a typo. ``from_wire`` ignores them in ELK JSON.
+    model_config = ConfigDict(extra="forbid")
+
     id: str | None = Field(
         None,
         description=(

@@ -1,8 +1,6 @@
 # Copyright (c) 2024 ipyelk contributors.
 # Distributed under the terms of the Modified BSD License.
 from ..diagram import Diagram
-
-# from ..schema.validator import validate_elk_json
 from ..elements import convert_elkjson
 from ..pipes import MarkElementWidget
 from .loader import Loader
