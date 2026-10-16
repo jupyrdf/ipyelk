@@ -592,8 +592,11 @@ class Node(HierarchicalElement):
         Use it to reuse a fragment: one element cannot be under two parents.
         The copy of an element with the id ``X`` has the id ``"<prefix>.X"``,
         where ``X`` is the id that the element serializes with (its ``id``, or
-        its ``wire_id``). So the same fragment and prefix always give the same
-        ids, and every id of the copy is set. The copies have their own
+        its ``wire_id``). Every id of the copy is set. Two clones with one
+        prefix get the same ids when they copy the same fragment object, or a
+        fragment whose elements all have explicit ids. A fragment built again
+        gets new ``wire_id`` values for its elements without an ``id``, so
+        their copies get new ids too. The copies have their own
         parents, layout options and ``properties``. An edge between two
         elements of the fragment connects their copies, and an edge to an
         element outside the fragment still connects that element. ``metadata``
@@ -659,14 +662,27 @@ def _claim_labels(parent: BaseElement) -> None:
 
 
 def _second_parent(el: BaseElement, old: BaseElement, new: BaseElement) -> ValueError:
-    def name(element: BaseElement) -> str:
-        return f"{type(element).__name__} {element.wire_id()!r}"
-
+    old_name, new_name, copied = _name(old), _name(new), ""
+    if new_name == old_name:
+        new_name = f"another {new_name}"
+        copied = (
+            " A shallow model_copy() shares the labels, children and ports of the "
+            "original."
+        )
     return ValueError(
-        f"{name(el)} is already under {name(old)}, so it cannot also be under "
-        f"{name(new)}. An element has one parent: detach it first, or use a copy "
-        "(Node.clone(prefix) for a fragment, model_copy() for a label)."
+        f"{_name(el)} is already under {old_name}, so it cannot also be under "
+        f"{new_name}.{copied} An element has one parent: detach it first, or use a "
+        "copy (Node.clone(prefix) for a fragment, model_copy() for a label)."
     )
+
+
+def _name(element: BaseElement) -> str:
+    """``Node 'id'``, or a description without an id: ``wire_id()`` would mint one."""
+    kind = type(element).__name__
+    if element.id is not None:
+        return f"{kind} {element.id!r}"
+    text = getattr(element, "text", "")
+    return f"{kind} without an id" + (f" (text {text!r})" if text else "")
 
 
 def _clone(el: BaseElement, prefix: str, copies: dict[int, BaseElement]) -> BaseElement:

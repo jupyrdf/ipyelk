@@ -46,6 +46,9 @@ def test_resolve_missing_and_lookup():
     assert list(doc.lookup(["b", "nope", "a"], strict=False)) == [b, a]
     with pytest.raises(NotFoundError, match="nope"):
         list(doc.lookup(["a", "nope"]))
+    assert doc["a"] is a
+    with pytest.raises(NotFoundError, match="id:nope not in index"):
+        doc["nope"]
 
 
 def test_an_empty_document_resolves_nothing():
@@ -53,6 +56,8 @@ def test_an_empty_document_resolves_nothing():
     assert doc.elements is None
     assert doc.resolve("a") is None
     assert doc.missing(["a"]) == ("a",)
+    with pytest.raises(NotFoundError, match="id:a not in index"):
+        doc["a"]
 
 
 def hidden_child_tree():

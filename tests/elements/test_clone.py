@@ -49,6 +49,19 @@ def test_the_same_fragment_and_prefix_give_the_same_ids():
     assert not set(first) & set(other)
 
 
+def test_a_rebuilt_fragment_keeps_only_its_explicit_ids():
+    """An element without an ``id`` gets a new ``wire_id`` when its fragment is
+    built again, so its copy gets a new id too.
+    """
+    first, _ = fragment()
+    rebuilt, _ = fragment()
+    a, b = first.clone("g1"), rebuilt.clone("g1")
+    assert a.children[0].id == b.children[0].id == "g1.core"
+    assert a.ports[0].id == b.ports[0].id == "g1.in"
+    assert a.id != b.id
+    assert a.ports[1].id != b.ports[1].id
+
+
 def test_parents_and_edges_connect_the_copies():
     gate, outside = fragment()
     copy = gate.clone("g1")

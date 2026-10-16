@@ -17,11 +17,20 @@ from ..elements import (
     elk_serialization,
 )
 
+#: the warning that reading or writing ``MarkIndex.context`` emits through 3.x
+CONTEXT_DEPRECATED = (
+    "MarkIndex.context is deprecated and will be removed in ipyelk 4.0: "
+    "MarkIndex.document (an ipyelk.elements.Document) owns the ids, and "
+    "nothing in ipyelk reads the Registry. Use index.document.resolve(id)."
+)
+
 
 class MarkIndex(W.DOMWidget):
     """The element index of a pipeline, which its stages and tools share.
 
     ``document`` owns the ids, and ``elements`` is ``document.elements``.
+    ``elements`` and the deprecated ``context`` are properties, not traits:
+    the constructor takes them, but ``observe`` does not see them.
     """
 
     document = T.Instance(Document, kw={})
@@ -29,6 +38,19 @@ class MarkIndex(W.DOMWidget):
     _root: Node | None = None
     _root_of: ElementIndex | None = None
     _context: Registry | None = None
+
+    def __init__(
+        self,
+        elements: ElementIndex | None = None,
+        context: Registry | None = None,
+        **kwargs,
+    ) -> None:
+        super().__init__(**kwargs)
+        if elements is not None:
+            self.elements = elements
+        if context is not None:
+            warnings.warn(CONTEXT_DEPRECATED, DeprecationWarning, stacklevel=2)
+            self._context = context
 
     @property
     def elements(self) -> ElementIndex | None:
@@ -42,18 +64,17 @@ class MarkIndex(W.DOMWidget):
     @property
     def context(self) -> Registry:
         """Deprecated: ``document`` owns the ids. Removed in ipyelk 4.0."""
-        warnings.warn(
-            "MarkIndex.context is deprecated and will be removed in ipyelk 4.0: "
-            "MarkIndex.document (an ipyelk.elements.Document) owns the ids, and "
-            "nothing in ipyelk reads the Registry. Use index.document.resolve(id).",
-            DeprecationWarning,
-            stacklevel=2,
-        )
+        warnings.warn(CONTEXT_DEPRECATED, DeprecationWarning, stacklevel=2)
         if self._context is None:
             with warnings.catch_warnings():
                 warnings.simplefilter("ignore", DeprecationWarning)
                 self._context = Registry()
         return self._context
+
+    @context.setter
+    def context(self, context: Registry) -> None:
+        warnings.warn(CONTEXT_DEPRECATED, DeprecationWarning, stacklevel=2)
+        self._context = context
 
     def to_id(self, element: BaseElement) -> str:
         return element.wire_id()
@@ -83,8 +104,8 @@ class MarkElementWidget(W.DOMWidget):
     reads or writes (see :meth:`sync_value`). There it is written from both
     sides. A browser write is never sent back: ``echo_update=False`` stops the
     echo, and ``_should_send_property`` stops the re-serialized copy. Kernel
-    writes are sent exactly once. ``flow`` is never synced: no browser code
-    reads it.
+    writes are sent exactly once. ``flow`` and ``index`` are never synced: no
+    browser code reads them.
 
     Known limitation: a second frontend attached to the same kernel used to
     learn browser-written values through the echo and no longer does.
@@ -97,7 +118,8 @@ class MarkElementWidget(W.DOMWidget):
     #: generation of the ``run`` request the browser last answered; ``0`` with
     #: an older extension build (see ``util.wait_for_answer``)
     gen = T.Int(0).tag(sync=True, echo_update=False)
-    index = T.Instance(MarkIndex, kw={}).tag(sync=True, **W.widget_serialization)
+    #: kernel only: no browser code reads it
+    index = T.Instance(MarkIndex, kw={})
     flow: tuple[str, ...] = TypedTuple(T.Unicode(), kw={})
 
     #: the tree ``set_state`` last deserialized from the browser

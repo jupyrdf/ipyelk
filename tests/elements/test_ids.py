@@ -355,6 +355,26 @@ def test_a_registry_does_not_keep_its_elements_alive():
     assert len(registry.ids) == 0
 
 
+@REGISTRY_COMPAT
+def test_a_registry_takes_keys_without_weak_references():
+    """A ``str`` key works as in 2.x; an element key is still held weakly."""
+    registry = Registry()
+    node = Node()
+    assert registry["x"] == registry["x"]
+    assert registry[node] == registry[node] != registry["x"]
+    assert "x" in registry.ids
+    assert node in registry.ids
+    assert "y" not in registry.ids
+    assert registry.ids.get("y") is None
+    with registry:
+        assert Registry.get_id("y", default="Y") == "Y"
+    assert len(registry.ids) == 3
+    assert set(registry.ids) == {"x", "y", node}
+    del registry.ids["x"]
+    assert set(registry.ids.strong) == {"y"}
+    assert list(registry.ids.weak) == [node]
+
+
 def test_registry_warns_and_keeps_working():
     """The two-tier policy: a name that worked warns, names its replacement and its
     removal version, and keeps working through 3.x (#160).
@@ -381,3 +401,30 @@ def test_markindex_context_warns_and_is_not_read():
     widget.build_index()
     assert widget.index.document.resolve("root").element is widget.value
     widget.close()
+
+
+@REGISTRY_COMPAT
+def test_markindex_context_and_elements_keep_working():
+    """``context`` warns on read and write and keeps what it was given; the
+    constructor still takes ``elements`` and ``context``.
+    """
+    from ipyelk.pipes import MarkIndex
+
+    registry = Registry()
+    index = MarkIndex()
+    with pytest.warns(DeprecationWarning, match=r"MarkIndex\.context") as record:
+        index.context = registry
+    assert record[0].filename == __file__, "the warning points at the caller"
+    with pytest.warns(DeprecationWarning, match=r"MarkIndex\.context"):
+        assert index.context is registry
+
+    elements = ElementIndex.from_els(Node(id="root"))
+    with pytest.warns(DeprecationWarning, match=r"MarkIndex\.context") as record:
+        built = MarkIndex(elements=elements, context=registry)
+    assert record[0].filename == __file__
+    assert built.elements is elements
+    assert built.document.elements is elements
+    with pytest.warns(DeprecationWarning, match=r"MarkIndex\.context"):
+        assert built.context is registry
+    index.close()
+    built.close()

@@ -235,14 +235,18 @@
   refresh sends up to five fewer messages. Browser code that reads `value` of another
   mark must call `sync_value()` on it first ([#161]).
 - A `Registry` holds its elements weakly, so it no longer keeps every element that it
-  saw alive. Its keys must support `weakref`, as the elements do ([#160]).
+  saw alive. A key that cannot be weakly referenced, such as a `str`, is held strongly,
+  as in 2.x ([#160]).
 - A `Document` (`ipyelk.elements.Document`) owns the ids of an element tree. It replaces
   the global stack of `Registry` contexts: no ipyelk code enters a `Registry` any more.
   `Document(root)` writes onto each element without an `id` the id that it serializes
   with (`wire_id`), `resolve(id)` returns a `Resolved(element, via_slack)` or `None`,
-  `missing(ids)` lists the ids that do not resolve, and `lookup(ids, strict=True)`
-  yields the elements. The index of a pipeline is `MarkIndex.document`, and
-  `MarkIndex.elements` is the id map of that document. `ElementIndex.from_els`,
+  `document[id]` returns the element or raises `NotFoundError`, `missing(ids)` lists the
+  ids that do not resolve, and `lookup(ids, strict=True)` yields the elements. The index
+  of a pipeline is `MarkIndex.document`, and `MarkIndex.elements` is the id map of that
+  document. `MarkIndex.elements` and `MarkIndex.context` are properties now, not traits:
+  `MarkIndex(elements=...)` and assignment still work, but
+  `observe(callback, "elements")` never calls the callback. `ElementIndex.from_els`,
   `VisIndex.from_els` and `HierarchicalIndex.from_els` index an element without an `id`
   by its `wire_id`. In 2.x they raised `ValueError` ("Cannot index element without an
   id") outside a `Registry`. `Selection` and `Painter` resolve their ids through the
@@ -257,8 +261,10 @@
   `Selection.elements()` returns it, and `Document.resolve` returns it with
   `via_slack=True`. The `properties.key` of the slack port is still the id of the hidden
   element. Code that compares the id of a slack port with the id of a hidden element
-  must use `Document.resolve`. `ElementIndex.update` no longer adds the slack ports of a
-  browser answer to the index ([#160]).
+  must use `Document.resolve`. `Painter.paint` of a hidden element no longer styles its
+  slack port, which had the same id in 2.x; paint the slack port id to style it.
+  `ElementIndex.update` no longer adds the slack ports of a browser answer to the index
+  ([#160]).
 - An element under a second parent raises `ValueError` when it is attached, and the
   message names both parents. While the new parent is constructed, the error is a
   `pydantic.ValidationError`, which is a `ValueError` too. This applies to a label
@@ -273,9 +279,10 @@
 - `ipyelk.elements.Registry` is deprecated and will be removed in 4.0. Constructing one
   emits a `DeprecationWarning` that names `Document` and the removal version, and a
   `Registry` keeps working through 3.x. `MarkIndex.context` is deprecated in the same
-  way: it warns and returns a `Registry` that ipyelk does not read. This is the second
-  tier of the 3.0 policy: a name that worked warns and keeps working, and a name that
-  never worked raises. The `11_Logic_Gates` example uses `Document` ([#160]).
+  way: reading or assigning it warns, and it holds a `Registry` that ipyelk does not
+  read. This is the second tier of the 3.0 policy: a name that worked warns and keeps
+  working, and a name that never worked raises. The `11_Logic_Gates` example uses
+  `Document` ([#160]).
 
 ### Migration
 
@@ -383,7 +390,7 @@ node = el_map["n1"]
 from ipyelk.elements import Document
 
 doc = Document(*nodes)
-node = doc.resolve("n1").element  # resolve() returns None for an unknown id
+node = doc["n1"]  # NotFoundError for an unknown id; doc.resolve("n1") gives None
 
 # 2.x: one fragment in several places shared one object, or ids by hand
 gate = gate_template  # a second parent failed late, or raised AssertionError
@@ -418,11 +425,13 @@ replacement in the message.
 
 - `Node.clone(prefix)` copies a node with everything under it, for a fragment that is
   used in several places. The copy of an element with the id `X` has the id
-  `"<prefix>.X"`, where `X` is the id or the `wire_id` of the original, so the same
-  fragment and prefix always give the same ids. The copies have their own parents,
-  `layoutOptions` and `properties`. Edges inside the fragment connect the copies, and an
-  edge to an element outside the fragment keeps that endpoint. `metadata` and the widget
-  of a `Widget` shape are shared ([#160]).
+  `"<prefix>.X"`, where `X` is the id or the `wire_id` of the original. So two clones
+  with one prefix get the same ids if they copy the same fragment object, or a fragment
+  whose elements all have an `id`. An element without an `id` gets a new `wire_id` each
+  time its fragment is built again, and so does its copy. The copies have their own
+  parents, `layoutOptions` and `properties`. Edges inside the fragment connect the
+  copies, and an edge to an element outside the fragment keeps that endpoint. `metadata`
+  and the widget of a `Widget` shape are shared ([#160]).
 - An opt-in check for layout option keys that ELK ignores without an error. ELK takes a
   full option id, or the end of one that starts after a dot (`elk.direction`,
   `spacing.nodeNode`), and the old ids of some options (`layered.northOrSouthPort`).

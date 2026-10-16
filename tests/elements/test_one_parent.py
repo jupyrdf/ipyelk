@@ -30,6 +30,26 @@ def test_a_label_under_a_second_parent_raises_at_assignment():
         parent.labels = [label]
 
 
+def test_the_message_tells_a_copy_from_its_original():
+    original = Node(id="m", labels=[Label(id="L")])
+    copy = original.model_copy()
+    with pytest.raises(ValueError, match="cannot also be under another Node") as info:
+        copy.labels = list(copy.labels)
+    assert "under another Node 'm'. A shallow model_copy()" in str(info.value)
+
+
+def test_the_message_names_an_element_without_an_id_without_minting_one():
+    label = Label(text="shared")
+    a = Node(labels=[label])
+    unnamed = r"Label without an id \(text 'shared'\) is already under Node without"
+    with pytest.raises(ValueError, match=unnamed) as info:
+        Node(id="B", labels=[label])
+    message = str(info.value)
+    assert "so it cannot also be under Node 'B'." in message
+    assert label._wire_id is None, "naming the label did not mint a wire id"
+    assert a._wire_id is None
+
+
 def test_a_detached_or_copied_label_can_be_attached_again():
     label = Label(id="L")
     a = Node(id="A", labels=[label])
@@ -55,6 +75,18 @@ def test_a_child_moved_with_remove_child_attaches_again():
     a = Node(id="A", children=[child])
     a.remove_child(child)
     assert Node(id="B").add_child(child).get_parent().id == "B"
+
+
+def test_a_child_or_port_detached_by_assignment_attaches_again():
+    """The old parent no longer lists them, so the new parent may take them."""
+    child = Node(id="c")
+    port = Port(id="p")
+    a = Node(id="A", children=[child], ports=[port])
+    a.children = []
+    a.ports = []
+    b = Node(id="B")
+    assert b.add_child(child).get_parent() is b
+    assert b.add_port(port).get_parent() is b
 
 
 def test_a_compartment_gives_each_line_its_own_bullet():

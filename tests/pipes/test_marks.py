@@ -53,6 +53,7 @@ def test_value_and_flow_are_not_synced_by_default(monkeypatch):
     mark = MarkElementWidget(value=Node(id="root"))
     assert "value" not in mark.get_state()
     assert "flow" not in mark.get_state()
+    assert "index" not in mark.get_state(), "no browser code reads the index"
     sent = capture_sends(mark, monkeypatch)
 
     mark.flow = ("new",)
@@ -105,6 +106,23 @@ def test_observer_write_during_browser_write_is_sent_once(monkeypatch):
     assert sent == []
 
 
+def test_a_viewer_syncs_the_value_of_its_source():
+    """The viewer draws ``source.value``, whatever pipe made the source."""
+    from ipyelk.diagram import SprottyViewer
+
+    source = MarkElementWidget(value=Node(id="root"))
+    assert "value" not in source.keys
+    viewer = SprottyViewer(source=source)
+    assert "value" in source.keys
+
+    other = MarkElementWidget(value=Node(id="other"))
+    viewer.source = other
+    assert "value" in other.keys
+    viewer.close()
+    source.close()
+    other.close()
+
+
 def test_only_the_marks_a_browser_stage_uses_sync_value():
     """The browser reads the inlets of the text sizer and the layout, writes
     their outlets, and draws the source of the viewer. The source of the
@@ -130,6 +148,7 @@ def test_only_the_marks_a_browser_stage_uses_sync_value():
     }
     assert diagram.view.source is elkjs.outlet
     assert not any("flow" in mark.keys for mark in synced.values())
+    assert not any("index" in mark.keys for mark in synced.values())
 
     kernel_only = Pipe()
     assert "value" not in kernel_only.inlet.keys

@@ -40,6 +40,7 @@ class Document:
 
         doc = Document(root)
         doc.resolve("n1")  # Resolved(element=..., via_slack=False), or None
+        doc["n1"]  # the element; NotFoundError for an unknown id
         doc.missing(["n1", "typo"])  # ("typo",)
         list(doc.lookup(["n1"]))  # the elements; strict=False skips unknown ids
     """
@@ -80,6 +81,16 @@ class Document:
             return Resolved(known[hidden], via_slack=True)
         element = known.get(el_id)
         return None if element is None else Resolved(element)
+
+    def __getitem__(self, el_id: str) -> BaseElement:
+        """The element that ``el_id`` names; strict :meth:`resolve`.
+
+        Raises :class:`~ipyelk.exceptions.NotFoundError` naming an unknown id.
+        """
+        found = self.resolve(el_id)
+        if found is None:
+            raise NotFoundError(f"Element with id:{el_id} not in index")
+        return found.element
 
     def missing(self, ids: Iterable[str]) -> tuple[str, ...]:
         """The ids of ``ids`` that do not resolve, in order."""

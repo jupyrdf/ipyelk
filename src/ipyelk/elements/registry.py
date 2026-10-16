@@ -3,9 +3,10 @@
 from __future__ import annotations
 
 import warnings
+import weakref
+from collections.abc import Hashable, Iterator, MutableMapping
 from typing import ClassVar
 from uuid import uuid4
-from weakref import WeakKeyDictionary
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -24,18 +25,55 @@ REGISTRY_DEPRECATED = (
 )
 
 
+class _IdMap(MutableMapping[Hashable, str]):
+    """``key -> id``, holding each key weakly if it can be weakly referenced.
+
+    An element is held weakly, so the map does not keep it alive. A key that
+    cannot be weakly referenced, such as a ``str``, is held strongly.
+    """
+
+    def __init__(self) -> None:
+        self.weak: weakref.WeakKeyDictionary[Hashable, str]
+        self.weak = weakref.WeakKeyDictionary()
+        self.strong: dict[Hashable, str] = {}
+
+    def _map(self, key: Hashable) -> MutableMapping[Hashable, str]:
+        try:
+            weakref.ref(key)
+        except TypeError:
+            return self.strong
+        return self.weak
+
+    def __getitem__(self, key: Hashable) -> str:
+        return self._map(key)[key]
+
+    def __setitem__(self, key: Hashable, value: str) -> None:
+        self._map(key)[key] = value
+
+    def __delitem__(self, key: Hashable) -> None:
+        del self._map(key)[key]
+
+    def __iter__(self) -> Iterator[Hashable]:
+        yield from list(self.weak)
+        yield from list(self.strong)
+
+    def __len__(self) -> int:
+        return len(self.weak) + len(self.strong)
+
+
 class Registry(BaseModel):
     """Deprecated: a :class:`~ipyelk.elements.Document` owns the ids. Removed in 4.0.
 
     Context Manager to generate and maintain a lookup of objects to identifiers.
-    The lookup holds its objects weakly: an element that nothing else uses is
-    collected, and its entry goes with it. Constructing one emits a
+    The lookup holds an element weakly: an element that nothing else uses is
+    collected, and its entry goes with it. A key that cannot be weakly
+    referenced, such as a ``str``, is held strongly. Constructing one emits a
     ``DeprecationWarning``; ipyelk itself never enters one.
     """
 
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
-    ids: WeakKeyDictionary = Field(repr=False, default_factory=WeakKeyDictionary)
+    ids: _IdMap = Field(repr=False, default_factory=_IdMap)
     stack: ClassVar[list] = []
 
     def __init__(self, **data: object) -> None:
