@@ -118,8 +118,13 @@ element, for example `label:icon` on a node, loading raises a `ValidationError`.
 `radius`, `rx` or `ry`, and the renderer draws both shapes from the width and height. So
 a `node:round` shape loads as an `Ellipse` with the `width` and `height` of the JSON. A
 `node:widget` shape loads as a `Widget` with the widget that has the `model_id` in
-`use`. If the kernel has no widget with that `model_id`, loading raises a
-`ValidationError`.
+`use`. If no open widget has that `model_id`, the shape loads as a `NodeShape` with the
+same JSON, and ipyelk warns. This occurs when the widget closed, or when the JSON comes
+from another kernel.
+
+If a shape class of your own sets a new type string, the class adds itself to
+`BaseShape.json_classes` when Python defines it. If another class already has that type
+string, ipyelk warns, and JSON loads the type string as the new class.
 
 An element, its properties and its shape raise a `ValidationError` for a key that they
 do not have, because such a key is usually a typo. For example, `Rect(start="arrow")`

@@ -10,7 +10,9 @@ is in the schema, and a payload with every kind of element validates.
 from __future__ import annotations
 
 import json
+import re
 from collections.abc import Iterator
+from pathlib import Path
 
 import pytest
 from ipywidgets import IntSlider
@@ -36,6 +38,7 @@ from ipyelk.elements import (
 )
 from ipyelk.elements.elements import BaseProperties, EdgeSection
 from ipyelk.elements.serialization import to_json
+from ipyelk.pipes import MarkElementWidget
 from ipyelk.schema import SCHEMA, validate_elk_json
 
 from .test_label_schema import project
@@ -252,17 +255,26 @@ BUILT_IN_TYPES = {
 }
 
 
+#: the view types of ``di-config.ts`` that no shape class has
+FRONTEND_ONLY_TYPES = {"graph", "junction", "symbol", "node:compartment"}
+
+DI_CONFIG = Path(__file__).parents[2] / "js/sprotty/di-config.ts"
+
+
 @pytest.fixture
 def json_classes() -> Iterator[dict[str, type[shapes.BaseShape]]]:
-    """``SHAPE_TYPES``. At the end of the test, it removes the classes the test added."""
-    before = dict(shapes.SHAPE_TYPES)
-    yield shapes.SHAPE_TYPES
-    shapes.SHAPE_TYPES.clear()
-    shapes.SHAPE_TYPES.update(before)
+    """``BaseShape.json_classes``. At the end of the test, it removes the classes the
+    test added.
+    """
+    classes = shapes.BaseShape.json_classes
+    before = dict(classes)
+    yield classes
+    classes.clear()
+    classes.update(before)
 
 
 def test_every_shape_class_has_a_json_type():
-    """Each shape class with a type string adds itself to ``SHAPE_TYPES``, so JSON
+    """Each shape class with a type string adds itself to ``json_classes``, so JSON
     loads it, except ``Circle``.
     """
     found = {
@@ -271,18 +283,26 @@ def test_every_shape_class_has_a_json_type():
         if cls.__module__ == shapes.__name__
         and cls.model_fields["type"].default is not None
     }
-    assert found - set(shapes.SHAPE_TYPES.values()) == {shapes.Circle}
-    assert shapes.SHAPE_TYPES is shapes.BaseShape.json_classes
+    assert found - set(shapes.BaseShape.json_classes.values()) == {shapes.Circle}
 
 
 def test_each_built_in_type_has_its_class():
     built_in = {
         tag: cls
-        for tag, cls in shapes.SHAPE_TYPES.items()
+        for tag, cls in shapes.BaseShape.json_classes.items()
         if cls.__module__ == shapes.__name__
     }
     assert built_in == BUILT_IN_TYPES
-    assert shapes.Circle not in shapes.SHAPE_TYPES.values()
+    assert shapes.Circle not in shapes.BaseShape.json_classes.values()
+
+
+def test_the_frontend_has_a_view_for_each_type():
+    """The view types that ``di-config.ts`` registers are the type strings of the
+    shape classes, and the frontend-only types.
+    """
+    source = DI_CONFIG.read_text(encoding="utf-8")
+    views = set(re.findall(r"configureModelElement\(\s*context,\s*'([^']+)'", source))
+    assert views == set(BUILT_IN_TYPES) | FRONTEND_ONLY_TYPES
 
 
 def test_a_subclass_with_the_type_of_its_parent_does_not_add_itself(json_classes):
@@ -303,16 +323,45 @@ def test_a_class_that_does_not_load_from_json_does_not_add_itself(json_classes):
     assert json_classes == BUILT_IN_TYPES
 
 
-def test_a_second_class_for_a_type_raises(json_classes):
+def test_a_second_class_for_a_type_warns_and_replaces_the_first(json_classes):
     message = (
-        r"\.Oval has the shape type 'node:round' of ipyelk\.elements\.shapes\.Ellipse\."
+        r"\.Oval replaces ipyelk\.elements\.shapes\.Ellipse as the class that loads"
+        r" the shape type 'node:round'"
     )
-    with pytest.raises(TypeError, match=message):
+    with pytest.warns(UserWarning, match=message):
 
         class Oval(shapes.NodeShape):
             type: str = "node:round"
 
-    assert json_classes == BUILT_IN_TYPES
+    assert json_classes == {**BUILT_IN_TYPES, "node:round": Oval}
+
+
+def test_a_renamed_class_replaces_the_old_name(json_classes):
+    """A notebook cell that renames a class, and keeps its type, runs again."""
+
+    class MyShape(shapes.NodeShape):
+        type: str = "node:mine"
+
+    with pytest.warns(UserWarning, match=r"\.MyShape2 replaces .*\.MyShape as"):
+
+        class MyShape2(shapes.NodeShape):
+            type: str = "node:mine"
+
+    assert json_classes["node:mine"] is MyShape2
+
+
+def test_the_same_class_defined_again_replaces_it_with_no_warning(json_classes):
+    """A module reload, or a function that defines a class, defines the same class."""
+
+    def define() -> type[shapes.NodeShape]:
+        class Local(shapes.NodeShape):
+            type: str = "node:local"
+
+        return Local
+
+    first, second = define(), define()  # pytest makes a warning an error
+    assert first is not second
+    assert json_classes["node:local"] is second
 
 
 def test_a_new_shape_class_loads_from_json(json_classes):
@@ -374,13 +423,44 @@ def test_the_projection_keeps_the_shape_classes(widget: IntSlider):
     [
         (NodeProperties, {"type": "label:icon", "use": "x"}, "Unexpected Subtype"),
         (NodeProperties, {"type": "node:path"}, "use\n  Field required"),
-        (
-            NodeProperties,
-            {"type": "node:widget", "use": "no-such-id"},
-            "widget\n  Field required",
-        ),
     ],
 )
 def test_json_that_its_shape_class_rejects_does_not_load(properties, shape, message):
     with pytest.raises(ValidationError, match=message):
         properties.model_validate({"shape": shape})
+
+
+def closed_widget_json() -> dict:
+    """The JSON of a root with a ``Widget`` node, after its widget closes."""
+    slider = IntSlider()
+    shape = shapes.Widget(widget=slider, delay=100, width=20, height=10)
+    wire = to_json(shaped("children", shape), None)
+    slider.close()
+    return wire
+
+
+@pytest.mark.parametrize("model_id", ["closed", "no-such-id"])
+def test_a_widget_shape_with_no_open_widget_loads_as_a_node_shape(model_id):
+    """A closed widget, or JSON from another kernel, loads with the same JSON (#233)."""
+    wire = closed_widget_json()
+    if model_id != "closed":
+        wire["children"][0]["properties"]["shape"]["use"] = model_id
+    shape_json = dict(wire["children"][0]["properties"]["shape"])
+    with pytest.warns(UserWarning, match="No open widget has the model_id") as caught:
+        back = convert_elkjson(json.loads(json.dumps(wire)))
+    assert len(caught) == 1
+    loaded = loaded_shape(back, "children")
+    assert type(loaded) is shapes.NodeShape
+    assert loaded.model_dump(mode="json", exclude_none=True) == shape_json
+    assert to_json(back, None) == wire
+
+
+def test_a_layout_result_with_a_closed_widget_loads():
+    """The value that comes back from the frontend after a layout still loads."""
+    wire = closed_widget_json()
+    wire["children"][0]["x"] = 15  # laid out
+    outlet = MarkElementWidget()
+    with pytest.warns(UserWarning, match="No open widget has the model_id"):
+        outlet.set_state({"value": wire})
+    assert outlet.value.children[0].x == 15
+    assert type(outlet.value.children[0].properties.shape) is shapes.NodeShape

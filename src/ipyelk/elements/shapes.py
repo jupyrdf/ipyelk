@@ -8,6 +8,7 @@ The *Shapes* page of the API reference describes the shapes and the terms used h
 from __future__ import annotations
 
 import builtins
+import warnings
 from typing import ClassVar
 
 from ipywidgets import DOMWidget, widget_serialization
@@ -56,14 +57,16 @@ class BaseShape(BaseModel):
     to a subclass outside ipyelk, when its module is imported. A subclass that keeps
     the ``type`` of its parent does not add itself, so the parent class still loads
     that type string. If a second class has a type string that is already in
-    ``json_classes``, its definition raises ``TypeError``, unless it sets
-    :py:attr:`loads_from_json` to ``False``.
+    ``json_classes``, its definition warns with a ``UserWarning`` and the second class
+    replaces the first, unless it sets :py:attr:`loads_from_json` to ``False``. A class
+    with the same module and name as the first, for example after a module reload,
+    replaces it with no warning.
     """
 
     type: str | None = None
 
     # builtins.type: the `type` field hides the builtin in the class body
-    #: The class that loads each type string from JSON. ``SHAPE_TYPES`` is the same dict.
+    #: The class that loads each type string from JSON.
     json_classes: ClassVar[dict[str, builtins.type[BaseShape]]] = {}
 
     #: ``False`` keeps the class out of ``json_classes``. A subclass does not inherit it.
@@ -93,11 +96,13 @@ class BaseShape(BaseModel):
             cls.__qualname__,
         ):
             msg = (
-                f"{cls.__module__}.{cls.__qualname__} has the shape type {tag!r} of"
-                f" {taken.__module__}.{taken.__qualname__}. Give it another type, or"
-                " set `loads_from_json = False` on it."
+                f"{cls.__module__}.{cls.__qualname__} replaces"
+                f" {taken.__module__}.{taken.__qualname__} as the class that loads the"
+                f" shape type {tag!r} from JSON. Give it another type, or set"
+                " `loads_from_json = False` on it."
             )
-            raise TypeError(msg)
+            # a warning, not an error: a notebook can rename a class and run it again
+            warnings.warn(msg, UserWarning, stacklevel=3)
         BaseShape.json_classes[tag] = cls
 
     def dimension(self, key: str) -> float | None:
@@ -426,13 +431,20 @@ class ForeignObject(NodeShape):
     use: str = Field(..., description="HTML markup")
 
 
+def open_widget(model_id: object) -> DOMWidget | None:
+    """Return the open widget that has ``model_id``, or ``None``."""
+    found = widget_serialization["from_json"](f"IPY_MODEL_{model_id}", None)
+    return found if isinstance(found, DOMWidget) else None
+
+
 class Widget(NodeShape):
     """A Jupyter widget in the HTML layer, which :py:class:`HTML` describes.
 
     Fields:
         - ``widget`` (ipywidgets ``DOMWidget``, required): the widget to draw.
           Serialization writes its ``model_id`` to ``use``, so a value in ``use`` has
-          no effect. JSON loads the widget that has the ``model_id`` in ``use``.
+          no effect. JSON loads the widget that has the ``model_id`` in ``use``. If no
+          open widget has it, JSON loads a :py:class:`NodeShape` with the same fields.
         - ``delay`` (``int`` or ``None``, default ``None``): a time in milliseconds.
           If it is set and not 0, the frontend applies the diagram zoom to the widget
           only after ``delay``. ``None`` and 0 apply the zoom at once. The ``15_Nesting_Plots`` example uses it.
@@ -454,8 +466,8 @@ class Widget(NodeShape):
     def find_widget(cls, data):
         """Load JSON, which has the ``model_id`` of the widget in ``use``."""
         if isinstance(data, dict) and "widget" not in data and data.get("use"):
-            found = widget_serialization["from_json"](f"IPY_MODEL_{data['use']}", None)
-            if isinstance(found, DOMWidget):
+            found = open_widget(data["use"])
+            if found is not None:
                 data = {**data, "widget": found}
         return data
 
@@ -486,16 +498,27 @@ class HTML(NodeShape):
 Widget.model_rebuild()
 
 
-#: The class that loads each shape ``type`` from JSON: :py:attr:`BaseShape.json_classes`.
-SHAPE_TYPES: dict[str, type[BaseShape]] = BaseShape.json_classes
-
-
 def shape_class(family: type[BaseShape], data: object) -> type[BaseShape]:
     """Return the class that loads the JSON ``data`` of a shape of ``family``.
 
     It is the class of the ``type`` in ``data``, if that class is ``family`` or a
-    subclass of it, else ``family``.
+    subclass of it, else ``family``. A :py:class:`Widget` with no open widget for its
+    ``model_id`` loads as a :py:class:`NodeShape`, with a warning.
     """
-    tag = data.get("type") if isinstance(data, dict) else None
-    cls = SHAPE_TYPES.get(tag) if isinstance(tag, str) else None
-    return cls if cls is not None and issubclass(cls, family) else family
+    if not isinstance(data, dict):
+        return family
+    tag = data.get("type")
+    cls = BaseShape.json_classes.get(tag) if isinstance(tag, str) else None
+    if cls is None or not issubclass(cls, family):
+        return family
+    if issubclass(cls, Widget) and "widget" not in data:
+        model_id = data.get("use")
+        if open_widget(model_id) is None:
+            # a closed widget, or JSON from another kernel: keep the layout result
+            msg = (
+                f"No open widget has the model_id {model_id!r} of a {tag!r} shape. The"
+                " shape loads as a NodeShape with the same JSON."
+            )
+            warnings.warn(msg, UserWarning, stacklevel=2)
+            return NodeShape
+    return cls
