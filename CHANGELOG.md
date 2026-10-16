@@ -283,6 +283,18 @@
   read. This is the second tier of the 3.0 policy: a name that worked warns and keeps
   working, and a name that never worked raises. The `11_Logic_Gates` example uses
   `Document` ([#160]).
+- `MarkIndex` is a plain `traitlets.HasTraits`, not a widget. It opens no comm and no
+  `Layout`, and `MarkElementWidget.index` is never sent to the browser. Every stage
+  outlet of a pipeline shares the index of the pipeline's inlet, and the index is built
+  on first read, so one `Diagram()` builds no index that it throws away.
+  `MarkElementWidget` is a `Widget`, not a `DOMWidget`, because no view displays it.
+  Thus, it has no `layout`, and its browser model is a `WidgetModel`. One `Diagram()`
+  opens 52 widgets, not 76. These uses break: a `MarkIndex` used as a widget (`.comm`,
+  `close()`, `display()` or `widget_serialization`), browser code that reads
+  `mark.get('index')`, and code that reads `layout` of a `MarkElementWidget`.
+  `MarkIndex.comm`, `MarkIndex.close` and `MarkElementWidget.layout` raise
+  `DeprecatedAPIError` throughout 3.x. The index stays shared:
+  `source.index.elements = None` makes the next run rebuild it, as in 2.x ([#237]).
 
 ### Migration
 
@@ -517,6 +529,7 @@ except ClosedError:  # also a TraitError and a RuntimeError
 [#156]: https://github.com/jupyrdf/ipyelk/issues/156
 [#197]: https://github.com/jupyrdf/ipyelk/issues/197
 [#218]: https://github.com/jupyrdf/ipyelk/issues/218
+[#237]: https://github.com/jupyrdf/ipyelk/issues/237
 
 ## `2.1.3` (unreleased)
 

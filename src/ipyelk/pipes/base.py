@@ -245,8 +245,6 @@ class Pipe(W.Widget):
 
     def _own(self, widget: AnyWidget) -> AnyWidget:
         self._owned.append(widget)
-        if isinstance(widget, MarkElementWidget):
-            self._owned.append(widget.index)
         return widget
 
     def _new_mark(self) -> MarkElementWidget:

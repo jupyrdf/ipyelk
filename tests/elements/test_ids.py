@@ -437,5 +437,3 @@ def test_markindex_context_and_elements_keep_working():
     assert built.document.elements is elements
     with pytest.warns(DeprecationWarning, match=r"MarkIndex\.context"):
         assert built.context is registry
-    index.close()
-    built.close()

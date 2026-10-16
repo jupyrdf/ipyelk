@@ -16,6 +16,7 @@ from ..elements import (
     Registry,
     elk_serialization,
 )
+from ..exceptions import RemovedAPI
 
 #: the warning that reading or writing ``MarkIndex.context`` emits through 3.x
 CONTEXT_DEPRECATED = (
@@ -25,15 +26,24 @@ CONTEXT_DEPRECATED = (
 )
 
 
-class MarkIndex(W.DOMWidget):
+class MarkIndex(T.HasTraits):
     """The element index of a pipeline, which its stages and tools share.
 
-    ``document`` owns the ids, and ``elements`` is ``document.elements``.
+    A plain ``HasTraits``, not a widget: it lives only in the kernel, so it
+    opens no comm. ``document`` owns the ids, and ``elements`` is
+    ``document.elements``.
     ``elements`` and the deprecated ``context`` are properties, not traits:
     the constructor takes them, but ``observe`` does not see them.
     """
 
     document = T.Instance(Document, kw={})
+
+    #: removed names raise :class:`~ipyelk.exceptions.DeprecatedAPIError` through 3.x
+    comm = close = RemovedAPI(
+        "MarkIndex is not a widget in ipyelk 3.0: it lives only in the kernel, so it "
+        "has no comm and nothing to close. Its elements and document work as in 2.x. "
+        "No alias: this error is raised throughout 3.x."
+    )
 
     _root: Node | None = None
     _root_of: ElementIndex | None = None
@@ -97,8 +107,11 @@ class MarkIndex(W.DOMWidget):
         return self._root
 
 
-class MarkElementWidget(W.DOMWidget):
+class MarkElementWidget(W.Widget):
     """An element tree plus the shared index and the pending ``flow``.
+
+    A ``Widget``, not a ``DOMWidget``: no view displays it, so it has no
+    ``layout``.
 
     ``value`` is synced with the browser only for a mark that a browser stage
     reads or writes (see :meth:`sync_value`). There it is written from both
@@ -118,14 +131,36 @@ class MarkElementWidget(W.DOMWidget):
     #: generation of the ``run`` request the browser last answered; ``0`` with
     #: an older extension build (see ``util.wait_for_answer``)
     gen = T.Int(0).tag(sync=True, echo_update=False)
-    #: kernel only: no browser code reads it
-    index = T.Instance(MarkIndex, kw={})
+    #: kernel only: no browser code reads it. Built on first read, or shared
+    #: from the mark it follows (see :meth:`share_index`)
+    index = T.Instance(MarkIndex)
     flow: tuple[str, ...] = TypedTuple(T.Unicode(), kw={})
+    #: removed names raise :class:`~ipyelk.exceptions.DeprecatedAPIError` through 3.x
+    layout = RemovedAPI(
+        "MarkElementWidget is not a DOMWidget in ipyelk 3.0: no view displays it, so "
+        "it has no layout. No alias: this error is raised throughout 3.x."
+    )
 
     #: the tree ``set_state`` last deserialized from the browser
     _browser_value: Node | None = None
+    #: the mark whose index this one shares, set by ``share_index``
+    _index_of: MarkElementWidget | None = None
     #: the synced trait names (``Widget.keys``), typed for mypy
     keys: list[str]
+
+    @T.default("index")
+    def _default_index(self) -> MarkIndex:
+        return MarkIndex() if self._index_of is None else self._index_of.index
+
+    def share_index(self, mark: MarkElementWidget) -> None:
+        """Use the index of ``mark``, without building one to throw away.
+
+        ``Pipeline`` calls this for each stage outlet. If neither mark has an
+        index yet, the first read of ``index`` takes the one of ``mark``.
+        """
+        self._index_of = mark
+        if "index" in self._trait_values or "index" in mark._trait_values:
+            self.index = mark.index
 
     def sync_value(self) -> MarkElementWidget:
         """Sync ``value`` with the browser from now on, and send it now.

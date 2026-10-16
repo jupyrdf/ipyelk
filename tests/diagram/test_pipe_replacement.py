@@ -313,7 +313,6 @@ def test_closing_a_pipe_closes_what_it_created_not_its_inlet() -> None:
     pipe.close()
 
     assert is_open(source)
-    assert is_open(source.index)
     assert not any(is_open(widget) for widget in [pipe, *subs, *marks])
     assert not is_open(pipe.status_widget)
 
