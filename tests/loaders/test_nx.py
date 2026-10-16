@@ -153,3 +153,30 @@ def test_nx_loader_edge_owners_match_networkx(seed):
     finally:
         mark.close()
     assert owners == expected
+
+
+@pytest.mark.parametrize(
+    "tree_edges",
+    [
+        # apart from the tree, which the edge x -> y walks into
+        [("x", "y"), ("y", "x"), ("r", "a"), ("r", "b")],
+        # under the root of the tree
+        [("r", "a"), ("r", "b"), ("b", "x"), ("x", "y"), ("y", "x")],
+        # a node that is its own parent
+        [("x", "x"), ("y", "y"), ("r", "a"), ("r", "b")],
+    ],
+)
+def test_nx_loader_refuses_a_cycle_in_the_hierarchy(tree_edges):
+    """A cycle raises, as ``nx.lowest_common_ancestor`` did, not drop its nodes."""
+    graph = nx.MultiDiGraph([("x", "y"), ("a", "b")])
+    with pytest.raises(nx.NetworkXError, match="The hierarchy has a cycle"):
+        NXLoader().load(graph=graph, hierarchy=nx.DiGraph(tree_edges))
+
+
+def test_nx_loader_refuses_a_cycle_that_no_edge_reaches():
+    """The whole hierarchy is checked, not only the parents of edge ends."""
+    graph = nx.MultiDiGraph([("a", "b")])
+    graph.add_nodes_from(["x", "y"])
+    hierarchy = nx.DiGraph([("x", "y"), ("y", "x"), ("r", "a"), ("r", "b")])
+    with pytest.raises(nx.NetworkXError, match=r"\('x', 'y'\)"):
+        NXLoader().load(graph=graph, hierarchy=hierarchy)

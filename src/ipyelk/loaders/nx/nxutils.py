@@ -104,6 +104,10 @@ def process_hierarchy(graph, hierarchy: nx.DiGraph | None) -> nx.DiGraph:
     else:
         # copy graph to avoid mutation
         hierarchy = hierarchy.copy(as_view=False)
+        # `tree_lca` and the nesting need a tree: a cycle would drop its nodes
+        if not nx.is_directed_acyclic_graph(hierarchy):
+            cycle = nx.find_cycle(hierarchy)
+            raise nx.NetworkXError(f"The hierarchy has a cycle: {cycle}")
 
     # check graph and add any missing nodes
     for n in graph.nodes():
@@ -175,6 +179,7 @@ def tree_lca(hierarchy: nx.DiGraph, node1: Hashable, node2: Hashable) -> Hashabl
 
     def up(node: Hashable) -> dict[Hashable, None]:
         # an ordered set of the node and its ancestors, which stops on a cycle
+        # (`process_hierarchy` refuses one)
         path: dict[Hashable, None] = {}
         while node is not None and node not in path:
             path[node] = None
