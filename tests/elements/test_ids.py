@@ -403,6 +403,15 @@ def test_markindex_context_warns_and_is_not_read():
     widget.close()
 
 
+def _ours(record, match: str):
+    """The warnings in ``record`` whose message has ``match``.
+
+    Constructing a widget on ipywidgets 8.0 also emits ipykernel's own ``Comm``
+    deprecation warning, so the first warning in a record need not be ours.
+    """
+    return [w for w in record if match in str(w.message)]
+
+
 @REGISTRY_COMPAT
 def test_markindex_context_and_elements_keep_working():
     """``context`` warns on read and write and keeps what it was given; the
@@ -414,14 +423,16 @@ def test_markindex_context_and_elements_keep_working():
     index = MarkIndex()
     with pytest.warns(DeprecationWarning, match=r"MarkIndex\.context") as record:
         index.context = registry
-    assert record[0].filename == __file__, "the warning points at the caller"
+    assert _ours(record, "MarkIndex.context")[0].filename == __file__, (
+        "the warning points at the caller"
+    )
     with pytest.warns(DeprecationWarning, match=r"MarkIndex\.context"):
         assert index.context is registry
 
     elements = ElementIndex.from_els(Node(id="root"))
     with pytest.warns(DeprecationWarning, match=r"MarkIndex\.context") as record:
         built = MarkIndex(elements=elements, context=registry)
-    assert record[0].filename == __file__
+    assert _ours(record, "MarkIndex.context")[0].filename == __file__
     assert built.elements is elements
     assert built.document.elements is elements
     with pytest.warns(DeprecationWarning, match=r"MarkIndex\.context"):
