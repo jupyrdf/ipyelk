@@ -127,6 +127,42 @@ describe('ELKTextSizerModel.reuse_sizes', () => {
     state.namespaced_css = '.a { font-size: 20px; }';
     const big = label('b');
     expect(model.reuse_sizes([big])).toEqual([big]);
+    measureAll(model, [big], 40);
+    expect(model.reuse_sizes([label('b')])).toEqual([]);
+
+    // a style widget of another class can give the same CSS a new font
+    state._dom_classes = ['styled-widget-2'];
+    const styled = label('b');
+    expect(model.reuse_sizes([styled])).toEqual([styled]);
+  });
+
+  it('keeps only the sizes of the last run', () => {
+    const model = sizer({ namespaced_css: '', _dom_classes: [] });
+    measureAll(model, model.reuse_sizes([label('a')]), 20);
+    measureAll(model, model.reuse_sizes([label('b')]), 30);
+
+    const back = [label('a')];
+    expect(model.reuse_sizes(back)).toEqual(back);
+  });
+
+  it('measures again after the page loads a font', () => {
+    const fonts = new EventTarget();
+    vi.stubGlobal('document', { documentElement: {}, fonts });
+    vi.stubGlobal('window', {
+      getComputedStyle: () => ({ getPropertyValue: () => '' }),
+    });
+    const model = sizer({ namespaced_css: '', _dom_classes: [] });
+    measureAll(model, model.reuse_sizes([label('a')]), 20);
+    expect(model.reuse_sizes([label('a')])).toEqual([]);
+
+    // the label was measured with the fallback font, while its web font loaded
+    fonts.dispatchEvent(new Event('loadingdone'));
+    const loaded = [label('a')];
+    expect(model.reuse_sizes(loaded)).toEqual(loaded);
+    measureAll(model, loaded, 25);
+    const again = label('a');
+    expect(model.reuse_sizes([again])).toEqual([]);
+    expect(again).toMatchObject({ width: 25, height: 10 });
   });
 
   it('measures again after the font of the theme changes', () => {
@@ -156,6 +192,19 @@ describe('ELKTextSizerModel.reuse_sizes', () => {
     ]);
     const again = [label('a')];
     expect(model.reuse_sizes(again)).toEqual(again);
+  });
+
+  it('keeps the size of a label with no text, which measures 0', () => {
+    const model = sizer({ namespaced_css: '', _dom_classes: [] });
+    const first = [label(''), { properties: { cssClasses: '' } }];
+    expect(model.reuse_sizes(first)).toEqual(first);
+    model.read_sizes(
+      first,
+      first.map(() => ({ getBoundingClientRect: () => ({ width: 0, height: 0 }) })),
+    );
+    const again = { properties: { cssClasses: '' } };
+    expect(model.reuse_sizes([label(''), again])).toEqual([]);
+    expect(again).toMatchObject({ width: 0, height: 0 });
   });
 
   it('answers without the DOM when every label has a size', () => {

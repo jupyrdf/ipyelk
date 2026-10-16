@@ -39,6 +39,23 @@ function themeFont(): string[] {
   );
 }
 
+/** how many times the page finished loading fonts, and the font sets it counts */
+let fontLoads = 0;
+const countedFonts = new WeakSet<FontFaceSet>();
+
+/**
+ * A count that changes when the page finishes loading fonts. A label measured
+ * while its web font loaded has the size of the fallback font.
+ */
+function fontLoadCount(): number {
+  const fonts = typeof document === 'undefined' ? undefined : document.fonts;
+  if (fonts && !countedFonts.has(fonts)) {
+    countedFonts.add(fonts);
+    fonts.addEventListener('loadingdone', () => fontLoads++);
+  }
+  return fontLoads;
+}
+
 export class ELKTextSizerModel extends DOMWidgetModel {
   static model_name = 'ELKTextSizerModel';
   static serializers = {
@@ -227,7 +244,8 @@ export class ELKTextSizerModel extends DOMWidgetModel {
 
   /**
    * Give each label the size measured in the last run for the same text and CSS
-   * classes, if the CSS of the widget and the font of the theme did not change.
+   * classes, if the CSS of the widget and the font of the theme did not change,
+   * and the page loaded no font.
    * The kernel sends back the old size of a label whose text changed, so the
    * size on a label cannot tell if it is still valid.
    * @param labels the labels to size
@@ -238,6 +256,7 @@ export class ELKTextSizerModel extends DOMWidgetModel {
       this.get('namespaced_css'),
       this.get('_dom_classes'),
       themeFont(),
+      fontLoadCount(),
     ]);
     const last = css === this.sizesCss ? this.sizes : new Map<string, TSize>();
     this.sizesCss = css;
@@ -272,8 +291,9 @@ export class ELKTextSizerModel extends DOMWidgetModel {
 
       label.width = size.width;
       label.height = size.height;
-      if (size.width || size.height) {
-        // a label that did not render measures 0: measure it again next time
+      if (size.width || size.height || !label.text) {
+        // a label that did not render measures 0: measure it again next time,
+        // unless it has no text, which measures 0 in any case
         this.sizes.set(sizeKey(label), { width: size.width, height: size.height });
       }
 
