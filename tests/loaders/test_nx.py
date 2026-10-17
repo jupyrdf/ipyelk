@@ -1,11 +1,13 @@
 # Copyright (c) 2026 ipyelk contributors.
 # Distributed under the terms of the Modified BSD License.
+import random
+
 import networkx as nx
 import pytest
 
-from ipyelk.elements import Edge, HierarchicalIndex, Node, Port, index
+from ipyelk.elements import Edge, HierarchicalIndex, Node, Port, index, iter_edges
 from ipyelk.loaders import NXLoader
-from ipyelk.loaders.nx.nxutils import get_endpoint
+from ipyelk.loaders.nx.nxutils import get_endpoint, tree_lca
 
 
 def test_nx_port_ids_prefixed_by_node_id():
@@ -98,3 +100,83 @@ def test_nx_edge_lands_on_an_existing_port_by_global_id():
         assert edges[0].target is b
     finally:
         mark.close()
+
+
+def random_tree(seed: int, n_nodes: int) -> tuple[random.Random, nx.DiGraph]:
+    """A random tree rooted at ``n0``, as a networkx hierarchy."""
+    rng = random.Random(seed)  # ruff: ignore[suspicious-non-cryptographic-random-usage]
+    tree: nx.DiGraph = nx.DiGraph()
+    tree.add_node("n0")
+    for i in range(1, n_nodes):
+        tree.add_edge(f"n{rng.randrange(i)}", f"n{i}")
+    return rng, tree
+
+
+@pytest.mark.parametrize("seed", range(4))
+def test_tree_lca_matches_networkx(seed):
+    """The parent walk gives the ancestor that ``nx.lowest_common_ancestor`` gives."""
+    rng, tree = random_tree(seed, 200)
+    nodes = list(tree)
+    pairs = [(rng.choice(nodes), rng.choice(nodes)) for _ in range(300)]
+    pairs += [(node, node) for node in nodes[:10]]
+    pairs += list(tree.edges)[:10]  # a parent and its child
+    for u, v in pairs:
+        assert tree_lca(tree, u, v) == nx.lowest_common_ancestor(tree, u, v)
+
+
+@pytest.mark.parametrize("seed", range(4))
+def test_nx_loader_edge_owners_match_networkx(seed):
+    """Each edge goes to the owner that the loader gave it with networkx."""
+    rng, hierarchy = random_tree(seed, 120)
+    nodes = list(hierarchy)
+    graph = nx.MultiDiGraph()
+    graph.add_nodes_from(nodes)
+    for i in range(200):
+        u, v = rng.choice(nodes), rng.choice(nodes)
+        if u == v == "n0":
+            continue  # a self loop on the root has no parent to own it
+        ports = {"sourcePort": "out"} if rng.random() < 0.3 else {}
+        graph.add_edge(u, v, id=f"e{i}", **ports)
+
+    expected = {}
+    for u, v, data in graph.edges(data=True):
+        if u == v:
+            # self loops are owned by their parent
+            owner = next(iter(hierarchy.pred[u]))
+        else:
+            owner = nx.lowest_common_ancestor(hierarchy, u, v)
+        expected[data["id"]] = owner
+
+    mark = NXLoader().load(graph=graph, hierarchy=hierarchy)
+    try:
+        owners = {edge.id: owner.id for owner, edge in iter_edges(mark.value)}
+    finally:
+        mark.close()
+    assert owners == expected
+
+
+@pytest.mark.parametrize(
+    "tree_edges",
+    [
+        # apart from the tree, which the edge x -> y walks into
+        [("x", "y"), ("y", "x"), ("r", "a"), ("r", "b")],
+        # under the root of the tree
+        [("r", "a"), ("r", "b"), ("b", "x"), ("x", "y"), ("y", "x")],
+        # a node that is its own parent
+        [("x", "x"), ("y", "y"), ("r", "a"), ("r", "b")],
+    ],
+)
+def test_nx_loader_refuses_a_cycle_in_the_hierarchy(tree_edges):
+    """A cycle raises, as ``nx.lowest_common_ancestor`` did, not drop its nodes."""
+    graph = nx.MultiDiGraph([("x", "y"), ("a", "b")])
+    with pytest.raises(nx.NetworkXError, match="The hierarchy has a cycle"):
+        NXLoader().load(graph=graph, hierarchy=nx.DiGraph(tree_edges))
+
+
+def test_nx_loader_refuses_a_cycle_that_no_edge_reaches():
+    """The whole hierarchy is checked, not only the parents of edge ends."""
+    graph = nx.MultiDiGraph([("a", "b")])
+    graph.add_nodes_from(["x", "y"])
+    hierarchy = nx.DiGraph([("x", "y"), ("y", "x"), ("r", "a"), ("r", "b")])
+    with pytest.raises(nx.NetworkXError, match=r"\('x', 'y'\)"):
+        NXLoader().load(graph=graph, hierarchy=hierarchy)

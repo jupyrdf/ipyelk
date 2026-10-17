@@ -106,6 +106,10 @@ def process_hierarchy(graph, hierarchy: nx.DiGraph | None) -> nx.DiGraph:
     else:
         # copy graph to avoid mutation
         hierarchy = hierarchy.copy(as_view=False)
+        # `tree_lca` and the nesting need a tree: a cycle would drop its nodes
+        if not nx.is_directed_acyclic_graph(hierarchy):
+            cycle = nx.find_cycle(hierarchy)
+            raise nx.NetworkXError(f"The hierarchy has a cycle: {cycle}")
 
     # check graph and add any missing nodes
     for n in graph.nodes():
@@ -168,6 +172,26 @@ def as_in_hierarchy(
     raise NotFoundError(f"Unable to find {node} in the hierarchy")
 
 
+def tree_lca(hierarchy: nx.DiGraph, node1: Hashable, node2: Hashable) -> Hashable:
+    """Lowest common ancestor of two nodes of a tree, by walking up their parents.
+
+    ``O(depth)`` per call, where ``nx.lowest_common_ancestor`` is ``O(N + E)``.
+    Returns ``None`` if the nodes share no ancestor, as networkx does.
+    """
+
+    def up(node: Hashable) -> dict[Hashable, None]:
+        # an ordered set of the node and its ancestors, which stops on a cycle
+        # (`process_hierarchy` refuses one)
+        path: dict[Hashable, None] = {}
+        while node is not None and node not in path:
+            path[node] = None
+            node = next(iter(hierarchy.pred[node]), None)
+        return path
+
+    ancestors = up(node1)
+    return next((node for node in up(node2) if node in ancestors), None)
+
+
 def lca(
     hierarchy: nx.DiGraph,
     node1: HierarchicalElement,
@@ -196,7 +220,7 @@ def lca(
             node = node1
         ancestor = node.get_parent()
     else:
-        ancestor = nx.lowest_common_ancestor(hierarchy, node1, node2)
+        ancestor = tree_lca(hierarchy, node1, node2)
     if not isinstance(ancestor, HierarchicalElement):
         ancestor = el_map[ancestor]
     return ancestor
