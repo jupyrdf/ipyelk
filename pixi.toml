@@ -258,6 +258,8 @@ inputs = [
   "build/reports/pip-freeze/utest.txt",
   "pyproject.toml",
   "{tests,src}/**/*.{py,json}",
+  "CHANGELOG.md",
+  "docs/migration.md",
   "!**/.ipynb_checkpoints",
 ]
 outputs = [
@@ -311,6 +313,8 @@ inputs = [
   "build/reports/pip-freeze/utest-oldest.txt",
   "pyproject.toml",
   "{tests,src}/**/*.{py,json}",
+  "CHANGELOG.md",
+  "docs/migration.md",
   "!**/.ipynb_checkpoints",
 ]
 outputs = ["build/reports/utest-oldest/{pytest.html,pytest.xunit.xml}"]

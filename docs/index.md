@@ -13,6 +13,7 @@
 ```
 
 ```{toctree}
+migration
 changelog
 contributing
 ```

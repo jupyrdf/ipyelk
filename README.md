@@ -35,6 +35,8 @@
 
 `ipyelk` is distributed on [conda-forge][] and [PyPI][].
 
+To upgrade from `ipyelk` 2.x, read [Migrating from ipyelk 2.x to 3.0][migration].
+
 ### `ipyelk` with `conda` (recommended)
 
 ```bash
@@ -91,6 +93,7 @@ package's license expression is `BSD-3-Clause AND EPL-1.0 AND EPL-2.0`.
 [examples]: https://github.com/jupyrdf/ipyelk/tree/master/examples/_index.ipynb
 [contributing]: https://github.com/jupyrdf/ipyelk/tree/master/CONTRIBUTING.md
 [changelog]: https://github.com/jupyrdf/ipyelk/tree/master/CHANGELOG.md
+[migration]: https://ipyelk.readthedocs.io/en/latest/migration.html
 [ci-badge]: https://github.com/jupyrdf/ipyelk/workflows/CI/badge.svg
 [ci]: https://github.com/jupyrdf/ipyelk/actions?query=workflow%3ACI+branch%3Amaster
 [elk-json]:
