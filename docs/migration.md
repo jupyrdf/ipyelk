@@ -122,11 +122,11 @@ A deprecated name is a name that worked in 2.x and still works in 3.x. When your
 uses a deprecated name, `ipyelk` shows a `DeprecationWarning`. The message names the
 replacement. `ipyelk` 4.0 removes `Registry` and `MarkIndex.context`.
 
-| Deprecated name     | Warning              | Section                           |
-| ------------------- | -------------------- | --------------------------------- |
-| `Registry`          | `DeprecationWarning` | {ref}`migration-document`         |
+| Deprecated name     | Warning              | Section                            |
+| ------------------- | -------------------- | ---------------------------------- |
+| `Registry`          | `DeprecationWarning` | {ref}`migration-document`          |
 | `MarkIndex.context` | `DeprecationWarning` | {ref}`migration-markindex-context` |
-| `LabelPortSpacing`  | `DeprecationWarning` | {ref}`migration-label-port`       |
+| `LabelPortSpacing`  | `DeprecationWarning` | {ref}`migration-label-port`        |
 
 ## Tools
 
@@ -1044,16 +1044,16 @@ fit.ui.click()
 
 ### Call `sync_value()` for browser code that reads a mark
 
-A `MarkElementWidget` syncs its `value` with the browser only when a browser stage
-reads or writes the `value`. These marks sync their `value`:
+A `MarkElementWidget` syncs its `value` with the browser only when a browser stage reads
+or writes the `value`. These marks sync their `value`:
 
 - the inlet of a `SyncedInletPipe`
 - the outlet of a `SyncedOutletPipe`, such as `ElkJS` and `BrowserTextSizer`
 - the `source` of a viewer
 
 These objects call `MarkElementWidget.sync_value()` when they take the mark. Every other
-mark keeps its `value` in the kernel, for example `Diagram.source`. A browser write to
-a `value` that does not sync has no effect. The `flow` and `index` of a mark never sync,
+mark keeps its `value` in the kernel, for example `Diagram.source`. A browser write to a
+`value` that does not sync has no effect. The `flow` and `index` of a mark never sync,
 because no browser code reads them.
 
 This change affects browser code that reads the `value` of another mark. Call
@@ -1734,9 +1734,8 @@ layout.
 
 A `Document` (`ipyelk.elements.Document`) owns the ids of an element tree. It replaces
 the `Registry` context manager, which 3.0 deprecates. `Document(root)` gives each
-element without an id the id that the element serializes with. This id is the
-`wire_id` of the element. Thus, the id that the browser shows is the id that the element
-keeps.
+element without an id the id that the element serializes with. This id is the `wire_id`
+of the element. Thus, the id that the browser shows is the id that the element keeps.
 
 A `Document` finds an element in three ways:
 
@@ -1783,9 +1782,9 @@ print(doc.resolve("typo"), doc.missing(["n1", "typo"]))
 
 ### Read the ids of a pipe from `MarkIndex.document`
 
-`MarkIndex.document` replaces `MarkIndex.context`, which 3.0 deprecates. Every stage
-and tool of a pipe shares the `MarkIndex` of the pipe. Its `document` is the `Document`
-of the pipe, and `MarkIndex.elements` is the id map of that document. `MarkIndex.context`
+`MarkIndex.document` replaces `MarkIndex.context`, which 3.0 deprecates. Every stage and
+tool of a pipe shares the `MarkIndex` of the pipe. Its `document` is the `Document` of
+the pipe, and `MarkIndex.elements` is the id map of that document. `MarkIndex.context`
 holds a `Registry` that `ipyelk` does not read.
 
 `MarkIndex.elements` and `MarkIndex.context` are properties in 3.0, not traits.
@@ -1920,13 +1919,13 @@ nodes and ports. An element that its old parent no longer holds attaches without
 error.
 
 In 2.x, a shared label failed later, in `ValidationPipe`, with "Nonunique Element Ids".
-A shared child node or port failed an `assert` ("owned by different node"). A label
-that you append to `labels` in place is not checked when you attach it.
-`ValidationPipe` still reports its id. `Compartment(bullet_shape=...)` gives each line
-its own bullet label. In 2.x, it shared one label, which failed validation.
+A shared child node or port failed an `assert` ("owned by different node"). A label that
+you append to `labels` in place is not checked when you attach it. `ValidationPipe`
+still reports its id. `Compartment(bullet_shape=...)` gives each line its own bullet
+label. In 2.x, it shared one label, which failed validation.
 
-To use one fragment in several places, copy it with `Node.clone(prefix)`. The copy of
-an element with the id `X` has the id `"<prefix>.X"`.
+To use one fragment in several places, copy it with `Node.clone(prefix)`. The copy of an
+element with the id `X` has the id `"<prefix>.X"`.
 
 This change affects code that puts one element under two parents. The change is in
 [#160].
@@ -2057,8 +2056,8 @@ print(len(root.edges))
 ### Do not import `Mark` or `MarkFactory`
 
 3.0 removes `ipyelk.elements.Mark`, `ipyelk.elements.MarkFactory` and the module
-`ipyelk.elements.mark_factory`. They served the `networkx` transformer that `ipyelk`
-2.0 removed, and no code used them after that. An import of the module or of one of the
+`ipyelk.elements.mark_factory`. They served the `networkx` transformer that `ipyelk` 2.0
+removed, and no code used them after that. An import of the module or of one of the
 names raises `DeprecatedImportError`.
 
 This change affects code that imports these names. To use one fragment in several
