@@ -1918,8 +1918,8 @@ names both parents. While the second parent is made, the error is a
 nodes and ports. An element that its old parent no longer holds attaches without an
 error.
 
-In 2.x, a shared label failed later, in `ValidationPipe`, with "Nonunique Element Ids".
-A shared child node or port failed an `assert` ("owned by different node"). A label that
+In 2.x, a shared label failed later, in `ValidationPipe`, with `Nonunique Element Ids`.
+A shared child node or port failed an `assert` (`owned by different node`). A label that
 you append to `labels` in place is not checked when you attach it. `ValidationPipe`
 still reports its id. `Compartment(bullet_shape=...)` gives each line its own bullet
 label. In 2.x, it shared one label, which failed validation.
