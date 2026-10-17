@@ -33,6 +33,7 @@ Do these steps before you change your code:
    - {ref}`migration-selection-ids`
    - {ref}`migration-option-ids`
    - {ref}`migration-layout-options`
+   - {ref}`migration-shape-classes`
    - {ref}`migration-wrapping-horizontal`
    - {ref}`migration-label-size`
 
@@ -1231,6 +1232,215 @@ node = Node(layoutOptions={"org.eclipse.elk.partitioning.partition": 2.0})
 print(node.layoutOptions)
 ```
 
+(migration-unknown-keys)=
+
+### An unknown key on an element raises
+
+An unknown key is a keyword argument or a dictionary key that a class has no field for.
+In 3.0, these classes raise `ValidationError` for an unknown key when you make an
+object:
+
+- `Node`, `Port`, `Label`, `Edge`, `EdgeSection` and their subclasses
+- the properties classes, for example `NodeProperties`
+- the shape classes, for example `Rect`
+
+In 2.x, these classes ignored an unknown key. Thus a typo such as `Node(hieght=5)` did
+nothing, and the node kept no height. A shape also rejects a field of another shape
+class. For example, `Rect(start="arrow")` raises, because `start` is a field of
+`EdgeShape`. A `Point` now ignores an unknown key. 2.x raised `TypeError` for one.
+
+Assignment does not change. In both versions, `node.hieght = 5` raises `ValidationError`
+for an element or its properties, and a shape raises `ValueError`. `layoutOptions`
+accepts any option id, as in 2.x.
+
+ELK JSON can have keys that the models do not have, for example the `$H` key that elkjs
+adds. Thus `convert_elkjson`, `from_elkjson`, the value that comes back from the
+frontend and the `networkx` loader ignore those keys. To load a dictionary of your own
+in the same way, use `ipyelk.elements.from_wire(Node, data)`. In 3.0,
+`Node.model_validate(data)` raises for an unknown key.
+
+This change affects code that passes a misspelled key or a key of another class. It also
+affects code that loads ELK JSON with `Node.model_validate`. The change is in [#233].
+
+```python
+# 2.x
+from ipyelk.elements import Node
+
+Node(id="a", hieght=5)
+```
+
+The 2.x code raises this error on 3.0:
+
+```text
+ValidationError: 1 validation error for Node
+hieght
+  Extra inputs are not permitted [type=extra_forbidden, input_value=5, input_type=int]
+```
+
+```python
+# 3.0
+from ipyelk.elements import Node
+
+node = Node(id="a", height=5)
+print(node.height)
+```
+
+```python
+# 2.x: ELK JSON with a key that the models do not have
+from ipyelk.elements import Node
+
+Node.model_validate({"id": "root", "$H": 123})
+```
+
+The 2.x code raises this error on 3.0:
+
+```text
+ValidationError: 1 validation error for Node
+$H
+  Extra inputs are not permitted [type=extra_forbidden, input_value=123, input_type=int]
+```
+
+```python
+# 3.0: from_wire ignores the keys that the models do not have
+from ipyelk.elements import Node, from_wire
+
+root = from_wire(Node, {"id": "root", "$H": 123})
+print(root.id)
+```
+
+(migration-shape-classes)=
+
+### JSON loads a shape as the class of its type string
+
+The type string of a shape is its `type` field, for example `node:path`. The type string
+selects the renderer in the frontend. In 3.0, ELK JSON loads each shape as the class of
+its type string. ELK JSON loads through `convert_elkjson`, `from_elkjson` and the value
+that comes back from the frontend after each layout. Thus a `Path`, a `Comment` or a
+`Widget` keeps its class and its fields. 2.x loaded every shape as the shape class of
+its element, for example `NodeShape`.
+
+This change affects code that reads the shapes of a loaded tree. It also affects code
+that loads JSON with incomplete shapes, and code that defines shape classes. The change
+is in [#233].
+
+#### A shape must have the fields of its class
+
+The class of the type string validates the shape. If the JSON does not have a field that
+the class requires, loading raises `ValidationError`. 2.x loaded the shape as a
+`NodeShape`. For example, a `node:path` shape without `use` raises.
+
+```python
+# 2.x: a node:path shape without use
+from ipyelk.elements import convert_elkjson
+
+shape = {"type": "node:path"}
+convert_elkjson({"id": "root", "children": [{"id": "a", "properties": {"shape": shape}}]})
+```
+
+The 2.x code raises this error on 3.0:
+
+```text
+ValidationError: 1 validation error for Node
+children.0.properties.shape.use
+  Field required [type=missing, input_value={'type': 'node:path'}, input_type=dict]
+```
+
+```python
+# 3.0: give each shape the fields that its class requires
+from ipyelk.elements import convert_elkjson
+
+shape = {"type": "node:path", "use": "M 0,0 L 10,10"}
+root = convert_elkjson({"id": "root", "children": [{"id": "a", "properties": {"shape": shape}}]})
+print(type(root.children[0].properties.shape).__name__)
+```
+
+#### A `Circle` loads as an `Ellipse`
+
+`Circle` and `Ellipse` have the same type string, `node:round`. The JSON does not hold
+`radius`, `rx` or `ry`. Thus a `node:round` shape loads as an `Ellipse` with the `width`
+and `height` of the JSON. The renderer draws both shapes from the width and the height,
+so the diagram does not change. `isinstance(shape, Circle)` is `False` after a load, in
+both versions.
+
+```python
+# both versions: the JSON of a node with a Circle shape
+from ipyelk.elements import Node, NodeProperties, convert_elkjson, shapes
+from ipyelk.elements.serialization import to_json
+
+circle = NodeProperties(shape=shapes.Circle(radius=7))
+data = to_json(Node(id="root", children=[Node(id="a", properties=circle)]), None)
+```
+
+```python
+# 2.x: this printed NodeShape 14.0
+shape = convert_elkjson(data).children[0].properties.shape
+print(type(shape).__name__, shape.width)
+```
+
+The 2.x code shows this on 3.0:
+
+```text
+Ellipse 14.0
+```
+
+```python
+# 3.0: read the size from width and height
+shape = convert_elkjson(data).children[0].properties.shape
+print(shape.width / 2)
+```
+
+#### A widget shape needs an open widget
+
+A `node:widget` shape loads as a `Widget` with the widget that has the `model_id` in
+`use`. If no open widget has that `model_id`, the shape loads as a `NodeShape` with the
+same JSON, and `ipyelk` shows a `UserWarning`. This occurs when the widget closed, or
+when the JSON comes from another kernel.
+
+```python
+# 2.x: JSON with the model_id of a widget that is not open
+from ipyelk.elements import convert_elkjson
+
+shape = {"type": "node:widget", "use": "abc123"}
+root = convert_elkjson({"id": "root", "children": [{"id": "a", "properties": {"shape": shape}}]})
+print(type(root.children[0].properties.shape).__name__)
+```
+
+The 2.x code shows this warning on 3.0, and loads a `NodeShape` as 2.x did:
+
+```text
+UserWarning: No open widget has the model_id 'abc123' of a 'node:widget' shape. The shape loads as a NodeShape with the same JSON.
+NodeShape
+```
+
+```python
+# 3.0: load the JSON while its widget is open
+from ipywidgets import IntSlider
+
+from ipyelk.elements import Node, NodeProperties, convert_elkjson, shapes
+from ipyelk.elements.serialization import to_json
+
+slider = IntSlider()
+properties = NodeProperties(shape=shapes.Widget(widget=slider))
+data = to_json(Node(id="root", children=[Node(id="a", properties=properties)]), None)
+print(convert_elkjson(data).children[0].properties.shape.widget is slider)
+```
+
+#### A second class for a type string replaces the first
+
+If a shape class of your own sets a new type string, the class adds itself to
+`BaseShape.json_classes` when Python defines it. Then JSON loads that type string as
+your class. 2.x had no `json_classes`. If your class sets a type string that another
+class has, your class replaces the other class. Then `ipyelk` shows a `UserWarning`. For
+example, a class `Oval` with the type string `node:round` shows this warning:
+
+```text
+UserWarning: __main__.Oval replaces ipyelk.elements.shapes.Ellipse as the class that loads the shape type 'node:round' from JSON. Give it another type, or set `loads_from_json = False` on it.
+```
+
+To keep the other class, give your class another type string, or set
+`loads_from_json = False` on your class. If you define the same class again, for example
+when you run a notebook cell again, `ipyelk` shows no warning.
+
 ### Expect `NotFoundError` or `NotUniqueError` from `ElementIndex.root()`
 
 A root is a node that has no parent. `ElementIndex.root()` raises
@@ -1515,3 +1725,4 @@ is gone. Thus, the 2.x imports fail.
 [#206]: https://github.com/jupyrdf/ipyelk/pull/206
 [#223]: https://github.com/jupyrdf/ipyelk/pull/223
 [#226]: https://github.com/jupyrdf/ipyelk/pull/226
+[#233]: https://github.com/jupyrdf/ipyelk/pull/233

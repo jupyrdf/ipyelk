@@ -1,6 +1,6 @@
 # Copyright (c) 2024 ipyelk contributors.
 # Distributed under the terms of the Modified BSD License.
-from .common import EMPTY_SENTINEL, LayoutOptions
+from .common import EMPTY_SENTINEL, LayoutOptions, from_wire
 from .elements import (
     BaseElement,
     Edge,
@@ -72,6 +72,7 @@ __all__ = [
     "elk_serialization",
     "exclude_hidden",
     "exclude_layout",
+    "from_wire",
     "iter_edges",
     "iter_elements",
     "iter_hierarchy",

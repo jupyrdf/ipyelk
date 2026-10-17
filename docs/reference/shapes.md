@@ -105,6 +105,33 @@ give a node a size other than the size of its shape, for example a `Circle` node
 children. The `radius` then stays as you set it, and the `width` and `height` of the
 node hold the laid-out size.
 
+## Shapes from JSON
+
+When ipyelk loads ELK JSON, the type string of each shape selects its class. ELK JSON
+comes back from the frontend after each layout, and `from_elkjson` loads it from a
+dictionary. A shape with the type string `node:path` loads as a `Path`, and a shape with
+`label:icon` loads as an `Icon`. A shape with no type string loads as the shape class of
+its element, for example `NodeShape`. If the type string belongs to another kind of
+element, for example `label:icon` on a node, loading raises a `ValidationError`.
+
+`Circle` and `Ellipse` have the same type string, `node:round`. The JSON does not hold
+`radius`, `rx` or `ry`, and the renderer draws both shapes from the width and height. So
+a `node:round` shape loads as an `Ellipse` with the `width` and `height` of the JSON. A
+`node:widget` shape loads as a `Widget` with the widget that has the `model_id` in
+`use`. If no open widget has that `model_id`, the shape loads as a `NodeShape` with the
+same JSON, and ipyelk warns. This occurs when the widget closed, or when the JSON comes
+from another kernel.
+
+If a shape class of your own sets a new type string, the class adds itself to
+`BaseShape.json_classes` when Python defines it. If another class already has that type
+string, ipyelk warns, and JSON loads the type string as the new class.
+
+An element, its properties and its shape raise a `ValidationError` for a key that they
+do not have, because such a key is usually a typo. For example, `Rect(start="arrow")`
+raises, because `start` is a field of `EdgeShape`. ELK JSON can have keys that the
+models do not have, so loading ELK JSON ignores them. `from_wire(Node, data)` from
+`ipyelk.elements` loads a dictionary in the same way.
+
 ## The shapes
 
 The example column links to a notebook that runs in your browser.
@@ -184,7 +211,7 @@ renderer, which has no shape class.
 ```{eval-rst}
 .. currentmodule:: ipyelk.elements.shapes
 .. autoclass:: BaseShape
-    :members: dimension
+    :members: dimension, json_classes, loads_from_json
 .. autoclass:: ElementShape
 .. autoclass:: NodeShape
 .. autoclass:: Point
