@@ -131,12 +131,12 @@ def _removed_in_code() -> tuple[set[str], dict[str, list[type]]]:
     return removed, classes
 
 
-def _table() -> set[str]:
-    """The names in the table of removed names."""
-    guide = _guide().split("(migration-removed-names)=\n\n## ", 1)[1]
+def _table(label: str = "migration-removed-names") -> set[str]:
+    """The names in the table of removed names, or of the section ``label``."""
+    guide = _guide().split(f"({label})=\n\n## ", 1)[1]
     section = guide.split("\n## ", 1)[0]
     rows = [line for line in section.splitlines() if line.startswith("|")][2:]
-    assert rows, "the table of removed names is gone"
+    assert rows, f"the table of {label} is gone"
     cells = [row.split("|")[1] for row in rows]
     spans = [span for cell in cells for span in re.findall(r"`([^`]+)`", cell)]
     return {span for span in spans if re.fullmatch(r"[\w.]+", span)}
@@ -166,6 +166,36 @@ def test_migration_table_lists_only_removed_names() -> None:
 
     stale = sorted(name for name in _table() if not is_removed(name))
     assert not stale, f"the code does not remove {stale}: fix their rows"
+
+
+# the table of deprecated names ##########################################################
+
+#: code that uses each deprecated name, which must warn and still work
+DEPRECATED_USES = {
+    "Registry": "from ipyelk.elements import Registry\nwith Registry() as r: r",
+    "MarkIndex.context": "from ipyelk.pipes import MarkIndex\nMarkIndex().context",
+    "LabelPortSpacing": (
+        "from ipyelk.elements.layout_options.port_options import LabelPortSpacing\n"
+        "LabelPortSpacing(spacing=3)"
+    ),
+}
+
+
+@pytest.mark.parametrize("name", sorted(DEPRECATED_USES))
+def test_migration_deprecated_name_warns_and_works(name: str) -> None:
+    """Each name in the table of deprecated names warns and keeps working."""
+    assert set(DEPRECATED_USES) == _table("migration-deprecated-names")
+    with warnings.catch_warnings(record=True) as caught:
+        warnings.simplefilter("always")
+        exec(DEPRECATED_USES[name], {})  # ruff: ignore[exec-builtin]
+    # select our own: on ipywidgets 8.0.1 a widget also warns about ipykernel's Comm
+    ours = [
+        w
+        for w in caught
+        if issubclass(w.category, DeprecationWarning)
+        and f"{name} is deprecated" in str(w.message)
+    ]
+    assert ours, f"{name} does not warn: {[str(w.message) for w in caught]}"
 
 
 # the examples ###########################################################################
