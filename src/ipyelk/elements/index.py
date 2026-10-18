@@ -20,13 +20,8 @@ from .elements import (
 )
 from .registry import new_id
 
-
-def _missing_id(el: BaseElement, what: str = "element") -> ValueError:
-    # type name only: an element repr recurses through its whole subtree
-    return ValueError(
-        f"Cannot index {what} without an id ({type(el).__name__}); "
-        "set `id` or build the index inside a Registry context"
-    )
+#: ends the id of a slack port, after the id of the hidden element it stands for
+SLACK_SUFFIX = ".slack"
 
 
 class IDReport(BaseModel):
@@ -77,6 +72,11 @@ class VisIndex(BaseModel):
         ),
     )
 
+    slack_ports: dict[str, str] = Field(
+        default_factory=dict,
+        description="mapping of slack port ids to the id of the hidden element",
+    )
+
     slack_edge_style: set[str] = Field({"slack-edge"})
     slack_port_style: set[str] = Field({"slack-port"})
 
@@ -87,19 +87,14 @@ class VisIndex(BaseModel):
 
         for el, is_hidden, last in iter_visible(*els):
             if is_hidden:
-                el_id = el.get_id()
-                if el_id is None:
-                    raise _missing_id(el)
+                el_id = el.wire_id()
                 if not isinstance(last, BaseElement):
                     raise ValueError(
                         f"Cannot index hidden {type(el).__name__} {el_id!r} "
                         "without a visible ancestor"
                     )
-                last_id = last.get_id()
-                if last_id is None:
-                    raise _missing_id(last, "visible ancestor")
                 index[el_id] = el
-                last_visible[el_id] = last_id
+                last_visible[el_id] = last.wire_id()
         return cls(
             hidden=index,
             last_visible=last_visible,
@@ -166,18 +161,18 @@ class ElementIndex(BaseModel):
 
     @classmethod
     def from_els(cls, *els: BaseElement) -> ElementIndex:
-        """Index ``els`` and their descendants by id.
+        """Index ``els`` and their descendants by the id they serialize with.
 
-        A derived id (``Label.wrap``) that another element already uses is
-        replaced with a fresh one; any other id is kept.
+        An element without an ``id`` is indexed by its ``wire_id``, which
+        ``Document.index`` then writes onto it. A derived id (``Label.wrap``)
+        that another element already uses is replaced with a fresh one; any
+        other id is kept.
         """
         found = list(iter_elements(*els))
         given = {el.id: el for el in found if el.id is not None and not el.derived_id}
         elements: dict[str, SerializeAsAny[BaseElement]] = {}
         for el in found:
-            el_id = el.get_id()
-            if el_id is None:
-                raise _missing_id(el)
+            el_id = el.wire_id()
             if el.derived_id and elements.get(el_id, given.get(el_id, el)) is not el:
                 el_id = el.id = new_id()
             elements[el_id] = el
@@ -219,7 +214,7 @@ class ElementIndex(BaseModel):
         if not roots:
             raise NotFoundError("The index has no root: every node has a parent")
         if len(roots) > 1:
-            ids = ", ".join(str(r.get_id()) for r in roots)
+            ids = ", ".join(r.wire_id() for r in roots)
             raise NotUniqueError(f"The index has {len(roots)} roots: {ids}")
         root = roots[0]
         assert isinstance(root, Node), f"Root is not of type Node. Not {type(root)}."
@@ -252,7 +247,8 @@ class ElementIndex(BaseModel):
         for key, e2 in other.items():
             e1 = self.elements.get(key)
             if e1 is None:
-                self.elements[key] = e2
+                if not VisIndex.is_slack_port(e2):  # the projection's, not the user's
+                    self.elements[key] = e2
             elif type(e1) == type(e2):
                 if isinstance(e1, Port) and (
                     is_hidden(e1) or VisIndex.is_slack_port(e2)
@@ -273,8 +269,7 @@ class ElementIndex(BaseModel):
             if el.id is None:
                 null_ids.append(el)
                 continue
-            eid = el.get_id()
-            assert eid is not None
+            eid = el.wire_id()
             if eid in ids:
                 duplicated[eid].append(el)
             else:
@@ -377,7 +372,7 @@ class ElementIndex(BaseModel):
         # build orphaned set of nodes
         for el, edge in iter_edges(root):
             for endpt in (edge.source, edge.target):
-                if endpt.get_id() not in self.elements:
+                if endpt.wire_id() not in self.elements:
                     # get the top ancestor of endpoint (``endpt``) and add to the orphan set
                     ancestor = get_ancestor(endpt)
                     assert isinstance(ancestor, Node)
@@ -416,10 +411,7 @@ class HierarchicalIndex(ElementIndex):
         elements: dict[str, SerializeAsAny[BaseElement]] = {}
         for el in iter_elements(*els):
             if isinstance(el, HierarchicalElement):
-                el_id = el.get_id()
-                if el_id is None:
-                    raise _missing_id(el)
-                elements[el_id] = el
+                elements[el.wire_id()] = el
         if vis_index is None:
             vis_index = VisIndex()
         return cls(
@@ -487,9 +479,21 @@ class HierarchicalIndex(ElementIndex):
         try:
             port = node.get_port(key)
         except NotFoundError:
-            port = self.vis_index.port_factory(id=key)
+            port = self.vis_index.port_factory(id=self.slack_id(key))
             node.add_port(port, key=key)
+            self.vis_index.slack_ports[port.wire_id()] = key
         return port
+
+    def slack_id(self, key: str) -> str:
+        """The id of the slack port for the hidden element ``key``: its own id,
+        so the browser never sees two elements with one id.
+        """
+        slack_id = f"{key}{SLACK_SUFFIX}"
+        # shortcut: checks node, port and hidden ids, not edge or label ids;
+        # extend if a user id ever ends with the suffix
+        while slack_id in self.elements or slack_id in self.vis_index.hidden:
+            slack_id += SLACK_SUFFIX
+        return slack_id
 
     def is_hidden(self, key):
         return key not in self.elements

@@ -4,7 +4,7 @@
 
 An id-less element serializes with a UUID minted once per object (``wire_id``);
 ``id`` itself stays ``None`` until the element is indexed, and the index's
-``Registry`` adopts the wire id, so the id first serialized is the one the
+``Document`` pins the wire id, so the id first serialized is the one the
 element keeps.
 """
 
@@ -20,6 +20,11 @@ from pydantic import ConfigDict
 from ipyelk.elements import ElementIndex, Label, Node, Port, Registry
 from ipyelk.elements.elements import ElementMetadata
 from ipyelk.pipes import MarkElementWidget, ValidationPipe
+
+#: the Registry tests pin the deprecated tier: it warns and keeps working
+REGISTRY_COMPAT = pytest.mark.filterwarnings(
+    "ignore:ipyelk.elements.Registry is deprecated:DeprecationWarning"
+)
 
 
 def test_idless_node_serialises_a_stable_uuid():
@@ -50,6 +55,7 @@ def test_edge_endpoints_never_null():
     assert None not in wire["edges"][0]["sources"] + wire["edges"][0]["targets"]
 
 
+@REGISTRY_COMPAT
 def test_port_id_composes_from_explicit_parent_id():
     port = Port()
     node = Node(id="N", ports=[port])
@@ -77,7 +83,7 @@ def test_wire_id_becomes_the_indexed_id():
     port = child.add_port(Port())
     edge = root.add_edge(port, root)
 
-    widget = MarkElementWidget(value=root)  # serializes at construction
+    widget = MarkElementWidget(value=root).sync_value()  # serializes now
     first_wire = widget.get_state()["value"]
     assert first_wire["id"] is not None
     assert root.id is None, "serialising does not assign ids"
@@ -304,6 +310,7 @@ def test_copies_mint_their_own_wire_ids():
     widget.close()
 
 
+@REGISTRY_COMPAT
 def test_registry_minted_id_becomes_the_wire_id():
     """Index first, serialize later: index keys and wire ids agree."""
     root = Node(children=[Node(ports=[Port()])])
@@ -326,3 +333,107 @@ def test_registry_minted_id_becomes_the_wire_id():
         assert root.get_id() == root_id, "a later Registry adopts the wire id"
         assert port.get_id() == port_id
     assert root.model_dump() == wire
+
+
+@REGISTRY_COMPAT
+def test_a_registry_does_not_keep_its_elements_alive():
+    """The Registry maps elements to ids weakly (#160 defect 6)."""
+    import gc
+    import weakref
+
+    registry = Registry()
+    node = Node(ports=[Port()])
+    with registry:
+        node_id = node.get_id()
+        node.ports[0].get_id()
+    assert registry[node] == node_id
+    assert len(registry.ids) == 2
+    ref = weakref.ref(node)
+    del node
+    gc.collect()
+    assert ref() is None
+    assert len(registry.ids) == 0
+
+
+@REGISTRY_COMPAT
+def test_a_registry_takes_keys_without_weak_references():
+    """A ``str`` key works as in 2.x; an element key is still held weakly."""
+    registry = Registry()
+    node = Node()
+    assert registry["x"] == registry["x"]
+    assert registry[node] == registry[node] != registry["x"]
+    assert "x" in registry.ids
+    assert node in registry.ids
+    assert "y" not in registry.ids
+    assert registry.ids.get("y") is None
+    with registry:
+        assert Registry.get_id("y", default="Y") == "Y"
+    assert len(registry.ids) == 3
+    assert set(registry.ids) == {"x", "y", node}
+    del registry.ids["x"]
+    assert set(registry.ids.strong) == {"y"}
+    assert list(registry.ids.weak) == [node]
+
+
+def test_registry_warns_and_keeps_working():
+    """The two-tier policy: a name that worked warns, names its replacement and its
+    removal version, and keeps working through 3.x (#160).
+    """
+    with pytest.warns(DeprecationWarning, match=r"Registry is deprecated") as record:
+        registry = Registry()
+    (warning,) = record
+    assert warning.filename == __file__, "the warning points at the caller"
+    message = str(warning.message)
+    assert "ipyelk 4.0" in message
+    assert "Document" in message
+    node = Node(ports=[Port()])
+    with registry:
+        assert node.get_id() == node.wire_id()
+        assert node.ports[0].get_id().startswith(f"{node.wire_id()}.")
+    assert node.get_id() is None, "outside the Registry nothing is assigned"
+
+
+def test_markindex_context_warns_and_is_not_read():
+    widget = MarkElementWidget(value=Node(id="root"))
+    with pytest.warns(DeprecationWarning, match=r"MarkIndex\.context is deprecated"):
+        context = widget.index.context
+    assert isinstance(context, Registry)
+    widget.build_index()
+    assert widget.index.document.resolve("root").element is widget.value
+    widget.close()
+
+
+def _ours(record, match: str):
+    """The warnings in ``record`` whose message has ``match``.
+
+    Constructing a widget on ipywidgets 8.0 also emits ipykernel's own ``Comm``
+    deprecation warning, so the first warning in a record need not be ours.
+    """
+    return [w for w in record if match in str(w.message)]
+
+
+@REGISTRY_COMPAT
+def test_markindex_context_and_elements_keep_working():
+    """``context`` warns on read and write and keeps what it was given; the
+    constructor still takes ``elements`` and ``context``.
+    """
+    from ipyelk.pipes import MarkIndex
+
+    registry = Registry()
+    index = MarkIndex()
+    with pytest.warns(DeprecationWarning, match=r"MarkIndex\.context") as record:
+        index.context = registry
+    assert _ours(record, "MarkIndex.context")[0].filename == __file__, (
+        "the warning points at the caller"
+    )
+    with pytest.warns(DeprecationWarning, match=r"MarkIndex\.context"):
+        assert index.context is registry
+
+    elements = ElementIndex.from_els(Node(id="root"))
+    with pytest.warns(DeprecationWarning, match=r"MarkIndex\.context") as record:
+        built = MarkIndex(elements=elements, context=registry)
+    assert _ours(record, "MarkIndex.context")[0].filename == __file__
+    assert built.elements is elements
+    assert built.document.elements is elements
+    with pytest.warns(DeprecationWarning, match=r"MarkIndex\.context"):
+        assert built.context is registry

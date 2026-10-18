@@ -164,7 +164,7 @@ class Pipeline(SyncedOutletPipe):
         prev = self.inlet
         for pipe in self.pipes:
             pipe.inlet = prev
-            pipe.outlet.index = pipe.inlet.index
+            pipe.outlet.share_index(pipe.inlet)
             prev = pipe.outlet
         self.outlet = prev
 

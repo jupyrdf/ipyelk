@@ -4,7 +4,7 @@
  */
 import { random } from 'lodash';
 
-import { DOMWidgetModel, DOMWidgetView } from '@jupyter-widgets/base';
+import { DOMWidgetModel, DOMWidgetView, WidgetModel } from '@jupyter-widgets/base';
 import { unpack_models as deserialize } from '@jupyter-widgets/base';
 
 import {
@@ -176,7 +176,7 @@ export class ELKTextSizerModel extends DOMWidgetModel {
    */
   measure(gen: number = 0): Promise<void> | null {
     const rootNode: ElkNode = this.get('inlet')?.get('value');
-    let outlet: DOMWidgetModel = this.get('outlet'); // target output
+    let outlet: WidgetModel = this.get('outlet'); // target output
     const stale = staleMessage(this.get('inlet'), rootNode, outlet);
     if (stale != null) {
       this.send(stale); // unservable: let the kernel re-sync the state

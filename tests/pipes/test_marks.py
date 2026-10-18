@@ -32,7 +32,7 @@ def browser_wire():
 
 
 def test_browser_value_write_is_not_resent(monkeypatch):
-    outlet = MarkElementWidget()
+    outlet = MarkElementWidget().sync_value()
     sent = capture_sends(outlet, monkeypatch)
 
     outlet.set_state({"value": browser_wire()})
@@ -48,20 +48,34 @@ def test_browser_value_write_is_not_resent(monkeypatch):
     assert sent == []
 
 
-def test_other_traits_keep_default_send_behaviour(monkeypatch):
-    """Only ``value`` is special-cased; ``flow`` follows the ipywidgets rules."""
-    outlet = MarkElementWidget()
-    sent = capture_sends(outlet, monkeypatch)
+def test_value_and_flow_are_not_synced_by_default(monkeypatch):
+    """A mark that no browser stage reads sends nothing: not ``value``, not ``flow``."""
+    mark = MarkElementWidget(value=Node(id="root"))
+    assert "value" not in mark.get_state()
+    assert "flow" not in mark.get_state()
+    assert "index" not in mark.get_state(), "no browser code reads the index"
+    sent = capture_sends(mark, monkeypatch)
 
-    outlet.flow = ("new",)
-    assert sent == [("update", ["flow"])]
+    mark.flow = ("new",)
+    mark.value = Node(id="other")
+    assert sent == []
+    mark.set_state({"value": browser_wire(), "flow": ["r"]})
+    assert mark.value.id == "other", "a browser write to an unsynced value is ignored"
+    assert mark.flow == ("new",)
 
-    sent.clear()
-    outlet.set_state({"flow": ["new", "r"]})
-    # echo_update stays on for flow; the browser JSON equals the re-serialised
-    # value so the stock lock check suppresses the second update
-    assert sent == [("echo_update", ["flow"])]
-    assert outlet.flow == ("new", "r")
+
+def test_sync_value_sends_the_value_once(monkeypatch):
+    mark = MarkElementWidget(value=Node(id="root"))
+    sent = capture_sends(mark, monkeypatch)
+    assert mark.sync_value() is mark
+    assert sent == [("update", ["value"])]
+    assert mark.get_state("value")["value"]["id"] == "root"
+    mark.sync_value()
+    assert sent == [("update", ["value"])], "a second call sends nothing"
+    mark.value = Node(id="other")
+    assert sent[-1] == ("update", ["value"])
+    mark.flow = ("new",)
+    assert sent[-1] == ("update", ["value"]), "flow stays unsynced"
 
 
 def test_observer_write_during_browser_write_is_sent_once(monkeypatch):
@@ -69,7 +83,7 @@ def test_observer_write_during_browser_write_is_sent_once(monkeypatch):
     to the browser's tree by assigning a new one does so while the property
     lock is still held, and that tree must reach the frontend (#164 review).
     """
-    outlet = MarkElementWidget()
+    outlet = MarkElementWidget().sync_value()
     sent = capture_sends(outlet, monkeypatch)
     replacement = Node(id="root", children=[Node(id="replaced")])
 
@@ -90,3 +104,54 @@ def test_observer_write_during_browser_write_is_sent_once(monkeypatch):
     sent.clear()
     outlet.set_state({"value": browser_wire()})
     assert sent == []
+
+
+def test_a_viewer_syncs_the_value_of_its_source():
+    """The viewer draws ``source.value``, whatever pipe made the source."""
+    from ipyelk.diagram import SprottyViewer
+
+    source = MarkElementWidget(value=Node(id="root"))
+    assert "value" not in source.keys
+    viewer = SprottyViewer(source=source)
+    assert "value" in source.keys
+
+    other = MarkElementWidget(value=Node(id="other"))
+    viewer.source = other
+    assert "value" in other.keys
+    viewer.close()
+    source.close()
+    other.close()
+
+
+def test_only_the_marks_a_browser_stage_uses_sync_value():
+    """The browser reads the inlets of the text sizer and the layout, writes
+    their outlets, and draws the source of the viewer. The source of the
+    diagram stays in the kernel.
+    """
+    from ipyelk import Diagram
+    from ipyelk.pipes import Pipe
+
+    diagram = Diagram(source=MarkElementWidget(value=Node(id="root")))
+    validation, sizer, visibility, elkjs = diagram.pipe.pipes
+    synced = {
+        "source": diagram.source,
+        "validation.outlet": validation.outlet,
+        "sizer.outlet": sizer.outlet,
+        "visibility.outlet": visibility.outlet,
+        "elkjs.outlet": elkjs.outlet,
+    }
+    assert {name for name, mark in synced.items() if "value" in mark.keys} == {
+        "validation.outlet",
+        "sizer.outlet",
+        "visibility.outlet",
+        "elkjs.outlet",
+    }
+    assert diagram.view.source is elkjs.outlet
+    assert not any("flow" in mark.keys for mark in synced.values())
+    assert not any("index" in mark.keys for mark in synced.values())
+
+    kernel_only = Pipe()
+    assert "value" not in kernel_only.inlet.keys
+    assert "value" not in kernel_only.outlet.keys
+    kernel_only.close()
+    diagram.close()

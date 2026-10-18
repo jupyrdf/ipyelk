@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 from collections.abc import Iterator
+from typing import TYPE_CHECKING
 
 import ipywidgets as W
 import traitlets as T
@@ -16,8 +17,11 @@ from ..exceptions import (
     check_removed,
     registration_method,
 )
-from ..pipes import Pipe
+from ..pipes import MarkIndex, Pipe
 from ..util import close_tree
+
+if TYPE_CHECKING:
+    from ..elements import BaseElement, Document
 
 _REGISTRATION_ASSIGNED = (
     "Tool.{name} is a registration method in ipyelk 3.0, not an assignable "
@@ -297,6 +301,49 @@ class ToolButton(Tool):
 
         btn.on_click(click)
         return btn
+
+
+class ResolvingTool(Tool):
+    """A tool that holds element ids and resolves them in the ``Document`` of
+    its ``tee``. Subclasses name the ids in :meth:`_held_ids`.
+    """
+
+    def _held_ids(self) -> tuple[str, ...]:
+        raise NotImplementedError
+
+    def get_index(self) -> MarkIndex:
+        """The attached pipe's element index, built on first use.
+
+        Raises ``ValueError`` when the tool has no ``tee`` to resolve against.
+        """
+        if self.tee is None:
+            raise ValueError("Tool not attached to a pipe")
+        inlet = self.tee.inlet
+        if inlet.index.elements is None and inlet.value is not None:
+            inlet.build_index()  # the MarkIndex always exists; its elements may not
+        return inlet.index
+
+    def get_document(self) -> Document:
+        """The ``Document`` that resolves the ids, built on first use."""
+        return self.get_index().document
+
+    def elements(self, *, strict: bool = True) -> Iterator[BaseElement]:
+        """The elements of the held ids, in order.
+
+        A slack port id gives the hidden element that the port stands for.
+
+        :param strict: when True (default) an id the index does not know raises
+            :py:class:`~ipyelk.exceptions.NotFoundError` naming it; when False such
+            ids are skipped (see :meth:`missing_ids` to report them).
+        """
+        document = self.get_document()
+        if strict and document.elements is None:
+            raise ValueError("Cannot resolve ids: the pipe has no elements yet")
+        yield from document.lookup(self._held_ids(), strict=strict)
+
+    def missing_ids(self) -> tuple[str, ...]:
+        """The held ids the index does not know, in order."""
+        return self.get_document().missing(self._held_ids())
 
 
 def _controls(widget: W.Widget | None) -> Iterator[W.Widget]:

@@ -25,7 +25,10 @@ Do these steps before you change your code:
 2. Run your notebooks and your tests with `ipyelk` 3.0.
 3. If you see `DeprecatedAPIError` or `DeprecatedImportError`, read the message. The
    message names the replacement.
-4. Read the sections about changes that do not raise an error:
+4. If you see a `DeprecationWarning`, read the message. The message names the
+   replacement. The table in {ref}`migration-deprecated-names` lists the deprecated
+   names.
+5. Read the sections about changes that do not raise an error:
    - {ref}`migration-unbound`
    - {ref}`migration-callback-argument`
    - {ref}`migration-record-reports`
@@ -36,6 +39,9 @@ Do these steps before you change your code:
    - {ref}`migration-shape-classes`
    - {ref}`migration-wrapping-horizontal`
    - {ref}`migration-label-size`
+   - {ref}`migration-index-without-id`
+   - {ref}`migration-slack-id`
+   - {ref}`migration-value-sync`
 
 (migration-removed-names)=
 
@@ -103,6 +109,24 @@ that tells you what to use instead.
 | `ipyelk.tools.contol_overlay`                                                                       | `DeprecatedImportError` | {ref}`migration-control-module`   |
 | `ipyelk.elements.layout_options.Draw2DLayout`, `ipyelk.elements.layout_options.layout.Draw2DLayout` | `DeprecatedImportError` | {ref}`migration-draw2d`           |
 | `ipyelk.pipes.mappings`                                                                             | `DeprecatedImportError` | {ref}`migration-mappings`         |
+| `ipyelk.elements.Mark`, `ipyelk.elements.MarkFactory`                                               | `DeprecatedImportError` | {ref}`migration-mark-factory`     |
+| `ipyelk.elements.mark_factory`                                                                      | `DeprecatedImportError` | {ref}`migration-mark-factory`     |
+| `MarkIndex.comm`, `MarkIndex.close`                                                                 | `DeprecatedAPIError`    | {ref}`migration-markindex-widget` |
+| `MarkElementWidget.layout`, `MarkElementWidget(layout=...)`                                         | `DeprecatedAPIError`    | {ref}`migration-markindex-widget` |
+
+(migration-deprecated-names)=
+
+## The warnings for deprecated names
+
+A deprecated name is a name that worked in 2.x and still works in 3.x. When your code
+uses a deprecated name, `ipyelk` shows a `DeprecationWarning`. The message names the
+replacement. `ipyelk` 4.0 removes `Registry` and `MarkIndex.context`.
+
+| Deprecated name     | Warning              | Section                            |
+| ------------------- | -------------------- | ---------------------------------- |
+| `Registry`          | `DeprecationWarning` | {ref}`migration-document`          |
+| `MarkIndex.context` | `DeprecationWarning` | {ref}`migration-markindex-context` |
+| `LabelPortSpacing`  | `DeprecationWarning` | {ref}`migration-label-port`        |
 
 ## Tools
 
@@ -1016,6 +1040,110 @@ if fit.closed:
 fit.ui.click()
 ```
 
+(migration-value-sync)=
+
+### Call `sync_value()` for browser code that reads a mark
+
+A `MarkElementWidget` syncs its `value` with the browser only when a browser stage reads
+or writes the `value`. These marks sync their `value`:
+
+- the inlet of a `SyncedInletPipe`
+- the outlet of a `SyncedOutletPipe`, such as `ElkJS` and `BrowserTextSizer`
+- the `source` of a viewer
+
+These objects call `MarkElementWidget.sync_value()` when they take the mark. Every other
+mark keeps its `value` in the kernel, for example `Diagram.source`. A browser write to a
+`value` that does not sync has no effect. The `flow` and `index` of a mark never sync,
+because no browser code reads them.
+
+This change affects browser code that reads the `value` of another mark. Call
+`sync_value()` on that mark first. The change is in [#161].
+
+```python
+# both versions
+from ipyelk.elements import Node
+from ipyelk.pipes import MarkElementWidget
+
+mark = MarkElementWidget(value=Node(id="root"))
+```
+
+```python
+# 2.x: this printed True
+print("value" in mark.get_state())
+```
+
+```python
+# 3.0: sync the value of a mark that your browser code reads
+mark.sync_value()
+print("value" in mark.get_state())
+```
+
+(migration-markindex-widget)=
+
+### Use a `MarkIndex` as a kernel object, not as a widget
+
+In 3.0, a `MarkIndex` is a plain `traitlets.HasTraits`, not a widget. The `MarkIndex`
+lives only in the kernel, so it opens no comm, and `MarkElementWidget.index` is never
+sent to the browser. A `MarkElementWidget` is a `Widget`, not a `DOMWidget`, because no
+view displays it. Thus, a `MarkElementWidget` has no `layout`, and its browser model is
+a `WidgetModel`. One `Diagram()` opens 52 widgets in 3.0. In 2.1.1, it opened 78
+widgets.
+
+Every stage of a pipe shares the `MarkIndex` of the source, as in 2.x. The pipe builds
+the `MarkIndex` when a stage first reads it. When you replace the tree of the source,
+set `source.index.elements = None`. The next run then builds the index again for the new
+tree. This works as in 2.x.
+
+This change affects these uses:
+
+- code that uses a `MarkIndex` as a widget: `.comm`, `close()`, `display()` or
+  `widget_serialization`
+- browser code that reads `mark.get('index')`
+- code that reads `layout` of a `MarkElementWidget`
+
+`MarkIndex.comm`, `MarkIndex.close`, `MarkElementWidget.layout` and
+`MarkElementWidget(layout=...)` raise `DeprecatedAPIError` throughout 3.x. The change is
+in [#237].
+
+```python
+# both versions
+from ipyelk.elements import Node
+from ipyelk.pipes import MarkElementWidget
+
+mark = MarkElementWidget(value=Node(id="root"))
+```
+
+```python
+# 2.x: the index was a widget, so code closed it with the mark
+mark.index.close()
+```
+
+The 2.x code raises this error on 3.0:
+
+```text
+DeprecatedAPIError: MarkIndex is not a widget in ipyelk 3.0: it lives only in the kernel, so it has no comm and nothing to close. Its elements and document work as in 2.x. No alias: this error is raised throughout 3.x.
+```
+
+```python
+# 2.x: a mark had a layout, which no view used
+mark.layout
+```
+
+The 2.x code raises this error on 3.0:
+
+```text
+DeprecatedAPIError: MarkElementWidget is not a DOMWidget in ipyelk 3.0: no view displays it, so it has no layout. No alias: this error is raised throughout 3.x.
+```
+
+```python
+# 3.0: drop the elements to rebuild the index, and close the mark only
+mark.value = Node(id="new-root")
+mark.index.elements = None
+mark.build_index()
+print(mark.index.document["new-root"] is mark.value)
+mark.close()
+```
+
 ## Elements and layout options
 
 An option id is the full id of a layout option of the Eclipse Layout Kernel (ELK), for
@@ -1085,6 +1213,8 @@ node = Node(
 )
 print(unknown_layout_options(node.layoutOptions))
 ```
+
+(migration-label-port)=
 
 ### Set the label-port spacing in each direction
 
@@ -1600,6 +1730,235 @@ the next layout. 2.x code that assigns `None` to `width` and `height` after it c
 the shape still works. The {doc}`reference/shapes` page tells you how to request that
 layout.
 
+(migration-document)=
+
+### Find elements by id with a `Document`
+
+A `Document` (`ipyelk.elements.Document`) owns the ids of an element tree. It replaces
+the `Registry` context manager, which 3.0 deprecates. `Document(root)` gives each
+element without an id the id that the element serializes with. This id is the `wire_id`
+of the element. Thus, the id that the browser shows is the id that the element keeps.
+
+A `Document` finds an element in three ways:
+
+- `document[id]` returns the element. It raises `NotFoundError` for an unknown id.
+- `document.resolve(id)` returns a `Resolved(element, via_slack)`, or `None` for an
+  unknown id.
+- `document.lookup(ids, strict=True)` returns the elements of `ids`. With
+  `strict=False`, it skips the unknown ids. `document.missing(ids)` lists them.
+
+No `ipyelk` code uses a `Registry` in 3.0. A `Registry` holds an element weakly, so it
+does not keep the element alive. It holds a key that cannot be weakly referenced, such
+as a `str`, as in 2.x.
+
+This change affects code that makes a `Registry` or enters one with `with`. `Registry`
+works through 3.x, and `ipyelk` 4.0 removes it. The change is in [#160].
+
+```python
+# 2.x
+from ipyelk.elements import ElementIndex, Node, Registry
+
+nodes = [Node(id="n1"), Node()]
+with Registry():
+    el_map = ElementIndex.from_els(*nodes)
+node = el_map.elements["n1"]
+```
+
+The 2.x code shows this warning on 3.0:
+
+```text
+DeprecationWarning: ipyelk.elements.Registry is deprecated and will be removed in ipyelk 4.0: a Document (ipyelk.elements.Document) owns the ids of an element tree, without a context manager. Document(root) gives each element without an id the id that it serializes with, and document.resolve(id) finds the element; to reuse a fragment, copy it with Node.clone(prefix). Registry keeps working through 3.x.
+```
+
+```python
+# 3.0
+from ipyelk.elements import Document, Node
+
+nodes = [Node(id="n1"), Node()]
+doc = Document(*nodes)
+node = doc["n1"]
+print(doc.resolve("typo"), doc.missing(["n1", "typo"]))
+```
+
+(migration-markindex-context)=
+
+### Read the ids of a pipe from `MarkIndex.document`
+
+`MarkIndex.document` replaces `MarkIndex.context`, which 3.0 deprecates. Every stage and
+tool of a pipe shares the `MarkIndex` of the pipe. Its `document` is the `Document` of
+the pipe, and `MarkIndex.elements` is the id map of that document. `MarkIndex.context`
+holds a `Registry` that `ipyelk` does not read.
+
+`MarkIndex.elements` and `MarkIndex.context` are properties in 3.0, not traits.
+`MarkIndex(elements=...)` and an assignment to `elements` work as in 2.x. But
+`observe(callback, "elements")` never calls the callback.
+
+This change affects code that reads or assigns `MarkIndex.context`, and code that
+observes `MarkIndex.elements`. `MarkIndex.context` works through 3.x, and `ipyelk` 4.0
+removes it. The change is in [#160].
+
+```python
+# both versions
+from ipyelk.elements import Node
+from ipyelk.pipes import MarkElementWidget
+
+mark = MarkElementWidget(value=Node(id="root", children=[Node()]))
+mark.build_index()
+element = mark.value.children[0]
+```
+
+```python
+# 2.x
+with mark.index.context:
+    el_id = element.get_id()
+```
+
+The 2.x code shows this warning on 3.0:
+
+```text
+DeprecationWarning: MarkIndex.context is deprecated and will be removed in ipyelk 4.0: MarkIndex.document (an ipyelk.elements.Document) owns the ids, and nothing in ipyelk reads the Registry. Use index.document.resolve(id).
+```
+
+```python
+# 3.0: the id that the element serializes with is the id that it keeps
+el_id = element.wire_id()
+print(mark.index.document[el_id] is element)
+```
+
+(migration-index-without-id)=
+
+### Index an element that has no id
+
+`ElementIndex.from_els`, `VisIndex.from_els` and `HierarchicalIndex.from_els` index an
+element without an id by its `wire_id`. In 2.x, they raised `ValueError` outside a
+`Registry`. `Painter.paint(element)` stores the `wire_id` of an element that has no id.
+In 2.x, it raised `ValueError`. The `id` of the element stays `None` until a `Document`
+writes it.
+
+This change affects code that expects the `ValueError`. The change is in [#160].
+
+```python
+# both versions
+from ipyelk.elements import ElementIndex, Node
+
+node = Node()
+```
+
+```python
+# 2.x: this raised ValueError("Cannot index element without an id ...")
+index = ElementIndex.from_els(node)
+```
+
+```python
+# 3.0
+index = ElementIndex.from_els(node)
+print(index.elements[node.wire_id()] is node, node.id)
+```
+
+(migration-slack-id)=
+
+### Find the hidden element of a slack port with `Document.resolve`
+
+A slack port is the port that the projection adds to the nearest visible ancestor of a
+hidden element. The edges of the hidden element connect to the slack port. In 3.0, a
+slack port has its own id: the id of the hidden element plus `.slack`. If another
+element uses that id, the slack port adds `.slack` again. In 2.x, the slack port had the
+id of the hidden element, so two elements had one id.
+
+The rest stays as in 2.x:
+
+- `Selection.elements()` returns the hidden element for the id of a slack port.
+- `Document.resolve` returns the hidden element, with `via_slack=True`.
+- `properties.key` of the slack port is the id of the hidden element.
+
+`Painter.paint` of the id of a hidden element does not style its slack port. In 2.x, it
+did, because the two elements had one id. To style the slack port, paint its id too.
+`ElementIndex.update` does not add the slack ports of a browser answer to the index.
+
+This change affects code that compares the id of a slack port with the id of a hidden
+element, and code that paints a hidden element. The change is in [#160].
+
+```python
+# both versions: the node "h" is hidden inside the node "C"
+from ipyelk.elements import Node, NodeProperties
+from ipyelk.pipes import VisibilityPipe
+
+root = Node(id="root")
+compound = root.add_child(Node(id="C"))
+hidden = compound.add_child(Node(id="h", properties=NodeProperties(hidden=True)))
+root.add_edge(hidden, root.add_child(Node(id="shown")))
+pipe = VisibilityPipe()
+pipe.inlet.value = root
+pipe.inlet.build_index()
+await pipe.run()
+(port,) = pipe.outlet.value.children[0].ports
+```
+
+```python
+# 2.x: this printed True
+print(port.id == hidden.id)
+```
+
+```python
+# 3.0
+from ipyelk.tools import Painter
+
+document = pipe.inlet.index.document
+found = document.resolve(port.id)
+print(port.id, found.element is hidden, found.via_slack, port.properties.key)
+slack_ids = [slack for slack, hidden_id in document.slack.items() if hidden_id == "h"]
+Painter().paint(["h", *slack_ids], "highlight")
+```
+
+(migration-one-parent)=
+
+### Give each element one parent
+
+An element under a second parent raises `ValueError` when you attach it. The message
+names both parents. While the second parent is made, the error is a
+`pydantic.ValidationError`, which is a `ValueError` too. This applies to labels, child
+nodes and ports. An element that its old parent no longer holds attaches without an
+error.
+
+In 2.x, a shared label failed later, in `ValidationPipe`, with `Nonunique Element Ids`.
+A shared child node or port failed an `assert` (`owned by different node`). A label that
+you append to `labels` in place is not checked when you attach it. `ValidationPipe`
+still reports its id. `Compartment(bullet_shape=...)` gives each line its own bullet
+label. In 2.x, it shared one label, which failed validation.
+
+To use one fragment in several places, copy it with `Node.clone(prefix)`. The copy of an
+element with the id `X` has the id `"<prefix>.X"`.
+
+This change affects code that puts one element under two parents. The change is in
+[#160].
+
+```python
+# 2.x
+from ipyelk.elements import Label, Node
+
+label = Label(text="x")
+a = Node(id="A", labels=[label])
+b = Node(id="B", labels=[label])
+```
+
+The 2.x code raises this error on 3.0:
+
+```text
+Value error, Label without an id (text 'x') is already under Node 'A', so it cannot also be under Node 'B'. An element has one parent: detach it first, or use a copy (Node.clone(prefix) for a fragment, model_copy() for a label).
+```
+
+```python
+# 3.0: give each parent its own label, and copy a fragment with clone
+from ipyelk.elements import Label, Node
+
+label = Label(text="x")
+a = Node(id="A", labels=[label])
+b = Node(id="B", labels=[label.model_copy()])
+gate = Node(id="gate", children=[Node(id="core")])
+root = Node(id="root", children=[gate.clone("g1"), gate.clone("g2")])
+print([child.children[0].id for child in root.children])
+```
+
 ## Imports
 
 (migration-zoom-pan-import)=
@@ -1694,6 +2053,38 @@ root.add_edge(source=a.ports[0], target=b)
 print(len(root.edges))
 ```
 
+(migration-mark-factory)=
+
+### Do not import `Mark` or `MarkFactory`
+
+3.0 removes `ipyelk.elements.Mark`, `ipyelk.elements.MarkFactory` and the module
+`ipyelk.elements.mark_factory`. They served the `networkx` transformer that `ipyelk` 2.0
+removed, and no code used them after that. An import of the module or of one of the
+names raises `DeprecatedImportError`.
+
+This change affects code that imports these names. To use one fragment in several
+places, copy it with `Node.clone(prefix)`. To load a `networkx` graph, use
+`ipyelk.from_nx` or `ipyelk.loaders.NXLoader`. The change is in [#160].
+
+```python
+# 2.x
+from ipyelk.elements import MarkFactory
+```
+
+The 2.x code raises this error on 3.0:
+
+```text
+DeprecatedImportError: ipyelk.elements.MarkFactory was removed in ipyelk 3.0: Mark and MarkFactory served the networkx transformer that ipyelk 2.0 removed (#90), and nothing used them since. To use one fragment in several places, copy it with Node.clone(prefix); to load a networkx graph, use ipyelk.from_nx or ipyelk.loaders.NXLoader. No alias: this error is raised throughout 3.x.
+```
+
+```python
+# 3.0: copy a fragment with clone
+from ipyelk.elements import Node
+
+gate = Node(id="gate", children=[Node(id="core")])
+print(gate.clone("g1").children[0].id)
+```
+
 ### Do not import `NodeExpandTool` in TypeScript
 
 The browser part of `ipyelk` is the npm package `@jupyrdf/jupyter-elk`. 3.0 removes its
@@ -1720,9 +2111,12 @@ is gone. Thus, the 2.x imports fail.
 ```
 
 [#157]: https://github.com/jupyrdf/ipyelk/pull/157
+[#160]: https://github.com/jupyrdf/ipyelk/issues/160
+[#161]: https://github.com/jupyrdf/ipyelk/issues/161
 [#192]: https://github.com/jupyrdf/ipyelk/pull/192
 [#202]: https://github.com/jupyrdf/ipyelk/pull/202
 [#206]: https://github.com/jupyrdf/ipyelk/pull/206
 [#223]: https://github.com/jupyrdf/ipyelk/pull/223
 [#226]: https://github.com/jupyrdf/ipyelk/pull/226
 [#233]: https://github.com/jupyrdf/ipyelk/pull/233
+[#237]: https://github.com/jupyrdf/ipyelk/issues/237

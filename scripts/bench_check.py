@@ -24,7 +24,7 @@ from pathlib import Path
 
 HERE = Path(__file__).parent
 BASELINE = HERE / "bench_baseline.json"
-PHASES = ("first", "collapse", "burst", "replace", "close")
+PHASES = ("construct", "first", "collapse", "burst", "replace", "close")
 COUNTS = (
     "comm_opens",
     "messages_k2b",

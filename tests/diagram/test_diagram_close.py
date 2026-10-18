@@ -50,7 +50,6 @@ async def build_and_close(show_view: bool) -> None:
     diagram.close()
     assert is_open(source)
     close_widget(source)
-    close_widget(source.index)
 
 
 @pytest.mark.asyncio
@@ -92,7 +91,7 @@ async def test_close_keeps_the_source_and_what_was_passed_in() -> None:
     assert diagram.closed
     for widget in [*subs, *created, view, toolbar, *tools, *uis]:
         assert not is_open(widget), widget
-    for widget in (source, source.index, given, given.index):
+    for widget in (source, given):
         assert is_open(widget)
     assert diagram.source is source
     assert all(sub._diagram is None for sub in subs)

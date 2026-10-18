@@ -38,27 +38,26 @@ class ValidationPipe(Pipe):
         inlet = self.inlet
         # report ids before any are assigned: `fix_null_id` decides (apply_fixes)
         index: MarkIndex = inlet.build_index(assign_ids=False)
-        with index.context:
-            self.get_reports(index)
+        self.get_reports(index)
+        self.errors = self.collect_errors()
+        if self.errors:
+            raise ValueError("Inlet value is not valid")
+        value, fixes = self.apply_fixes(index)
+
+        if value is self.outlet.value:
+            # force refresh if same instance
+            self.outlet._notify_trait("value", None, value)
+        else:
+            self.outlet.value = value
+        # always rebuild the outlet index; re-report only if a fix changed it
+        outlet_index = self.outlet.build_index()
+        if fixes:
+            self.get_reports(outlet_index)
             self.errors = self.collect_errors()
             if self.errors:
-                raise ValueError("Inlet value is not valid")
-            value, fixes = self.apply_fixes(index)
-
-            if value is self.outlet.value:
-                # force refresh if same instance
-                self.outlet._notify_trait("value", None, value)
-            else:
-                self.outlet.value = value
-            # always rebuild the outlet index; re-report only if a fix changed it
-            outlet_index = self.outlet.build_index()
-            if fixes:
-                self.get_reports(outlet_index)
-                self.errors = self.collect_errors()
-                if self.errors:
-                    raise ValueError("Outlet value is not valid")
-            if self.check_layout_options:
-                self.report_layout_options(outlet_index)
+                raise ValueError("Outlet value is not valid")
+        if self.check_layout_options:
+            self.report_layout_options(outlet_index)
 
     def get_reports(self, index: MarkIndex):
         if index.elements is None:
@@ -130,7 +129,7 @@ class ValidationPipe(Pipe):
         if self.id_report.null_ids and self.fix_null_id:
             self.log.debug(f"fixing {len(self.id_report.null_ids)} ids")
             for el in self.id_report.null_ids:
-                el.id = el.get_id()
+                el.id = el.wire_id()
                 fixes += 1
 
         if self.edge_report.orphans and self.fix_orphans:

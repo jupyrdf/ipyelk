@@ -5,12 +5,10 @@ import traitlets as T
 from ipywidgets.widgets.trait_types import TypedTuple
 
 from ..elements import (
-    Registry,
     VisIndex,
     convert_elkjson,
     exclude_hidden,
     exclude_layout,
-    index,
 )
 from . import flows as F
 from .base import Pipe
@@ -45,12 +43,10 @@ class VisibilityPipe(Pipe):
             data = root.model_dump()
 
         # new root node with slack edges / ports introduced due to hidden
-        # elements
-        with Registry():
-            value = convert_elkjson(data, vis_index)
-
-            for el in index.iter_elements(value):
-                el.id = el.get_id()
+        # elements; every element of ``data`` has its wire id, so no id is minted
+        value = convert_elkjson(data, vis_index)
+        # the browser can select a slack port: resolve it to its hidden element
+        self.inlet.index.document.slack = dict(vis_index.slack_ports)
         self.outlet.value = value
 
         return self.outlet

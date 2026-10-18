@@ -17,13 +17,11 @@ from ipyelk.elements import (
     ElementIndex,
     EndpointSymbol,
     Label,
-    Mark,
     Node,
     NodeProperties,
     Partition,
     Port,
     Record,
-    Registry,
     SymbolSpec,
     convert_elkjson,
     exclude_layout,
@@ -145,21 +143,17 @@ def test_nested_include_exclude():
     assert exclude == {"children": {0: {"tag"}}, "width": True, "id": True}
 
 
-def test_registry_mark_and_symbol_subclasses():
-    """Registry ids and endpoint-specific symbol fields survive nested exports."""
+def test_wire_id_and_symbol_subclasses():
+    """Wire ids and endpoint-specific symbol fields survive nested exports."""
     node = TaggedNode()
-    registry = Registry()
-    mark = Mark(element=node, context=registry)
-    data = json.loads(mark.model_dump_json(exclude_none=True))
-    assert data["id"] == mark.get_id()
+    data = json.loads(node.model_dump_json(exclude_none=True))
+    assert data["id"] == node.wire_id()
     assert data["tag"] == "custom"
-    assert Registry.get_context(error_if_none=False) is None
-    assert mark.model_dump(include={"id"}) == {"id": data["id"]}
+    assert node.model_dump(include={"id"}) == {"id": data["id"]}
     spec = SymbolSpec().add(
         EndpointSymbol(identifier="arrow", element=node, path_offset=shapes.Point(2, 3))
     )
-    with registry:
-        symbol = json.loads(spec.model_dump_json(exclude_none=True))["library"]["arrow"]
+    symbol = json.loads(spec.model_dump_json(exclude_none=True))["library"]["arrow"]
     assert symbol["path_offset"] == {"x": 2, "y": 3}
     assert symbol["element"]["tag"] == "custom"
     assert symbol["element"]["id"] == data["id"]
