@@ -1394,7 +1394,10 @@ print(shape.width / 2)
 A `node:widget` shape loads as a `Widget` with the widget that has the `model_id` in
 `use`. If no open widget has that `model_id`, the shape loads as a `NodeShape` with the
 same JSON, and `ipyelk` shows a `UserWarning`. This occurs when the widget closed, or
-when the JSON comes from another kernel.
+when the JSON comes from another kernel. Only ELK JSON loads in this way. A
+`node:widget` dictionary in your own code with no open widget, for example
+`NodeProperties(shape={"type": "node:widget", "use": "abc123"})`, raises
+`ValidationError`, because the `Widget` has no `widget`.
 
 ```python
 # 2.x: JSON with the model_id of a widget that is not open
