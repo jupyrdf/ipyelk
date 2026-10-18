@@ -173,6 +173,132 @@
       "required": ["id"],
       "type": "object"
     },
+    "CommentShape": {
+      "additionalProperties": false,
+      "properties": {
+        "delay": {
+          "description": "Milliseconds before a widget shape applies the diagram zoom; others ignore it.",
+          "type": "number"
+        },
+        "height": {
+          "type": "number"
+        },
+        "type": {
+          "const": "node:comment",
+          "type": "string"
+        },
+        "use": {
+          "$ref": "#/definitions/NotchSize"
+        },
+        "width": {
+          "type": "number"
+        },
+        "x": {
+          "type": "number"
+        },
+        "y": {
+          "type": "number"
+        }
+      },
+      "required": ["type"],
+      "type": "object"
+    },
+    "CustomShape": {
+      "additionalProperties": false,
+      "description": "A shape with no type, or with a type that no built-in shape has: the payload of a custom view.",
+      "properties": {
+        "delay": {
+          "description": "Milliseconds before a widget shape applies the diagram zoom; others ignore it.",
+          "type": "number"
+        },
+        "end": {
+          "type": "string"
+        },
+        "height": {
+          "type": "number"
+        },
+        "start": {
+          "type": "string"
+        },
+        "type": {
+          "pattern": "^(?!(edge|port|label|label:icon|node|node:(path|svg|round|diamond|comment|use|image|foreignobject|widget|html))$)",
+          "type": "string"
+        },
+        "use": {
+          "type": "string"
+        },
+        "width": {
+          "type": "number"
+        },
+        "x": {
+          "type": "number"
+        },
+        "y": {
+          "type": "number"
+        }
+      },
+      "type": "object"
+    },
+    "DiamondShape": {
+      "additionalProperties": false,
+      "properties": {
+        "delay": {
+          "description": "Milliseconds before a widget shape applies the diagram zoom; others ignore it.",
+          "type": "number"
+        },
+        "height": {
+          "type": "number"
+        },
+        "type": {
+          "const": "node:diamond",
+          "type": "string"
+        },
+        "width": {
+          "type": "number"
+        },
+        "x": {
+          "type": "number"
+        },
+        "y": {
+          "type": "number"
+        }
+      },
+      "required": ["type"],
+      "type": "object"
+    },
+    "EdgeShape": {
+      "additionalProperties": false,
+      "properties": {
+        "delay": {
+          "description": "Milliseconds before a widget shape applies the diagram zoom; others ignore it.",
+          "type": "number"
+        },
+        "end": {
+          "$ref": "#/definitions/SymbolId"
+        },
+        "height": {
+          "type": "number"
+        },
+        "start": {
+          "$ref": "#/definitions/SymbolId"
+        },
+        "type": {
+          "const": "edge",
+          "type": "string"
+        },
+        "width": {
+          "type": "number"
+        },
+        "x": {
+          "type": "number"
+        },
+        "y": {
+          "type": "number"
+        }
+      },
+      "required": ["type"],
+      "type": "object"
+    },
     "ElkEdgeSection": {
       "additionalProperties": false,
       "properties": {
@@ -304,6 +430,161 @@
       },
       "type": "object"
     },
+    "ForeignObjectShape": {
+      "additionalProperties": false,
+      "properties": {
+        "delay": {
+          "description": "Milliseconds before a widget shape applies the diagram zoom; others ignore it.",
+          "type": "number"
+        },
+        "height": {
+          "type": "number"
+        },
+        "type": {
+          "const": "node:foreignobject",
+          "type": "string"
+        },
+        "use": {
+          "$ref": "#/definitions/Markup"
+        },
+        "width": {
+          "type": "number"
+        },
+        "x": {
+          "type": "number"
+        },
+        "y": {
+          "type": "number"
+        }
+      },
+      "required": ["type", "use"],
+      "type": "object"
+    },
+    "HTMLShape": {
+      "additionalProperties": false,
+      "properties": {
+        "delay": {
+          "description": "Milliseconds before a widget shape applies the diagram zoom; others ignore it.",
+          "type": "number"
+        },
+        "height": {
+          "type": "number"
+        },
+        "type": {
+          "const": "node:html",
+          "type": "string"
+        },
+        "use": {
+          "$ref": "#/definitions/Markup"
+        },
+        "width": {
+          "type": "number"
+        },
+        "x": {
+          "type": "number"
+        },
+        "y": {
+          "type": "number"
+        }
+      },
+      "required": ["type", "use"],
+      "type": "object"
+    },
+    "IconShape": {
+      "additionalProperties": false,
+      "properties": {
+        "delay": {
+          "description": "Milliseconds before a widget shape applies the diagram zoom; others ignore it.",
+          "type": "number"
+        },
+        "height": {
+          "type": "number"
+        },
+        "type": {
+          "const": "label:icon",
+          "type": "string"
+        },
+        "use": {
+          "$ref": "#/definitions/SymbolId"
+        },
+        "width": {
+          "type": "number"
+        },
+        "x": {
+          "type": "number"
+        },
+        "y": {
+          "type": "number"
+        }
+      },
+      "required": ["type", "use"],
+      "type": "object"
+    },
+    "ImageShape": {
+      "additionalProperties": false,
+      "properties": {
+        "delay": {
+          "description": "Milliseconds before a widget shape applies the diagram zoom; others ignore it.",
+          "type": "number"
+        },
+        "height": {
+          "type": "number"
+        },
+        "type": {
+          "const": "node:image",
+          "type": "string"
+        },
+        "use": {
+          "$ref": "#/definitions/ImageUrl"
+        },
+        "width": {
+          "type": "number"
+        },
+        "x": {
+          "type": "number"
+        },
+        "y": {
+          "type": "number"
+        }
+      },
+      "required": ["type", "use"],
+      "type": "object"
+    },
+    "ImageUrl": {
+      "description": "The URL of an image: absolute, relative to the notebook, or a `data:` URL.",
+      "minLength": 1,
+      "type": "string"
+    },
+    "LabelShape": {
+      "additionalProperties": false,
+      "properties": {
+        "delay": {
+          "description": "Milliseconds before a widget shape applies the diagram zoom; others ignore it.",
+          "type": "number"
+        },
+        "height": {
+          "type": "number"
+        },
+        "type": {
+          "const": "label",
+          "type": "string"
+        },
+        "use": {
+          "$ref": "#/definitions/SymbolId"
+        },
+        "width": {
+          "type": "number"
+        },
+        "x": {
+          "type": "number"
+        },
+        "y": {
+          "type": "number"
+        }
+      },
+      "required": ["type"],
+      "type": "object"
+    },
     "LayoutOptions": {
       "additionalProperties": {
         "type": "string"
@@ -311,26 +592,96 @@
       "description": "***************************************************************************** Copyright (c) 2019 TypeFox and others.\n\nThis program and the accompanying materials are made available under the terms of the Eclipse Public License 2.0 which is available at https://www.eclipse.org/legal/epl-2.0.\n\nThis Source Code may also be made available under the following Secondary Licenses when the conditions for such availability set forth in the Eclipse Public License v. 2.0 are satisfied: GPL-3.0 which is available at https://www.gnu.org/licenses/gpl-3.0-standalone.html.\n\nSPDX-License-Identifier: EPL-2.0 OR GPL-3.0-or-later\n*****************************************************************************",
       "type": "object"
     },
-    "Shape": {
+    "Markup": {
+      "description": "SVG or HTML markup. The views insert it as it is, so it must be trusted.",
+      "type": "string"
+    },
+    "ModelId": {
+      "description": "The `model_id` of the Jupyter widget that a `node:widget` shape draws.",
+      "type": "string"
+    },
+    "NotchSize": {
+      "description": "The size of a comment's notch in pixels: a finite number, 0 or more. 0 draws no notch. ipyelk 2.x wrote it as a string, which the view still reads.",
+      "minimum": 0,
+      "type": "number"
+    },
+    "PathData": {
+      "description": "The `d` attribute of an SVG `path`: a move first, then path commands, numbers, commas and spaces.",
+      "pattern": "^\\s*[Mm][\\sMmZzLlHhVvCcSsQqTtAa0-9eE+\\-.,]*$",
+      "type": "string"
+    },
+    "PathShape": {
       "additionalProperties": false,
-      "description": "***************************************************************************** Copyright (c) 2019 TypeFox and others.\n\nThis program and the accompanying materials are made available under the terms of the Eclipse Public License 2.0 which is available at https://www.eclipse.org/legal/epl-2.0/\n\nSPDX-License-Identifier: EPL-2.0\n*****************************************************************************",
       "properties": {
         "delay": {
+          "description": "Milliseconds before a widget shape applies the diagram zoom; others ignore it.",
           "type": "number"
-        },
-        "end": {
-          "type": "string"
         },
         "height": {
           "type": "number"
         },
-        "start": {
-          "type": "string"
-        },
         "type": {
+          "const": "node:path",
           "type": "string"
         },
         "use": {
+          "$ref": "#/definitions/PathData"
+        },
+        "width": {
+          "type": "number"
+        },
+        "x": {
+          "type": "number"
+        },
+        "y": {
+          "type": "number"
+        }
+      },
+      "required": ["type", "use"],
+      "type": "object"
+    },
+    "PortShape": {
+      "additionalProperties": false,
+      "properties": {
+        "delay": {
+          "description": "Milliseconds before a widget shape applies the diagram zoom; others ignore it.",
+          "type": "number"
+        },
+        "height": {
+          "type": "number"
+        },
+        "type": {
+          "const": "port",
+          "type": "string"
+        },
+        "use": {
+          "$ref": "#/definitions/SymbolId"
+        },
+        "width": {
+          "type": "number"
+        },
+        "x": {
+          "type": "number"
+        },
+        "y": {
+          "type": "number"
+        }
+      },
+      "required": ["type"],
+      "type": "object"
+    },
+    "RectShape": {
+      "additionalProperties": false,
+      "properties": {
+        "delay": {
+          "description": "Milliseconds before a widget shape applies the diagram zoom; others ignore it.",
+          "type": "number"
+        },
+        "height": {
+          "type": "number"
+        },
+        "type": {
+          "const": "node",
           "type": "string"
         },
         "width": {
@@ -343,6 +694,182 @@
           "type": "number"
         }
       },
+      "required": ["type"],
+      "type": "object"
+    },
+    "RoundShape": {
+      "additionalProperties": false,
+      "properties": {
+        "delay": {
+          "description": "Milliseconds before a widget shape applies the diagram zoom; others ignore it.",
+          "type": "number"
+        },
+        "height": {
+          "type": "number"
+        },
+        "type": {
+          "const": "node:round",
+          "type": "string"
+        },
+        "width": {
+          "type": "number"
+        },
+        "x": {
+          "type": "number"
+        },
+        "y": {
+          "type": "number"
+        }
+      },
+      "required": ["type"],
+      "type": "object"
+    },
+    "SVGShape": {
+      "additionalProperties": false,
+      "properties": {
+        "delay": {
+          "description": "Milliseconds before a widget shape applies the diagram zoom; others ignore it.",
+          "type": "number"
+        },
+        "height": {
+          "type": "number"
+        },
+        "type": {
+          "const": "node:svg",
+          "type": "string"
+        },
+        "use": {
+          "$ref": "#/definitions/Markup"
+        },
+        "width": {
+          "type": "number"
+        },
+        "x": {
+          "type": "number"
+        },
+        "y": {
+          "type": "number"
+        }
+      },
+      "required": ["type", "use"],
+      "type": "object"
+    },
+    "Shape": {
+      "anyOf": [
+        {
+          "$ref": "#/definitions/EdgeShape"
+        },
+        {
+          "$ref": "#/definitions/PortShape"
+        },
+        {
+          "$ref": "#/definitions/LabelShape"
+        },
+        {
+          "$ref": "#/definitions/IconShape"
+        },
+        {
+          "$ref": "#/definitions/RectShape"
+        },
+        {
+          "$ref": "#/definitions/PathShape"
+        },
+        {
+          "$ref": "#/definitions/SVGShape"
+        },
+        {
+          "$ref": "#/definitions/RoundShape"
+        },
+        {
+          "$ref": "#/definitions/DiamondShape"
+        },
+        {
+          "$ref": "#/definitions/CommentShape"
+        },
+        {
+          "$ref": "#/definitions/UseShape"
+        },
+        {
+          "$ref": "#/definitions/ImageShape"
+        },
+        {
+          "$ref": "#/definitions/ForeignObjectShape"
+        },
+        {
+          "$ref": "#/definitions/WidgetShape"
+        },
+        {
+          "$ref": "#/definitions/HTMLShape"
+        },
+        {
+          "$ref": "#/definitions/CustomShape"
+        }
+      ],
+      "description": "A shape: its `type` selects the view and the type of its `use`."
+    },
+    "SymbolId": {
+      "description": "The `identifier` of a symbol in the diagram's `defs`.",
+      "minLength": 1,
+      "type": "string"
+    },
+    "UseShape": {
+      "additionalProperties": false,
+      "properties": {
+        "delay": {
+          "description": "Milliseconds before a widget shape applies the diagram zoom; others ignore it.",
+          "type": "number"
+        },
+        "height": {
+          "type": "number"
+        },
+        "type": {
+          "const": "node:use",
+          "type": "string"
+        },
+        "use": {
+          "$ref": "#/definitions/SymbolId"
+        },
+        "width": {
+          "type": "number"
+        },
+        "x": {
+          "type": "number"
+        },
+        "y": {
+          "type": "number"
+        }
+      },
+      "required": ["type", "use"],
+      "type": "object"
+    },
+    "WidgetShape": {
+      "additionalProperties": false,
+      "properties": {
+        "delay": {
+          "description": "Milliseconds before a widget shape applies the diagram zoom; others ignore it.",
+          "type": "number"
+        },
+        "height": {
+          "type": "number"
+        },
+        "type": {
+          "const": "node:widget",
+          "type": "string"
+        },
+        "use": {
+          "$ref": "#/definitions/ModelId"
+        },
+        "width": {
+          "type": "number"
+        },
+        "x": {
+          "type": "number"
+        },
+        "y": {
+          "type": "number"
+        }
+      },
+      "required": ["type", "use"],
       "type": "object"
     }
   }

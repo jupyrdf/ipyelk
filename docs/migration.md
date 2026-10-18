@@ -34,6 +34,7 @@ Do these steps before you change your code:
    - {ref}`migration-option-ids`
    - {ref}`migration-layout-options`
    - {ref}`migration-shape-classes`
+   - {ref}`migration-shape-payloads`
    - {ref}`migration-wrapping-horizontal`
    - {ref}`migration-label-size`
 
@@ -1457,6 +1458,140 @@ To keep the other class, give your class another type string, or set
 `loads_from_json = False` on your class. If you define the same class again, for example
 when you run a notebook cell again, `ipyelk` shows no warning.
 
+(migration-shape-payloads)=
+
+### Give each shape a payload of its type
+
+The payload of a shape is the data in its `use` field, for example the path data of a
+`Path`. In 2.x, `use` was a string on every shape, and the frontend guessed what to do
+with a bad value. In 3.0, the type string of a shape selects the type of its payload, in
+Python, in TypeScript and in the JSON schema `elkschema.json`. Python validates the
+payload when you make a shape, when you assign `use` and when JSON loads. An invalid
+payload raises `ValidationError` at the `use` field. The _Shapes_ page lists the payload
+types: `SymbolId`, `PathData`, `Markup`, `ImageUrl` and `NotchSize`.
+
+This change affects code that reads a `Comment` notch as a string, and code that gives a
+shape a payload that the frontend cannot draw. The change is in [#148].
+
+#### Read the comment notch as a number
+
+`Comment.use` is the size of the notch in pixels, as a number of the type `NotchSize`.
+2.x changed a number to a string. A string of a number, for example the `"20"` in the
+JSON that 2.x saved, still loads as the number. The JSON of 3.0 holds a number.
+
+```python
+# 2.x: this printed '20'
+from ipyelk.elements import shapes
+
+print(repr(shapes.Comment(use=20).use))
+```
+
+The 2.x code shows this on 3.0:
+
+```text
+20.0
+```
+
+```python
+# 3.0
+from ipyelk.elements import shapes
+
+print(shapes.Comment(use="20").use == 20)
+```
+
+A notch of 0 draws no notch, so the node is a rectangle. 2.x drew a notch of 15 pixels
+for 0. A notch that is not a number, is negative, `nan` or an infinity raises
+`ValidationError`. 2.x drew a notch of 15 pixels for a string that was not a number. The
+renderer limits the notch to the width and the height of the node.
+
+```python
+# 2.x
+from ipyelk.elements import shapes
+
+shapes.Comment(use="big")
+```
+
+The 2.x code raises this error on 3.0:
+
+```text
+ValidationError: 1 validation error for Comment
+use
+  Input should be a valid number, unable to parse string as a number [type=float_parsing, input_value='big', input_type=str]
+```
+
+```python
+# 3.0: give the size in pixels
+from ipyelk.elements import shapes
+
+print(shapes.Comment(use=30).use)
+```
+
+#### Give a payload that the renderer can draw
+
+These payloads raise `ValidationError` in 3.0. The 2.x frontend drew nothing for them.
+
+- An empty symbol identifier in `Use`, `Icon`, `PortShape` or `LabelShape`. For a port
+  or a label with no symbol, leave out `use`.
+- An empty `Image` URL.
+- `Path` data that does not start with `M` or `m`, or that has characters other than
+  path commands, numbers, commas and spaces.
+- A `use` on `Rect`, `Circle`, `Ellipse` or `Diamond`. These shapes have no payload.
+- A `use` on a `Widget` that is not the `model_id` of its widget. ipyelk writes the
+  `model_id` of the widget to `use`, so leave out `use`. 2.x dropped the value.
+
+An assignment raises the same error as a construction, and the shape keeps its old
+value. 2.x validated an assignment only on `Comment`.
+
+```python
+# 2.x
+from ipyelk.elements import shapes
+
+shapes.Path(use="hello")
+```
+
+The 2.x code raises this error on 3.0:
+
+```text
+ValidationError: 1 validation error for Path
+use
+  String should match pattern '^\s*[Mm][\sMmZzLlHhVvCcSsQqTtAa0-9eE+\-.,]*$' [type=string_pattern_mismatch, input_value='hello', input_type=str]
+```
+
+```python
+# 3.0
+from ipyelk.elements import shapes
+
+path = shapes.Path(use="M 0,0 L 20,20")
+path.use = "M 0,0 L 30,30"
+print(path.use)
+```
+
+```python
+# 2.x
+from ipyelk.elements import shapes
+
+shapes.Rect(use="ignored")
+```
+
+The 2.x code raises this error on 3.0:
+
+```text
+ValidationError: 1 validation error for Rect
+use
+  Input should be None [type=none_required, input_value='ignored', input_type=str]
+```
+
+```python
+# 3.0
+from ipyelk.elements import shapes
+
+print(shapes.Rect().use)
+```
+
+`NodeShape`, `PortShape` and `LabelShape` keep a string `use` for a shape class of your
+own. To validate the payload of your class, subclass one of them, set a new type string
+and give `use` a type.
+
 ### Expect `NotFoundError` or `NotUniqueError` from `ElementIndex.root()`
 
 A root is a node that has no parent. `ElementIndex.root()` raises
@@ -1774,6 +1909,7 @@ is gone. Thus, the 2.x imports fail.
 // 3.0: delete the import, because there is no replacement
 ```
 
+[#148]: https://github.com/jupyrdf/ipyelk/issues/148
 [#157]: https://github.com/jupyrdf/ipyelk/pull/157
 [#192]: https://github.com/jupyrdf/ipyelk/pull/192
 [#202]: https://github.com/jupyrdf/ipyelk/pull/202

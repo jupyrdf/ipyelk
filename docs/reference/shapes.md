@@ -31,17 +31,44 @@ rectangle for a node or a port, the text for a label and a line for an edge.
 
 ## The `use` field
 
-Most shapes hold their data in the `use` field, which is a string. Each shape gives
-`use` its own meaning, as the API section below shows. For some shapes, `use` holds a
-symbol identifier. A symbol is a drawing that you define once with `Symbol` and add to
-the `symbols` of the diagram. The symbol identifier is the `identifier` of that
-`Symbol`. If no symbol has the identifier, a port draws a rectangle and a label draws
-its text. A `Use` node and an edge end draw nothing. Typed fields in place of the `use`
-string are planned in [#148](https://github.com/jupyrdf/ipyelk/issues/148).
+Most shapes hold their payload in the `use` field. The payload is the data that the
+renderer draws, for example the path data of a `Path`. The type string of the shape sets
+the type of the payload. Each shape class validates its payload when you make the shape,
+when you assign `use` and when ipyelk loads JSON. An invalid payload raises a
+`ValidationError` at the `use` field.
+
+| Class                                       | Payload type | Meaning of `use`                                              | Required |
+| ------------------------------------------- | ------------ | ------------------------------------------------------------- | -------- |
+| `Path`                                      | `PathData`   | the `d` attribute of an SVG `path`, which starts with `M`     | yes      |
+| `SVG`                                       | `Markup`     | SVG markup                                                    | yes      |
+| `ForeignObject`, `HTML`                     | `Markup`     | HTML markup                                                   | yes      |
+| `Image`                                     | `ImageUrl`   | the URL of an image, not empty                                | yes      |
+| `Use`, `Icon`                               | `SymbolId`   | a symbol identifier, not empty                                | yes      |
+| `PortShape`, `LabelShape`                   | `SymbolId`   | a symbol identifier. `None` draws a rectangle or the text.    | no       |
+| `Comment`                                   | `NotchSize`  | the size of the notch in pixels, a finite number of 0 or more | no, 15   |
+| `Widget`                                    | a `model_id` | ipyelk writes the `model_id` of the widget                    | no       |
+| `Rect`, `Circle`, `Ellipse`, `Diamond`      | none         | `use` must be `None`                                          | no       |
+| `NodeShape` and the shape classes of others | `str`        | the payload of a custom renderer                              | no       |
+
+A symbol is a drawing that you define once with `Symbol` and add to the `symbols` of the
+diagram. The symbol identifier is the `identifier` of that `Symbol`. If no symbol has
+the identifier, a port draws a rectangle and a label draws its text. A `Use` node and an
+edge end draw nothing.
+
+A `Comment` notch is the length of the two short sides of the triangle that the renderer
+cuts from the top-right corner. 0 draws no notch, so the node is a rectangle. The
+renderer limits the notch to the width and the height of the node. A string of a number,
+which ipyelk 2.x wrote, loads as the number.
+
+To give a shape class of your own a payload, subclass `NodeShape`, `PortShape` or
+`LabelShape`. Set a new type string, and give `use` or new fields a type. JSON then
+loads the type string as your class, with your validation. The frontend needs a renderer
+for that type string.
 
 ```{warning}
 The frontend inserts the markup of `SVG`, `ForeignObject` and `HTML` into the page
-without changes. Put only markup from a source that you trust in `use`.
+without changes. Put only markup from a source that you trust in `use`. The `Markup`
+type does not make markup safe.
 ```
 
 ## Width and height
@@ -204,6 +231,17 @@ renderer, which has no shape class.
 .. autoclass:: EndpointSymbol
 .. autoclass:: SymbolSpec
     :members: add, merge
+```
+
+### Payload types
+
+```{eval-rst}
+.. currentmodule:: ipyelk.elements.shapes
+.. autodata:: SymbolId
+.. autodata:: PathData
+.. autodata:: Markup
+.. autodata:: ImageUrl
+.. autodata:: NotchSize
 ```
 
 ### Base classes

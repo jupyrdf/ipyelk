@@ -232,6 +232,26 @@
   ignores an unknown key, also in user code, and no longer raises `TypeError` for one in
   ELK JSON. The `15_Nesting_Plots` example no longer passes `key=None` to `Node`, which
   now rejects it ([#153]).
+- The `use` field of each shape class has a type of its own, and the type string of the
+  shape selects it, in Python, in TypeScript and in `elkschema.json` ([#148]):
+  - `Comment.use` is a number of pixels (`NotchSize`), not a string:
+    `Comment(use=20).use == 20.0`, and the JSON holds `20.0`. A string of a number, as
+    2.x wrote it, still loads as the number. A notch of 0 draws no notch. 2.x drew 15
+    pixels for it. A notch that is not a number, is negative, `nan`, an infinity or a
+    `bool` raises `ValidationError`. The renderer limits the notch to the size of the
+    node.
+  - The `use` of a `Path` must be SVG path data that starts with `M` or `m`
+    (`PathData`). The symbol identifier (`SymbolId`) of a `Use`, an `Icon`, a
+    `PortShape` or a `LabelShape`, and the URL (`ImageUrl`) of an `Image`, must not be
+    empty.
+  - `Rect`, `Circle`, `Ellipse` and `Diamond` have no payload: their `use` must be
+    `None`.
+  - `Widget(widget=w, use="other")` raises: the `use` of a `Widget` is the `model_id` of
+    its widget. 2.x dropped the value.
+  - Every shape validates an assignment as it validates a construction. 2.x validated an
+    assignment only on `Comment`.
+  - `NodeShape`, `PortShape` and `LabelShape` keep a string `use` for the payload of a
+    custom shape type.
 
 #### Migration
 
@@ -699,6 +719,12 @@ removed names][migration-removed-names] lists every name that raises
   `elk-worker.js`. The worker in the lab extension falls from 1.92 MB to 1.46 MB, and
   its source map from 7.7 MB to 4.2 MB. This makes the wheel about 0.4 MB smaller
   ([#161])
+- `Shape` is a union of one interface for each built-in type string, for example
+  `CommentShape` and `PathShape`, and `CustomShape` for the other type strings. Each
+  interface gives `use` its type. `shapeOf<T>(element)` reads the shape of an element as
+  the variant of its view. The comment view draws no notch for 0, and limits the notch
+  to the size of the node. A notch that is missing, not a number or negative draws 15
+  pixels, and a string notch from 2.x still draws ([#148])
 
 [#29]: https://github.com/jupyrdf/ipyelk/issues/29
 [#31]: https://github.com/jupyrdf/ipyelk/issues/31
@@ -710,6 +736,7 @@ removed names][migration-removed-names] lists every name that raises
 [#133]: https://github.com/jupyrdf/ipyelk/issues/133
 [#140]: https://github.com/jupyrdf/ipyelk/issues/140
 [#147]: https://github.com/jupyrdf/ipyelk/issues/147
+[#148]: https://github.com/jupyrdf/ipyelk/issues/148
 [#153]: https://github.com/jupyrdf/ipyelk/issues/153
 [#155]: https://github.com/jupyrdf/ipyelk/issues/155
 [#156]: https://github.com/jupyrdf/ipyelk/issues/156

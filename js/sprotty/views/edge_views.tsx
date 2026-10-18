@@ -26,6 +26,7 @@ import {
   svg,
 } from 'sprotty';
 
+import { CustomShape, EdgeShape, shapeOf } from '../json/elkgraph-json';
 import { ElkModelRenderer } from '../renderer';
 import { ElkEdge, ElkJunction } from '../sprotty-model';
 
@@ -100,8 +101,9 @@ export class ElkEdgeView extends PolylineEdgeView {
     segments: Point[],
     context: ElkModelRenderer,
   ): VNode {
-    const startId = edge?.properties?.shape?.start;
-    const endId = edge?.properties?.shape?.end;
+    const shape = shapeOf<EdgeShape | CustomShape>(edge);
+    const startId = shape?.start;
+    const endId = shape?.end;
     const startReach = symbolReach(context.getConnector(startId));
     const endReach = symbolReach(context.getConnector(endId));
     let r = routeEndAngle(segments, 'source', startReach);
@@ -168,8 +170,9 @@ export class ElkEdgeView extends PolylineEdgeView {
     let href: string;
     let correction: Point;
     let vnode: VNode;
-    let start = edge?.properties?.shape?.start;
-    let end = edge?.properties?.shape?.end;
+    let shape = shapeOf<EdgeShape | CustomShape>(edge);
+    let start = shape?.start;
+    let end = shape?.end;
     if (start) {
       const p2 = segments[0];
       let r = routeEndAngle(

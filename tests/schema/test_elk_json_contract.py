@@ -14,6 +14,7 @@ import re
 from collections.abc import Iterator
 from pathlib import Path
 
+import jsonschema
 import pytest
 from ipywidgets import IntSlider
 from pydantic import BaseModel, ValidationError
@@ -52,7 +53,8 @@ REGIONS: dict[type[BaseModel], str] = {
     EdgeSection: "ElkEdgeSection",
     shapes.Point: "ElkPoint",
     BaseProperties: "ElkProperties",
-    shapes.BaseShape: "Shape",
+    # the variant of the other type strings has every key that a shape can have
+    shapes.BaseShape: "CustomShape",
 }
 
 
@@ -271,6 +273,73 @@ def json_classes() -> Iterator[dict[str, type[shapes.BaseShape]]]:
     yield classes
     classes.clear()
     classes.update(before)
+
+
+def schema_variant(tag: str) -> dict:
+    """The definition in the ``Shape`` union of the schema for the type ``tag``."""
+    definitions = SCHEMA["definitions"]
+    for ref in definitions["Shape"]["anyOf"]:
+        variant = definitions[ref["$ref"].rsplit("/", 1)[1]]
+        if variant["properties"]["type"].get("const") == tag:
+            return variant
+    raise KeyError(tag)
+
+
+def payload_type(fragment: dict | None) -> dict | None:
+    """The type and the constraints of a field schema, from either side."""
+    if fragment is None:
+        return None
+    if "$ref" in fragment:
+        fragment = SCHEMA["definitions"][fragment["$ref"].rsplit("/", 1)[1]]
+    # pydantic writes an optional field as a union with null
+    options = [f for f in fragment.get("anyOf", [fragment]) if f.get("type") != "null"]
+    (fragment,) = options
+    keys = {"type", "minimum", "minLength", "pattern"}
+    return {key: value for key, value in fragment.items() if key in keys}
+
+
+@pytest.mark.parametrize(("tag", "cls"), BUILT_IN_TYPES.items())
+def test_each_built_in_type_has_its_payload_in_the_schema(tag, cls):
+    """The ``use`` of each class has the type and the constraints of the schema
+    variant of its type string, and the variant requires it if the class does (#148).
+    """
+    variant = schema_variant(tag)
+    assert wire_keys(cls) <= set(variant["properties"])
+    python = cls.model_json_schema(mode="serialization")["properties"].get("use")
+    on_wire = "use" in wire_keys(cls)
+    assert payload_type(python if on_wire else None) == payload_type(
+        variant["properties"].get("use")
+    )
+    if on_wire:
+        # a Widget writes the model_id of its widget: the field is never set by hand
+        required = cls.model_fields["use"].is_required() or cls is shapes.Widget
+        assert required == ("use" in variant.get("required", []))
+
+
+@pytest.mark.parametrize(
+    ("shape", "valid"),
+    [
+        ({"type": "node:comment", "use": 20}, True),
+        ({"type": "node:comment", "use": "abc"}, False),
+        ({"type": "node:comment", "use": -1}, False),
+        ({"type": "node:path", "use": "M0,0 L1,1"}, True),
+        ({"type": "node:path", "use": "hello"}, False),
+        ({"type": "node:use", "use": ""}, False),
+        ({"type": "node", "use": "x"}, False),
+        ({"type": "node:star", "use": "x"}, True),
+        ({"use": "x"}, True),
+    ],
+)
+def test_the_schema_checks_the_payload_of_each_type(shape, valid):
+    """A built-in type string takes only its own payload. A custom type string
+    takes any string payload, which its own view reads.
+    """
+    root = {"id": "root", "children": [{"id": "a", "properties": {"shape": shape}}]}
+    if valid:
+        assert validate_elk_json(root)
+    else:
+        with pytest.raises(jsonschema.ValidationError):
+            validate_elk_json(root)
 
 
 def test_every_shape_class_has_a_json_type():
