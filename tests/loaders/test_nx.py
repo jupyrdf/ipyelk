@@ -180,3 +180,13 @@ def test_nx_loader_refuses_a_cycle_that_no_edge_reaches():
     hierarchy = nx.DiGraph([("x", "y"), ("y", "x"), ("r", "a"), ("r", "b")])
     with pytest.raises(nx.NetworkXError, match=r"\('x', 'y'\)"):
         NXLoader().load(graph=graph, hierarchy=hierarchy)
+
+
+@pytest.mark.parametrize("kind", [nx.Graph, nx.MultiGraph])
+def test_nx_loader_refuses_an_undirected_hierarchy(kind):
+    """An undirected hierarchy has no parents: it raises, not ``NetworkXNoCycle``."""
+    graph = nx.MultiDiGraph([("a", "b")])
+    hierarchy = kind([("r", "a"), ("r", "b")])
+    match = f"The hierarchy is an undirected {kind.__name__}"
+    with pytest.raises(nx.NetworkXError, match=match):
+        NXLoader().load(graph=graph, hierarchy=hierarchy)

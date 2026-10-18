@@ -189,6 +189,7 @@ TypeFox
 TypeScript
 (?:UI|ui)s?
 Unobserves
+[Uu]ndirected
 [Uu]ninstrumented
 [Uu]nloadable
 [Uu]nstamped

@@ -84,8 +84,9 @@ class BaseProperties(BaseModel):
         """Load a shape from JSON as the class of its ``type`` (``shape_class``)."""
         if not isinstance(value, dict):
             return value
-        model = shape_class(cls.shape_family(), value)
-        if info.context == WIRE_CONTEXT:
+        wire = info.context == WIRE_CONTEXT
+        model = shape_class(cls.shape_family(), value, wire=wire)
+        if wire:
             return from_wire(model, value)
         return model.model_validate(value, context=info.context)
 

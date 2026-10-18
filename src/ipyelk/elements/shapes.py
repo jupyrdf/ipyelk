@@ -444,7 +444,8 @@ class Widget(NodeShape):
         - ``widget`` (ipywidgets ``DOMWidget``, required): the widget to draw.
           Serialization writes its ``model_id`` to ``use``, so a value in ``use`` has
           no effect. JSON loads the widget that has the ``model_id`` in ``use``. If no
-          open widget has it, JSON loads a :py:class:`NodeShape` with the same fields.
+          open widget has it, ELK JSON loads a :py:class:`NodeShape` with the same
+          fields, and a dictionary in user code raises.
         - ``delay`` (``int`` or ``None``, default ``None``): a time in milliseconds.
           If it is set and not 0, the frontend applies the diagram zoom to the widget
           only after ``delay``. ``None`` and 0 apply the zoom at once. The ``15_Nesting_Plots`` example uses it.
@@ -498,12 +499,16 @@ class HTML(NodeShape):
 Widget.model_rebuild()
 
 
-def shape_class(family: type[BaseShape], data: object) -> type[BaseShape]:
+def shape_class(
+    family: type[BaseShape], data: object, *, wire: bool = False
+) -> type[BaseShape]:
     """Return the class that loads the JSON ``data`` of a shape of ``family``.
 
     It is the class of the ``type`` in ``data``, if that class is ``family`` or a
-    subclass of it, else ``family``. A :py:class:`Widget` with no open widget for its
-    ``model_id`` loads as a :py:class:`NodeShape`, with a warning.
+    subclass of it, else ``family``. In ELK JSON (``wire``, as ``from_wire`` loads it),
+    a :py:class:`Widget` with no open widget for its ``model_id`` loads as a
+    :py:class:`NodeShape`, with a warning. Elsewhere, such a ``Widget`` raises, because
+    it has no ``widget``.
     """
     if not isinstance(data, dict):
         return family
@@ -511,7 +516,7 @@ def shape_class(family: type[BaseShape], data: object) -> type[BaseShape]:
     cls = BaseShape.json_classes.get(tag) if isinstance(tag, str) else None
     if cls is None or not issubclass(cls, family):
         return family
-    if issubclass(cls, Widget) and "widget" not in data:
+    if wire and issubclass(cls, Widget) and "widget" not in data:
         model_id = data.get("use")
         if open_widget(model_id) is None:
             # a closed widget, or JSON from another kernel: keep the layout result

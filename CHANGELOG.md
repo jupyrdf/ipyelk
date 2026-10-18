@@ -206,11 +206,11 @@
   `node:round`, and the JSON does not hold their radii, so a `node:round` shape loads as
   an `Ellipse` of the same size. A `node:widget` shape loads with the widget that has
   the `model_id` in `use`. If no open widget has that `model_id`, for example because
-  the widget closed, the shape loads as a `NodeShape` with the same JSON, and ipyelk
-  warns. JSON that the class of its type string rejects now raises `ValidationError`,
-  where 2.x loaded it: for example a `node:path` shape without `use`. A second shape
-  class with a type string that is already taken warns and replaces the first class
-  ([#153]).
+  the widget closed, ELK JSON loads the shape as a `NodeShape` with the same JSON, and
+  ipyelk warns. JSON that the class of its type string rejects now raises
+  `ValidationError`, where 2.x loaded it: for example a `node:path` shape without `use`,
+  or a `node:widget` shape in user code with no open widget. A second shape class with a
+  type string that is already taken warns and replaces the first class ([#153]).
 - The elements, their properties and their shapes raise `ValidationError` (type
   `extra_forbidden`) for a key that they do not have, at construction. 2.x ignored the
   key, so a typo such as `Node(hieght=5)` did nothing. Assignment does not change. For
@@ -545,6 +545,14 @@ removed names][migration-removed-names] lists every name that raises
   falls from 3.3 s to 0.4 s. A cycle in the hierarchy still raises a `NetworkXError`,
   which now names the cycle. It raises also if no edge joins two different nodes, where
   the loader dropped the nodes of the cycle ([#160])
+- `NXLoader` raises a `NetworkXError` that says the hierarchy must be directed, for an
+  undirected hierarchy such as an `nx.Graph`. It raised
+  `NetworkXNoCycle: No cycle found.`, which did not name the problem ([#160])
+- Only ELK JSON loads a `node:widget` shape with no open widget for its `use` as a
+  `NodeShape`, with a warning. Such a dictionary in user code, for example
+  `NodeProperties(shape={"type": "node:widget", "use": "x"})`, raises `ValidationError`,
+  as `Widget(use="x")` does. Before, it loaded as a `NodeShape` and warned, as ELK JSON
+  does ([#153])
 
 ### Development
 
@@ -654,6 +662,8 @@ removed names][migration-removed-names] lists every name that raises
 - Preserve the normal labextension in `src/_d` during the coverage build
   (`build-js-ext-cov`), which emptied it and left `pixi run build` with an unloadable
   extension (`_build.load: "static"`)
+- Test that the browser text sizer adds its listener for font loads once for each
+  `FontFaceSet`, also with two sizer models that each run twice ([#161])
 
 ### Documentation
 

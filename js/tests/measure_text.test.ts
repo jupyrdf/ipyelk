@@ -165,6 +165,21 @@ describe('ELKTextSizerModel.reuse_sizes', () => {
     expect(again).toMatchObject({ width: 25, height: 10 });
   });
 
+  it('listens for font loads once, however many sizers and runs', () => {
+    const fonts = new EventTarget();
+    const listen = vi.spyOn(fonts, 'addEventListener');
+    vi.stubGlobal('document', { documentElement: {}, fonts });
+    vi.stubGlobal('window', {
+      getComputedStyle: () => ({ getPropertyValue: () => '' }),
+    });
+    const models = [0, 1].map(() => sizer({ namespaced_css: '', _dom_classes: [] }));
+    for (const model of models) {
+      model.reuse_sizes([label('a')]);
+      model.reuse_sizes([label('a')]);
+    }
+    expect(listen).toHaveBeenCalledOnce();
+  });
+
   it('measures again after the font of the theme changes', () => {
     let fontSize = '13px';
     vi.stubGlobal('document', { documentElement: {} });
