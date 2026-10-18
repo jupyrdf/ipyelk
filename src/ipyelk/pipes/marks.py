@@ -16,7 +16,7 @@ from ..elements import (
     Registry,
     elk_serialization,
 )
-from ..exceptions import RemovedAPI
+from ..exceptions import RemovedAPI, check_removed
 
 #: the warning that reading or writing ``MarkIndex.context`` emits through 3.x
 CONTEXT_DEPRECATED = (
@@ -148,6 +148,10 @@ class MarkElementWidget(W.Widget):
     #: the synced trait names (``Widget.keys``), typed for mypy
     keys: list[str]
 
+    def __init__(self, **kwargs) -> None:
+        check_removed(type(self), kwargs)
+        super().__init__(**kwargs)
+
     @T.default("index")
     def _default_index(self) -> MarkIndex:
         return MarkIndex() if self._index_of is None else self._index_of.index
@@ -155,11 +159,11 @@ class MarkElementWidget(W.Widget):
     def share_index(self, mark: MarkElementWidget) -> None:
         """Use the index of ``mark``, without building one to throw away.
 
-        ``Pipeline`` calls this for each stage outlet. If neither mark has an
-        index yet, the first read of ``index`` takes the one of ``mark``.
+        ``Pipeline`` calls this for each stage outlet. If this mark has no
+        index yet, its first read of ``index`` takes the one of ``mark``.
         """
         self._index_of = mark
-        if "index" in self._trait_values or "index" in mark._trait_values:
+        if "index" in self._trait_values:
             self.index = mark.index
 
     def sync_value(self) -> MarkElementWidget:

@@ -9,8 +9,8 @@ import pytest
 
 from ipyelk import Diagram
 from ipyelk.elements import Label, Node
-from ipyelk.exceptions import DeprecatedAPIError
-from ipyelk.pipes import MarkElementWidget, MarkIndex
+from ipyelk.exceptions import DeprecatedAPIError, NotUniqueError
+from ipyelk.pipes import BrowserTextSizer, MarkElementWidget, MarkIndex
 from ipyelk.pipes import flows as F
 from ipyelk.pipes.util import iter_pipes
 
@@ -80,10 +80,22 @@ async def test_every_stage_shares_the_one_index_of_the_source(built) -> None:
     diagram.close()
 
 
+def answer_for_the_new_tree(diagram: Diagram) -> None:
+    """The browser answer of the text sizer for the new tree lands mid-flight."""
+    sizer = next(p for p in iter_pipes(diagram.pipe) if isinstance(p, BrowserTextSizer))
+    wire = diagram.source.value.model_dump(mode="json", exclude_none=True)
+    sizer.outlet.set_state({"value": wire})
+    sizer.outlet.persist()
+
+
 @pytest.mark.asyncio
 @pytest.mark.usefixtures("browser")
 async def test_dropping_the_source_elements_rebuilds_the_index_for_a_new_tree() -> None:
-    """A collapse tool swaps the source tree, then drops the elements (#237)."""
+    """A collapse tool swaps the source tree, then drops the elements (#237).
+
+    A browser answer for the new tree can then reach ``persist`` before any
+    pipe rebuilds the index: ``persist`` must index the new tree, not merge it.
+    """
     diagram = Diagram(source=MarkElementWidget(value=user_graph()[0]))
     await settle(diagram)
     source = diagram.source
@@ -94,6 +106,11 @@ async def test_dropping_the_source_elements_rebuilds_the_index_for_a_new_tree() 
     source.value = Node(id="root2", children=[leaf])
     source.index.elements = None
     assert all(p.outlet.index.elements is None for p in iter_pipes(diagram.pipe))
+    answer_for_the_new_tree(diagram)
+    assert "x" in index.elements
+    assert "a" not in index.elements
+    assert index.root.id == "root2"
+
     source.record(F.New)
     await diagram.refresh()
 
@@ -108,11 +125,27 @@ async def test_dropping_the_source_elements_rebuilds_the_index_for_a_new_tree() 
     diagram.close()
 
 
+@pytest.mark.asyncio
+@pytest.mark.usefixtures("browser")
+async def test_a_new_tree_merged_into_the_old_index_has_two_roots() -> None:
+    """Without dropping the elements, ``persist`` merges the new tree (#237)."""
+    diagram = Diagram(source=MarkElementWidget(value=user_graph()[0]))
+    await settle(diagram)
+    diagram.source.value = Node(id="root2", children=[Node(id="x")])
+    answer_for_the_new_tree(diagram)
+    with pytest.raises(NotUniqueError, match="2 roots"):
+        # not `index.root`: it caches the root per `elements`, which a merge keeps
+        diagram.source.index.elements.root()
+    diagram.close()
+
+
 def test_the_widget_names_of_an_index_and_a_mark_raise_their_removed_error() -> None:
     mark = MarkElementWidget()
     for owner, name in [(mark.index, "comm"), (mark.index, "close"), (mark, "layout")]:
         with pytest.raises(DeprecatedAPIError, match=r"ipyelk 3\.0"):
             getattr(owner, name)
+    with pytest.raises(DeprecatedAPIError, match="has no layout"):
+        MarkElementWidget(layout=None)
     assert mark.get_state()["_model_name"] == "WidgetModel"
     assert mark.get_state()["_model_module"] == "@jupyter-widgets/base"
     mark.close()

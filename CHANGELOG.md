@@ -294,9 +294,9 @@
   on first read, so one `Diagram()` builds no index that it throws away.
   `MarkElementWidget` is a `Widget`, not a `DOMWidget`, because no view displays it.
   Thus, it has no `layout`, and its browser model is a `WidgetModel`. One `Diagram()`
-  opens 52 widgets, not 76. These uses break: a `MarkIndex` used as a widget (`.comm`,
-  `close()`, `display()` or `widget_serialization`), browser code that reads
-  `mark.get('index')`, and code that reads `layout` of a `MarkElementWidget`.
+  opens 52 widgets, not the 78 of 2.1.1. These uses break: a `MarkIndex` used as a
+  widget (`.comm`, `close()`, `display()` or `widget_serialization`), browser code that
+  reads `mark.get('index')`, and code that reads `layout` of a `MarkElementWidget`.
   `MarkIndex.comm`, `MarkIndex.close` and `MarkElementWidget.layout` raise
   `DeprecatedAPIError` throughout 3.x. The index stays shared:
   `source.index.elements = None` makes the next run rebuild it, as in 2.x ([#237]).

@@ -112,7 +112,7 @@ that tells you what to use instead.
 | `ipyelk.elements.Mark`, `ipyelk.elements.MarkFactory`                                               | `DeprecatedImportError` | {ref}`migration-mark-factory`     |
 | `ipyelk.elements.mark_factory`                                                                      | `DeprecatedImportError` | {ref}`migration-mark-factory`     |
 | `MarkIndex.comm`, `MarkIndex.close`                                                                 | `DeprecatedAPIError`    | {ref}`migration-markindex-widget` |
-| `MarkElementWidget.layout`                                                                          | `DeprecatedAPIError`    | {ref}`migration-markindex-widget` |
+| `MarkElementWidget.layout`, `MarkElementWidget(layout=...)`                                         | `DeprecatedAPIError`    | {ref}`migration-markindex-widget` |
 
 (migration-deprecated-names)=
 
@@ -1086,7 +1086,8 @@ In 3.0, a `MarkIndex` is a plain `traitlets.HasTraits`, not a widget. The `MarkI
 lives only in the kernel, so it opens no comm, and `MarkElementWidget.index` is never
 sent to the browser. A `MarkElementWidget` is a `Widget`, not a `DOMWidget`, because no
 view displays it. Thus, a `MarkElementWidget` has no `layout`, and its browser model is
-a `WidgetModel`. One `Diagram()` opens 52 widgets in 3.0. In 2.x, it opened 76 widgets.
+a `WidgetModel`. One `Diagram()` opens 52 widgets in 3.0. In 2.1.1, it opened 78
+widgets.
 
 Every stage of a pipe shares the `MarkIndex` of the source, as in 2.x. The pipe builds
 the `MarkIndex` when a stage first reads it. When you replace the tree of the source,
@@ -1100,8 +1101,9 @@ This change affects these uses:
 - browser code that reads `mark.get('index')`
 - code that reads `layout` of a `MarkElementWidget`
 
-`MarkIndex.comm`, `MarkIndex.close` and `MarkElementWidget.layout` raise
-`DeprecatedAPIError` throughout 3.x. The change is in [#237].
+`MarkIndex.comm`, `MarkIndex.close`, `MarkElementWidget.layout` and
+`MarkElementWidget(layout=...)` raise `DeprecatedAPIError` throughout 3.x. The change is
+in [#237].
 
 ```python
 # both versions
