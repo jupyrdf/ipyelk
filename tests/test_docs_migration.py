@@ -230,8 +230,9 @@ def _run(src: str) -> tuple[list[str], bool]:
         result = eval(code, {"__name__": "__main__"})  # ruff: ignore[suspicious-eval-usage]
         if inspect.iscoroutine(result):
             await result
-        # let the scheduled runs go on until they wait for the browser, which never
-        # answers here: the deepest block needs 2 turns of the event loop
+        # every block awaits its own work, so these turns matter only for an error in
+        # a run that nobody awaits: each turn takes it to its next await, and 10 turns
+        # cover about 10 awaits
         for _ in range(10):
             await asyncio.sleep(0)
 
