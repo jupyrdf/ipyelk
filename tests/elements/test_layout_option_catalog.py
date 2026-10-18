@@ -118,3 +118,30 @@ def test_draw2d_layout_is_a_tombstone() -> None:
             Draw2DLayout,
         )
     assert not hasattr(layout_options, "NoSuchOption")
+
+
+def test_model_keeps_only_the_tags() -> None:
+    """``model`` holds the ``applies_to`` tags; its 2.x data classes are tombstones."""
+    from ipyelk.elements.layout_options import model
+    from ipyelk.exceptions import DeprecatedImportError
+    from ipyelk.util import strip_none
+
+    assert all(
+        issubclass(tag, model.ElkGraphElement)
+        for tag in TARGETS
+        if isinstance(tag, type)
+    )
+    with pytest.raises(DeprecatedImportError, match="nothing replaces it"):
+        from ipyelk.elements.layout_options.model import (  # ruff: ignore[unused-import]
+            ElkPoint,
+        )
+    with pytest.raises(
+        DeprecatedImportError, match=r"Import strip_none from ipyelk\.util"
+    ):
+        _ = model.strip_none
+    with pytest.raises(AttributeError, match="no attribute 'NoSuchName'"):
+        _ = model.NoSuchName
+    assert strip_none({"a": None, "b": [], "c": {"d": None}, "e": 0}) == {
+        "c": {},
+        "e": 0,
+    }

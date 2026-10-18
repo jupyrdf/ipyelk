@@ -103,6 +103,22 @@ that tells you what to use instead.
 | `ipyelk.tools.contol_overlay`                                                                       | `DeprecatedImportError` | {ref}`migration-control-module`   |
 | `ipyelk.elements.layout_options.Draw2DLayout`, `ipyelk.elements.layout_options.layout.Draw2DLayout` | `DeprecatedImportError` | {ref}`migration-draw2d`           |
 | `ipyelk.pipes.mappings`                                                                             | `DeprecatedImportError` | {ref}`migration-mappings`         |
+| `ipyelk.elements.layout_options.model.Elk`, `ipyelk.elements.layout_options.model.ElkProperties`    | `DeprecatedImportError` | {ref}`migration-model-tags`       |
+| `ipyelk.elements.layout_options.model.ELKConstructorArguments`                                      | `DeprecatedImportError` | {ref}`migration-model-tags`       |
+| `ipyelk.elements.layout_options.model.ELKLayoutArguments`                                           | `DeprecatedImportError` | {ref}`migration-model-tags`       |
+| `ipyelk.elements.layout_options.model.ElkPoint`, `ipyelk.elements.layout_options.model.ElkShape`    | `DeprecatedImportError` | {ref}`migration-model-tags`       |
+| `ipyelk.elements.layout_options.model.ElkEdgeSection`                                               | `DeprecatedImportError` | {ref}`migration-model-tags`       |
+| `ipyelk.elements.layout_options.model.ElkExtendedEdge`                                              | `DeprecatedImportError` | {ref}`migration-model-tags`       |
+| `ipyelk.elements.layout_options.model.ElkPrimitiveEdge`                                             | `DeprecatedImportError` | {ref}`migration-model-tags`       |
+| `ipyelk.elements.layout_options.model.ElkSerializable`                                              | `DeprecatedImportError` | {ref}`migration-model-tags`       |
+| `ipyelk.elements.layout_options.model.ElkRoot`                                                      | `DeprecatedImportError` | {ref}`migration-model-tags`       |
+| `ipyelk.elements.layout_options.model.ElkNullElement`                                               | `DeprecatedImportError` | {ref}`migration-model-tags`       |
+| `ipyelk.elements.layout_options.model.from_bool`, `ipyelk.elements.layout_options.model.from_dict`  | `DeprecatedImportError` | {ref}`migration-model-tags`       |
+| `ipyelk.elements.layout_options.model.from_float`, `ipyelk.elements.layout_options.model.from_int`  | `DeprecatedImportError` | {ref}`migration-model-tags`       |
+| `ipyelk.elements.layout_options.model.from_list`, `ipyelk.elements.layout_options.model.from_none`  | `DeprecatedImportError` | {ref}`migration-model-tags`       |
+| `ipyelk.elements.layout_options.model.from_str`, `ipyelk.elements.layout_options.model.from_union`  | `DeprecatedImportError` | {ref}`migration-model-tags`       |
+| `ipyelk.elements.layout_options.model.to_class`, `ipyelk.elements.layout_options.model.to_float`    | `DeprecatedImportError` | {ref}`migration-model-tags`       |
+| `ipyelk.elements.layout_options.model.strip_none`                                                   | `DeprecatedImportError` | {ref}`migration-model-tags`       |
 
 ## Tools
 
@@ -1481,37 +1497,76 @@ index = ElementIndex.from_els(Node(id="root", children=[Node(id="a"), Node(id="b
 print(index.root().id)
 ```
 
-### Compare `ElkLabel` objects field by field
+(migration-model-tags)=
 
-3.0 removes `ElkLabel.__eq__` and `ElkLabel.__hash__`. They served a cache of text sizes
-that is gone. `ElkLabel` now compares field by field, like the other classes in
-`ipyelk.elements.layout_options.model`. You cannot put an `ElkLabel` in a `set`.
+### Do not use the data classes of `layout_options.model`
 
-This change affects code that puts `ElkLabel` objects in a `set` or uses them as `dict`
-keys. The change is in [#206].
+In 2.x, the module `ipyelk.elements.layout_options.model` had ELK JSON data classes with
+`from_dict` and `to_dict` converters. No code in `ipyelk` used them. In 3.0, the module
+has only five tag classes: `ElkGraphElement`, `ElkNode`, `ElkPort`, `ElkEdge` and
+`ElkLabel`. A tag class names the kind of element that a layout option applies to, in
+`LayoutOptionWidget.applies_to`. A tag class has no fields and no methods.
 
-```python
-# both versions
-from ipyelk.elements.layout_options.model import ElkLabel
+An import of a removed name raises `DeprecatedImportError`. The table in
+{ref}`migration-removed-names` lists the names. The function `strip_none` moved to
+`ipyelk.util.strip_none`. Nothing replaces the other names. To make a graph, use the
+classes `Node`, `Port`, `Edge` and `Label` of `ipyelk.elements`. To load ELK JSON, use
+`ipyelk.elements.convert_elkjson` or `ipyelk.elements.from_wire`.
 
-label = ElkLabel(id="l1", text="hello")
-```
+3.0 also removes `ElkLabel.__eq__` and `ElkLabel.__hash__`. They served a cache of text
+sizes that is gone.
+
+This change affects code that imports a removed name, or that makes a tag class with
+fields. The changes are in [#206] and [#214].
 
 ```python
 # 2.x
-print(hash(label))
+from ipyelk.elements.layout_options.model import ElkPoint
 ```
 
 The 2.x code raises this error on 3.0:
 
 ```text
-TypeError: unhashable type: 'ElkLabel'
+DeprecatedImportError: ipyelk.elements.layout_options.model.ElkPoint was removed in ipyelk 3.0: it was a generated ELK JSON data class that nothing in ipyelk used, and nothing replaces it. Build graphs from ipyelk.elements.Node, Port, Edge and Label, and load ELK JSON with ipyelk.elements.convert_elkjson or from_wire. No alias: this error is raised throughout 3.x.
 ```
 
 ```python
-# 3.0: keep labels in a list or index them by id
-labels = {label.id: label}
-print(label == ElkLabel(id="l1", text="hello"))
+# 2.x
+from ipyelk.elements.layout_options.model import ElkLabel
+
+label = ElkLabel(id="l1", text="hello")
+```
+
+The 2.x code raises this error on 3.0:
+
+```text
+TypeError: ElkLabel() takes no arguments
+```
+
+```python
+# 3.0: make the label from the class of ipyelk.elements
+from ipyelk.elements import Label
+
+label = Label(id="l1", text="hello")
+print(label == Label(id="l1", text="hello"))
+```
+
+```python
+# 2.x
+from ipyelk.elements.layout_options.model import strip_none
+```
+
+The 2.x code raises this error on 3.0:
+
+```text
+DeprecatedImportError: ipyelk.elements.layout_options.model.strip_none was removed in ipyelk 3.0: it moved. Import strip_none from ipyelk.util. No alias: this error is raised throughout 3.x.
+```
+
+```python
+# 3.0
+from ipyelk.util import strip_none
+
+print(strip_none({"id": "a", "labels": [], "width": None}))
 ```
 
 (migration-wrapping-horizontal)=
@@ -1723,6 +1778,7 @@ is gone. Thus, the 2.x imports fail.
 [#192]: https://github.com/jupyrdf/ipyelk/pull/192
 [#202]: https://github.com/jupyrdf/ipyelk/pull/202
 [#206]: https://github.com/jupyrdf/ipyelk/pull/206
+[#214]: https://github.com/jupyrdf/ipyelk/issues/214
 [#223]: https://github.com/jupyrdf/ipyelk/pull/223
 [#226]: https://github.com/jupyrdf/ipyelk/pull/226
 [#233]: https://github.com/jupyrdf/ipyelk/pull/233

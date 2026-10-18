@@ -156,11 +156,18 @@
   ([#217](https://github.com/jupyrdf/ipyelk/issues/217)).
 - Remove code that nothing used: the `ipyelk.pipes.mappings` module, the
   `GraphWrappingStrategy.horizontal` trait, and `ElkLabel.__eq__`/`__hash__`, which
-  served a text sizer cache that is gone. `ElkLabel` now compares field by field like
-  the other `layout_options.model` classes and, like them, cannot be put in a `set`.
-  Importing `ipyelk.pipes.mappings` raises `DeprecatedImportError`: nothing replaces its
-  `Edge` and `Port` classes or its `NodeMap`, `EdgeMap` and `PortMap` aliases
+  served a text sizer cache that is gone. Importing `ipyelk.pipes.mappings` raises
+  `DeprecatedImportError`: nothing replaces its `Edge` and `Port` classes or its
+  `NodeMap`, `EdgeMap` and `PortMap` aliases
   ([#217](https://github.com/jupyrdf/ipyelk/issues/217)).
+- `ipyelk.elements.layout_options.model` keeps only the tag classes that
+  `LayoutOptionWidget.applies_to` uses: `ElkGraphElement`, `ElkNode`, `ElkPort`,
+  `ElkEdge` and `ElkLabel`. They have no fields, so `ElkLabel(id="l1", text="hello")`
+  raises `TypeError`. The generated ELK JSON data classes, for example `ElkPoint` and
+  `ElkShape`, their converter functions, for example `from_dict`, and the `ElkRoot` and
+  `ElkNullElement` sentinels had no users. Their imports raise `DeprecatedImportError`,
+  and nothing replaces them. `strip_none` moved to `ipyelk.util.strip_none`. Its old
+  import raises `DeprecatedImportError` that names the new place ([#214]).
 - Layout options are checked against the options that the bundled `elkjs` knows, and the
   option classes that ELK ignored without an error now take effect, so **layouts can
   change** ([#29]):
@@ -723,6 +730,7 @@ removed names][migration-removed-names] lists every name that raises
 [#200]: https://github.com/jupyrdf/ipyelk/issues/200
 [#201]: https://github.com/jupyrdf/ipyelk/issues/201
 [#205]: https://github.com/jupyrdf/ipyelk/issues/205
+[#214]: https://github.com/jupyrdf/ipyelk/issues/214
 [#215]: https://github.com/jupyrdf/ipyelk/issues/215
 [#216]: https://github.com/jupyrdf/ipyelk/issues/216
 [#217]: https://github.com/jupyrdf/ipyelk/issues/217
