@@ -188,8 +188,9 @@ class Pipeline(SyncedOutletPipe):
         """Run the dirty pipes for the pending flow.
 
         The flow is taken from the inlet at the start (``MarkElementWidget.take``)
-        and re-recorded unless the run succeeds. A source should therefore feed
-        one pipeline: a second would find the flow already taken.
+        and re-recorded unless the run succeeds. A second pipeline on the same
+        source would find the flow already taken, so a ``Diagram`` refuses a
+        source that feeds another open diagram.
 
         ``flow`` is passed by a parent pipeline to a nested one, since the
         parent already took it.

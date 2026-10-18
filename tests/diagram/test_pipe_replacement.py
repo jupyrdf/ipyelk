@@ -287,17 +287,16 @@ async def test_a_replaced_user_pipe_is_closed_but_not_what_it_was_given() -> Non
 
 
 @pytest.mark.asyncio
-async def test_replacing_one_diagrams_pipe_leaves_a_sharing_diagram_alone() -> None:
-    source = make_source()
-    first = Diagram(source=source)
-    second = Diagram(source=source)
+async def test_replacing_one_diagrams_pipe_leaves_another_diagram_alone() -> None:
+    first = Diagram(source=make_source())
+    second = Diagram(source=make_source())
     await refresh(second)
 
     await replace(first, DefaultFlow())
     second.source.record("new")
     await refresh(second)
 
-    assert is_open(source)
+    assert is_open(second.source)
     assert is_open(second.pipe)
     assert second.view.source is second.pipe.outlet
     assert second.pipe.outlet.value is not None

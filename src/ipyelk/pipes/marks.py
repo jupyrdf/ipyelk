@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import warnings
+import weakref
 
 import ipywidgets as W
 import traitlets as T
@@ -145,12 +146,19 @@ class MarkElementWidget(W.Widget):
     _browser_value: Node | None = None
     #: the mark whose index this one shares, set by ``share_index``
     _index_of: MarkElementWidget | None = None
+    #: the diagram this mark is the ``source`` of (see ``Diagram.source``)
+    _diagram: weakref.ref | None = None
     #: the synced trait names (``Widget.keys``), typed for mypy
     keys: list[str]
 
     def __init__(self, **kwargs) -> None:
         check_removed(type(self), kwargs)
         super().__init__(**kwargs)
+
+    def _owner(self) -> W.Widget | None:
+        """The open diagram this mark is the ``source`` of, if any."""
+        owner = self._diagram() if self._diagram else None
+        return owner if owner is not None and owner.comm is not None else None
 
     @T.default("index")
     def _default_index(self) -> MarkIndex:

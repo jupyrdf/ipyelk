@@ -1040,6 +1040,99 @@ if fit.closed:
 fit.ui.click()
 ```
 
+(migration-one-source)=
+
+### Give each open diagram its own source
+
+A source is the `MarkElementWidget` that holds the elements of a diagram,
+`Diagram.source`. In 3.0, a source feeds one open diagram. `Diagram(source=...)` and an
+assignment to `Diagram.source` raise `traitlets.TraitError` when another open `Diagram`
+has that source.
+
+In 2.x, two diagrams could share a source, but they did not work together:
+
+- Each run of a diagram took the pending changes from the source. Thus, a recorded
+  change did not reach both diagrams.
+- Each layout wrote its positions and sizes onto the same elements. Thus, the last
+  layout won, also in the other diagram.
+
+A closed diagram releases its source. A diagram also releases its old source when it
+gets a new one. To show one diagram in two places, display the same `Diagram` twice.
+
+This change affects code that gives the source of an open diagram to a second diagram.
+The change is in [#178].
+
+```python
+# both versions
+from ipyelk import Diagram, from_element
+from ipyelk.elements import Node
+
+first = from_element(Node(id="root"))
+```
+
+```python
+# 2.x
+second = Diagram(source=first.source)
+```
+
+The 2.x code raises this error on 3.0:
+
+```text
+TraitError: MarkElementWidget feeds another open diagram; close that diagram or give this one its own MarkElementWidget. To show one diagram in two places, display the same Diagram twice
+```
+
+```python
+# 3.0: give the second diagram its own source
+second = from_element(Node(id="root"))
+```
+
+```python
+# 3.0: or close the first diagram, and give its source to the second diagram
+first.close()
+second = Diagram(source=first.source)
+```
+
+(migration-fixed-view)=
+
+### Give the viewer to the diagram when you make it
+
+In 3.0, `Diagram.view` is fixed after construction. Give the viewer to the diagram with
+`Diagram(view=...)`. An assignment of a different viewer raises `traitlets.TraitError`.
+An assignment of the same viewer does nothing.
+
+The tools of a diagram stay bound to the viewer that the diagram started with. In 2.x,
+an assignment of a new viewer moved the output of the pipe to the new viewer. But the
+selection, the painter, the Fit and Center buttons and `ToggleCollapsedTool` still acted
+on the old viewer, and the old viewer stayed open.
+
+This change affects code that assigns `Diagram.view`. The change is in [#208].
+
+```python
+# both versions
+from ipyelk import Diagram, from_element
+from ipyelk.diagram import SprottyViewer
+from ipyelk.elements import Node
+
+diagram = from_element(Node(id="root"))
+```
+
+```python
+# 2.x
+diagram.view = SprottyViewer()
+```
+
+The 2.x code raises this error on 3.0:
+
+```text
+TraitError: Diagram.view cannot be replaced, because the tools are bound to it; close this Diagram, then build a new Diagram(source=..., view=...)
+```
+
+```python
+# 3.0: close the diagram, and give its source and the new viewer to a new diagram
+diagram.close()
+diagram = Diagram(source=diagram.source, view=SprottyViewer())
+```
+
 (migration-value-sync)=
 
 ### Call `sync_value()` for browser code that reads a mark
@@ -2116,8 +2209,10 @@ is gone. Thus, the 2.x imports fail.
 [#157]: https://github.com/jupyrdf/ipyelk/pull/157
 [#160]: https://github.com/jupyrdf/ipyelk/issues/160
 [#161]: https://github.com/jupyrdf/ipyelk/issues/161
+[#178]: https://github.com/jupyrdf/ipyelk/issues/178
 [#192]: https://github.com/jupyrdf/ipyelk/pull/192
 [#202]: https://github.com/jupyrdf/ipyelk/pull/202
+[#208]: https://github.com/jupyrdf/ipyelk/issues/208
 [#206]: https://github.com/jupyrdf/ipyelk/pull/206
 [#223]: https://github.com/jupyrdf/ipyelk/pull/223
 [#226]: https://github.com/jupyrdf/ipyelk/pull/226

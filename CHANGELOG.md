@@ -300,6 +300,21 @@
   `MarkIndex.comm`, `MarkIndex.close` and `MarkElementWidget.layout` raise
   `DeprecatedAPIError` throughout 3.x. The index stays shared:
   `source.index.elements = None` makes the next run rebuild it, as in 2.x ([#237]).
+- A source feeds one open diagram. `Diagram(source=...)` and an assignment to
+  `Diagram.source` raise `TraitError` when the `MarkElementWidget` is the source of
+  another open `Diagram`. The message names the fix: close the other diagram, or give
+  this one its own `MarkElementWidget`. In 2.x, both diagrams took the pending changes
+  from one source, so a recorded change did not reach both. Both diagrams also wrote
+  their layout onto the same elements, so the last layout won. A closed diagram releases
+  its source, also when it closes during a run. A diagram releases its old source when
+  it gets a new one. To show one diagram in two places, display the same `Diagram` twice
+  ([#178]).
+- `Diagram.view` is fixed after construction. Pass the viewer as `Diagram(view=viewer)`.
+  An assignment of a different viewer raises `TraitError`. The diagram's tools stay
+  bound to the viewer that the diagram started with. In 2.x, the assignment moved the
+  pipe's output to the new viewer, but the selection, the painter, the Fit and Center
+  buttons and `ToggleCollapsedTool` still acted on the old viewer. The old viewer also
+  stayed open. An assignment of the same viewer does nothing ([#208]).
 
 #### Migration
 
@@ -429,8 +444,8 @@ removed names][migration-removed-names] lists every name that raises
   pipe ([#180])
   - A pipe belongs to one diagram, with every pipe nested in it. Assigning a pipe that
     nests a pipe another open diagram owns raises `TraitError`: both diagrams used to
-    share its outlet, so one silently showed the other's graph. Two diagrams sharing a
-    _source_ is a separate question ([#178])
+    share its outlet, so one silently showed the other's graph. A _source_ feeds one
+    open diagram too ([#178])
   - A replaced pipe is closed, so assigning a pipe that nests a closed pipe, or any part
     of the current pipe (wrapping it, or reusing its stages), raises `TraitError` too:
     build a new pipe instead
@@ -817,6 +832,7 @@ removed names][migration-removed-names] lists every name that raises
 [#200]: https://github.com/jupyrdf/ipyelk/issues/200
 [#201]: https://github.com/jupyrdf/ipyelk/issues/201
 [#205]: https://github.com/jupyrdf/ipyelk/issues/205
+[#208]: https://github.com/jupyrdf/ipyelk/issues/208
 [#215]: https://github.com/jupyrdf/ipyelk/issues/215
 [#216]: https://github.com/jupyrdf/ipyelk/issues/216
 [#217]: https://github.com/jupyrdf/ipyelk/issues/217
