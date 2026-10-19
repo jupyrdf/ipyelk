@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING
 import traitlets as T
 
 from ...diagram import Diagram
-from ...elements import HierarchicalIndex, Label, Node, Registry, index
+from ...elements import Document, HierarchicalIndex, Label, Node
 from ...pipes import MarkElementWidget
 from ..loader import Loader
 from .nxutils import (
@@ -45,39 +45,34 @@ class NXLoader(Loader["nx.MultiDiGraph"]):
                 el = from_nx_node(n, hierarchy)
                 nx_node_map[el] = n
 
-        context = Registry()
-        with context:
-            el_map = HierarchicalIndex.from_els(*nx_node_map.keys())
+        el_map = HierarchicalIndex.from_els(*nx_node_map.keys())
 
-            # nest elements based on hierarchical edges
-            for u, v in hierarchy.edges():
-                parent = u if isinstance(u, Node) else el_map.get(u)
-                child = v if isinstance(v, Node) else el_map.get(v)
-                if not isinstance(parent, Node) or not isinstance(child, Node):
-                    raise TypeError("Hierarchy edges must connect nodes")
-                parent.add_child(child)
+        # nest elements based on hierarchical edges
+        for u, v in hierarchy.edges():
+            parent = u if isinstance(u, Node) else el_map.get(u)
+            child = v if isinstance(v, Node) else el_map.get(v)
+            if not isinstance(parent, Node) or not isinstance(child, Node):
+                raise TypeError("Hierarchy edges must connect nodes")
+            parent.add_child(child)
 
-            # add element edges
-            for u, v, d in graph.edges(data=True):
-                edge = process_endpoints(u, v, d, el_map)
-                owner = get_owner(edge, hierarchy, el_map, nx_node_map)
-                owner.edges.append(edge)
+        # add element edges
+        for u, v, d in graph.edges(data=True):
+            edge = process_endpoints(u, v, d, el_map)
+            owner = get_owner(edge, hierarchy, el_map, nx_node_map)
+            owner.edges.append(edge)
 
-            root: Node = get_root(hierarchy)
-            if not isinstance(root, Node):
-                root = el_map.get(root)
+        root: Node = get_root(hierarchy)
+        if not isinstance(root, Node):
+            root = el_map.get(root)
 
-            if root.id is None and self.root_id is not None:
-                root.id = self.root_id
+        if root.id is None and self.root_id is not None:
+            root.id = self.root_id
 
-            for el in index.iter_elements(root):
-                el.id = el.get_id()
+        Document(root)  # pins the id that each element serializes with
 
-            for el, n in nx_node_map.items():
-                if not el.labels and el.id != root.id:
-                    label_id = el.get_id()
-                    if label_id is not None:
-                        el.labels.append(Label(text=label_id))
+        for el, n in nx_node_map.items():
+            if not el.labels and el.id != root.id:
+                el.labels.append(Label(text=el.wire_id()))
 
         return MarkElementWidget(
             value=self.apply_layout_defaults(root),

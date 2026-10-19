@@ -147,7 +147,8 @@ a `node:round` shape loads as an `Ellipse` with the `width` and `height` of the 
 `node:widget` shape loads as a `Widget` with the widget that has the `model_id` in
 `use`. If no open widget has that `model_id`, the shape loads as a `NodeShape` with the
 same JSON, and ipyelk warns. This occurs when the widget closed, or when the JSON comes
-from another kernel.
+from another kernel. Only ELK JSON loads in this way: a `node:widget` dictionary in your
+own code with no open widget raises a `ValidationError`.
 
 If a shape class of your own sets a new type string, the class adds itself to
 `BaseShape.json_classes` when Python defines it. If another class already has that type

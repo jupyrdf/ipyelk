@@ -104,6 +104,12 @@ def process_hierarchy(graph, hierarchy: nx.DiGraph | None) -> nx.DiGraph:
     if hierarchy is None:
         hierarchy = nx.DiGraph()
     else:
+        if not hierarchy.is_directed():
+            name = type(hierarchy).__name__
+            raise nx.NetworkXError(
+                f"The hierarchy is an undirected {name}: it needs a directed graph"
+                " with an edge from each parent to its child"
+            )
         # copy graph to avoid mutation
         hierarchy = hierarchy.copy(as_view=False)
         # `tree_lca` and the nesting need a tree: a cycle would drop its nodes
@@ -159,7 +165,7 @@ def as_in_hierarchy(
         return nx_node_map[parent]
 
     if isinstance(parent, HierarchicalElement):
-        node_id = parent.get_id()
+        node_id = parent.wire_id()
         if node_id in hierarchy:
             return node_id
     else:

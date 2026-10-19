@@ -157,9 +157,9 @@ export class ELKViewerView extends DOMWidgetView {
    * unset until initialization completes because Backbone calls `initialize`
    * from `super()`, and a field initializer would overwrite that source.
    */
-  private connectedSource: DOMWidgetModel | null | undefined;
+  private connectedSource: WidgetModel | null | undefined;
   /** Hover tool whose `change:hovered_id` this view observes. */
-  private connectedHover: DOMWidgetModel | null | undefined;
+  private connectedHover: WidgetModel | null | undefined;
   /** Painter whose `change:styles` this view observes. */
   private connectedPainter: WidgetModel | null | undefined;
   /** Identifies this view in viewport reports and `set_viewport` commands. */

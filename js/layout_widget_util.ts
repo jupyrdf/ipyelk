@@ -14,7 +14,7 @@ export function layoutErrorMessage(error: unknown, gen?: number): TELKErrorMessa
   return message;
 }
 
-/** the subset of `DOMWidgetModel` that {@link answer} writes through */
+/** the subset of `WidgetModel` that {@link answer} writes through */
 export interface IAnswerOutlet {
   set(key: any, val?: any, options?: any): unknown;
   save_changes(): void;

@@ -1,126 +1,18 @@
 # Copyright (c) 2024 ipyelk contributors.
 # Distributed under the terms of the Modified BSD License.
-from __future__ import annotations
+"""Removed in 3.0: ``Mark`` and ``MarkFactory`` served the networkx transformer
+that 2.0 removed, and nothing used them since.
 
-from typing import Any
+This guard exists only to turn a stale import into an actionable error; it
+defines nothing.
+"""
 
-import networkx as nx
-from pydantic import BaseModel, Field, SerializationInfo, model_serializer
+from ..exceptions import DeprecatedImportError
 
-from .elements import BaseElement, Edge, Node
-from .registry import Registry
-
-
-class Mark(BaseModel):
-    """Wrap the given node in another tuple so it can be used multiple times as
-    a networkx node.
-
-    :param node: Incoming Element to wrap
-    :return: tuple that describes this current node and context to be used in a
-    networkx graph.
-    """
-
-    element: BaseElement = Field(...)
-    context: Registry = Field(...)
-    selector: Any | None = Field(None, exclude=True)
-
-    def __hash__(self):
-        return hash((id(self.element), id(self.context)))
-
-    def __eq__(self, other):
-        return hash(self) == hash(other)
-
-    @model_serializer
-    def serialize_mark(self, info: SerializationInfo) -> dict:
-        with self.context:
-            return self.element.model_dump(
-                mode=info.mode,
-                context=info.context,
-                # Forwarding pydantic's own arguments unchanged; the two SDK
-                # annotations disagree (`core_schema.IncExCall` is
-                # `set[int | str] | dict[int | str, ...]`, `BaseModel.model_dump`
-                # takes `set[int] | set[str] | Mapping[int, ...] | Mapping[str, ...]`).
-                include=info.include,  # type: ignore[arg-type]
-                exclude=info.exclude,  # type: ignore[arg-type]
-                by_alias=info.by_alias,
-                exclude_none=info.exclude_none,
-                exclude_unset=info.exclude_unset,
-                exclude_defaults=info.exclude_defaults,
-                exclude_computed_fields=info.exclude_computed_fields,
-                round_trip=info.round_trip,
-            )
-
-    def get_selector(self):
-        if isinstance(self.element, Edge):
-            if self.selector is None:
-                raise ValueError("Edge Selector not set")
-            return self.selector
-        return self
-
-    def set_edge_selector(self, u, v, key):
-        self.selector = (u, v, key)
-
-    def get_id(self):
-        with self.context:
-            return self.element.get_id()
-
-
-class MarkFactory(BaseModel):
-    registry: Registry = Field(default_factory=Registry)
-
-    def _add(
-        self, node: Node, g: nx.Graph, tree: nx.DiGraph, follow_edges: bool
-    ) -> Mark:
-        context = self.registry
-        with context:
-            nx_node = Mark(element=node, context=context)
-            if nx_node not in g:
-                g.add_node(
-                    nx_node,
-                    mark=nx_node,
-                    elkjson=node.model_dump(exclude={"children", "edges", "parent"}),
-                )
-
-            for child in get_children(node):
-                nx_child = self._add(child, g, tree, follow_edges=follow_edges)
-                tree.add_edge(nx_node, nx_child)
-
-            for edge in node.edges:
-                endpts = edge.points()
-                assert endpts[0] is not None
-                assert endpts[1] is not None
-                nx_u, nx_v = map(lambda n: Mark(element=n, context=context), endpts)
-                for nx_pt, pt in zip([nx_u, nx_v], endpts, strict=True):
-                    if nx_pt not in g:
-                        if follow_edges:
-                            self._add(pt, g, tree, follow_edges=follow_edges)
-                        else:
-                            g.add_node(
-                                nx_pt,
-                                mark=nx_pt,
-                                elkjson=pt.model_dump(
-                                    exclude={"children", "edges", "parent"}
-                                ),
-                            )
-
-                assert isinstance(edge, Edge), f"Expected Edge type not {type(edge)}"
-                mark = Mark(element=edge, context=context)
-                key = g.add_edge(
-                    nx_u,
-                    nx_v,
-                    mark=mark,
-                    elkjson=edge.model_dump(),
-                )
-                mark.set_edge_selector(nx_u, nx_v, key)
-            return nx_node
-
-    def __call__(self, *nodes, follow_edges=True):
-        g: nx.MultiDiGraph = nx.MultiDiGraph()
-        tree: nx.DiGraph = nx.DiGraph()
-        for node in nodes:
-            self._add(node, g, tree, follow_edges=follow_edges)
-        return (g, tree)
-
-
-def get_children(node: Node) -> list[Node]:
-    return getattr(node, "children", [])
+raise DeprecatedImportError(
+    "ipyelk.elements.mark_factory was removed in ipyelk 3.0: its Mark and "
+    "MarkFactory classes served the networkx transformer that ipyelk 2.0 removed "
+    "(#90), and nothing used them since. To use one fragment in several places, "
+    "copy it with Node.clone(prefix); to load a networkx graph, use ipyelk.from_nx "
+    "or ipyelk.loaders.NXLoader. No alias: this error is raised throughout 3.x."
+)

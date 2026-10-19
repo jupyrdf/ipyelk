@@ -1,45 +1,36 @@
 # Copyright (c) 2024 ipyelk contributors.
 # Distributed under the terms of the Modified BSD License.
+"""``Mark`` and ``MarkFactory`` are removed in 3.0 with error-only tombstones (#160)."""
 
-from ipyelk.elements import MarkFactory, Node
+import sys
 
+import pytest
 
-def test_simple_factory():
-    """Have factory generate graphs from only a single node"""
-    n1 = Node()
-
-    factory = MarkFactory()
-    g, tree = factory(n1)
-    assert len(g) == 1, "Expecting only one nodes"
-    assert len(g.edges) == 0, "Expect no edges"
-    assert len(tree) == 0, "Expecting no hierarchy"
-    assert len(tree.edges) == 0, "Expecting no hierarchy"
+from ipyelk.exceptions import DeprecatedImportError
 
 
-def test_simple_flat():
-    """Have factory generate graphs from two connected nodes"""
-    n1 = Node()
-    n2 = Node()
-    n1.add_edge(n1, n2)
+@pytest.mark.parametrize("name", ["Mark", "MarkFactory"])
+def test_import_from_the_package_raises(name: str) -> None:
+    with pytest.raises(DeprecatedImportError, match=rf"ipyelk\.elements\.{name} was"):
+        exec(f"from ipyelk.elements import {name}", {})  # ruff: ignore[exec-builtin]
+    import ipyelk.elements
 
-    factory = MarkFactory()
-    g, tree = factory(n1, n2)
-    assert len(g) == 2, "Expecting only two nodes"
-    assert len(g.edges) == 1, "Expect only one edge"
-    assert len(tree) == 0, "Expecting no hierarchy"
-    assert len(tree.edges) == 0, "Expecting no hierarchy"
+    assert "3.x" in ipyelk.elements._REMOVED[name]
+    assert "Node.clone(prefix)" in ipyelk.elements._REMOVED[name]
+    assert name not in ipyelk.elements.__all__
+    assert name not in dir(ipyelk.elements)
 
 
-def test_simple_hierarchy():
-    """Have factory generate graphs from connected parent child"""
-    n1 = Node()
-    n2 = Node()
-    n1.add_edge(n1, n2)
-    n1.add_child(n2, "x")
+def test_import_of_the_module_raises() -> None:
+    sys.modules.pop("ipyelk.elements.mark_factory", None)
+    with pytest.raises(DeprecatedImportError, match=r"ipyelk\.from_nx"):
+        import ipyelk.elements.mark_factory  # ruff: ignore[unused-import]
+    assert "ipyelk.elements.mark_factory" not in sys.modules
 
-    factory = MarkFactory()
-    g, tree = factory(n1)
-    assert len(g) == 2, "Expecting only two nodes"
-    assert len(g.edges) == 1, "Expect only one edge"
-    assert len(tree) == 2, "Expecting two nodes in hierarchy"
-    assert len(tree.edges) == 1, "Expect only one edge"
+
+def test_an_unknown_name_is_a_plain_attribute_error() -> None:
+    import ipyelk.elements
+
+    with pytest.raises(AttributeError) as info:
+        _ = ipyelk.elements.NoSuchName
+    assert not isinstance(info.value, DeprecatedImportError)

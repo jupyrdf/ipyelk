@@ -3,23 +3,19 @@
 from __future__ import annotations
 
 from collections.abc import Iterable, Iterator
-from typing import TYPE_CHECKING
 
 import traitlets as T
 from ipywidgets.widgets.trait_types import TypedTuple
 
 from ..elements import BaseElement
 from ..exceptions import RemovedAPI
-from .tool import Tool
-
-if TYPE_CHECKING:
-    from ..pipes import MarkIndex
+from .tool import ResolvingTool
 
 #: what ``paint``/``unpaint`` accept: one id, one element, or any iterable of them
 Paintable = str | BaseElement | Iterable[str | BaseElement]
 
 
-class Painter(Tool):
+class Painter(ResolvingTool):
     """Temporary, view-only styling: CSS classes the browser adds to rendered
     elements without touching the model.
 
@@ -68,7 +64,7 @@ class Painter(Tool):
 
     def paint(self, ids: Paintable, *css_classes: str) -> None:
         """Add ``css_classes`` to each of ``ids`` (a str is one id; elements are
-        stored as their ``get_id()``), keeping the classes already painted there.
+        stored as their ``wire_id()``), keeping the classes already painted there.
         """
         styles = dict(self.styles)
         for el_id in _ids(ids):
@@ -99,45 +95,13 @@ class Painter(Tool):
         """The painted ids, in painting order."""
         return tuple(self.styles)
 
-    def get_index(self) -> MarkIndex:
-        """The attached pipe's element index, built on first use.
-
-        Raises ``ValueError`` when the painter has no ``tee`` to resolve against.
-        """
-        if self.tee is None:
-            raise ValueError("Tool not attached to a pipe")
-        inlet = self.tee.inlet
-        if inlet.index.elements is None and inlet.value is not None:
-            inlet.build_index()  # the MarkIndex always exists; its elements may not
-        return inlet.index
-
-    def elements(self, *, strict: bool = True) -> Iterator[BaseElement]:
-        """The painted elements, in ``painted_ids`` order.
-
-        :param strict: when True (default) an id the index does not know raises
-            :py:class:`~ipyelk.exceptions.NotFoundError` naming it; when False such
-            ids are skipped (see :meth:`missing_ids` to report them).
-        """
-        index = self.get_index()
-        if strict:
-            yield from map(index.from_id, self.painted_ids)  # NotFoundError names it
-            return
-        missing = set(self.missing_ids())
-        yield from (
-            index.from_id(el_id) for el_id in self.painted_ids if el_id not in missing
-        )
-
-    def missing_ids(self) -> tuple[str, ...]:
-        """The painted ids the index does not know, in ``painted_ids`` order."""
-        known = self.get_index().elements
-        if known is None:  # nothing has been indexed yet (no value on the inlet)
-            return self.painted_ids
-        return tuple(el_id for el_id in self.painted_ids if el_id not in known.elements)
+    def _held_ids(self) -> tuple[str, ...]:
+        return self.painted_ids
 
 
 def _ids(ids: Paintable) -> Iterator[str]:
     """One id per target: a ``str`` is one id (never its characters), an element is
-    its ``get_id()``, anything else is iterated.
+    its ``wire_id()``, anything else is iterated.
     """
     targets: Iterable[str | BaseElement]
     targets = [ids] if isinstance(ids, (str, BaseElement)) else ids
@@ -145,7 +109,4 @@ def _ids(ids: Paintable) -> Iterator[str]:
         if isinstance(target, str):
             yield target
             continue
-        el_id = target.get_id()
-        if el_id is None:  # an element outside any Registry has no id yet
-            raise ValueError(f"{target!r} has no id to paint")
-        yield el_id
+        yield target.wire_id()  # the id that the element keeps when indexed

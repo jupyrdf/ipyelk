@@ -2,27 +2,92 @@
 # Distributed under the terms of the Modified BSD License.
 from __future__ import annotations
 
+import warnings
+
 import ipywidgets as W
 import traitlets as T
 from ipywidgets.widgets.trait_types import TypedTuple
 
 from ..elements import (
     BaseElement,
+    Document,
     ElementIndex,
     Node,
     Registry,
     elk_serialization,
 )
+from ..exceptions import RemovedAPI, check_removed
+
+#: the warning that reading or writing ``MarkIndex.context`` emits through 3.x
+CONTEXT_DEPRECATED = (
+    "MarkIndex.context is deprecated and will be removed in ipyelk 4.0: "
+    "MarkIndex.document (an ipyelk.elements.Document) owns the ids, and "
+    "nothing in ipyelk reads the Registry. Use index.document.resolve(id)."
+)
 
 
-class MarkIndex(W.DOMWidget):
-    elements = T.Instance(ElementIndex, allow_none=True)
-    context = T.Instance(Registry, kw={})
+class MarkIndex(T.HasTraits):
+    """The element index of a pipeline, which its stages and tools share.
+
+    A plain ``HasTraits``, not a widget: it lives only in the kernel, so it
+    opens no comm. ``document`` owns the ids, and ``elements`` is
+    ``document.elements``.
+    ``elements`` and the deprecated ``context`` are properties, not traits:
+    the constructor takes them, but ``observe`` does not see them.
+    """
+
+    document = T.Instance(Document, kw={})
+
+    #: removed names raise :class:`~ipyelk.exceptions.DeprecatedAPIError` through 3.x
+    comm = close = RemovedAPI(
+        "MarkIndex is not a widget in ipyelk 3.0: it lives only in the kernel, so it "
+        "has no comm and nothing to close. Its elements and document work as in 2.x. "
+        "No alias: this error is raised throughout 3.x."
+    )
 
     _root: Node | None = None
+    _root_of: ElementIndex | None = None
+    _context: Registry | None = None
 
-    def to_id(self, element: BaseElement):
-        return element.get_id()
+    def __init__(
+        self,
+        elements: ElementIndex | None = None,
+        context: Registry | None = None,
+        **kwargs,
+    ) -> None:
+        super().__init__(**kwargs)
+        if elements is not None:
+            self.elements = elements
+        if context is not None:
+            warnings.warn(CONTEXT_DEPRECATED, DeprecationWarning, stacklevel=2)
+            self._context = context
+
+    @property
+    def elements(self) -> ElementIndex | None:
+        """The id map of ``document``; ``None`` until something is indexed."""
+        return self.document.elements
+
+    @elements.setter
+    def elements(self, elements: ElementIndex | None) -> None:
+        self.document.elements = elements
+
+    @property
+    def context(self) -> Registry:
+        """Deprecated: ``document`` owns the ids. Removed in ipyelk 4.0."""
+        warnings.warn(CONTEXT_DEPRECATED, DeprecationWarning, stacklevel=2)
+        if self._context is None:
+            with warnings.catch_warnings():
+                warnings.simplefilter("ignore", DeprecationWarning)
+                self._context = Registry()
+        return self._context
+
+    @context.setter
+    def context(self, context: Registry) -> None:
+        warnings.warn(CONTEXT_DEPRECATED, DeprecationWarning, stacklevel=2)
+        self._context = context
+
+    def to_id(self, element: BaseElement) -> str:
+        return element.wire_id()
 
     def from_id(self, key: str) -> BaseElement:
         elements = self.elements
@@ -33,41 +98,87 @@ class MarkIndex(W.DOMWidget):
 
     @property
     def root(self) -> Node:
-        if self._root is None:
-            self._update_root()
-        if self._root is None:
+        elements = self.elements
+        if elements is None:
             raise ValueError("Root cannot be None after updating it!")
+        if self._root_of is not elements:
+            self._root, self._root_of = elements.root(), elements
+        assert self._root is not None
         return self._root
 
-    @T.observe("elements")
-    def _update_root(self, change: T.Bunch | None = None):
-        self._root = None
-        if self.elements:
-            self._root = self.elements.root()
 
+class MarkElementWidget(W.Widget):
+    """An element tree plus the shared index and the pending ``flow``.
 
-class MarkElementWidget(W.DOMWidget):
-    """A synced element tree plus the shared index and the pending ``flow``.
+    A ``Widget``, not a ``DOMWidget``: no view displays it, so it has no
+    ``layout``.
 
-    ``value`` is written from both sides. A browser write is never sent back:
-    ``echo_update=False`` stops the echo, and ``_should_send_property`` stops
-    the re-serialized copy. Kernel writes are sent exactly once.
+    ``value`` is synced with the browser only for a mark that a browser stage
+    reads or writes (see :meth:`sync_value`). There it is written from both
+    sides. A browser write is never sent back: ``echo_update=False`` stops the
+    echo, and ``_should_send_property`` stops the re-serialized copy. Kernel
+    writes are sent exactly once. ``flow`` and ``index`` are never synced: no
+    browser code reads them.
 
     Known limitation: a second frontend attached to the same kernel used to
     learn browser-written values through the echo and no longer does.
     """
 
+    #: synced per instance, see :meth:`sync_value`
     value = T.Instance(Node, allow_none=True).tag(
-        sync=True, echo_update=False, **elk_serialization
+        echo_update=False, **elk_serialization
     )
     #: generation of the ``run`` request the browser last answered; ``0`` with
     #: an older extension build (see ``util.wait_for_answer``)
     gen = T.Int(0).tag(sync=True, echo_update=False)
-    index = T.Instance(MarkIndex, kw={}).tag(sync=True, **W.widget_serialization)
-    flow: tuple[str, ...] = TypedTuple(T.Unicode(), kw={}).tag(sync=True)
+    #: kernel only: no browser code reads it. Built on first read, or shared
+    #: from the mark it follows (see :meth:`share_index`)
+    index = T.Instance(MarkIndex)
+    flow: tuple[str, ...] = TypedTuple(T.Unicode(), kw={})
+    #: removed names raise :class:`~ipyelk.exceptions.DeprecatedAPIError` through 3.x
+    layout = RemovedAPI(
+        "MarkElementWidget is not a DOMWidget in ipyelk 3.0: no view displays it, so "
+        "it has no layout. No alias: this error is raised throughout 3.x."
+    )
 
     #: the tree ``set_state`` last deserialized from the browser
     _browser_value: Node | None = None
+    #: the mark whose index this one shares, set by ``share_index``
+    _index_of: MarkElementWidget | None = None
+    #: the synced trait names (``Widget.keys``), typed for mypy
+    keys: list[str]
+
+    def __init__(self, **kwargs) -> None:
+        check_removed(type(self), kwargs)
+        super().__init__(**kwargs)
+
+    @T.default("index")
+    def _default_index(self) -> MarkIndex:
+        return MarkIndex() if self._index_of is None else self._index_of.index
+
+    def share_index(self, mark: MarkElementWidget) -> None:
+        """Use the index of ``mark``, without building one to throw away.
+
+        ``Pipeline`` calls this for each stage outlet. If this mark has no
+        index yet, its first read of ``index`` takes the one of ``mark``.
+        """
+        self._index_of = mark
+        if "index" in self._trait_values:
+            self.index = mark.index
+
+    def sync_value(self) -> MarkElementWidget:
+        """Sync ``value`` with the browser from now on, and send it now.
+
+        Only the marks that a browser stage reads or writes need ``value`` in
+        the browser: the inlet and outlet of a ``SyncedInletPipe`` or
+        ``SyncedOutletPipe``, and a viewer's ``source``. These call this
+        method when they take the mark. A mark stays synced once it is.
+        """
+        if "value" not in self.keys:
+            self.keys = [*self.keys, "value"]
+            if self.comm is not None:
+                self.send_state("value")
+        return self
 
     def set_trait(self, name, value):
         """Remember which ``value`` came from the browser (``set_state`` holds
@@ -130,25 +241,19 @@ class MarkElementWidget(W.DOMWidget):
         return self
 
     def build_index(self, *, assign_ids: bool = True) -> MarkIndex:
-        """Index ``value``; by default pin the resulting ids onto the elements.
+        """Index ``value`` in the shared ``Document``; by default pin the ids.
 
-        The index's ``Registry`` assigns ids to elements that have none; writing
-        them back is what lets every later serialization -- which runs outside
-        the Registry -- emit the ids the index is keyed by, so ``persist`` can
-        merge what comes back from the browser.  Explicit ids are never changed.
-        ``assign_ids=False`` leaves ``id`` untouched so a caller can report or
-        reject unassigned ids first (``ValidationPipe.fix_null_id``).
+        The document writes the id that each element serializes with onto the
+        elements that have none, so every later serialization emits the ids
+        the index is keyed by, and ``persist`` can merge what comes back from
+        the browser. Explicit ids are never changed. ``assign_ids=False``
+        leaves ``id`` untouched so a caller can report or reject unassigned ids
+        first (``ValidationPipe.fix_null_id``).
         """
         if self.value is None:
-            index = ElementIndex()
+            self.index.elements = ElementIndex()
         else:
-            with self.index.context:
-                index = ElementIndex.from_els(self.value)
-            if assign_ids:
-                for key, el in index.items():
-                    if el.id is None:
-                        el.id = key
-        self.index.elements = index
+            self.index.document.index(self.value, assign_ids=assign_ids)
         return self.index
 
     def _repr_mimebundle_(self, **kwargs):

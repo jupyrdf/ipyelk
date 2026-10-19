@@ -234,8 +234,7 @@ class RecordingComm:
     def __init__(self, data=None, comm_id=None, **kwargs) -> None:
         self.comm_id = comm_id or uuid.uuid4().hex
         self.kernel = object()  # non-None, so Widget._send actually sends
-        if RECORDER.enabled:
-            RECORDER.opens += 1
+        RECORDER.opens += 1  # always: a phase counts the difference
         RECORDER.record(self.comm_id, data)
 
     def send(self, data=None, metadata=None, buffers=None, **kwargs) -> None:
@@ -655,8 +654,13 @@ async def measure_case(shape: str, n: int, case: dict) -> None:
     root = bench_graphs.GENERATORS[shape](n, seed=SEED)
     case["elements"] = bench_graphs.count_elements(root)
     RECORDER.enabled = False  # widget construction traffic is not refresh traffic
+    opens, t0 = RECORDER.opens, time.perf_counter()
     source = ElementLoader().load(root=root)
     diagram = Diagram(source=source)
+    case["construct"] = {
+        "wall_s": time.perf_counter() - t0,
+        "comm_opens": RECORDER.opens - opens,
+    }
     pipe = diagram.pipe
     valid, sizer, vis, elk = pipe.pipes
     RECORDER.roles.update({
@@ -820,7 +824,6 @@ async def close(root) -> dict:
         if source.comm is None:
             errors.add("source closed")
         close_widget(source)
-        close_widget(source.index)
 
     await round_trip()  # warm-up
     before = live_widgets()

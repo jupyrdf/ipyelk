@@ -1,7 +1,7 @@
 # Copyright (c) 2024 ipyelk contributors.
 # Distributed under the terms of the Modified BSD License.
 
-from ipyelk.elements import Edge, HierarchicalIndex, Label, Node, Port, Registry
+from ipyelk.elements import Edge, HierarchicalIndex, Label, Node, Port
 
 
 def test_self_edge_lca():
@@ -24,10 +24,8 @@ def test_self_edge_lca():
     node.add_edge(source=port1, target=port2)
     root = Node(children=[node])
 
-    context = Registry()
-    with context:
-        index = HierarchicalIndex.from_els(root)
-        edge_report, _ = index.get_reports()
+    index = HierarchicalIndex.from_els(root)
+    edge_report, _ = index.get_reports()
 
     assert len(edge_report.lca_mismatch) == 1
     for edge, (current_owner, expected_owner) in edge_report.lca_mismatch.items():

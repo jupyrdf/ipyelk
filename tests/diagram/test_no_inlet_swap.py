@@ -181,6 +181,12 @@ async def test_collapse_does_not_remeasure(browser):
     assert c.labels[0].width == pytest.approx(LABEL_WIDTH), "sizes persist"
     laid_out_a = next(n for n in diagram.pipe.outlet.value.children if n.id == "a")
     assert laid_out_a.children == [], "c is collapsed out of the laid-out tree"
-    assert [p.id for p in laid_out_a.ports] == ["c"], "its edge end is a slack port"
+    assert [p.id for p in laid_out_a.ports] == ["c.slack"], (
+        "its edge end is a slack port"
+    )
     assert c in diagram.pipe.inlet.index.elements.get("a").children
     assert diagram.pipe.inlet.index.elements.get("c") is c, "not the slack port"
+    document = diagram.pipe.inlet.index.document
+    assert document.resolve("c.slack") == (c, True), "selecting it selects c"
+    diagram.view.selection.ids = ("c.slack",)
+    assert list(diagram.view.selection.elements()) == [c]

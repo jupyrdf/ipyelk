@@ -7,7 +7,7 @@ import * as ELK from 'elkjs/lib/elk-api';
 import { Signal } from '@lumino/signaling';
 
 import { unpack_models as deserialize } from '@jupyter-widgets/base';
-import { DOMWidgetModel } from '@jupyter-widgets/base';
+import { DOMWidgetModel, WidgetModel } from '@jupyter-widgets/base';
 
 import {
   RunQueue,
@@ -92,7 +92,7 @@ export class ELKLayoutModel extends DOMWidgetModel {
     // duplicate `run` messages / overlapping refreshes), and they are
     // reapplied onto the layout result afterwards.
     const rootNode: ELK.ElkNode = this.get('inlet')?.get('value');
-    let outlet: DOMWidgetModel = this.get('outlet'); // target output
+    let outlet: WidgetModel = this.get('outlet'); // target output
     const stale = staleMessage(this.get('inlet'), rootNode, outlet);
     if (stale != null) {
       this.send(stale); // unservable: let the kernel re-sync the state

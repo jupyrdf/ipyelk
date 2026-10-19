@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import json
 import re
+import warnings
 from collections.abc import Iterator
 from pathlib import Path
 
@@ -524,11 +525,32 @@ def test_a_widget_shape_with_no_open_widget_loads_as_a_node_shape(model_id):
     assert to_json(back, None) == wire
 
 
+@pytest.mark.parametrize(
+    "build",
+    [
+        lambda shape: NodeProperties(shape=shape),
+        lambda shape: NodeProperties.model_validate({"shape": shape}),
+        lambda shape: Node(id="a", properties={"shape": shape}),
+    ],
+    ids=["NodeProperties", "model_validate", "Node"],
+)
+def test_user_code_with_a_widget_shape_and_no_open_widget_raises(build):
+    """Only ELK JSON loads a ``NodeShape`` in place of the ``Widget``: user code that
+    builds a ``Widget`` with no widget raises, and does not warn.
+    """
+    shape = closed_widget_json()["children"][0]["properties"]["shape"]
+    with warnings.catch_warnings():
+        warnings.simplefilter("error")
+        with pytest.raises(ValidationError, match="widget\n  Field required"):
+            build(shape)
+
+
 def test_a_layout_result_with_a_closed_widget_loads():
     """The value that comes back from the frontend after a layout still loads."""
     wire = closed_widget_json()
     wire["children"][0]["x"] = 15  # laid out
     outlet = MarkElementWidget()
+    outlet.sync_value()  # as the outlet of a browser stage does (#235)
     with pytest.warns(UserWarning, match="No open widget has the model_id"):
         outlet.set_state({"value": wire})
     assert outlet.value.children[0].x == 15

@@ -126,6 +126,11 @@ class Viewer(W.Widget):
     def _reset_stale_throttle(self, change: T.Bunch | None = None):
         self._stale_resync_interval = 0.0
 
+    @T.observe("source")
+    def _sync_source_value(self, change: T.Bunch) -> None:
+        if change.new is not None:
+            change.new.sync_value()  # the browser draws ``source.value``
+
     @T.default("fit_tool")
     def _default_fit_tool(self) -> FitTool:
         return FitTool(on_click=lambda *_: self.fit())
