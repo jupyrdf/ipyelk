@@ -2225,9 +2225,8 @@ print(mark.index.document[el_id] is element)
 
 `ElementIndex.from_els`, `VisIndex.from_els` and `HierarchicalIndex.from_els` index an
 element without an id by its `wire_id`. In 2.x, they raised `ValueError` outside a
-`Registry`. `Painter.paint(element)` stores the `wire_id` of an element that has no id.
-In 2.x, it raised `ValueError`. The `id` of the element stays `None` until a `Document`
-writes it.
+`Registry`. 3.0 adds `Painter.paint`, which also stores the `wire_id` of an element that
+has no id. The `id` of the element stays `None` until a `Document` writes it.
 
 This change affects code that expects the `ValueError`. The change is in [#160].
 
@@ -2239,7 +2238,7 @@ node = Node()
 ```
 
 ```python
-# 2.x: this raised ValueError("Cannot index element without an id ...")
+# 2.x: this raised a ValueError, "none is not an allowed value"
 index = ElementIndex.from_els(node)
 ```
 
@@ -2265,12 +2264,13 @@ The rest stays as in 2.x:
 - `Document.resolve` returns the hidden element, with `via_slack=True`.
 - `properties.key` of the slack port is the id of the hidden element.
 
-`Painter.paint` of the id of a hidden element does not style its slack port. In 2.x, it
-did, because the two elements had one id. To style the slack port, paint its id too.
-`ElementIndex.update` does not add the slack ports of a browser answer to the index.
+`Painter.paint`, which is new in 3.0, styles only the elements with the ids that you
+give it. Thus, the id of a hidden element does not style its slack port. To style the
+slack port, paint its id too. `ElementIndex.update` does not add the slack ports of a
+browser answer to the index.
 
 This change affects code that compares the id of a slack port with the id of a hidden
-element, and code that paints a hidden element. The change is in [#160].
+element. The change is in [#160].
 
 ```python
 # both versions: the node "h" is hidden inside the node "C"
