@@ -12,17 +12,177 @@
  *
  * SPDX-License-Identifier: EPL-2.0
  *******************************************************************************/
-export interface Shape {
-  type?: string;
-  use?: string;
-  start?: string;
-  end?: string;
+/**
+ * The `identifier` of a symbol in the diagram's `defs`.
+ * @minLength 1
+ */
+export type SymbolId = string;
+
+/**
+ * The `d` attribute of an SVG `path`: a move and a number first, then path commands,
+ * numbers, commas and ASCII whitespace, as the SVG grammar allows.
+ * @pattern ^[ \t\n\r\f]*[Mm][ \t\n\r\f]*[0-9+\-.][ \t\n\r\fMmZzLlHhVvCcSsQqTtAa0-9eE+\-.,]*$
+ */
+export type PathData = string;
+
+/** SVG or HTML markup. The views insert it as it is, so it must be trusted. */
+export type Markup = string;
+
+/**
+ * The URL of an image: absolute, relative to the notebook, or a `data:` URL.
+ * @minLength 1
+ */
+export type ImageUrl = string;
+
+/**
+ * The size of a comment's notch in pixels: a finite number, 0 or more. 0 draws no
+ * notch. ipyelk 2.x wrote it as a string, which the view still reads.
+ * @minimum 0
+ */
+export type NotchSize = number;
+
+/** The `model_id` of the Jupyter widget that a `node:widget` shape draws. */
+export type ModelId = string;
+
+/** The fields that every shape can have. */
+export interface ShapeBase {
   x?: number;
   y?: number;
   width?: number;
   height?: number;
+  /** Milliseconds before a widget shape applies the diagram zoom; others ignore it. */
   delay?: number;
 }
+
+export interface EdgeShape extends ShapeBase {
+  type: 'edge';
+  start?: SymbolId;
+  end?: SymbolId;
+}
+
+export interface PortShape extends ShapeBase {
+  type: 'port';
+  use?: SymbolId;
+}
+
+export interface LabelShape extends ShapeBase {
+  type: 'label';
+  use?: SymbolId;
+}
+
+export interface IconShape extends ShapeBase {
+  type: 'label:icon';
+  use: SymbolId;
+}
+
+export interface RectShape extends ShapeBase {
+  type: 'node';
+}
+
+export interface PathShape extends ShapeBase {
+  type: 'node:path';
+  use: PathData;
+}
+
+export interface SVGShape extends ShapeBase {
+  type: 'node:svg';
+  use: Markup;
+}
+
+export interface RoundShape extends ShapeBase {
+  type: 'node:round';
+}
+
+export interface DiamondShape extends ShapeBase {
+  type: 'node:diamond';
+}
+
+export interface CommentShape extends ShapeBase {
+  type: 'node:comment';
+  use?: NotchSize;
+}
+
+export interface UseShape extends ShapeBase {
+  type: 'node:use';
+  use: SymbolId;
+}
+
+export interface ImageShape extends ShapeBase {
+  type: 'node:image';
+  use: ImageUrl;
+}
+
+export interface ForeignObjectShape extends ShapeBase {
+  type: 'node:foreignobject';
+  use: Markup;
+}
+
+export interface WidgetShape extends ShapeBase {
+  type: 'node:widget';
+  use: ModelId;
+}
+
+export interface HTMLShape extends ShapeBase {
+  type: 'node:html';
+  use: Markup;
+}
+
+/**
+ * A shape with no type, or with a type that no built-in shape has: the payload of a
+ * custom view.
+ */
+export interface CustomShape extends ShapeBase {
+  /**
+   * @pattern ^(?!(edge|port|label|label:icon|node|node:(path|svg|round|diamond|comment|use|image|foreignobject|widget|html))$)
+   */
+  type?: string;
+  use?: string;
+  start?: string;
+  end?: string;
+}
+
+/** A shape: its `type` selects the view and the type of its `use`. */
+export type Shape =
+  | EdgeShape
+  | PortShape
+  | LabelShape
+  | IconShape
+  | RectShape
+  | PathShape
+  | SVGShape
+  | RoundShape
+  | DiamondShape
+  | CommentShape
+  | UseShape
+  | ImageShape
+  | ForeignObjectShape
+  | WidgetShape
+  | HTMLShape
+  | CustomShape;
+/**
+ * The shape of an element, typed as the variant that its view draws: sprotty selects
+ * the view by the shape's `type`, so the view knows the variant.
+ */
+export function shapeOf<T extends Shape>(element?: {
+  properties?: ElkProperties;
+}): T | undefined {
+  return element?.properties?.shape as T | undefined;
+}
+
+/**
+ * The size of a comment's notch, limited to `width` and `height`. A notch that is
+ * missing, not a number or negative draws the default of 15 pixels. 0 draws none.
+ * ipyelk 2.x wrote the notch as a string, which this reads too.
+ */
+export function notchSize(
+  use: NotchSize | string | undefined,
+  width: number,
+  height: number,
+): number {
+  const size = parseFloat(String(use));
+  return Math.min(Number.isFinite(size) && size >= 0 ? size : 15, width, height);
+}
+
 export interface ElkProperties {
   cssClasses?: string;
   key?: string;

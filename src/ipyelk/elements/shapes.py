@@ -9,21 +9,58 @@ from __future__ import annotations
 
 import builtins
 import warnings
-from typing import ClassVar
+from typing import Annotated, ClassVar
 
 from ipywidgets import DOMWidget, widget_serialization
 from pydantic import (
     BaseModel,
+    BeforeValidator,
     ConfigDict,
     Field,
     SerializationInfo,
     SerializerFunctionWrapHandler,
+    ValidationInfo,
     field_validator,
     model_serializer,
     model_validator,
 )
 
 from .common import serialize_value
+
+
+def _not_a_bool(value: object) -> object:
+    # pydantic reads True as 1.0 in a float field. pydantic turns a ValueError from a
+    # validation function into a ValidationError, but a TypeError escapes it.
+    if isinstance(value, bool):
+        raise ValueError("Input should be a number of pixels, not a bool")  # ruff: ignore[type-check-without-type-error]
+    return value
+
+
+# the payload types of `use`, one for each meaning. The *Shapes* page lists them.
+
+#: The ``identifier`` of a symbol in the diagram's ``defs``.
+SymbolId = Annotated[str, Field(min_length=1)]
+
+#: The ``d`` attribute of an SVG ``path``: a move command and a number first, then path
+#: commands, numbers, commas and ASCII whitespace, as the SVG grammar allows.
+PathData = Annotated[
+    str,
+    Field(
+        pattern=r"^[ \t\n\r\f]*[Mm][ \t\n\r\f]*[0-9+\-.][ \t\n\r\fMmZzLlHhVvCcSsQqTtAa0-9eE+\-.,]*$"
+    ),
+]
+
+#: SVG or HTML markup. The frontend inserts it as it is, so it must be trusted.
+Markup = str
+
+#: The URL of an image: absolute, relative to the notebook, or a ``data:`` URL.
+ImageUrl = Annotated[str, Field(min_length=1)]
+
+# the constraints before the function, so that the JSON schema has `minimum`
+#: The size of a comment's notch in pixels: a finite number, 0 or more.
+NotchSize = Annotated[
+    float, Field(ge=0, allow_inf_nan=False), BeforeValidator(_not_a_bool)
+]
 
 
 class Point(BaseModel):
@@ -72,8 +109,9 @@ class BaseShape(BaseModel):
     #: ``False`` keeps the class out of ``json_classes``. A subclass does not inherit it.
     loads_from_json: ClassVar[bool] = True
 
-    #: an unknown key is a typo, or a field of another shape class
-    model_config = ConfigDict(extra="forbid")
+    #: an unknown key is a typo, or a field of another shape class. An assignment
+    #: validates as a construction does.
+    model_config = ConfigDict(extra="forbid", validate_assignment=True)
 
     @classmethod
     def __pydantic_init_subclass__(cls, **kwargs: object) -> None:
@@ -151,7 +189,8 @@ class ElementShape(BaseShape):
           the element holds the laid-out size, and the shape's size still wins over
           it as the input to the next layout. The *Width and height* section of the
           *Shapes* page explains this.
-        - ``use`` (``str``): each subclass gives ``use`` its own meaning.
+        - ``use`` (``str``): the payload. Each built-in subclass gives ``use`` its
+          own meaning and type. A custom shape type can give it any meaning.
         - ``delay`` (``int``): a time in milliseconds. Only :py:class:`Widget` uses it.
     """
 
@@ -159,7 +198,7 @@ class ElementShape(BaseShape):
     y: float | None = None
     width: float | None = None
     height: float | None = None
-    use: str | None = Field(None, description="Each subclass gives its own meaning")
+    use: str | None = Field(None, description="The payload of a custom shape type")
     delay: int | None = Field(
         None,
         description="Milliseconds before a Widget node applies the diagram zoom",
@@ -198,13 +237,13 @@ class PortShape(ElementShape):
     """The shape of a port.
 
     Fields:
-        - ``use`` (``str`` or ``None``, default ``None``): a symbol identifier, drawn
-          at the size of the port. If ``use`` is ``None`` or no symbol has it, the
-          renderer draws a rectangle.
+        - ``use`` (:py:data:`SymbolId` or ``None``, default ``None``): a symbol
+          identifier, drawn at the size of the port. If ``use`` is ``None`` or no
+          symbol has it, the renderer draws a rectangle.
     """
 
     type: str | None = "port"
-    use: str | None = Field(None, description="Symbol identifier")
+    use: SymbolId | None = Field(None, description="Symbol identifier")
 
 
 class LabelShape(ElementShape):
@@ -214,13 +253,13 @@ class LabelShape(ElementShape):
     the text of the label.
 
     Fields:
-        - ``use`` (``str`` or ``None``, default ``None``): a symbol identifier, drawn in
-          place of the text. If ``use`` is ``None`` or no symbol has it, the renderer
-          draws the text.
+        - ``use`` (:py:data:`SymbolId` or ``None``, default ``None``): a symbol
+          identifier, drawn in place of the text. If ``use`` is ``None`` or no symbol
+          has it, the renderer draws the text.
     """
 
     type: str | None = "label"
-    use: str | None = Field(None, description="Symbol identifier")
+    use: SymbolId | None = Field(None, description="Symbol identifier")
 
 
 class Icon(LabelShape):
@@ -231,7 +270,7 @@ class Icon(LabelShape):
     label that is not nested draws the symbol in place of its text.
 
     Fields:
-        - ``use`` (``str``, required): a symbol identifier.
+        - ``use`` (:py:data:`SymbolId`, required): a symbol identifier.
 
     .. code-block:: python
 
@@ -243,7 +282,7 @@ class Icon(LabelShape):
     """
 
     type: str = "label:icon"
-    use: str = Field(..., description="Symbol identifier")
+    use: SymbolId = Field(..., description="Symbol identifier")
 
 
 class NodeShape(ElementShape):
@@ -254,9 +293,9 @@ class Path(NodeShape):
     """An SVG path. The renderer does not scale it to the size of the node.
 
     Fields:
-        - ``use`` (``str``, required): the path data, that is, the ``d`` attribute of
-          an SVG ``path`` element. Its coordinates are pixels from the top-left corner
-          of the node.
+        - ``use`` (:py:data:`PathData`, required): the path data, that is, the ``d``
+          attribute of an SVG ``path`` element. It starts with a move, ``M`` or
+          ``m``. Its coordinates are pixels from the top-left corner of the node.
 
     .. code-block:: python
 
@@ -265,7 +304,7 @@ class Path(NodeShape):
     """
 
     type: str = "node:path"
-    use: str = Field(..., description="SVG path data")
+    use: PathData = Field(..., description="SVG path data")
 
     @classmethod
     def from_list(cls, segments, closed=False):
@@ -294,6 +333,7 @@ class Circle(NodeShape):
         - ``x``, ``y`` (``float`` or ``None``, default ``None``): the center. If they
           are ``None``, the renderer centers the ellipse in the node.
         - ``width``, ``height``: these fields have no effect.
+        - ``use``: no payload, so it must be ``None``.
 
     .. code-block:: python
 
@@ -304,6 +344,8 @@ class Circle(NodeShape):
     # it writes the same `node:round` as Ellipse, so JSON loads it as an Ellipse
     loads_from_json = False
     radius: float = Field(0, exclude=True, description="Radius in pixels")
+    #: no payload: a value other than ``None`` raises
+    use: None = Field(None, exclude=True, description="No payload")
 
     def dimension(self, key: str) -> float | None:
         if key in {"width", "height"}:
@@ -318,7 +360,7 @@ class SVG(NodeShape):
     Put only trusted markup in ``use``, as the warning on the *Shapes* page explains.
 
     Fields:
-        - ``use`` (``str``, required): the SVG markup.
+        - ``use`` (:py:data:`Markup`, required): the SVG markup.
         - ``x``, ``y`` (``float`` or ``None``, default ``None``): the offset of the
           markup in pixels. ``None`` is 0.
 
@@ -328,7 +370,7 @@ class SVG(NodeShape):
     """
 
     type: str = "node:svg"
-    use: str = Field(..., description="SVG markup")
+    use: Markup = Field(..., description="SVG markup")
 
 
 class Ellipse(NodeShape):
@@ -341,11 +383,14 @@ class Ellipse(NodeShape):
           is ``None`` or 0, ``Ellipse`` serializes two times ``rx``. The same rule
           applies to ``height`` and ``ry``.
         - ``x``, ``y`` (``float`` or ``None``, default ``None``): as for ``Circle``.
+        - ``use``: no payload, so it must be ``None``.
     """
 
     type: str = "node:round"
     rx: float = Field(0, exclude=True, description="Horizontal radius in pixels")
     ry: float = Field(0, exclude=True, description="Vertical radius in pixels")
+    #: no payload: a value other than ``None`` raises
+    use: None = Field(None, exclude=True, description="No payload")
 
     def dimension(self, key: str) -> float | None:
         value = super().dimension(key)
@@ -354,49 +399,52 @@ class Ellipse(NodeShape):
 
 
 class Diamond(NodeShape):
-    """A polygon with its four corners at the middle of the four sides of the node."""
+    """A polygon with its four corners at the middle of the four sides of the node.
+
+    It has no payload: ``use`` must be ``None``.
+    """
 
     type: str = "node:diamond"
+    #: no payload: a value other than ``None`` raises
+    use: None = Field(None, exclude=True, description="No payload")
 
 
 class Comment(NodeShape):
     """A rectangle with a corner notch, a triangle cut from the top-right corner.
 
     Fields:
-        - ``use`` (``str``, default ``"15"``): the length in pixels of the two short
-          sides of the notch. ``Comment`` changes a number to a string, also on
-          assignment. For ``"0"`` or a string that is not a number, the renderer
-          draws a 15 pixel notch.
+        - ``use`` (:py:data:`NotchSize`, default ``15``): the length in pixels of the
+          two short sides of the notch, a finite number of 0 or more. 0 draws no
+          notch. The renderer limits the notch to the width and the height of the
+          node. A string of a number, as 2.x wrote it, loads as the number.
 
     .. code-block:: python
 
-        Comment(use=20).use == "20"
+        Comment(use=20).use == 20.0
     """
 
     type: str = "node:comment"
-    use: str = Field(str(15), description="Size of the corner notch, as a string")
-
-    # coerce on assignment too (`comment.use = 20`), as the v1 `dict()` override did
-    model_config = ConfigDict(validate_assignment=True)
-
-    @field_validator("use", mode="before")
-    @classmethod
-    def stringify_size(cls, value):
-        return str(value) if isinstance(value, (int, float)) else value
+    # the notch is the one payload that is not a string, so it replaces the base type
+    use: NotchSize = Field(15, description="Size of the corner notch in pixels")  # type: ignore[assignment]
 
 
 class Rect(NodeShape):
-    """A rectangle at the size of the node. A node with no shape draws the same."""
+    """A rectangle at the size of the node. A node with no shape draws the same.
+
+    It has no payload: ``use`` must be ``None``.
+    """
 
     type: str = "node"
+    #: no payload: a value other than ``None`` raises
+    use: None = Field(None, exclude=True, description="No payload")
 
 
 class Use(NodeShape):
     """A symbol at the size of the node.
 
     Fields:
-        - ``use`` (``str``, required): a symbol identifier. If no symbol has it, the
-          renderer draws nothing.
+        - ``use`` (:py:data:`SymbolId`, required): a symbol identifier. If no symbol
+          has it, the renderer draws nothing.
 
     .. code-block:: python
 
@@ -404,18 +452,18 @@ class Use(NodeShape):
     """
 
     type: str = "node:use"
-    use: str = Field(..., description="Symbol identifier")
+    use: SymbolId = Field(..., description="Symbol identifier")
 
 
 class Image(NodeShape):
     """An image in an SVG ``image`` element, at the size of the node.
 
     Fields:
-        - ``use`` (``str``, required): the URL of the image.
+        - ``use`` (:py:data:`ImageUrl`, required): the URL of the image.
     """
 
     type: str = "node:image"
-    use: str = Field(..., description="Image URL")
+    use: ImageUrl = Field(..., description="Image URL")
 
 
 class ForeignObject(NodeShape):
@@ -424,11 +472,11 @@ class ForeignObject(NodeShape):
     Put only trusted markup in ``use``, as the warning on the *Shapes* page explains.
 
     Fields:
-        - ``use`` (``str``, required): the HTML markup.
+        - ``use`` (:py:data:`Markup`, required): the HTML markup.
     """
 
     type: str = "node:foreignobject"
-    use: str = Field(..., description="HTML markup")
+    use: Markup = Field(..., description="HTML markup")
 
 
 def open_widget(model_id: object) -> DOMWidget | None:
@@ -442,10 +490,12 @@ class Widget(NodeShape):
 
     Fields:
         - ``widget`` (ipywidgets ``DOMWidget``, required): the widget to draw.
-          Serialization writes its ``model_id`` to ``use``, so a value in ``use`` has
-          no effect. JSON loads the widget that has the ``model_id`` in ``use``. If no
-          open widget has it, ELK JSON loads a :py:class:`NodeShape` with the same
-          fields, and a dictionary in user code raises.
+          Serialization writes its ``model_id`` to ``use``. A ``use`` that is not
+          the ``model_id`` of an open ``widget`` raises ``ValidationError``, at
+          construction and when you assign ``use``. JSON loads the
+          widget that has the ``model_id`` in ``use``. If no open widget has it, ELK
+          JSON loads a :py:class:`NodeShape` with the same fields, and a dictionary
+          in user code raises.
         - ``delay`` (``int`` or ``None``, default ``None``): a time in milliseconds.
           If it is set and not 0, the frontend applies the diagram zoom to the widget
           only after ``delay``. ``None`` and 0 apply the zoom at once. The ``15_Nesting_Plots`` example uses it.
@@ -464,12 +514,30 @@ class Widget(NodeShape):
 
     @model_validator(mode="before")
     @classmethod
-    def find_widget(cls, data):
+    def find_widget(cls, data, info: ValidationInfo):
         """Load JSON, which has the ``model_id`` of the widget in ``use``."""
-        if isinstance(data, dict) and "widget" not in data and data.get("use"):
-            found = open_widget(data["use"])
+        if not isinstance(data, dict):
+            return data
+        widget, use = data.get("widget"), data.get("use")
+        # an assignment passes every field: check use only when it is the new value
+        given = info.field_name in {None, "use"}
+        if widget is None and use:
+            found = open_widget(use)
             if found is not None:
                 data = {**data, "widget": found}
+        elif (
+            given
+            and isinstance(widget, DOMWidget)
+            # a closed widget has no model_id to check against (#241)
+            and getattr(widget, "comm", None) is not None
+            and use is not None
+        ):
+            if use != widget.model_id:
+                msg = (
+                    f"use {use!r} is not the model_id {widget.model_id!r} of widget."
+                    " Serialization writes the model_id to use: leave use out."
+                )
+                raise ValueError(msg)
         return data
 
     @model_serializer(mode="wrap")
@@ -489,11 +557,11 @@ class HTML(NodeShape):
     explains.
 
     Fields:
-        - ``use`` (``str``, required): the HTML markup.
+        - ``use`` (:py:data:`Markup`, required): the HTML markup.
     """
 
     type: str = "node:html"
-    use: str = Field(..., description="HTML markup")
+    use: Markup = Field(..., description="HTML markup")
 
 
 Widget.model_rebuild()

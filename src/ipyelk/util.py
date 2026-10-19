@@ -4,7 +4,23 @@ from __future__ import annotations
 
 import weakref
 
-from .elements.layout_options.model import strip_none
+
+def strip_none(data: dict) -> dict:
+    """A copy of ``data`` without its ``None`` values and empty lists, also in the
+    nested dictionaries. A value that is not a ``dict`` comes back as it is.
+    """
+    if not isinstance(data, dict):
+        return data
+    result: dict = {}
+    for key, value in data.items():
+        if isinstance(value, dict):
+            value = strip_none(value)
+        if isinstance(value, list) and len(value) == 0:
+            value = None  # empty
+        if value is None:
+            continue
+        result[key] = value
+    return result
 
 
 def open_owner(ref: weakref.ref | None):

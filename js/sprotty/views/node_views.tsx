@@ -31,6 +31,19 @@ import {
   svg,
 } from 'sprotty';
 
+import {
+  CommentShape,
+  CustomShape,
+  ForeignObjectShape,
+  ImageShape,
+  LabelShape,
+  PathShape,
+  PortShape,
+  SVGShape,
+  UseShape,
+  notchSize,
+  shapeOf,
+} from '../json/elkgraph-json';
 import { ElkModelRenderer } from '../renderer';
 import { ElkLabel, ElkNode, ElkPort } from '../sprotty-model';
 
@@ -157,16 +170,18 @@ export class ElkImageNodeView extends ElkNodeView {
   renderMark(node: ElkNode, context: ElkModelRenderer): VNode {
     let width = node.size.width;
     let height = node.size.height;
-    return <image width={width} height={height} href={node.properties?.shape?.use} />;
+    return (
+      <image width={width} height={height} href={shapeOf<ImageShape>(node)?.use} />
+    );
   }
 }
 
 @injectable()
 export class ElkCommentNodeView extends ElkNodeView {
   renderMark(node: ElkNode, context: ElkModelRenderer): VNode {
-    let tabSize = Number(node?.properties?.shape?.use) || 15;
     let width = node.size.width;
     let height = node.size.height;
+    let tabSize = notchSize(shapeOf<CommentShape>(node)?.use, width, height);
     const points = [
       { x: 0, y: 0 },
       { x: width - tabSize, y: 0 },
@@ -184,7 +199,7 @@ export class ElkCommentNodeView extends ElkNodeView {
 @injectable()
 export class ElkPathNodeView extends ElkNodeView {
   renderMark(node: ElkNode, context: ElkModelRenderer): VNode {
-    let segments = node?.properties?.shape?.use;
+    let segments = shapeOf<PathShape>(node)?.use;
 
     return <path d={segments} />;
   }
@@ -193,7 +208,7 @@ export class ElkPathNodeView extends ElkNodeView {
 @injectable()
 export class ElkUseNodeView extends ElkNodeView {
   renderMark(node: ElkNode, context: ElkModelRenderer): VNode {
-    let use = node?.properties?.shape?.use;
+    let use = shapeOf<UseShape>(node)?.use;
     let href = context.hrefID(use);
     let mark: VNode = (
       <use href={'#' + href} width={node.size.width} height={node.size.height} />
@@ -211,7 +226,7 @@ export class ElkSVGNodeView extends ElkNodeView {
     return svg('g', {
       // an svg shape renders its `use` markup by design
       // ast-grep-ignore: ts-no-html-injection
-      props: { innerHTML: node?.properties?.shape?.use },
+      props: { innerHTML: shapeOf<SVGShape>(node)?.use },
       transform: `translate(${x} ${y})`,
     });
   }
@@ -233,9 +248,10 @@ export class ElkCompartmentNodeView extends ElkNodeView {
 @injectable()
 export class ElkForeignObjectNodeView extends ElkNodeView {
   renderMark(node: ElkNode, context: ElkModelRenderer): VNode {
+    let markup = shapeOf<ForeignObjectShape>(node)?.use;
     // a foreignObject shape renders its `use` markup by design
     // ast-grep-ignore: ts-no-html-injection
-    let contents = html('div', { props: { innerHTML: node?.properties?.shape?.use } });
+    let contents = html('div', { props: { innerHTML: markup } });
     return (
       <foreignObject
         requiredFeatures="http://www.w3.org/TR/SVG11/feature#Extensibility"
@@ -288,7 +304,7 @@ export class ElkJLNodeView extends ElkNodeView {
 export class ElkPortView extends RectangularNodeView {
   render(port: ElkPort, context: ElkModelRenderer): VNode | undefined {
     let mark: VNode;
-    let use = port?.properties?.shape?.use;
+    let use = shapeOf<PortShape | CustomShape>(port)?.use;
     let href = context.hrefID(use);
     if (href) {
       mark = (
@@ -333,7 +349,7 @@ export class ElkLabelView extends ShapeView {
       return undefined;
     }
     let mark: VNode;
-    let use = label?.properties?.shape?.use;
+    let use = shapeOf<LabelShape | CustomShape>(label)?.use;
     let href = context.hrefID(use);
     if (href) {
       mark = (
@@ -364,7 +380,7 @@ export class ElkLabelView extends ShapeView {
 
     if (label.labels?.length) {
       let icon: ElkLabel = label.labels[0];
-      let use = icon?.properties?.shape?.use;
+      let use = shapeOf<LabelShape | CustomShape>(icon)?.use;
       let href = context.hrefID(use);
 
       let height = label.size.height;

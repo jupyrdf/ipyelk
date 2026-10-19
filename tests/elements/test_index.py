@@ -173,7 +173,7 @@ def typed(shape: shapes.NodeShape, **fields):
         typed(shapes.Image(use="a.png"), use="a.png"),
         typed(shapes.ForeignObject(use="<b>x</b>"), use="<b>x</b>"),
         typed(shapes.HTML(use="<b>x</b>"), use="<b>x</b>"),
-        typed(shapes.Comment(use=20), use="20"),
+        typed(shapes.Comment(use=20), use=20.0),
         typed(shapes.Diamond()),
         typed(shapes.Rect()),
         typed(shapes.NodeShape(width=30, height=20), width=30, height=20),

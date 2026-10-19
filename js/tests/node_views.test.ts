@@ -8,10 +8,11 @@ import { describe, expect, it } from 'vitest';
 
 import { SGraphImpl } from 'sprotty';
 
-import { ElkProperties } from '../sprotty/json/elkgraph-json';
+import { ElkProperties, notchSize } from '../sprotty/json/elkgraph-json';
 import { ElkModelRenderer } from '../sprotty/renderer';
 import { ElkLabel, ElkNode } from '../sprotty/sprotty-model';
 import {
+  ElkCommentNodeView,
   ElkLabelView,
   ElkNodeView,
   ElkRoundNodeView,
@@ -205,5 +206,41 @@ describe('ElkRoundNodeView', () => {
   it('places the center at x and y when the shape sets them', () => {
     const attrs = renderEllipse({ type: 'node:round', x: 3, y: 4 }).data?.attrs;
     expect(attrs).toMatchObject({ rx: 50, ry: 25, cx: 3, cy: 4 });
+  });
+});
+
+describe('ElkCommentNodeView notch (#148)', () => {
+  function points(use: unknown): string {
+    const node = new ElkNode();
+    node.id = 'c0';
+    node.type = 'node:comment';
+    node.size = { width: 40, height: 30 };
+    node.position = { x: 0, y: 0 };
+    node.properties = { shape: { type: 'node:comment', use: use as number } };
+    const mark = new ElkCommentNodeView().renderMark(node, asContext(context));
+    return mark.data?.attrs?.points as string;
+  }
+
+  it('cuts the notch from the top-right corner, in pixels', () => {
+    expect(points(10)).toBe('0,0 30,0 40,10 40,30 0,30');
+  });
+
+  it('reads the string notch that ipyelk 2.x saved', () => {
+    expect(points('10')).toBe(points(10));
+  });
+
+  it('draws no notch for 0', () => {
+    expect(points(0)).toBe('0,0 40,0 40,0 40,30 0,30');
+  });
+
+  it('draws the default of 15 for a missing, invalid or negative notch', () => {
+    for (const use of [undefined, 'abc', '', -5, NaN]) {
+      expect(points(use)).toBe(points(15));
+    }
+  });
+
+  it('limits the notch to the size of the node', () => {
+    expect(notchSize(100, 40, 30)).toBe(30);
+    expect(notchSize(100, 20, 30)).toBe(20);
   });
 });

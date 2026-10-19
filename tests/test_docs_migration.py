@@ -178,6 +178,9 @@ DEPRECATED_USES = {
         "from ipyelk.elements.layout_options.port_options import LabelPortSpacing\n"
         "LabelPortSpacing(spacing=3)"
     ),
+    "ipyelk.elements.layout_options.model.strip_none": (
+        "from ipyelk.elements.layout_options.model import strip_none\nstrip_none({})"
+    ),
 }
 
 
