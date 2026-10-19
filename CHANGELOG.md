@@ -587,6 +587,15 @@ removed names][migration-removed-names] lists every name that raises
   Before, the serialization of the shape raised `AttributeError`, because a closed
   widget has no `model_id`. The shape now writes the `model_id` that the widget had. ELK
   JSON loads it as a `NodeShape`, with a warning that names the `model_id` ([#241])
+- After `ToggleCollapsedTool` hides a node, a refresh with nothing pending keeps the
+  collapsed diagram in the view. Before, each stage with no pending change gave its
+  input to the next stage. The view then got your tree without the projection that
+  `VisibilityPipe` makes, so it lost the slack port, and an edge pointed at the hidden
+  child. A stage with no pending change now keeps its output while its input stays the
+  same. A change to your tree that no stage observes, such as a new CSS class, therefore
+  shows at the next run of a stage, not at a refresh with nothing pending. A collapse
+  also sends less to the browser, because the kernel no longer sends your tree again as
+  the output of the text sizer ([#231])
 
 ### Development
 
@@ -865,6 +874,7 @@ removed names][migration-removed-names] lists every name that raises
 [#218]: https://github.com/jupyrdf/ipyelk/issues/218
 [#219]: https://github.com/jupyrdf/ipyelk/issues/219
 [#227]: https://github.com/jupyrdf/ipyelk/issues/227
+[#231]: https://github.com/jupyrdf/ipyelk/issues/231
 [#232]: https://github.com/jupyrdf/ipyelk/issues/232
 [#237]: https://github.com/jupyrdf/ipyelk/issues/237
 [#241]: https://github.com/jupyrdf/ipyelk/issues/241

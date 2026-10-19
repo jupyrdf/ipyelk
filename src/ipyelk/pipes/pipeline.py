@@ -240,8 +240,12 @@ class Pipeline(SyncedOutletPipe):
             pipe.status_update(PipeStatus.finished(start_time=pipe_start_time))
 
     async def _run_pipe(self, i: int, pipe: Pipe, flow: tuple[str, ...]) -> None:
+        value = pipe.inlet.value
         if not pipe.status.dirty():
-            pipe.outlet.value = pipe.inlet.value
+            # A clean stage keeps what it made from this value, such as the
+            # projection of a VisibilityPipe. A new value passes through (#231).
+            if value is not pipe._ran_on:
+                pipe.outlet.value = value
             return
         self.status_update(PipeStatus.running(), pipe=pipe)
         # A progress callback may have closed this pipeline and its stages.
@@ -250,6 +254,7 @@ class Pipeline(SyncedOutletPipe):
             await pipe.run(flow=flow if i == 0 else pipe.inlet.flow)
         else:
             await pipe.run()
+        pipe._ran_on = value
 
     def check_dirty(self, flow: tuple[str, ...] | None = None) -> bool:
         # check pipes and propagate flow to downstream pipes

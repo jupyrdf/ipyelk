@@ -75,8 +75,8 @@ async def test_shape_and_user_size_through_the_pipeline(monkeypatch):
 
 @pytest.mark.asyncio
 async def test_a_refresh_without_a_layout_shows_the_laid_out_size(monkeypatch):
-    """A refresh that runs no stage hands the user's tree to the view, which
-    must show the size the layout gave a node, not the input size.
+    """A refresh that runs no stage leaves the last layout in the view, which
+    shows the size the layout gave a node, not the input size (#231).
     """
     monkeypatch.setattr(BrowserTextSizer, "run", _browser_stage())
     monkeypatch.setattr(ElkJS, "run", _browser_stage(grow=(200.0, 150.0)))
@@ -89,11 +89,11 @@ async def test_a_refresh_without_a_layout_shows_the_laid_out_size(monkeypatch):
     assert node.properties.shape is circle
     assert (node.width, node.height) == (200, 150)
 
-    node.add_class("highlight")
+    laid_out = diagram.view.source.value
     diagram.refresh()
     await settle(diagram)
     assert diagram.pipe.status.exception is None
-    assert diagram.view.source.value is root
+    assert diagram.view.source.value is laid_out
     shown = diagram.view.source.get_state(key="value")["value"]["children"][0]
     assert (shown["width"], shown["height"]) == (200, 150)
     diagram.close()
