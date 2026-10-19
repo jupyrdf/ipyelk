@@ -114,6 +114,11 @@ class Pipeline(SyncedOutletPipe):
         if self._closed:
             raise asyncio.CancelledError
 
+    @T.validate("inlet", "outlet")
+    def _validate_open_ends(self, proposal: T.Bunch):
+        self._check_open(f"set {proposal['trait'].name}")
+        return proposal["value"]
+
     @T.validate("pipes")
     def _validate_pipes(self, proposal: T.Bunch) -> list[Pipe]:
         """Refuse any change once closed, a closed stage, a stage listed twice,

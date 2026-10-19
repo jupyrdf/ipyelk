@@ -141,6 +141,11 @@
   implement `run()` reject `trigger()`, and closed `ToolButton`s reject button callbacks
   with `ClosedError`, including tools closed with their diagram. Closing a diagram twice
   still does nothing ([#197]).
+- Raise on four more assignments to a closed widget. Setting `Diagram.layout` or
+  `Diagram.children` on a closed `Diagram`, or `Pipeline.inlet` or `Pipeline.outlet` on
+  a closed `Pipeline`, raises `ClosedError` with the same message as the other traits.
+  These assignments did not raise. A closed widget has no comm, so the browser did not
+  show the change ([#198]).
 - A closed tool names its class in the `ClosedError` from `trigger()` and button clicks,
   as a closed diagram or pipe does: "ToggleCollapsedTool is closed and cannot run; build
   a new ToggleCollapsedTool". It used to say "use a new tool". `Tool.closed` says

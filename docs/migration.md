@@ -1058,6 +1058,47 @@ if fit.closed:
 fit.ui.click()
 ```
 
+### Set `layout`, `children`, `inlet` and `outlet` before you close
+
+Four more assignments raise `ClosedError` after `close()`:
+
+- On a closed `Diagram`, an assignment to `Diagram.layout` or `Diagram.children`.
+- On a closed `Pipeline`, an assignment to `Pipeline.inlet` or `Pipeline.outlet`.
+
+In 2.x, these assignments did not raise. A closed widget has no connection to the
+browser, so the browser did not show the change. The message of the `ClosedError` is the
+same as for the other assignments in the section above.
+
+This change affects code that sets one of these four traits after `close()`. The change
+is in [#198].
+
+```python
+# both versions
+import ipywidgets as W
+
+from ipyelk import Diagram, from_element
+from ipyelk.elements import Node
+
+diagram = from_element(Node(id="root"))
+diagram.close()
+```
+
+```python
+# 2.x
+diagram.layout = W.Layout(height="400px")
+```
+
+The 2.x code raises this error on 3.0:
+
+```text
+ClosedError: Diagram is closed and cannot set layout; build a new Diagram
+```
+
+```python
+# 3.0: make a new diagram with the layout
+diagram = Diagram(source=diagram.source, layout=W.Layout(height="400px"))
+```
+
 (migration-one-source)=
 
 ### Give each open diagram its own source
@@ -2469,6 +2510,7 @@ is gone. Thus, the 2.x imports fail.
 [#161]: https://github.com/jupyrdf/ipyelk/issues/161
 [#178]: https://github.com/jupyrdf/ipyelk/issues/178
 [#192]: https://github.com/jupyrdf/ipyelk/pull/192
+[#198]: https://github.com/jupyrdf/ipyelk/issues/198
 [#202]: https://github.com/jupyrdf/ipyelk/pull/202
 [#206]: https://github.com/jupyrdf/ipyelk/pull/206
 [#208]: https://github.com/jupyrdf/ipyelk/issues/208

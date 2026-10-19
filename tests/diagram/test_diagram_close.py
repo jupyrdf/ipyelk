@@ -511,3 +511,28 @@ def test_closing_closes_a_replaced_default_layout_and_ui() -> None:
 
     assert live_widgets() - before == sum(map(len, given))
     assert all(is_open(widget) for widgets in given for widget in widgets)
+
+
+CLOSED_TRAITS = {
+    "Diagram.layout": (lambda: Diagram(source=make_source()), "layout", W.Layout),
+    "Diagram.children": (lambda: Diagram(source=make_source()), "children", tuple),
+    "Pipeline.inlet": (DefaultFlow, "inlet", MarkElementWidget),
+    "Pipeline.outlet": (DefaultFlow, "outlet", MarkElementWidget),
+}
+
+
+@pytest.mark.parametrize("name", CLOSED_TRAITS)
+def test_a_closed_widget_refuses_layout_children_inlet_and_outlet(name: str) -> None:
+    build, trait, value = CLOSED_TRAITS[name]
+    widget = build()
+    widget.close()
+    before = getattr(widget, trait)
+    cls = type(widget).__name__
+    again = "build a new Diagram" if cls == "Diagram" else "use a new pipe"
+    msg = f"^{cls} is closed and cannot set {trait}; {again}$"
+
+    with pytest.raises(ClosedError, match=msg):
+        setattr(widget, trait, value())
+
+    assert getattr(widget, trait) is before
+    widget.close()

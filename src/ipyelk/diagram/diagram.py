@@ -56,7 +56,8 @@ class Diagram(StyledWidget):
 
     A closed diagram (``closed`` is True) raises ``ClosedError`` on
     ``refresh()``, ``register_tool()`` and on setting ``source``, ``pipe``,
-    ``view``, ``tools``, ``toolbar``, ``symbols`` or ``style``.
+    ``view``, ``tools``, ``toolbar``, ``symbols``, ``style``, ``layout`` or
+    ``children``.
 
     """
 
@@ -159,10 +160,15 @@ class Diagram(StyledWidget):
             msg = f"{name} is closed and cannot {action}; build a new {name}"
             raise ClosedError(msg)
 
-    @T.validate("tools", "toolbar", "symbols", "style")
+    @T.validate("tools", "toolbar", "symbols", "style", "layout")
     def _validate_open(self, proposal: T.Bunch):
         self._check_open(f"set {proposal['trait'].name}")
         return proposal["value"]
+
+    @T.validate("children")
+    def _valid_children(self, proposal: T.Bunch):
+        self._check_open("set children")
+        return super()._valid_children(proposal)
 
     @T.validate("source")
     def _validate_source(self, proposal: T.Bunch) -> MarkElementWidget:
