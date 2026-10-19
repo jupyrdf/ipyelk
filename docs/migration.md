@@ -1695,7 +1695,7 @@ The 2.x code raises this error on 3.0:
 ```text
 ValidationError: 1 validation error for Path
 use
-  String should match pattern '^\s*[Mm][\sMmZzLlHhVvCcSsQqTtAa0-9eE+\-.,]*$' [type=string_pattern_mismatch, input_value='hello', input_type=str]
+  String should match pattern '^[ \t\n\r\f]*[Mm][ \t\n\r\f]*[0-9+\-.][ \t\n\r\fMmZzLlHhVvCcSsQqTtAa0-9eE+\-.,]*$' [type=string_pattern_mismatch, input_value='hello', input_type=str]
 ```
 
 ```python
