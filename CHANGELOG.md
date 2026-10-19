@@ -596,6 +596,11 @@ removed names][migration-removed-names] lists every name that raises
   shows at the next run of a stage, not at a refresh with nothing pending. A collapse
   also sends less to the browser, because the kernel no longer sends your tree again as
   the output of the text sizer ([#231])
+- If no event loop runs, for example in a script, `Tool.trigger()` raises a
+  `RuntimeError` that says what to do: call it from a coroutine that you run with
+  `asyncio.run(...)`. Before, it raised the `RuntimeError` of `asyncio`,
+  `no running event loop`, and Python warned that the coroutine `Tool._execute` was never
+  awaited. It also cancelled the task of an earlier `trigger()`, which it now keeps
 
 ### Development
 
