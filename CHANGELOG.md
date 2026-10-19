@@ -497,6 +497,22 @@ removed names][migration-removed-names] lists every name that raises
   and a `layout` or tool `ui` passed in. A closed diagram's pipe is closed, so another
   diagram can no longer take it. `Tool.close()` also closes the `ui` the tool built, and
   `Viewer.close()` its tools ([#191])
+- Close a default `layout` or tool `ui` that user code replaced. A `Diagram`, a `Viewer`
+  or a `Toolbar` closed the `layout` it built only while it still used that layout, and
+  a tool closed the `ui` it built only while it still used that `ui`. Each replacement
+  thus left the default open after `close()`: one widget for a `layout`, and three for
+  the default button of a tool. A replacement that user code assigned stays open
+  ([#198])
+- Keep the record of the stages that a `Pipeline` accepted. A `Pipeline` refuses a new
+  stage that is closed, part of the current pipe, or owned by another open diagram, and
+  it does not check again a stage that it accepted before. Two gaps let a stage skip the
+  check:
+  - An observer of `pipes` also wrote the record. A subclass `@validate` method that set
+    `pipes` under `hold_trait_notifications()` skipped the check of `pipes`, and the
+    observer then recorded the unchecked stages as accepted. Now only the check, and the
+    default of `pipes`, write the record.
+  - A kept stage that another diagram took after the `Pipeline` accepted it stayed in
+    both. A kept stage owned by another open diagram now raises `TraitError` ([#198])
 - Log the routine "fixing N ids" message from `ValidationPipe` at debug level instead of
   warning: assigning ids to id-less elements is the normal path (`fix_null_id=True`), so
   every diagram built from id-less elements logged it
@@ -868,6 +884,7 @@ removed names][migration-removed-names] lists every name that raises
 [#187]: https://github.com/jupyrdf/ipyelk/issues/187
 [#191]: https://github.com/jupyrdf/ipyelk/issues/191
 [#197]: https://github.com/jupyrdf/ipyelk/issues/197
+[#198]: https://github.com/jupyrdf/ipyelk/issues/198
 [#199]: https://github.com/jupyrdf/ipyelk/issues/199
 [#200]: https://github.com/jupyrdf/ipyelk/issues/200
 [#201]: https://github.com/jupyrdf/ipyelk/issues/201

@@ -46,9 +46,9 @@ def own_layout(widget, kwargs: dict):
 
 
 def close_own_layout(widget) -> None:
-    """Close the ``layout`` recorded by ``own_layout``, if it is still in use."""
+    """Close the ``layout`` recorded by ``own_layout``, also after a replacement."""
     layout = getattr(widget, "_own_layout", None)
-    if layout is not None and widget._trait_values.get("layout") is layout:
+    if layout is not None:
         layout.close()
 
 

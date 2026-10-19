@@ -127,7 +127,7 @@ class Pipeline(SyncedOutletPipe):
             if id(stage) in seen:
                 msg = f"{type(stage).__name__} is listed twice; use a new pipe"
             else:
-                msg = None if id(stage) in kept else self._refusal(stage)
+                msg = self._refusal(stage, kept=id(stage) in kept)
             seen.add(id(stage))
             if msg:
                 if self.comm is None:
@@ -137,20 +137,29 @@ class Pipeline(SyncedOutletPipe):
         self._stages = tuple(pipes)
         return pipes
 
-    def _refusal(self, stage: Pipe) -> str | None:
+    def _refusal(self, stage: Pipe, kept: bool = False) -> str | None:
+        """Why ``stage`` cannot be listed, or ``None``.
+
+        A ``kept`` stage was accepted before, so only a new owner refuses it.
+        """
         owner = self._owner()
         for sub in iter_pipes(stage):
             name = type(sub).__name__
-            if sub.comm is None:
+            if sub.comm is None and not kept:
                 return f"{name} is closed; use a new pipe"
             other = sub._owner()
-            if other is None:
+            if other is None or (kept and other is owner):
                 continue
             if other is owner:
                 return f"{name} is part of the current pipe; use a new pipe"
             where = "an open diagram" if owner is None else "another diagram"
             return f"{name} belongs to {where}; use a new pipe"
         return None
+
+    @T.observe("pipes", type="default")
+    def _record_default_stages(self, change: T.Bunch) -> None:
+        # a default skips ``_validate_pipes``, which records every other accepted value
+        self._stages = tuple(change.value)
 
     @T.observe("pipes")
     def _restage(self, change: T.Bunch) -> None:
@@ -160,7 +169,6 @@ class Pipeline(SyncedOutletPipe):
 
     @T.observe("pipes", "inlet")
     def _update_pipes(self, change=None):
-        self._stages = tuple(self.pipes)
         prev = self.inlet
         for pipe in self.pipes:
             pipe.inlet = prev
