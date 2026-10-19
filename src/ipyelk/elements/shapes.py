@@ -17,6 +17,7 @@ from pydantic import (
     BeforeValidator,
     ConfigDict,
     Field,
+    PrivateAttr,
     SerializationInfo,
     SerializerFunctionWrapHandler,
     ValidationInfo,
@@ -512,6 +513,9 @@ class Widget(NodeShape):
 
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
+    #: the ``model_id`` of ``widget`` when last validated open: closing drops its comm
+    _model_id: str | None = PrivateAttr(None)
+
     @model_validator(mode="before")
     @classmethod
     def find_widget(cls, data, info: ValidationInfo):
@@ -540,12 +544,22 @@ class Widget(NodeShape):
                 raise ValueError(msg)
         return data
 
+    @model_validator(mode="after")
+    def remember_model_id(self) -> Widget:
+        if self.widget.comm is not None:
+            self._model_id = self.widget.model_id
+        return self
+
     @model_serializer(mode="wrap")
     def serialize_shape(
         self, handler: SerializerFunctionWrapHandler, info: SerializationInfo
     ):
         data = super().serialize_shape(handler, info)
-        serialize_value(data, "use", self.widget.model_id, info)
+        # a closed widget writes the model_id it had, which ELK JSON loads as a
+        # NodeShape with a warning (#241)
+        widget = self.widget
+        model_id = widget.model_id if widget.comm is not None else self._model_id
+        serialize_value(data, "use", model_id or self.use, info)
         return data
 
 

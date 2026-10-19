@@ -16,6 +16,7 @@ from pydantic import ValidationError
 
 from ipyelk.elements import (
     LabelProperties,
+    Node,
     NodeProperties,
     PortProperties,
     convert_elkjson,
@@ -213,3 +214,27 @@ def test_serialization_does_not_change_the_shape(widget):
         shape.model_dump()
         shape.model_dump(mode="json", exclude_none=True)
         assert (dict(shape.__dict__), shape.model_fields_set) == before, shape
+
+
+def test_a_widget_shape_with_a_closed_widget_writes_its_last_model_id(widget):
+    """A closed widget writes the ``model_id`` it had, which loads as a
+    ``NodeShape`` (#241).
+    """
+    shape = shapes.Widget(widget=widget)
+    model_id = widget.model_id
+    assert shape.model_dump(mode="json")["use"] == model_id, "a live widget"
+    widget.close()
+    assert shape.model_dump(mode="json")["use"] == model_id
+    assert shape.model_dump()["use"] == model_id
+    root = Node(
+        id="root", children=[Node(id="n", properties=NodeProperties(shape=shape))]
+    )
+    dumped = root.model_dump(mode="json", exclude_none=True)
+    assert dumped["children"][0]["properties"]["shape"] == {
+        "type": "node:widget",
+        "use": model_id,
+    }
+    with pytest.warns(UserWarning, match=f"model_id {model_id!r}"):
+        wire = convert_elkjson(root.model_dump())
+    assert type(wire.children[0].properties.shape) is shapes.NodeShape
+    assert wire.children[0].properties.shape.use == model_id

@@ -583,6 +583,10 @@ removed names][migration-removed-names] lists every name that raises
   `NodeProperties(shape={"type": "node:widget", "use": "x"})`, raises `ValidationError`,
   as `Widget(use="x")` does. Before, it loaded as a `NodeShape` and warned, as ELK JSON
   does ([#153])
+- After you close the widget of a `Widget` shape, the next pipeline run no longer fails.
+  Before, the serialization of the shape raised `AttributeError`, because a closed
+  widget has no `model_id`. The shape now writes the `model_id` that the widget had. ELK
+  JSON loads it as a `NodeShape`, with a warning that names the `model_id` ([#241])
 
 ### Development
 
@@ -863,6 +867,7 @@ removed names][migration-removed-names] lists every name that raises
 [#227]: https://github.com/jupyrdf/ipyelk/issues/227
 [#232]: https://github.com/jupyrdf/ipyelk/issues/232
 [#237]: https://github.com/jupyrdf/ipyelk/issues/237
+[#241]: https://github.com/jupyrdf/ipyelk/issues/241
 [eclipse-sprotty/sprotty#573]: https://github.com/eclipse-sprotty/sprotty/issues/573
 [ipykernel#1529]: https://github.com/ipython/ipykernel/pull/1529
 [migration]: https://ipyelk.readthedocs.io/en/latest/migration.html
