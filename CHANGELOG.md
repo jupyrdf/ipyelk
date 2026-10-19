@@ -592,8 +592,10 @@ removed names][migration-removed-names] lists every name that raises
   input to the next stage. The view then got your tree without the projection that
   `VisibilityPipe` makes, so it lost the slack port, and an edge pointed at the hidden
   child. A stage with no pending change now keeps its output while its input stays the
-  same. A change to your tree that no stage observes, such as a new CSS class, therefore
-  shows at the next run of a stage, not at a refresh with nothing pending. A collapse
+  same. If you change your tree in place, for example with a new CSS class or label text,
+  record a change report before you call `refresh()`. For example, call
+  `diagram.source.record(F.Layout)`, with `F` as `ipyelk.pipes.flows`. 2.1.1 did not
+  show such a change at a refresh with nothing pending either. A collapse
   also sends less to the browser, because the kernel no longer sends your tree again as
   the output of the text sizer ([#231])
 - If no event loop runs, for example in a script, `Tool.trigger()` raises a

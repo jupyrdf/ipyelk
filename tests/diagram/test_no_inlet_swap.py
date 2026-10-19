@@ -14,7 +14,6 @@ import asyncio
 import pytest
 
 from ipyelk import Diagram
-from ipyelk.diagram import SprottyViewer
 from ipyelk.elements import Label, Node, NodeProperties
 from ipyelk.pipes import MarkElementWidget, Pipeline, ValidationPipe, VisibilityPipe
 from ipyelk.pipes.elkjs import ElkJS
@@ -193,18 +192,12 @@ async def test_collapse_does_not_remeasure(browser):
     assert list(diagram.view.selection.elements()) == [c]
 
 
-def _refresh(diagram: Diagram) -> None:  # nothing pending
-    diagram.refresh()
-
-
-def _new_view(diagram: Diagram) -> None:
-    diagram.view = SprottyViewer()
-
-
 @pytest.mark.asyncio
-@pytest.mark.parametrize("again", [_refresh, _new_view])
-async def test_a_refresh_after_a_collapse_shows_the_projection(browser, again):
-    """Nothing pending after a collapse: the view keeps the slack port (#231)."""
+async def test_a_refresh_after_a_collapse_shows_the_projection(browser):
+    """Nothing pending after a collapse: the view keeps the slack port (#231).
+
+    Fit, Center and a new ``diagram.view`` do not refresh, so this is the only path.
+    """
     root, _a, _b, _c = user_graph()
     diagram = Diagram(source=MarkElementWidget(value=root))
     await settle(diagram)
@@ -214,7 +207,7 @@ async def test_a_refresh_after_a_collapse_shows_the_projection(browser, again):
     collapsed = diagram.view.source.get_state(key="value")["value"]
     assert collapsed["edges"][0]["sources"] == ["c.slack"]
 
-    again(diagram)  # Fit and Center send a view command and do not refresh
+    diagram.refresh()
     await settle(diagram)
 
     assert diagram.pipe.status.exception is None
