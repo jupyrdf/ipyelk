@@ -16,6 +16,7 @@ from ..pipes import flows as F
 from ..pipes.util import iter_pipes
 from ..styled_widget import StyledWidget
 from ..tools import PipelineProgressBar, ToggleCollapsedTool, Tool, Toolbar
+from ..util import open_owner
 from .sprotty_viewer import SprottyViewer
 from .viewer import Viewer
 
@@ -30,8 +31,8 @@ class Diagram(StyledWidget):
     source: :py:class:`~ipyelk.pipes.MarkElementWidget`
         input source to the diagram's processing pipe. A source feeds one open
         diagram: a source of another open diagram is refused with
-        ``TraitError``. A diagram releases its source when it closes or gets a
-        new one.
+        ``TraitError``; ``source.diagram`` is that diagram. A diagram releases
+        its source when it closes or gets a new one.
     pipe: :py:class:`~ipyelk.pipes.Pipe`
         processing pipe (that may contain sub-pipes). Pipes perform various
         tasks like adding x/y and width/height layouts or calculating text label sizes.
@@ -44,7 +45,8 @@ class Diagram(StyledWidget):
         an inlet/outlet passed in.
     view: :py:class:`~ipyelk.diagram.viewer.Viewer`
         output view that will render the pipe outlet; closed with the diagram.
-        Pass it at construction: assigning a different view raises ``TraitError``.
+        Pass it at construction: assigning a different view, or giving a view of
+        another open diagram, raises ``TraitError``.
     tools: tuple :py:class:`~ipyelk.tools.Tool`
         list of tools that a user of the diagram might use to manipulate the
         state of the diagram; closed with the diagram.
@@ -77,9 +79,13 @@ class Diagram(StyledWidget):
         #: links to the default view and toolbar
         self._links: list[T.link] = []
         super().__init__(*args, **kwargs)
-        self.add_class("jp-ElkApp")
-        self._update_children()
-        self._update_tools()
+        try:
+            self.add_class("jp-ElkApp")
+            self._update_children()
+            self._update_tools()  # runs user code: a tool's tee or on_done
+        except BaseException:
+            self.close()  # release the source and view this diagram claimed
+            raise
 
     @T.default("layout")
     def _default_layout(self):
@@ -162,13 +168,13 @@ class Diagram(StyledWidget):
     def _validate_source(self, proposal: T.Bunch) -> MarkElementWidget:
         self._check_open("set source")
         source = proposal["value"]
-        owner = source._owner()
+        owner = source.diagram
         if owner is not None and owner is not self:
             name = type(source).__name__
             msg = (
-                f"{name} feeds another open diagram; close that diagram or give "
-                f"this one its own {name}. To show one diagram in two places, "
-                "display the same Diagram twice"
+                f"{name} feeds another open diagram; close that diagram with "
+                f"source.diagram.close() or give this one its own {name}. "
+                "To show one diagram in two places, display the same Diagram twice"
             )
             raise T.TraitError(msg)
         return source
@@ -182,6 +188,15 @@ class Diagram(StyledWidget):
             msg = (
                 f"{name}.view cannot be replaced, because the tools are bound to "
                 f"it; close this {name}, then build a new {name}(source=..., view=...)"
+            )
+            raise T.TraitError(msg)
+        owner = open_owner(view._diagram)
+        if owner is not None and owner is not self:
+            name = type(view).__name__
+            msg = (
+                f"{name} belongs to another open diagram; give this one its own "
+                f"{name}. To show one diagram in two places, display the same "
+                "Diagram twice"
             )
             raise T.TraitError(msg)
         return view
@@ -235,6 +250,9 @@ class Diagram(StyledWidget):
         Closing again does nothing.
         """
         self._closed = True
+        source = self._trait_values.get("source")
+        if source is not None and source._diagram and source._diagram() is self:
+            source._diagram = None  # free for another diagram
         pipe = self._trait_values.get("pipe")
         if pipe is not None and pipe._diagram and pipe._diagram() is self:
             self._release_pipe(pipe)
@@ -245,10 +263,12 @@ class Diagram(StyledWidget):
         for tool in self._trait_values.get("tools", ()):
             tool.on_done(self.refresh, remove=True)
             tool.close()
-        for name in ("toolbar", "view"):
-            widget = self._trait_values.get(name)
-            if widget is not None:
-                widget.close()
+        toolbar = self._trait_values.get("toolbar")
+        if toolbar is not None:
+            toolbar.close()
+        view = self._trait_values.get("view")
+        if view is not None and view._diagram and view._diagram() is self:
+            view.close()  # not a view a refused construction was given
         super().close()
 
     def _update_children(self):
@@ -257,7 +277,7 @@ class Diagram(StyledWidget):
         self.children = [self.view, self.toolbar]
 
     def _update_view_sources(self):
-        self.source._diagram = weakref.ref(self)  # see _validate_source
+        self.source._diagram = self.view._diagram = weakref.ref(self)  # see _validate_*
         self.source.record(F.New)
         self.pipe.inlet = self.source
         self.view.source = self.pipe.outlet

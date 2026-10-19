@@ -1059,6 +1059,10 @@ In 2.x, two diagrams could share a source, but they did not work together:
 A closed diagram releases its source. A diagram also releases its old source when it
 gets a new one. To show one diagram in two places, display the same `Diagram` twice.
 
+`MarkElementWidget.diagram` is the open diagram of a source, or `None`. You cannot set
+it. The outlet of a pipe stage, such as `first.pipe.outlet`, is not a source. This rule
+does not apply to it.
+
 This change affects code that gives the source of an open diagram to a second diagram.
 The change is in [#178].
 
@@ -1078,7 +1082,7 @@ second = Diagram(source=first.source)
 The 2.x code raises this error on 3.0:
 
 ```text
-TraitError: MarkElementWidget feeds another open diagram; close that diagram or give this one its own MarkElementWidget. To show one diagram in two places, display the same Diagram twice
+TraitError: MarkElementWidget feeds another open diagram; close that diagram with source.diagram.close() or give this one its own MarkElementWidget. To show one diagram in two places, display the same Diagram twice
 ```
 
 ```python
@@ -1090,6 +1094,39 @@ second = from_element(Node(id="root"))
 # 3.0: or close the first diagram, and give its source to the second diagram
 first.close()
 second = Diagram(source=first.source)
+```
+
+#### Close the last diagram before you run its cell again
+
+In a notebook, the source and the diagram are often in different cells. If you run the
+cell of the diagram again, `Diagram(source=source)` raises the error above. The diagram
+of the last run is still open, because ipywidgets keeps every open widget. This is also
+true when no name refers to that diagram. Use `source.diagram` to close it.
+
+```python
+# both versions
+from ipyelk.pipes import MarkElementWidget
+
+source = MarkElementWidget(value=Node(id="root"))  # cell 1
+diagram = Diagram(source=source)  # cell 2, first run
+```
+
+```python
+# 2.x
+diagram = Diagram(source=source)  # cell 2, second run
+```
+
+The 2.x code raises this error on 3.0:
+
+```text
+TraitError: MarkElementWidget feeds another open diagram; close that diagram with source.diagram.close() or give this one its own MarkElementWidget. To show one diagram in two places, display the same Diagram twice
+```
+
+```python
+# 3.0: close the diagram of the last run, then make the new diagram
+if source.diagram is not None:
+    source.diagram.close()
+diagram = Diagram(source=source)  # cell 2
 ```
 
 (migration-fixed-view)=
@@ -1131,6 +1168,27 @@ TraitError: Diagram.view cannot be replaced, because the tools are bound to it; 
 # 3.0: close the diagram, and give its source and the new viewer to a new diagram
 diagram.close()
 diagram = Diagram(source=diagram.source, view=SprottyViewer())
+```
+
+A viewer is the view of one open diagram, too. `Diagram(view=...)` raises
+`traitlets.TraitError` when the viewer is the view of another open diagram. In 2.x, both
+diagrams set the source of the viewer, and the last diagram won. When one diagram
+closed, it also closed the viewer of the other diagram.
+
+```python
+# 2.x
+second = Diagram(view=diagram.view)
+```
+
+The 2.x code raises this error on 3.0:
+
+```text
+TraitError: SprottyViewer belongs to another open diagram; give this one its own SprottyViewer. To show one diagram in two places, display the same Diagram twice
+```
+
+```python
+# 3.0: give the second diagram its own viewer
+second = Diagram(view=SprottyViewer())
 ```
 
 (migration-value-sync)=
@@ -2212,8 +2270,8 @@ is gone. Thus, the 2.x imports fail.
 [#178]: https://github.com/jupyrdf/ipyelk/issues/178
 [#192]: https://github.com/jupyrdf/ipyelk/pull/192
 [#202]: https://github.com/jupyrdf/ipyelk/pull/202
-[#208]: https://github.com/jupyrdf/ipyelk/issues/208
 [#206]: https://github.com/jupyrdf/ipyelk/pull/206
+[#208]: https://github.com/jupyrdf/ipyelk/issues/208
 [#223]: https://github.com/jupyrdf/ipyelk/pull/223
 [#226]: https://github.com/jupyrdf/ipyelk/pull/226
 [#233]: https://github.com/jupyrdf/ipyelk/pull/233

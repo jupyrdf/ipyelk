@@ -2,7 +2,15 @@
 # Distributed under the terms of the Modified BSD License.
 from __future__ import annotations
 
+import weakref
+
 from .elements.layout_options.model import strip_none
+
+
+def open_owner(ref: weakref.ref | None):
+    """The widget ``ref`` points to, if it is still alive and open; else ``None``."""
+    owner = ref() if ref else None
+    return owner if owner is not None and owner.comm is not None else None
 
 
 def close_widget(widget) -> None:

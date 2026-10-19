@@ -1,6 +1,8 @@
 # Copyright (c) 2026 ipyelk contributors.
 # Distributed under the terms of the Modified BSD License.
-"""A source feeds one open diagram (#178), and a diagram keeps its view (#208)."""
+"""A source and a view feed one open diagram (#178), and a diagram keeps its view
+(#208).
+"""
 
 from __future__ import annotations
 
@@ -26,9 +28,13 @@ from .test_pipe_replacement import is_open, live_widgets, make_source
 pytestmark = pytest.mark.usefixtures("headless")
 
 SHARED = re.escape(
-    "MarkElementWidget feeds another open diagram; close that diagram or give this "
-    "one its own MarkElementWidget. To show one diagram in two places, display the "
-    "same Diagram twice"
+    "MarkElementWidget feeds another open diagram; close that diagram with "
+    "source.diagram.close() or give this one its own MarkElementWidget. To show one "
+    "diagram in two places, display the same Diagram twice"
+)
+SHARED_VIEW = re.escape(
+    "SprottyViewer belongs to another open diagram; give this one its own "
+    "SprottyViewer. To show one diagram in two places, display the same Diagram twice"
 )
 FIXED_VIEW = re.escape(
     "Diagram.view cannot be replaced, because the tools are bound to it; close this "
@@ -50,7 +56,7 @@ def snapshot(diagram: Diagram) -> dict:
         "view.source": diagram.view.source,
         "children": diagram.children,
         "tools": diagram.tools,
-        "owner": diagram.source._owner(),
+        "owner": diagram.source.diagram,
     }
 
 
@@ -90,10 +96,64 @@ def test_a_source_of_an_open_diagram_is_refused_on_assignment() -> None:
     assert [snapshot(first), snapshot(second)] == before
 
 
+def test_the_diagram_of_a_source_is_read_only() -> None:
+    diagram = Diagram(source=make_source())
+    with pytest.raises(AttributeError):
+        diagram.source.diagram = None  # type: ignore[misc]
+    assert diagram.source.diagram is diagram
+
+
+# running a notebook cell again ##########################################################
+
+
+def test_running_the_diagram_cell_again_names_the_fix() -> None:
+    source = make_source()  # cell 1
+    diagram = Diagram(source=source)  # cell 2
+    first = weakref.ref(diagram)
+    with pytest.raises(T.TraitError, match=SHARED):
+        diagram = Diagram(source=source)  # cell 2, run again
+    del diagram
+    gc.collect()
+    assert source.diagram is first()  # ipywidgets keeps every open widget
+
+    source.diagram.close()
+    diagram = Diagram(source=source)
+    assert source.diagram is diagram
+
+
+def test_a_cell_that_closes_the_last_diagram_runs_again() -> None:
+    source = make_source()
+    runs = []
+    for _ in range(3):  # the cell of the migration guide, run three times
+        if source.diagram is not None:
+            source.diagram.close()
+        diagram = Diagram(source=source)
+        runs.append(diagram)
+
+    assert [run.closed for run in runs] == [True, True, False]
+    assert source.diagram is diagram
+
+
+def test_a_diagram_that_fails_to_build_releases_its_source(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    def boom(self: Diagram, change: object = None) -> None:
+        raise RuntimeError("boom")
+
+    source = make_source()
+    with monkeypatch.context() as patch:
+        patch.setattr(Diagram, "_update_tools", boom)  # user code in a tool raises
+        with pytest.raises(RuntimeError, match="boom"):
+            Diagram(source=source)
+
+    assert source.diagram is None
+    assert Diagram(source=source).pipe.inlet is source
+
+
 def test_a_diagram_can_take_its_own_source_again() -> None:
     diagram = Diagram(source=make_source())
     diagram.source = diagram.source
-    assert diagram.source._owner() is diagram
+    assert diagram.source.diagram is diagram
 
 
 # a closed or replaced diagram releases its source #######################################
@@ -104,6 +164,7 @@ def test_a_closed_diagram_releases_its_source(assign: bool) -> None:
     first = Diagram(source=make_source())
     source = first.source
     first.close()
+    assert source._diagram is None
 
     if assign:
         second = Diagram(source=make_source())
@@ -112,7 +173,7 @@ def test_a_closed_diagram_releases_its_source(assign: bool) -> None:
         second = Diagram(source=source)
 
     assert second.pipe.inlet is source
-    assert source._owner() is second
+    assert source.diagram is second
     assert is_open(source)
 
 
@@ -129,7 +190,7 @@ async def test_a_diagram_closed_mid_run_releases_its_source() -> None:
         await task
 
     assert second[0].pipe.inlet is source
-    assert source._owner() is second[0]
+    assert source.diagram is second[0]
     assert first.closed
 
 
@@ -159,9 +220,9 @@ def test_closed_diagrams_are_collected_and_leave_no_notifiers() -> None:
     del diagram
     gc.collect()
 
-    assert notifiers(source) == count
+    assert notifiers(source) == count  # 0 added today: a guard for a future observer
     assert not any(ref() for ref in refs)
-    assert source._owner() is None
+    assert source.diagram is None
 
 
 # a diagram keeps its view ###############################################################
@@ -195,6 +256,30 @@ def test_a_new_view_is_refused_and_changes_nothing() -> None:
     assert snapshot(diagram) == before
     assert other.source is None
     diagram.view = diagram.view  # the same view is not a change
+
+
+@pytest.mark.parametrize("given", [True, False], ids=["given-view", "default-view"])
+def test_a_view_of_an_open_diagram_is_refused(given: bool) -> None:
+    first = Diagram(source=make_source(), view=SprottyViewer()) if given else Diagram()
+    source = make_source()
+    before = snapshot(first)
+    widgets = live_widgets()
+
+    with pytest.raises(T.TraitError, match=SHARED_VIEW):
+        Diagram(source=source, view=first.view)
+
+    assert live_widgets() == widgets
+    assert snapshot(first) == before
+    assert source.diagram is None
+
+
+def test_a_refused_construction_leaves_the_given_view_open() -> None:
+    first = Diagram(source=make_source())
+    view = SprottyViewer()
+    with pytest.raises(T.TraitError, match=SHARED):
+        Diagram(source=first.source, view=view)
+    gc.collect()
+    assert is_open(view)
 
 
 def test_a_closed_diagram_names_its_state_before_the_view_rule() -> None:

@@ -302,19 +302,22 @@
   `source.index.elements = None` makes the next run rebuild it, as in 2.x ([#237]).
 - A source feeds one open diagram. `Diagram(source=...)` and an assignment to
   `Diagram.source` raise `TraitError` when the `MarkElementWidget` is the source of
-  another open `Diagram`. The message names the fix: close the other diagram, or give
-  this one its own `MarkElementWidget`. In 2.x, both diagrams took the pending changes
-  from one source, so a recorded change did not reach both. Both diagrams also wrote
-  their layout onto the same elements, so the last layout won. A closed diagram releases
-  its source, also when it closes during a run. A diagram releases its old source when
-  it gets a new one. To show one diagram in two places, display the same `Diagram` twice
-  ([#178]).
+  another open `Diagram`. The message names the fix: close the other diagram with
+  `source.diagram.close()`, or give this one its own `MarkElementWidget`.
+  `MarkElementWidget.diagram` is the open diagram of a source, or `None`. Thus, a
+  notebook can close the diagram of the last run of a cell. In 2.x, both diagrams took
+  the pending changes from one source, so a recorded change did not reach both. Both
+  diagrams also wrote their layout onto the same elements, so the last layout won. A
+  closed diagram releases its source, also when it closes during a run. A diagram
+  releases its old source when it gets a new one. To show one diagram in two places,
+  display the same `Diagram` twice ([#178]).
 - `Diagram.view` is fixed after construction. Pass the viewer as `Diagram(view=viewer)`.
   An assignment of a different viewer raises `TraitError`. The diagram's tools stay
   bound to the viewer that the diagram started with. In 2.x, the assignment moved the
   pipe's output to the new viewer, but the selection, the painter, the Fit and Center
   buttons and `ToggleCollapsedTool` still acted on the old viewer. The old viewer also
-  stayed open. An assignment of the same viewer does nothing ([#208]).
+  stayed open. An assignment of the same viewer does nothing. `Diagram(view=...)` also
+  raises `TraitError` when the viewer is the view of another open diagram ([#208]).
 
 #### Migration
 

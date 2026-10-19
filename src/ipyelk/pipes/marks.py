@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import warnings
 import weakref
+from typing import TYPE_CHECKING
 
 import ipywidgets as W
 import traitlets as T
@@ -18,6 +19,10 @@ from ..elements import (
     elk_serialization,
 )
 from ..exceptions import RemovedAPI, check_removed
+from ..util import open_owner
+
+if TYPE_CHECKING:
+    from ..diagram import Diagram
 
 #: the warning that reading or writing ``MarkIndex.context`` emits through 3.x
 CONTEXT_DEPRECATED = (
@@ -155,10 +160,14 @@ class MarkElementWidget(W.Widget):
         check_removed(type(self), kwargs)
         super().__init__(**kwargs)
 
-    def _owner(self) -> W.Widget | None:
-        """The open diagram this mark is the ``source`` of, if any."""
-        owner = self._diagram() if self._diagram else None
-        return owner if owner is not None and owner.comm is not None else None
+    @property
+    def diagram(self) -> Diagram | None:
+        """The open diagram this mark is the ``source`` of, or ``None``.
+
+        Read-only. A source feeds one open diagram, so ``source.diagram.close()``
+        frees the source for a new diagram, also when no name holds the old one.
+        """
+        return open_owner(self._diagram)
 
     @T.default("index")
     def _default_index(self) -> MarkIndex:
