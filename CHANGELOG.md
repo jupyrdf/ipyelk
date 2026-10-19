@@ -598,6 +598,15 @@ removed names][migration-removed-names] lists every name that raises
   show such a change at a refresh with nothing pending either. A collapse also sends
   less to the browser, because the kernel no longer sends your tree again as the output
   of the text sizer ([#231])
+- After `ToggleCollapsedTool` hides a node, a run that measures text again keeps the
+  collapsed diagram in the view. Such a run follows a label text change that you record
+  with `F.Text.text`. It also follows `diagram.source.record(F.Layout)` or
+  `record(F.New)`, then `refresh()`. Before, the text sizer got your tree with an edge
+  to the hidden node, and the load of its answer raised `NotFoundError`. A diagram with
+  a node that is hidden from the start failed the same way at its first run. Now
+  `model_dump()` of a tree leaves out each edge to a hidden element, as it leaves out
+  the element. `VisibilityPipe` now observes each change that `ElkJS` observes, so it
+  makes the projection again after the text sizer ([#246])
 - If no event loop runs, for example in a script, `Tool.trigger()` raises a
   `RuntimeError` that says what to do: call it from a coroutine that you run with
   `asyncio.run(...)`. Before, it raised the `RuntimeError` of `asyncio`,
@@ -886,6 +895,7 @@ removed names][migration-removed-names] lists every name that raises
 [#232]: https://github.com/jupyrdf/ipyelk/issues/232
 [#237]: https://github.com/jupyrdf/ipyelk/issues/237
 [#241]: https://github.com/jupyrdf/ipyelk/issues/241
+[#246]: https://github.com/jupyrdf/ipyelk/issues/246
 [eclipse-sprotty/sprotty#573]: https://github.com/eclipse-sprotty/sprotty/issues/573
 [ipykernel#1529]: https://github.com/ipython/ipykernel/pull/1529
 [migration]: https://ipyelk.readthedocs.io/en/latest/migration.html

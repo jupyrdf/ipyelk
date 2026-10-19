@@ -16,6 +16,7 @@ import pytest
 from ipyelk import Diagram
 from ipyelk.elements import Label, Node, NodeProperties
 from ipyelk.pipes import MarkElementWidget, Pipeline, ValidationPipe, VisibilityPipe
+from ipyelk.pipes import flows as F
 from ipyelk.pipes.elkjs import ElkJS
 from ipyelk.pipes.text_sizer import BrowserTextSizer
 from ipyelk.tools import ToggleCollapsedTool
@@ -212,4 +213,141 @@ async def test_a_refresh_after_a_collapse_shows_the_projection(browser):
 
     assert diagram.pipe.status.exception is None
     assert diagram.view.source.get_state(key="value")["value"] == collapsed
+    diagram.close()
+
+
+def _change_text(diagram: Diagram, b: Node) -> None:
+    b.labels[0].text = "B longer"
+    diagram.source.record(F.Text.text)
+
+
+def _record(tag: str):
+    def change(diagram: Diagram, _b: Node) -> None:
+        diagram.source.record(tag)
+
+    return change
+
+
+#: runs that measure text again (#246)
+REMEASURE = {
+    "text": _change_text,
+    "layout": _record(F.Layout),
+    "new": _record(F.New),
+}
+
+
+def _view(diagram: Diagram) -> dict:
+    return diagram.view.source.get_state(key="value")["value"]
+
+
+def _node(wire: dict, node_id: str) -> dict:
+    return next(n for n in wire["children"] if n["id"] == node_id)
+
+
+async def _collapse_a(diagram: Diagram) -> None:
+    diagram.view.selection.ids = ("a",)
+    await diagram.get_tool(ToggleCollapsedTool).trigger()
+    await settle(diagram)
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("change", REMEASURE.values(), ids=REMEASURE.keys())
+async def test_a_run_that_measures_text_after_a_collapse_shows_the_projection(
+    browser, change
+):
+    """The answer of the text sizer has no edge to the hidden ``c``, and the view
+    keeps the slack port (#246).
+    """
+    root, _a, b, c = user_graph()
+    diagram = Diagram(source=MarkElementWidget(value=root))
+    await settle(diagram)
+    await _collapse_a(diagram)
+    sizer = diagram.pipe.pipes[1]
+    sizer_runs = []
+    count_runs(sizer, sizer_runs)
+
+    change(diagram, b)
+    diagram.refresh()
+    await settle(diagram)
+
+    assert diagram.pipe.status.exception is None
+    assert sizer_runs == [{"action": "run"}], "the text is measured again"
+    view = _view(diagram)
+    assert _node(view, "a").get("children", []) == []
+    assert [p["id"] for p in _node(view, "a")["ports"]] == ["c.slack"]
+    assert view["edges"][0]["sources"] == ["c.slack"]
+    assert _node(view, "b")["labels"][0]["text"] == b.labels[0].text
+    assert diagram.pipe.inlet.index.elements.get("c") is c
+    diagram.close()
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("change", REMEASURE.values(), ids=REMEASURE.keys())
+async def test_an_expand_after_a_run_that_measures_text_shows_the_child(
+    browser, change
+):
+    """After #246's run, expanding ``a`` brings back ``c`` and its edge."""
+    root, _a, b, c = user_graph()
+    diagram = Diagram(source=MarkElementWidget(value=root))
+    await settle(diagram)
+    await _collapse_a(diagram)
+    change(diagram, b)
+    diagram.refresh()
+    await settle(diagram)
+
+    await _collapse_a(diagram)  # toggles ``c`` back
+
+    assert diagram.pipe.status.exception is None
+    assert c.properties.hidden is False
+    view = _view(diagram)
+    a_wire = _node(view, "a")
+    assert [n["id"] for n in a_wire["children"]] == ["c"]
+    assert a_wire["children"][0]["labels"][0]["width"] == pytest.approx(LABEL_WIDTH)
+    assert a_wire.get("ports", []) == []
+    assert view["edges"][0]["sources"] == ["c"]
+    diagram.close()
+
+
+@pytest.mark.asyncio
+async def test_a_node_hidden_from_the_start_lays_out_with_the_text_sizer(browser):
+    """The first run measures text with an edge to a hidden node (#246)."""
+    root, _a, _hidden = hidden_graph()
+    diagram = Diagram(source=MarkElementWidget(value=root))
+    await settle(diagram)
+
+    assert diagram.pipe.status.exception is None
+    view = _view(diagram)
+    assert [p["id"] for p in _node(view, "a")["ports"]] == ["hidden.slack"]
+    assert view["edges"][0]["sources"] == ["hidden.slack"]
+    diagram.close()
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("collapse", [False, True], ids=["expanded", "collapsed"])
+async def test_a_layout_option_change_reaches_the_layout(monkeypatch, collapse):
+    """``VisibilityPipe`` projects again for a change that ``ElkJS`` lays out (#246)."""
+    laid_out = []
+
+    def record_and_lay_out(wire: dict) -> None:
+        laid_out.append(wire)
+        lay_out(wire)
+
+    monkeypatch.setattr(BrowserTextSizer, "run", _browser_stage(measure_labels))
+    monkeypatch.setattr(ElkJS, "run", _browser_stage(record_and_lay_out))
+    root, a, _b, _c = user_graph()
+    diagram = Diagram(source=MarkElementWidget(value=root))
+    await settle(diagram)
+    if collapse:
+        await _collapse_a(diagram)
+    padding = "[top=1,left=1,bottom=1,right=1]"
+
+    a.layoutOptions = {"org.eclipse.elk.padding": padding}
+    diagram.source.record(F.Node.layout_options)
+    diagram.refresh()
+    await settle(diagram)
+
+    assert diagram.pipe.status.exception is None
+    wire = laid_out[-1]
+    assert _node(wire, "a")["layoutOptions"] == {"org.eclipse.elk.padding": padding}
+    assert wire["edges"][0]["sources"] == (["c.slack"] if collapse else ["c"])
     diagram.close()

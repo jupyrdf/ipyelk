@@ -15,13 +15,8 @@ from .base import Pipe
 
 
 class VisibilityPipe(Pipe):
-    observes = TypedTuple(
-        T.Unicode(),
-        default_value=(
-            F.AnyHidden,
-            F.Layout,
-        ),
-    )
+    #: the projection carries what ElkJS lays out, label sizes included (#246)
+    observes = TypedTuple(T.Unicode(), default_value=(F.Anythinglayout,))
 
     @T.default("reports")
     def _default_reports(self):

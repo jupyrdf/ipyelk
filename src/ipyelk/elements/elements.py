@@ -46,6 +46,8 @@ from .shapes import (
 )
 from .shapes import Widget as WidgetShape
 
+#: while active, a dump keeps each edge to a hidden element: VisibilityPipe makes
+#: a slack edge of it
 exclude_hidden = CounterContextManager()
 exclude_layout = CounterContextManager()
 
@@ -291,7 +293,26 @@ class BaseElement(IDElement, abc.ABC):
         "labels", "ports", "children", "edges", mode="wrap", check_fields=False
     )
     def serialize_visible(self, elements, handler: SerializerFunctionWrapHandler):
-        return handler([el for el in elements if not el.properties.hidden])
+        visible = [el for el in elements if not el.properties.hidden]
+        if not exclude_hidden.active:
+            # an edge to a hidden element would point at nothing in the JSON;
+            # under ``exclude_hidden`` VisibilityPipe makes it a slack edge (#246)
+            visible = [el for el in visible if not _dangles(el)]
+        return handler(visible)
+
+
+def _dangles(el: BaseElement) -> bool:
+    return isinstance(el, Edge) and (is_hidden(el.source) or is_hidden(el.target))
+
+
+def is_hidden(el: HierarchicalElement) -> bool:
+    """Whether ``el`` or any of its ancestors is hidden."""
+    node: HierarchicalElement | None = el
+    while node is not None:
+        if node.properties.hidden:
+            return True
+        node = node.get_parent()
+    return False
 
 
 class ShapeElement(BaseElement, abc.ABC):
