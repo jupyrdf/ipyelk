@@ -1762,7 +1762,7 @@ print(index.root().id)
 The 2.x code raises this error on 3.0:
 
 ```text
-NotUniqueError: The index has 2 roots: a, b
+NotUniqueError: The index has 2 roots: a, b. 2 nodes have no parent link. A child put in `children` after its parent is made, as with `children.append()`, has no parent link: add it with `add_child()`, or index one tree at a time.
 ```
 
 ```python
@@ -1771,6 +1771,71 @@ from ipyelk.elements import ElementIndex, Node
 
 index = ElementIndex.from_els(Node(id="root", children=[Node(id="a"), Node(id="b")]))
 print(index.root().id)
+```
+
+#### Add a child with `add_child()`, not `children.append()`
+
+The parent link of a node is the reference from the node to its parent. `root()` reads
+the parent link: a node without one is a root. Some ways to add a node to a tree set the
+parent link, and others do not:
+
+| Way to add the child `c` to the node `n`                                   | Sets the parent link |
+| -------------------------------------------------------------------------- | -------------------- |
+| `Node(children=[c])`, when `n` is made                                     | Yes                  |
+| `n.add_child(c)`                                                           | Yes                  |
+| `c.set_parent(n)`, then `n.children.append(c)`                             | Yes                  |
+| `n.name = c`, for a name that is not a field of `Node`                     | Yes                  |
+| `n.children.append(c)`, `extend([c])`, `insert(0, c)`, `n.children[0] = c` | No                   |
+| `n.children = [c]`                                                         | No                   |
+
+Ports follow the same rules: `Node(ports=[p])`, `n.add_port(p)` and `n.name = p` set the
+parent link of the port `p`. A change to `n.ports` after `n` is made does not set it.
+`root()` looks only at nodes, so a port, a label or an edge is never a root. An edge
+that `add_edge()` makes has no parent link, because the list `edges` of its node holds
+it.
+
+In 2.x, the same ways set the parent link. But `root()` used the first node without a
+parent link and showed no error. Thus, a tree that `children.append()` built had one
+root for 2.x: its top node. In 3.0, each child that `children.append()` added is one
+more root. On the first layout of a diagram, `ValidationPipe` calls `root()`. Thus, the
+first layout fails with `NotUniqueError`, and the diagram shows no graph.
+
+This change affects code that builds a tree with `children.append()` or any other change
+to `children` or `ports` after the node is made. To fix the code, add each child with
+`add_child()`, or give the children to `Node(children=[...])`. `ipyelk` does not set the
+missing parent links for you.
+
+```python
+# 2.x: the first layout of a diagram runs this pipe
+from ipyelk.elements import Node
+from ipyelk.pipes import ValidationPipe
+
+root = Node(id="root")
+root.children.append(Node(id="a"))
+pipe = ValidationPipe()
+pipe.inlet.value = root
+pipe.inlet.build_index()
+await pipe.run()
+```
+
+The 2.x code raises this error on 3.0:
+
+```text
+NotUniqueError: The index has 2 roots: root, a. 2 nodes have no parent link. A child put in `children` after its parent is made, as with `children.append()`, has no parent link: add it with `add_child()`, or index one tree at a time.
+```
+
+```python
+# 3.0: add the child with add_child()
+from ipyelk.elements import Node
+from ipyelk.pipes import ValidationPipe
+
+root = Node(id="root")
+child = root.add_child(Node(id="a"))
+pipe = ValidationPipe()
+pipe.inlet.value = root
+pipe.inlet.build_index()
+await pipe.run()
+print(child.get_parent().id)
 ```
 
 (migration-model-tags)=

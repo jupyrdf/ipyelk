@@ -153,7 +153,9 @@
   and `NotUniqueError`, naming the roots, when more than one node has none. It used to
   fail an `assert` with the message "Multiple roots" for no root, and to take the first
   of several roots without a word, so the checks skipped the other trees
-  ([#217](https://github.com/jupyrdf/ipyelk/issues/217)).
+  ([#217](https://github.com/jupyrdf/ipyelk/issues/217)). A child put in `children`
+  after its parent is made, as with `children.append()`, has no parent link, so it is a
+  second root and the first layout fails: add it with `add_child()` instead.
 - Remove code that nothing used: the `ipyelk.pipes.mappings` module, the
   `GraphWrappingStrategy.horizontal` trait, and `ElkLabel.__eq__`/`__hash__`, which
   served a text sizer cache that is gone. Importing `ipyelk.pipes.mappings` raises

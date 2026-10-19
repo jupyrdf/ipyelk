@@ -216,7 +216,12 @@ class ElementIndex(BaseModel):
             raise NotFoundError("The index has no root: every node has a parent")
         if len(roots) > 1:
             ids = ", ".join(r.wire_id() for r in roots)
-            raise NotUniqueError(f"The index has {len(roots)} roots: {ids}")
+            raise NotUniqueError(
+                f"The index has {len(roots)} roots: {ids}. {len(roots)} nodes have no"
+                " parent link. A child put in `children` after its parent is made,"
+                " as with `children.append()`, has no parent link: add it with"
+                " `add_child()`, or index one tree at a time."
+            )
         root = roots[0]
         assert isinstance(root, Node), f"Root is not of type Node. Not {type(root)}."
         assert len(root.ports) == 0, (
