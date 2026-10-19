@@ -35,7 +35,8 @@ Most shapes hold their payload in the `use` field. The payload is the data that 
 renderer draws, for example the path data of a `Path`. The type string of the shape sets
 the type of the payload. Each shape class validates its payload when you make the shape,
 when you assign `use` and when ipyelk loads JSON. An invalid payload raises a
-`ValidationError` at the `use` field.
+`ValidationError` at the `use` field. The one exception is a `Widget` whose `use` is not
+the `model_id` of its widget: its error is at the shape, not at the field.
 
 | Class                                       | Payload type | Meaning of `use`                                              | Required |
 | ------------------------------------------- | ------------ | ------------------------------------------------------------- | -------- |
@@ -238,11 +239,33 @@ renderer, which has no shape class.
 
 ```{eval-rst}
 .. currentmodule:: ipyelk.elements.shapes
-.. autodata:: SymbolId
-.. autodata:: PathData
-.. autodata:: Markup
-.. autodata:: ImageUrl
-.. autodata:: NotchSize
+.. py:data:: SymbolId
+    :type: str
+
+    The ``identifier`` of a symbol in the diagram's ``defs``. It must not be empty.
+
+.. py:data:: PathData
+    :type: str
+
+    The ``d`` attribute of an SVG ``path``: ``M`` or ``m`` and a number first, then
+    path commands, numbers, commas and ASCII whitespace.
+
+.. py:data:: Markup
+    :type: str
+
+    SVG or HTML markup. The frontend inserts it as it is, so it must be trusted.
+
+.. py:data:: ImageUrl
+    :type: str
+
+    The URL of an image: absolute, relative to the notebook, or a ``data:`` URL. It
+    must not be empty.
+
+.. py:data:: NotchSize
+    :type: float
+
+    The size of the notch of a comment in pixels: a finite number, 0 or more. 0 draws
+    no notch. A ``bool`` raises ``ValidationError``.
 ```
 
 ### Base classes

@@ -1,7 +1,8 @@
 # Copyright (c) 2026 ipyelk contributors.
 # Distributed under the terms of the Modified BSD License.
 """Each shape validates its typed ``use`` payload (#148): at construction, on
-assignment and when JSON loads, with an error at the ``use`` field.
+assignment and when JSON loads, with an error at the ``use`` field (on a ``Widget``,
+at the shape).
 """
 
 from __future__ import annotations
@@ -31,6 +32,8 @@ REJECTED = [
     (shapes.Comment, None, "float_type"),
     (shapes.Path, "hello", "string_pattern_mismatch"),
     (shapes.Path, "", "string_pattern_mismatch"),
+    (shapes.Path, "M", "string_pattern_mismatch"),
+    (shapes.Path, "M\u00a00,0", "string_pattern_mismatch"),
     (shapes.Path, 5, "string_type"),
     (shapes.Use, "", "string_too_short"),
     (shapes.Icon, "", "string_too_short"),
@@ -107,6 +110,21 @@ def test_json_rejects_the_payload(cls, use, kind):
     assert use_errors(info.value) == [kind]
 
 
+@pytest.mark.parametrize(
+    "use",
+    [
+        "m0 0",
+        "M1e-5 2E+3",
+        "M0,0L10,10",
+        "M.5.5l-1-1",
+        "\tM0 0 Z\r\n",
+        "M0 0A5 5 0 0 1 9 9",
+    ],
+)
+def test_path_data_accepts_what_svg_draws(use):
+    assert shapes.Path(use=use).use == use
+
+
 def test_legacy_payloads_load_with_the_same_meaning():
     """The 2.x calls and JSON of #148 keep working."""
     assert shapes.Comment(use=15).use == 15
@@ -146,6 +164,38 @@ def test_a_widget_shape_rejects_a_use_of_another_model_id(widget):
         shape.use = "other"
     shape.delay = 5  # another field still assigns
     assert shape.model_dump()["use"] == widget.model_id
+
+
+def test_a_widget_shape_from_json_takes_a_new_widget(widget):
+    loaded = shapes.Widget.model_validate(shapes.Widget(widget=widget).model_dump())
+    other = IntSlider()
+    try:
+        loaded.widget = other  # the old model_id in use is not checked
+        assert loaded.model_dump()["use"] == other.model_id
+        with pytest.raises(ValidationError, match="is not the model_id"):
+            loaded.use = widget.model_id
+    finally:
+        other.close()
+
+
+def test_a_widget_shape_with_a_closed_widget_raises_no_attribute_error(widget):
+    loaded = shapes.Widget.model_validate(shapes.Widget(widget=widget).model_dump())
+    model_id = widget.model_id
+    widget.close()
+    loaded.delay = 5
+    loaded.use = "other"  # a closed widget has no model_id to check against
+    assert shapes.Widget(widget=widget, use=model_id).use == model_id
+    with pytest.warns(UserWarning, match="loads as a NodeShape"):
+        wire = convert_elkjson({
+            "id": "root",
+            "children": [
+                {
+                    "id": "n",
+                    "properties": {"shape": {"type": "node:widget", "use": model_id}},
+                }
+            ],
+        })
+    assert type(wire.children[0].properties.shape) is shapes.NodeShape
 
 
 def every_shape(widget: IntSlider) -> list[shapes.BaseShape]:

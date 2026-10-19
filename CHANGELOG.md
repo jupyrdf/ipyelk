@@ -163,11 +163,12 @@
 - `ipyelk.elements.layout_options.model` keeps only the tag classes that
   `LayoutOptionWidget.applies_to` uses: `ElkGraphElement`, `ElkNode`, `ElkPort`,
   `ElkEdge` and `ElkLabel`. They have no fields, so `ElkLabel(id="l1", text="hello")`
-  raises `TypeError`. The generated ELK JSON data classes, for example `ElkPoint` and
-  `ElkShape`, their converter functions, for example `from_dict`, and the `ElkRoot` and
-  `ElkNullElement` sentinels had no users. Their imports raise `DeprecatedImportError`,
-  and nothing replaces them. `strip_none` moved to `ipyelk.util.strip_none`. Its old
-  import raises `DeprecatedImportError` that names the new place ([#214]).
+  raises `TypeError` that names `ipyelk.elements.Label`. The generated ELK JSON data
+  classes, for example `ElkPoint` and `ElkShape`, their converter functions, for example
+  `from_dict`, and the `ElkRoot` and `ElkNullElement` sentinels had no users. Their
+  imports raise `DeprecatedImportError`, and nothing replaces them. `strip_none` moved
+  to `ipyelk.util.strip_none`. Its old import shows a `DeprecationWarning` that names
+  the new place, and still works. 4.0 removes it ([#214]).
 - Layout options are checked against the options that the bundled `elkjs` knows, and the
   option classes that ELK ignored without an error now take effect, so **layouts can
   change** ([#29]):
@@ -236,18 +237,20 @@
   shape selects it, in Python, in TypeScript and in `elkschema.json` ([#148]):
   - `Comment.use` is a number of pixels (`NotchSize`), not a string:
     `Comment(use=20).use == 20.0`, and the JSON holds `20.0`. A string of a number, as
-    2.x wrote it, still loads as the number. A notch of 0 draws no notch. 2.x drew 15
-    pixels for it. A notch that is not a number, is negative, `nan`, an infinity or a
+    2.x wrote it, still loads as the number. `validate_elk_json` rejects the string,
+    because the schema describes the JSON of 3.0. A notch of 0 draws no notch. 2.x drew
+    15 pixels for it. A notch that is not a number, is negative, `nan`, an infinity or a
     `bool` raises `ValidationError`. The renderer limits the notch to the size of the
     node.
-  - The `use` of a `Path` must be SVG path data that starts with `M` or `m`
+  - The `use` of a `Path` must be SVG path data that starts with `M` or `m` and a number
     (`PathData`). The symbol identifier (`SymbolId`) of a `Use`, an `Icon`, a
     `PortShape` or a `LabelShape`, and the URL (`ImageUrl`) of an `Image`, must not be
     empty.
   - `Rect`, `Circle`, `Ellipse` and `Diamond` have no payload: their `use` must be
     `None`.
   - `Widget(widget=w, use="other")` raises: the `use` of a `Widget` is the `model_id` of
-    its widget. 2.x dropped the value.
+    its widget. 2.x dropped the value. Only a construction and an assignment of `use`
+    check it, and not while the widget is closed.
   - Every shape validates an assignment as it validates a construction. 2.x validated an
     assignment only on `Comment`.
   - `NodeShape`, `PortShape` and `LabelShape` keep a string `use` for the payload of a

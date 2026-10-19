@@ -19,9 +19,9 @@
 export type SymbolId = string;
 
 /**
- * The `d` attribute of an SVG `path`: a move first, then path commands, numbers,
- * commas and spaces.
- * @pattern ^\s*[Mm][\sMmZzLlHhVvCcSsQqTtAa0-9eE+\-.,]*$
+ * The `d` attribute of an SVG `path`: a move and a number first, then path commands,
+ * numbers, commas and ASCII whitespace, as the SVG grammar allows.
+ * @pattern ^[ \t\n\r\f]*[Mm][ \t\n\r\f]*[0-9+\-.][ \t\n\r\fMmZzLlHhVvCcSsQqTtAa0-9eE+\-.,]*$
  */
 export type PathData = string;
 

@@ -19,6 +19,7 @@ from pydantic import (
     Field,
     SerializationInfo,
     SerializerFunctionWrapHandler,
+    ValidationInfo,
     field_validator,
     model_serializer,
     model_validator,
@@ -40,10 +41,13 @@ def _not_a_bool(value: object) -> object:
 #: The ``identifier`` of a symbol in the diagram's ``defs``.
 SymbolId = Annotated[str, Field(min_length=1)]
 
-#: The ``d`` attribute of an SVG ``path``: a move command first, then path commands,
-#: numbers, commas and spaces.
+#: The ``d`` attribute of an SVG ``path``: a move command and a number first, then path
+#: commands, numbers, commas and ASCII whitespace, as the SVG grammar allows.
 PathData = Annotated[
-    str, Field(pattern=r"^\s*[Mm][\sMmZzLlHhVvCcSsQqTtAa0-9eE+\-.,]*$")
+    str,
+    Field(
+        pattern=r"^[ \t\n\r\f]*[Mm][ \t\n\r\f]*[0-9+\-.][ \t\n\r\fMmZzLlHhVvCcSsQqTtAa0-9eE+\-.,]*$"
+    ),
 ]
 
 #: SVG or HTML markup. The frontend inserts it as it is, so it must be trusted.
@@ -487,7 +491,8 @@ class Widget(NodeShape):
     Fields:
         - ``widget`` (ipywidgets ``DOMWidget``, required): the widget to draw.
           Serialization writes its ``model_id`` to ``use``. A ``use`` that is not
-          the ``model_id`` of ``widget`` raises ``ValidationError``. JSON loads the
+          the ``model_id`` of an open ``widget`` raises ``ValidationError``, at
+          construction and when you assign ``use``. JSON loads the
           widget that has the ``model_id`` in ``use``. If no open widget has it, ELK
           JSON loads a :py:class:`NodeShape` with the same fields, and a dictionary
           in user code raises.
@@ -509,16 +514,24 @@ class Widget(NodeShape):
 
     @model_validator(mode="before")
     @classmethod
-    def find_widget(cls, data):
+    def find_widget(cls, data, info: ValidationInfo):
         """Load JSON, which has the ``model_id`` of the widget in ``use``."""
         if not isinstance(data, dict):
             return data
         widget, use = data.get("widget"), data.get("use")
+        # an assignment passes every field: check use only when it is the new value
+        given = info.field_name in {None, "use"}
         if widget is None and use:
             found = open_widget(use)
             if found is not None:
                 data = {**data, "widget": found}
-        elif isinstance(widget, DOMWidget) and use is not None:
+        elif (
+            given
+            and isinstance(widget, DOMWidget)
+            # a closed widget has no model_id to check against (#241)
+            and getattr(widget, "comm", None) is not None
+            and use is not None
+        ):
             if use != widget.model_id:
                 msg = (
                     f"use {use!r} is not the model_id {widget.model_id!r} of widget."
