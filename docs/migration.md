@@ -37,6 +37,7 @@ Do these steps before you change your code:
    - {ref}`migration-option-ids`
    - {ref}`migration-layout-options`
    - {ref}`migration-shape-classes`
+   - {ref}`migration-shape-payloads`
    - {ref}`migration-wrapping-horizontal`
    - {ref}`migration-label-size`
    - {ref}`migration-index-without-id`
@@ -109,6 +110,21 @@ that tells you what to use instead.
 | `ipyelk.tools.contol_overlay`                                                                       | `DeprecatedImportError` | {ref}`migration-control-module`   |
 | `ipyelk.elements.layout_options.Draw2DLayout`, `ipyelk.elements.layout_options.layout.Draw2DLayout` | `DeprecatedImportError` | {ref}`migration-draw2d`           |
 | `ipyelk.pipes.mappings`                                                                             | `DeprecatedImportError` | {ref}`migration-mappings`         |
+| `ipyelk.elements.layout_options.model.Elk`, `ipyelk.elements.layout_options.model.ElkProperties`    | `DeprecatedImportError` | {ref}`migration-model-tags`       |
+| `ipyelk.elements.layout_options.model.ELKConstructorArguments`                                      | `DeprecatedImportError` | {ref}`migration-model-tags`       |
+| `ipyelk.elements.layout_options.model.ELKLayoutArguments`                                           | `DeprecatedImportError` | {ref}`migration-model-tags`       |
+| `ipyelk.elements.layout_options.model.ElkPoint`, `ipyelk.elements.layout_options.model.ElkShape`    | `DeprecatedImportError` | {ref}`migration-model-tags`       |
+| `ipyelk.elements.layout_options.model.ElkEdgeSection`                                               | `DeprecatedImportError` | {ref}`migration-model-tags`       |
+| `ipyelk.elements.layout_options.model.ElkExtendedEdge`                                              | `DeprecatedImportError` | {ref}`migration-model-tags`       |
+| `ipyelk.elements.layout_options.model.ElkPrimitiveEdge`                                             | `DeprecatedImportError` | {ref}`migration-model-tags`       |
+| `ipyelk.elements.layout_options.model.ElkSerializable`                                              | `DeprecatedImportError` | {ref}`migration-model-tags`       |
+| `ipyelk.elements.layout_options.model.ElkRoot`                                                      | `DeprecatedImportError` | {ref}`migration-model-tags`       |
+| `ipyelk.elements.layout_options.model.ElkNullElement`                                               | `DeprecatedImportError` | {ref}`migration-model-tags`       |
+| `ipyelk.elements.layout_options.model.from_bool`, `ipyelk.elements.layout_options.model.from_dict`  | `DeprecatedImportError` | {ref}`migration-model-tags`       |
+| `ipyelk.elements.layout_options.model.from_float`, `ipyelk.elements.layout_options.model.from_int`  | `DeprecatedImportError` | {ref}`migration-model-tags`       |
+| `ipyelk.elements.layout_options.model.from_list`, `ipyelk.elements.layout_options.model.from_none`  | `DeprecatedImportError` | {ref}`migration-model-tags`       |
+| `ipyelk.elements.layout_options.model.from_str`, `ipyelk.elements.layout_options.model.from_union`  | `DeprecatedImportError` | {ref}`migration-model-tags`       |
+| `ipyelk.elements.layout_options.model.to_class`, `ipyelk.elements.layout_options.model.to_float`    | `DeprecatedImportError` | {ref}`migration-model-tags`       |
 | `ipyelk.elements.Mark`, `ipyelk.elements.MarkFactory`                                               | `DeprecatedImportError` | {ref}`migration-mark-factory`     |
 | `ipyelk.elements.mark_factory`                                                                      | `DeprecatedImportError` | {ref}`migration-mark-factory`     |
 | `MarkIndex.comm`, `MarkIndex.close`                                                                 | `DeprecatedAPIError`    | {ref}`migration-markindex-widget` |
@@ -120,13 +136,15 @@ that tells you what to use instead.
 
 A deprecated name is a name that worked in 2.x and still works in 3.x. When your code
 uses a deprecated name, `ipyelk` shows a `DeprecationWarning`. The message names the
-replacement. `ipyelk` 4.0 removes `Registry` and `MarkIndex.context`.
+replacement. `ipyelk` 4.0 removes `Registry`, `MarkIndex.context` and
+`ipyelk.elements.layout_options.model.strip_none`.
 
-| Deprecated name     | Warning              | Section                            |
-| ------------------- | -------------------- | ---------------------------------- |
-| `Registry`          | `DeprecationWarning` | {ref}`migration-document`          |
-| `MarkIndex.context` | `DeprecationWarning` | {ref}`migration-markindex-context` |
-| `LabelPortSpacing`  | `DeprecationWarning` | {ref}`migration-label-port`        |
+| Deprecated name                                   | Warning              | Section                            |
+| ------------------------------------------------- | -------------------- | ---------------------------------- |
+| `Registry`                                        | `DeprecationWarning` | {ref}`migration-document`          |
+| `MarkIndex.context`                               | `DeprecationWarning` | {ref}`migration-markindex-context` |
+| `LabelPortSpacing`                                | `DeprecationWarning` | {ref}`migration-label-port`        |
+| `ipyelk.elements.layout_options.model.strip_none` | `DeprecationWarning` | {ref}`migration-model-tags`        |
 
 ## Tools
 
@@ -1574,6 +1592,147 @@ To keep the other class, give your class another type string, or set
 `loads_from_json = False` on your class. If you define the same class again, for example
 when you run a notebook cell again, `ipyelk` shows no warning.
 
+(migration-shape-payloads)=
+
+### Give each shape a payload of its type
+
+The payload of a shape is the data in its `use` field, for example the path data of a
+`Path`. In 2.x, `use` was a string on every shape, and the frontend guessed what to do
+with a bad value. In 3.0, the type string of a shape selects the type of its payload, in
+Python, in TypeScript and in the JSON schema `elkschema.json`. Python validates the
+payload when you make a shape, when you assign `use` and when JSON loads. An invalid
+payload raises `ValidationError` at the `use` field, except on a `Widget`, as the next
+sections tell. The _Shapes_ page lists the payload types: `SymbolId`, `PathData`,
+`Markup`, `ImageUrl` and `NotchSize`.
+
+This change affects code that reads a `Comment` notch as a string, and code that gives a
+shape a payload that the frontend cannot draw. The change is in [#148].
+
+#### Read the comment notch as a number
+
+`Comment.use` is the size of the notch in pixels, as a number of the type `NotchSize`.
+2.x changed a number to a string. A string of a number, for example the `"20"` in the
+JSON that 2.x saved, still loads as the number. The JSON of 3.0 holds a number. The JSON
+schema `elkschema.json` describes the JSON of 3.0, so `ipyelk.schema.validate_elk_json`
+rejects the string of 2.x. To check JSON that 2.x saved, load it with `convert_elkjson`
+and validate the JSON that `ipyelk.elements.serialization.to_json` writes.
+
+```python
+# 2.x: this printed '20'
+from ipyelk.elements import shapes
+
+print(repr(shapes.Comment(use=20).use))
+```
+
+The 2.x code shows this on 3.0:
+
+```text
+20.0
+```
+
+```python
+# 3.0
+from ipyelk.elements import shapes
+
+print(shapes.Comment(use="20").use == 20)
+```
+
+A notch of 0 draws no notch, so the node is a rectangle. 2.x drew a notch of 15 pixels
+for 0. A notch that is not a number, is negative, `nan` or an infinity raises
+`ValidationError`. 2.x drew a notch of 15 pixels for a string that was not a number. The
+renderer limits the notch to the width and the height of the node.
+
+```python
+# 2.x
+from ipyelk.elements import shapes
+
+shapes.Comment(use="big")
+```
+
+The 2.x code raises this error on 3.0:
+
+```text
+ValidationError: 1 validation error for Comment
+use
+  Input should be a valid number, unable to parse string as a number [type=float_parsing, input_value='big', input_type=str]
+```
+
+```python
+# 3.0: give the size in pixels
+from ipyelk.elements import shapes
+
+print(shapes.Comment(use=30).use)
+```
+
+#### Give a payload that the renderer can draw
+
+These payloads raise `ValidationError` in 3.0. The 2.x frontend drew nothing for them.
+
+- An empty symbol identifier in `Use`, `Icon`, `PortShape` or `LabelShape`. For a port
+  or a label with no symbol, leave out `use`.
+- An empty `Image` URL.
+- `Path` data that does not start with `M` or `m` and a number, or that has characters
+  other than path commands, numbers, commas and ASCII whitespace.
+- A `use` on `Rect`, `Circle`, `Ellipse` or `Diamond`. These shapes have no payload.
+- A `use` on a `Widget` that is not the `model_id` of its widget. ipyelk writes the
+  `model_id` of the widget to `use`, so leave out `use`. 2.x dropped the value. The
+  error is at the shape, not at `use`. ipyelk checks `use` when you make the shape and
+  when you assign `use`, not when you assign `widget`, and not when the widget is
+  closed.
+
+An assignment raises the same error as a construction, and the shape keeps its old
+value. 2.x validated an assignment only on `Comment`.
+
+```python
+# 2.x
+from ipyelk.elements import shapes
+
+shapes.Path(use="hello")
+```
+
+The 2.x code raises this error on 3.0:
+
+```text
+ValidationError: 1 validation error for Path
+use
+  String should match pattern '^[ \t\n\r\f]*[Mm][ \t\n\r\f]*[0-9+\-.][ \t\n\r\fMmZzLlHhVvCcSsQqTtAa0-9eE+\-.,]*$' [type=string_pattern_mismatch, input_value='hello', input_type=str]
+```
+
+```python
+# 3.0
+from ipyelk.elements import shapes
+
+path = shapes.Path(use="M 0,0 L 20,20")
+path.use = "M 0,0 L 30,30"
+print(path.use)
+```
+
+```python
+# 2.x
+from ipyelk.elements import shapes
+
+shapes.Rect(use="ignored")
+```
+
+The 2.x code raises this error on 3.0:
+
+```text
+ValidationError: 1 validation error for Rect
+use
+  Input should be None [type=none_required, input_value='ignored', input_type=str]
+```
+
+```python
+# 3.0
+from ipyelk.elements import shapes
+
+print(shapes.Rect().use)
+```
+
+`NodeShape`, `PortShape` and `LabelShape` keep a string `use` for a shape class of your
+own. To validate the payload of your class, subclass one of them, set a new type string
+and give `use` a type.
+
 ### Expect `NotFoundError` or `NotUniqueError` from `ElementIndex.root()`
 
 A root is a node that has no parent. `ElementIndex.root()` raises
@@ -1614,37 +1773,77 @@ index = ElementIndex.from_els(Node(id="root", children=[Node(id="a"), Node(id="b
 print(index.root().id)
 ```
 
-### Compare `ElkLabel` objects field by field
+(migration-model-tags)=
 
-3.0 removes `ElkLabel.__eq__` and `ElkLabel.__hash__`. They served a cache of text sizes
-that is gone. `ElkLabel` now compares field by field, like the other classes in
-`ipyelk.elements.layout_options.model`. You cannot put an `ElkLabel` in a `set`.
+### Do not use the data classes of `layout_options.model`
 
-This change affects code that puts `ElkLabel` objects in a `set` or uses them as `dict`
-keys. The change is in [#206].
+In 2.x, the module `ipyelk.elements.layout_options.model` had ELK JSON data classes with
+`from_dict` and `to_dict` converters. No code in `ipyelk` used them. In 3.0, the module
+has only five tag classes: `ElkGraphElement`, `ElkNode`, `ElkPort`, `ElkEdge` and
+`ElkLabel`. A tag class names the kind of element that a layout option applies to, in
+`LayoutOptionWidget.applies_to`. A tag class has no fields and no methods.
 
-```python
-# both versions
-from ipyelk.elements.layout_options.model import ElkLabel
+An import of a removed name raises `DeprecatedImportError`. The table in
+{ref}`migration-removed-names` lists the names. Nothing replaces them. The function
+`strip_none` moved to `ipyelk.util.strip_none`. Its old import shows a
+`DeprecationWarning` and still works. To make a graph, use the classes `Node`, `Port`,
+`Edge` and `Label` of `ipyelk.elements`. To load ELK JSON, use
+`ipyelk.elements.convert_elkjson` or `ipyelk.elements.from_wire`.
 
-label = ElkLabel(id="l1", text="hello")
-```
+3.0 also removes `ElkLabel.__eq__` and `ElkLabel.__hash__`. They served a cache of text
+sizes that is gone.
+
+This change affects code that imports a removed name or `strip_none`, or that makes an
+object of a tag class. The changes are in [#206] and [#214].
 
 ```python
 # 2.x
-print(hash(label))
+from ipyelk.elements.layout_options.model import ElkPoint
 ```
 
 The 2.x code raises this error on 3.0:
 
 ```text
-TypeError: unhashable type: 'ElkLabel'
+DeprecatedImportError: ipyelk.elements.layout_options.model.ElkPoint was removed in ipyelk 3.0: it was a generated ELK JSON data class that nothing in ipyelk used, and nothing replaces it. Build graphs from ipyelk.elements.Node, Port, Edge and Label, and load ELK JSON with ipyelk.elements.convert_elkjson or from_wire. No alias: this error is raised throughout 3.x.
 ```
 
 ```python
-# 3.0: keep labels in a list or index them by id
-labels = {label.id: label}
-print(label == ElkLabel(id="l1", text="hello"))
+# 2.x
+from ipyelk.elements.layout_options.model import ElkLabel
+
+label = ElkLabel(id="l1", text="hello")
+```
+
+The 2.x code raises this error on 3.0:
+
+```text
+TypeError: ElkLabel is a tag class with no fields: it names the kind of element that a layout option applies to. To make an element, use ipyelk.elements.Label.
+```
+
+```python
+# 3.0: make the label from the class of ipyelk.elements
+from ipyelk.elements import Label
+
+label = Label(id="l1", text="hello")
+print(label == Label(id="l1", text="hello"))
+```
+
+```python
+# 2.x
+from ipyelk.elements.layout_options.model import strip_none
+```
+
+The 2.x code shows this warning on 3.0:
+
+```text
+DeprecationWarning: ipyelk.elements.layout_options.model.strip_none is deprecated: import strip_none from ipyelk.util. ipyelk 4.0 removes this alias.
+```
+
+```python
+# 3.0
+from ipyelk.util import strip_none
+
+print(strip_none({"id": "a", "labels": [], "width": None}))
 ```
 
 (migration-wrapping-horizontal)=
@@ -2113,12 +2312,14 @@ is gone. Thus, the 2.x imports fail.
 // 3.0: delete the import, because there is no replacement
 ```
 
+[#148]: https://github.com/jupyrdf/ipyelk/issues/148
 [#157]: https://github.com/jupyrdf/ipyelk/pull/157
 [#160]: https://github.com/jupyrdf/ipyelk/issues/160
 [#161]: https://github.com/jupyrdf/ipyelk/issues/161
 [#192]: https://github.com/jupyrdf/ipyelk/pull/192
 [#202]: https://github.com/jupyrdf/ipyelk/pull/202
 [#206]: https://github.com/jupyrdf/ipyelk/pull/206
+[#214]: https://github.com/jupyrdf/ipyelk/issues/214
 [#223]: https://github.com/jupyrdf/ipyelk/pull/223
 [#226]: https://github.com/jupyrdf/ipyelk/pull/226
 [#233]: https://github.com/jupyrdf/ipyelk/pull/233

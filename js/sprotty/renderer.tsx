@@ -34,6 +34,7 @@ import { DOMWidgetModel, DOMWidgetView, WidgetModel } from '@jupyter-widgets/bas
 import { ELK_DEBUG } from '../tokens';
 
 import { JLModelSource } from './diagram-server';
+import { HTMLShape, WidgetShape, shapeOf } from './json/elkgraph-json';
 import { SSymbolGraph } from './json/elkgraph-to-sprotty';
 import { SElkConnectorSymbol } from './json/symbols';
 import { ElkNode } from './sprotty-model';
@@ -166,7 +167,7 @@ export class ElkModelRenderer extends ModelRenderer {
         yield {
           vnode: undefined,
           node: node,
-          widget: node.properties?.shape?.use,
+          widget: shapeOf<WidgetShape>(node)?.use,
           visible: true,
           html: undefined,
         };
@@ -177,7 +178,7 @@ export class ElkModelRenderer extends ModelRenderer {
           node: node,
           widget: undefined,
           visible: true,
-          html: node.properties?.shape?.use,
+          html: shapeOf<HTMLShape>(node)?.use,
         };
       }
 
@@ -300,7 +301,7 @@ export class ElkModelRenderer extends ModelRenderer {
     visible: boolean,
   ): Promise<JLSprottyWidget> {
     let widget, html;
-    let id = node.properties?.shape?.use;
+    let id = shapeOf<WidgetShape | HTMLShape>(node)?.use;
     if (getSubType(node) == 'widget') {
       if (id) {
         widget = await this.source.widget_manager.get_model(id);
