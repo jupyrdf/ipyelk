@@ -19,11 +19,15 @@ from pydantic import (
     Field,
     SerializationInfo,
     SerializerFunctionWrapHandler,
+    TypeAdapter,
     ValidationInfo,
+    ValidatorFunctionWrapHandler,
+    field_serializer,
     field_validator,
     model_serializer,
     model_validator,
 )
+from pydantic_core import PydanticKnownError
 
 from .common import serialize_value
 
@@ -152,6 +156,41 @@ class BaseShape(BaseModel):
         return getattr(self, key, None)
 
 
+def payload_class(cls: type[BaseShape], tag: object) -> type[BaseShape] | None:
+    """Return the class whose ``use`` a ``cls`` with the type string ``tag`` takes.
+
+    It is the class of ``tag`` in ``json_classes``, if ``tag`` is not the type string
+    of ``cls``. So ``NodeShape(type="node:comment")`` takes the ``use`` of a
+    ``Comment``, and its JSON is the JSON of a ``Comment`` (#244). ``None`` means that
+    ``cls`` validates ``use`` itself.
+    """
+    if not isinstance(tag, str) or tag == cls.model_fields["type"].default:
+        return None
+    found = BaseShape.json_classes.get(tag)
+    return found if found is not None and "use" in found.model_fields else None
+
+
+def payload_type(cls: type[BaseShape]) -> TypeAdapter:
+    """Return the type of the ``use`` of ``cls``, with its constraints."""
+    field = cls.model_fields["use"]
+    if not field.metadata:
+        return TypeAdapter(field.annotation)
+    return TypeAdapter(Annotated[(field.annotation, *field.metadata)])
+
+
+def validate_payload(cls: type[BaseShape], value: object) -> object:
+    """Validate ``value`` as the ``use`` of ``cls``.
+
+    ``None`` is no payload, which the JSON leaves out, so it raises only if ``cls``
+    requires ``use``.
+    """
+    if value is None:
+        if cls.model_fields["use"].is_required():
+            raise PydanticKnownError("missing")
+        return None
+    return payload_type(cls).validate_python(value)
+
+
 class EdgeShape(BaseShape):
     """The shape of an edge: a line along the route of the edge.
 
@@ -190,7 +229,9 @@ class ElementShape(BaseShape):
           it as the input to the next layout. The *Width and height* section of the
           *Shapes* page explains this.
         - ``use`` (``str``): the payload. Each built-in subclass gives ``use`` its
-          own meaning and type. A custom shape type can give it any meaning.
+          own meaning and type. A custom shape type can give it any meaning. With the
+          type string of another class, for example ``NodeShape(type="node:path")``,
+          ``use`` has the type of that class, here :py:data:`PathData`.
         - ``delay`` (``int``): a time in milliseconds. Only :py:class:`Widget` uses it.
     """
 
@@ -198,7 +239,10 @@ class ElementShape(BaseShape):
     y: float | None = None
     width: float | None = None
     height: float | None = None
-    use: str | None = Field(None, description="The payload of a custom shape type")
+    # validate_default: a type string can require use
+    use: str | None = Field(
+        None, description="The payload of a custom shape type", validate_default=True
+    )
     delay: int | None = Field(
         None,
         description="Milliseconds before a Widget node applies the diagram zoom",
@@ -220,6 +264,37 @@ class ElementShape(BaseShape):
         if v not in subtypes:
             raise ValueError(f"Unexpected Subtype: `{v}` not in `{subtypes}`")
         return v
+
+    @field_validator("use", mode="wrap")
+    @classmethod
+    def use_of_type(
+        cls, value, handler: ValidatorFunctionWrapHandler, info: ValidationInfo
+    ):
+        """Validate ``use`` as the class of the type string does."""
+        found = payload_class(cls, info.data.get("type"))
+        return handler(value) if found is None else validate_payload(found, value)
+
+    @field_serializer("use", mode="wrap")
+    def serialize_use(
+        self, value, handler: SerializerFunctionWrapHandler, info: SerializationInfo
+    ):
+        """Write ``use`` as the class of the type string does, for example a number."""
+        found = payload_class(type(self), self.type)
+        if found is None:
+            return handler(value)
+        payload = payload_type(found)
+        if info.mode_is_json():
+            return payload.dump_python(value, mode="json")
+        return payload.dump_python(value)
+
+    @model_validator(mode="before")
+    @classmethod
+    def use_of_new_type(cls, data, info: ValidationInfo):
+        """Validate ``use`` again when ``type`` is assigned."""
+        # an assignment validates only its own field, but the type selects the payload
+        if info.field_name == "type" and isinstance(data, dict):
+            data = {**data, "use": cls.model_validate(data).use}
+        return data
 
     @model_serializer(mode="wrap")
     def serialize_shape(
@@ -243,7 +318,9 @@ class PortShape(ElementShape):
     """
 
     type: str | None = "port"
-    use: SymbolId | None = Field(None, description="Symbol identifier")
+    use: SymbolId | None = Field(
+        None, description="Symbol identifier", validate_default=True
+    )
 
 
 class LabelShape(ElementShape):
@@ -259,7 +336,9 @@ class LabelShape(ElementShape):
     """
 
     type: str | None = "label"
-    use: SymbolId | None = Field(None, description="Symbol identifier")
+    use: SymbolId | None = Field(
+        None, description="Symbol identifier", validate_default=True
+    )
 
 
 class Icon(LabelShape):
