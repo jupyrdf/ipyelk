@@ -4,12 +4,7 @@
  */
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import {
-  FirstFit,
-  IFirstFitHost,
-  elementFirstFitHost,
-  fitTargets,
-} from '../first_fit';
+import { FirstFit, IFirstFitHost, elementFirstFitHost, fitTargets } from '../first_fit';
 import { ElkNode } from '../sprotty/json/elkgraph-json';
 
 const LAYOUT: ElkNode = {
@@ -61,7 +56,9 @@ describe('fitTargets', () => {
     const slack = { cssClasses: 'slack-port' };
     const layout = {
       ...LAYOUT,
-      children: [{ ...LAYOUT.children[0], ports: [{ id: 'x.slack', properties: slack }] }],
+      children: [
+        { ...LAYOUT.children[0], ports: [{ id: 'x.slack', properties: slack }] },
+      ],
       edges: [],
     };
     expect(fitTargets(layout)).toEqual(['a', 'a1']);
@@ -217,7 +214,12 @@ describe('elementFirstFitHost', () => {
 
   it('is shown only with a size on the page', () => {
     const shown = (el: HTMLElement) =>
-      elementFirstFitHost(() => el, () => true, () => null, () => null).isShown();
+      elementFirstFitHost(
+        () => el,
+        () => true,
+        () => null,
+        () => null,
+      ).isShown();
     expect(shown(element(100, 50))).toBe(true);
     expect(shown(element(0, 0))).toBe(false); // display: none, or a scale(0) tab
     expect(shown(element(100, 0))).toBe(false);
@@ -228,7 +230,12 @@ describe('elementFirstFitHost', () => {
     vi.stubGlobal('ResizeObserver', FakeObserver);
     const el = element(0, 0);
     let reveals = 0;
-    const h = elementFirstFitHost(() => el, () => true, () => null, () => reveals++);
+    const h = elementFirstFitHost(
+      () => el,
+      () => true,
+      () => null,
+      () => reveals++,
+    );
     h.watch();
     h.watch();
     expect(FakeObserver.made).toHaveLength(1);
@@ -269,7 +276,12 @@ describe('elementFirstFitHost', () => {
 
   it('does without an observer where there is none', () => {
     vi.stubGlobal('ResizeObserver', undefined);
-    const h = elementFirstFitHost(() => element(0, 0), () => true, () => null, () => null);
+    const h = elementFirstFitHost(
+      () => element(0, 0),
+      () => true,
+      () => null,
+      () => null,
+    );
     expect(() => h.watch()).not.toThrow();
     expect(() => h.unwatch()).not.toThrow();
   });
