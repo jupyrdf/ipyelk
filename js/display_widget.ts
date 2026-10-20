@@ -671,7 +671,11 @@ export class ELKViewerView extends DOMWidgetView {
         }),
       );
     }
-    this.firstFit.afterLayout(layout);
+    // overlapping calls can settle out of order: only the source's current value
+    // may be the first fit's, or its ids would frame a model sprotty no longer shows
+    if (layout === this.model.get('source')?.get('value')) {
+      this.firstFit.afterLayout(layout);
+    }
     this.model.layoutUpdated.emit();
     this.model.diagramUpdated.emit();
     // a re-layout moves elements under a camera that did not change: re-report

@@ -720,7 +720,7 @@ removed names][migration-removed-names] lists every name that raises
 - Fit each view after its first layout when the viewer's `fit_on_first_layout` is set:
   every element of the layout (ports and labels outside their parent included, and not
   narrowed to a selection), without animation, with the viewer's `fit_padding` and
-  `fit_max_zoom`. A layout with no sized node does not count as the first. A view with
+  `fit_max_zoom`. A layout with no sized top-level node does not count as the first. A view with
   no size on the page then waits for an `after-show` or `resize` message or a
   `ResizeObserver` callback (a CSS reveal), and stops observing once it fits, is
   removed, or a `viewport` command addressed to it arrives ([#245]).

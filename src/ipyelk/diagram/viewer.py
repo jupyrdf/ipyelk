@@ -63,7 +63,7 @@ class Viewer(W.Widget):
     :parameter fit_max_zoom: float or ``None``
         zoom limit for the first-layout fit and for :py:meth:`fit` calls that pass no
         ``max_zoom``; ``None`` (the default) leaves only the viewer's own limit (10),
-        so a small diagram fills the view.
+        so a small diagram fills the view. A value above 10 acts as 10.
 
     """
 
