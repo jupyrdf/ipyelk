@@ -40,6 +40,7 @@ import {
   unpack_models as deserialize,
 } from '@jupyter-widgets/base';
 
+import { FirstFit } from './first_fit';
 import { hoverAfterFeedback, hoverFeedbackActions } from './hover_util';
 import {
   canonicalSelection,
@@ -124,6 +125,9 @@ export class ELKViewerModel extends DOMWidgetModel {
       symbols: {},
       source: null,
       control_overlay: null,
+      fit_on_first_layout: false,
+      fit_padding: 0,
+      fit_max_zoom: null,
     };
     return defaults;
   }
@@ -176,6 +180,32 @@ export class ELKViewerView extends DOMWidgetView {
   );
   /** Sprotty animation length; animated viewport actions settle after this delay. */
   private animationDuration = 0;
+  /** Watches a hidden view for its first reveal, while its first fit waits. */
+  private revealObserver: ResizeObserver | null = null;
+  /** The kernel's `fit_on_first_layout`, applied once to this view. */
+  private readonly firstFit = new FirstFit({
+    isEnabled: () => !!this.model.get('fit_on_first_layout'),
+    isShown: () => {
+      const { width, height } = this.el.getBoundingClientRect();
+      return this.el.isConnected && width > 0 && height > 0;
+    },
+    fit: (ids) => {
+      this.resize(); // the canvas the fit fills is the one on the page now
+      this.source.fit(ids, ...this.fitDefaults(), false);
+    },
+    watch: () => {
+      // lumino only tells this view about shows and resizes of lumino parents;
+      // the observer also sees a CSS reveal (`display: none` lifted)
+      if (typeof ResizeObserver !== 'undefined') {
+        this.revealObserver = new ResizeObserver(() => this.firstFit.revealed());
+        this.revealObserver.observe(this.el);
+      }
+    },
+    unwatch: () => {
+      this.revealObserver?.disconnect();
+      this.revealObserver = null;
+    },
+  });
 
   initialize(parameters: WidgetView.IInitializeParameters) {
     super.initialize(parameters);
@@ -377,6 +407,9 @@ export class ELKViewerView extends DOMWidgetView {
         this.resize();
         break;
     }
+    if (msg.type === 'resize' || msg.type === 'after-show') {
+      this.firstFit.revealed();
+    }
   }
 
   // The selection write-back below is ASYNC (getSelection resolves one
@@ -515,6 +548,7 @@ export class ELKViewerView extends DOMWidgetView {
       window.clearTimeout(this.viewportReportTimer);
       this.viewportReportTimer = null;
     }
+    this.firstFit.dispose();
     return super.remove();
   }
 
@@ -651,6 +685,7 @@ export class ELKViewerView extends DOMWidgetView {
         }),
       );
     }
+    this.firstFit.afterLayout(layout);
     this.model.layoutUpdated.emit();
     this.model.diagramUpdated.emit();
     // a re-layout moves elements under a camera that did not change: re-report
@@ -683,6 +718,13 @@ export class ELKViewerView extends DOMWidgetView {
     return { markup: svg.outerHTML, extent: contentExtent(root) };
   }
 
+  /** The kernel's `fit_padding` and `fit_max_zoom` (no limit when unset). */
+  fitDefaults(): [number, number] {
+    const padding = this.model.get('fit_padding');
+    const maxZoom = this.model.get('fit_max_zoom');
+    return [padding == null ? 0 : padding, maxZoom == null ? Infinity : maxZoom];
+  }
+
   handleMessage(content: TAnyELKMessage) {
     switch (content.action) {
       case 'center':
@@ -706,6 +748,7 @@ export class ELKViewerView extends DOMWidgetView {
         if (content.view_id != null && content.view_id !== this.view_id) {
           break; // addressed to another view of this diagram
         }
+        this.firstFit.cancel(); // an explicit camera wins over a waiting first fit
         this.resize(); // ensure bounds are accurate before moving
         this.source
           .setViewport(content.origin, content.zoom, content.animate)
