@@ -1734,11 +1734,11 @@ own. To validate the payload of your class, subclass one of them, set a new type
 and give `use` a type.
 
 With the type string of a built-in class, a `NodeShape`, a `LabelShape` or an
-`ElementShape` validates `use` as that class does. For example,
+`ElementShape` validates `use` with the type of that class. For example,
 `NodeShape(type="node:comment")` takes a notch in pixels, as `Comment` does. A type
 string whose class requires `use`, such as `node:path`, requires it here too. A
-`node:widget` shape takes any string. 2.x took any string for every type string, and the
-JSON did not pass `validate_elk_json`. The change is in [#244].
+`node:widget` shape takes any string or `None`. 2.x took any string for every type
+string, and the JSON did not pass `validate_elk_json`. The change is in [#244].
 
 ```python
 # 2.x

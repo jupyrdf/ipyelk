@@ -8,6 +8,7 @@ The *Shapes* page of the API reference describes the shapes and the terms used h
 from __future__ import annotations
 
 import builtins
+import functools
 import warnings
 from typing import Annotated, ClassVar
 
@@ -170,8 +171,13 @@ def payload_class(cls: type[BaseShape], tag: object) -> type[BaseShape] | None:
     return found if found is not None and "use" in found.model_fields else None
 
 
+@functools.cache
 def payload_type(cls: type[BaseShape]) -> TypeAdapter:
-    """Return the type of the ``use`` of ``cls``, with its constraints."""
+    """Return the type of the ``use`` of ``cls``, with its constraints.
+
+    It has the annotation of the field and its metadata, such as a ``Field``
+    constraint or a ``BeforeValidator``, but not a ``field_validator`` of ``cls``.
+    """
     field = cls.model_fields["use"]
     if not field.metadata:
         return TypeAdapter(field.annotation)

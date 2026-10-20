@@ -12,7 +12,7 @@ from collections.abc import Iterator
 import jsonschema
 import pytest
 from ipywidgets import IntSlider
-from pydantic import ValidationError
+from pydantic import Field, ValidationError, field_validator
 
 from ipyelk.elements import (
     Label,
@@ -375,3 +375,48 @@ def test_python_and_the_schema_accept_the_same_strings(cls, tag):
         else:
             python_ok = True
         assert python_ok == schema_ok, data
+
+
+def test_a_port_type_of_your_own_requires_its_payload(json_classes):
+    class Star(shapes.PortShape):
+        type: str = "port:star"
+        use: shapes.SymbolId = Field(...)
+
+    with pytest.raises(ValidationError) as info:
+        shapes.PortShape(type="port:star")
+    assert use_errors(info.value) == ["missing"]
+    assert shapes.PortShape(type="port:star", use="dot").use == "dot"
+
+
+def test_a_class_without_use_gives_no_payload_type(json_classes):
+    """A type string that a class without ``use`` loads keeps the string ``use``."""
+
+    class Fancy(shapes.EdgeShape):
+        type: str = "edge:fancy"
+
+    class FancyNode(shapes.NodeShape):
+        type: str = "edge:fancy"
+        loads_from_json = False
+
+    assert shapes.NodeShape(type="edge:fancy", use="x").use == "x"
+
+
+def test_only_the_type_of_the_payload_applies(json_classes):
+    """The generic class takes the annotation and constraints of ``use``, but not a
+    ``field_validator`` of the class of the type string.
+    """
+
+    class Star(shapes.NodeShape):
+        type: str = "node:star"
+        use: str = "star"
+
+        @field_validator("use")
+        @classmethod
+        def starts_with_s(cls, value: str) -> str:
+            if not value.startswith("s"):
+                raise ValueError("not a star")
+            return value
+
+    with pytest.raises(ValidationError):
+        Star(use="abc")
+    assert shapes.NodeShape(type="node:star", use="abc").use == "abc"
