@@ -3,19 +3,21 @@
  * Distributed under the terms of the Modified BSD License.
  */
 import { ElkNode } from './sprotty/json/elkgraph-json';
+import { modelIds } from './viewport_util';
 
 /**
- * Ids that frame the whole diagram: the top-level nodes and edges of the laid-out
- * ELK JSON, which sprotty fits with everything inside them. Naming them, rather than
- * fitting with no ids, frames the whole diagram even when something is selected.
- * Empty while no top-level node has a size, i.e. before ELK has laid anything out.
+ * Ids that frame the whole diagram: every element of the laid-out ELK JSON, since
+ * sprotty frames each id by its own bounds, and ports and labels can sit outside
+ * their parent's. Naming them, rather than fitting with no ids, frames the whole
+ * diagram even when something is selected. Empty while no top-level node has a
+ * size, i.e. before ELK has laid anything out.
  */
 export function fitTargets(layout: ElkNode | null | undefined): string[] {
   const nodes = layout?.children || [];
   if (!nodes.some((node) => node.width > 0 && node.height > 0)) {
     return [];
   }
-  return [...nodes, ...(layout.edges || [])].map((element) => element.id);
+  return [...modelIds(layout)];
 }
 
 /** What `FirstFit` needs from the view it fits. */
@@ -109,4 +111,37 @@ export class FirstFit {
       this.host.unwatch();
     }
   }
+}
+
+/**
+ * The `IFirstFitHost` of a view rendered in `element()`: shown while it has a size on the
+ * page, and watched with a `ResizeObserver`, which also sees a CSS reveal
+ * (`display: none` lifted) that sends the view no lumino message.
+ */
+export function elementFirstFitHost(
+  element: () => HTMLElement,
+  isEnabled: () => boolean,
+  fit: (ids: string[]) => void,
+  revealed: () => void,
+): IFirstFitHost {
+  let observer: ResizeObserver | null = null;
+  return {
+    isEnabled,
+    fit,
+    isShown: () => {
+      const el = element();
+      const { width, height } = el.getBoundingClientRect();
+      return el.isConnected && width > 0 && height > 0;
+    },
+    watch: () => {
+      if (observer == null && typeof ResizeObserver !== 'undefined') {
+        observer = new ResizeObserver(() => revealed());
+        observer.observe(element());
+      }
+    },
+    unwatch: () => {
+      observer?.disconnect();
+      observer = null;
+    },
+  };
 }

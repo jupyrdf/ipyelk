@@ -40,7 +40,7 @@ import {
   unpack_models as deserialize,
 } from '@jupyter-widgets/base';
 
-import { FirstFit } from './first_fit';
+import { FirstFit, elementFirstFitHost } from './first_fit';
 import { hoverAfterFeedback, hoverFeedbackActions } from './hover_util';
 import {
   canonicalSelection,
@@ -180,32 +180,18 @@ export class ELKViewerView extends DOMWidgetView {
   );
   /** Sprotty animation length; animated viewport actions settle after this delay. */
   private animationDuration = 0;
-  /** Watches a hidden view for its first reveal, while its first fit waits. */
-  private revealObserver: ResizeObserver | null = null;
   /** The kernel's `fit_on_first_layout`, applied once to this view. */
-  private readonly firstFit = new FirstFit({
-    isEnabled: () => !!this.model.get('fit_on_first_layout'),
-    isShown: () => {
-      const { width, height } = this.el.getBoundingClientRect();
-      return this.el.isConnected && width > 0 && height > 0;
-    },
-    fit: (ids) => {
-      this.resize(); // the canvas the fit fills is the one on the page now
-      this.source.fit(ids, ...this.fitDefaults(), false);
-    },
-    watch: () => {
-      // lumino only tells this view about shows and resizes of lumino parents;
-      // the observer also sees a CSS reveal (`display: none` lifted)
-      if (typeof ResizeObserver !== 'undefined') {
-        this.revealObserver = new ResizeObserver(() => this.firstFit.revealed());
-        this.revealObserver.observe(this.el);
-      }
-    },
-    unwatch: () => {
-      this.revealObserver?.disconnect();
-      this.revealObserver = null;
-    },
-  });
+  private readonly firstFit = new FirstFit(
+    elementFirstFitHost(
+      () => this.el,
+      () => !!this.model.get('fit_on_first_layout'),
+      (ids) => {
+        this.resize(); // the canvas the fit fills is the one on the page now
+        this.source.fit(ids, ...this.fitDefaults(), false);
+      },
+      () => this.firstFit.revealed(),
+    ),
+  );
 
   initialize(parameters: WidgetView.IInitializeParameters) {
     super.initialize(parameters);
