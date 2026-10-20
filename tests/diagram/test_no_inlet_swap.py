@@ -355,9 +355,9 @@ async def test_a_layout_option_change_reaches_the_layout(monkeypatch, collapse):
 
 @pytest.mark.asyncio
 async def test_a_clean_text_sizer_passes_on_an_edit_it_does_not_observe(monkeypatch):
-    """A custom flow without ``VisibilityPipe``: the text sizer's output is a copy,
-    so a layout option or size that it does not observe reaches ``ElkJS`` through
-    its input, not through its stale copy.
+    """A custom flow without ``VisibilityPipe``: the output of the text sizer is a
+    copy, so a layout option or size that it does not observe reaches ``ElkJS``
+    through its input, not through its stale copy.
     """
     laid_out = []
 
