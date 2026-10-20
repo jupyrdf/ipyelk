@@ -340,6 +340,16 @@ removed names][migration-removed-names] lists every name that raises
 
 #### Added
 
+- `Viewer.fit_on_first_layout` (default `False`) makes each view fit the whole diagram
+  in the browser after its own first layout. `Viewer.fit()` is a message to the views
+  that exist when it is sent, so a diagram displayed after it was laid out opened at 1:1
+  in the top-left corner, and so did every later view of it. A view that is hidden at
+  its first layout (in a collapsed accordion or a background tab) fits the first time it
+  is shown. Each view fits once: later layouts, reveals and resizes keep its camera, and
+  a `set_viewport()` sent while a hidden view waits cancels its fit.
+  `Viewer.fit_padding` (default `0`) and `Viewer.fit_max_zoom` (default `None`, no
+  limit) set the padding and zoom limit of that fit, and of `fit()` calls and Fit button
+  clicks that pass none ([#245]).
 - `Node.clone(prefix)` copies a node with everything under it, for a fragment that is
   used in several places. The copy of an element with the id `X` has the id
   `"<prefix>.X"`, where `X` is the id or the `wire_id` of the original. So two clones
@@ -706,6 +716,12 @@ removed names][migration-removed-names] lists every name that raises
 
 ### `@jupyrdf/jupyter-elk 3.0.0-alpha0`
 
+- Fit each view after its first layout when the viewer's `fit_on_first_layout` is set:
+  the top-level nodes and edges, without animation, with the viewer's `fit_padding` and
+  `fit_max_zoom`. A layout with no sized node does not count as the first. A view with
+  no size on the page then waits for an `after-show` or `resize` message or a
+  `ResizeObserver` callback (a CSS reveal), and stops observing once it fits, is
+  removed, or a `viewport` command addressed to it arrives ([#245]).
 - Write `hovered_id` back on pointer leave, but only when the departed element is still
   the hovered one, so a stale leave cannot erase a newer enter; never dispatch `null` to
   sprotty as an element id; re-wiring the hover tool releases the previous tool's
@@ -863,6 +879,7 @@ removed names][migration-removed-names] lists every name that raises
 [#227]: https://github.com/jupyrdf/ipyelk/issues/227
 [#232]: https://github.com/jupyrdf/ipyelk/issues/232
 [#237]: https://github.com/jupyrdf/ipyelk/issues/237
+[#245]: https://github.com/jupyrdf/ipyelk/issues/245
 [eclipse-sprotty/sprotty#573]: https://github.com/eclipse-sprotty/sprotty/issues/573
 [ipykernel#1529]: https://github.com/ipython/ipykernel/pull/1529
 [migration]: https://ipyelk.readthedocs.io/en/latest/migration.html
