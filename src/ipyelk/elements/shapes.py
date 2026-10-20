@@ -513,8 +513,8 @@ class Widget(NodeShape):
 
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
-    #: the ``model_id`` of ``widget`` when last validated open: closing drops its comm
-    _model_id: str | None = PrivateAttr(None)
+    #: the last open ``widget`` and its ``model_id``: closing drops its comm
+    _model_id: tuple[DOMWidget, str] | None = PrivateAttr(None)
 
     @model_validator(mode="before")
     @classmethod
@@ -547,7 +547,7 @@ class Widget(NodeShape):
     @model_validator(mode="after")
     def remember_model_id(self) -> Widget:
         if self.widget.comm is not None:
-            self._model_id = self.widget.model_id
+            self._model_id = (self.widget, self.widget.model_id)
         return self
 
     @model_serializer(mode="wrap")
@@ -557,8 +557,11 @@ class Widget(NodeShape):
         data = super().serialize_shape(handler, info)
         # a closed widget writes the model_id it had, which ELK JSON loads as a
         # NodeShape with a warning (#241)
-        widget = self.widget
-        model_id = widget.model_id if widget.comm is not None else self._model_id
+        widget, seen = self.widget, self._model_id
+        if widget.comm is not None:
+            model_id = widget.model_id
+        else:  # only the model_id of this widget, not of one it replaced
+            model_id = seen[1] if seen and seen[0] is widget else None
         serialize_value(data, "use", model_id or self.use, info)
         return data
 
@@ -602,10 +605,13 @@ def shape_class(
         model_id = data.get("use")
         if open_widget(model_id) is None:
             # a closed widget, or JSON from another kernel: keep the layout result
-            msg = (
-                f"No open widget has the model_id {model_id!r} of a {tag!r} shape. The"
-                " shape loads as a NodeShape with the same JSON."
+            missing = (
+                f"No open widget has the model_id {model_id!r} of a {tag!r} shape."
+                if model_id is not None
+                # the widget was closed before the shape saw it open
+                else f"A {tag!r} shape has no model_id in use."
             )
+            msg = f"{missing} The shape loads as a NodeShape with the same JSON."
             warnings.warn(msg, UserWarning, stacklevel=2)
             return NodeShape
     return cls
