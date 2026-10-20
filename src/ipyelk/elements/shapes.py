@@ -308,6 +308,7 @@ class ElementShape(BaseShape):
         """Validate ``use`` again when ``type`` is assigned."""
         # an assignment validates only its own field, but the type selects the payload
         if info.field_name == "type" and isinstance(data, dict):
+            # on a copy, so its model_post_init and after validators run on the copy too
             shape = cls.model_construct(**data)
             cls.__pydantic_validator__.validate_assignment(shape, "use", shape.use)
             data = {**data, "use": shape.use}
