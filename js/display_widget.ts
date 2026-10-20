@@ -180,6 +180,8 @@ export class ELKViewerView extends DOMWidgetView {
   );
   /** Sprotty animation length; animated viewport actions settle after this delay. */
   private animationDuration = 0;
+  /** Counts the `diagramLayout` calls that render, so a superseded one can tell. */
+  private layoutCalls = 0;
   /** The kernel's `fit_on_first_layout`, applied once to this view. */
   private readonly firstFit = new FirstFit(
     elementFirstFitHost(
@@ -653,6 +655,7 @@ export class ELKViewerView extends DOMWidgetView {
       // bailing
       return null;
     }
+    const call = ++this.layoutCalls;
     await this.source.updateLayout(layout, symbols, this.div_id, this.painterStyles());
     // Apply kernel selection on the initial model and on structural replacements.
     // Ordinary coordinate-only updates already retain sprotty selection.
@@ -671,9 +674,9 @@ export class ELKViewerView extends DOMWidgetView {
         }),
       );
     }
-    // overlapping calls can settle out of order: only the source's current value
-    // may be the first fit's, or its ids would frame a model sprotty no longer shows
-    if (layout === this.model.get('source')?.get('value')) {
+    // overlapping calls can settle out of order: only the latest call's layout may
+    // be the first fit's, or its ids would frame a model sprotty no longer shows
+    if (call === this.layoutCalls) {
       this.firstFit.afterLayout(layout);
     }
     this.model.layoutUpdated.emit();

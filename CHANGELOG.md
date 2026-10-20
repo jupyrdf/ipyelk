@@ -718,10 +718,10 @@ removed names][migration-removed-names] lists every name that raises
 ### `@jupyrdf/jupyter-elk 3.0.0-alpha0`
 
 - Fit each view after its first layout when the viewer's `fit_on_first_layout` is set:
-  every element of the layout (ports and labels outside their parent included, and not
+  every node, port and label of the layout (those outside their parent included, and not
   narrowed to a selection), without animation, with the viewer's `fit_padding` and
-  `fit_max_zoom`. A layout with no sized top-level node does not count as the first. A view with
-  no size on the page then waits for an `after-show` or `resize` message or a
+  `fit_max_zoom`. A layout with no sized top-level node does not count as the first. A
+  view with no size on the page then waits for an `after-show` or `resize` message or a
   `ResizeObserver` callback (a CSS reveal), and stops observing once it fits, is
   removed, or a `viewport` command addressed to it arrives ([#245]).
 - Write `hovered_id` back on pointer leave, but only when the departed element is still

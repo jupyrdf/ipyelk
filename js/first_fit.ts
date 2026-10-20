@@ -8,7 +8,7 @@ import { modelIds } from './viewport_util';
 /**
  * Ids that frame the whole diagram: every element of the laid-out ELK JSON, since
  * sprotty frames each id by its own bounds, and ports and labels can sit outside
- * their parent's. Naming them, rather than fitting with no ids, frames the whole
+ * their parent's. Sprotty frames nodes, ports and labels, not edge routes. Naming them, rather than fitting with no ids, frames the whole
  * diagram even when something is selected. Empty while no top-level node has a
  * size, i.e. before ELK has laid anything out.
  */
