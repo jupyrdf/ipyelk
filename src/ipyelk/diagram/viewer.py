@@ -2,6 +2,7 @@
 # Distributed under the terms of the Modified BSD License.
 from __future__ import annotations
 
+import math
 from collections.abc import Sequence
 
 import ipywidgets as W
@@ -44,6 +45,21 @@ class Viewer(W.Widget):
         additional JupyterLab widgets that can be rendered on top of the diagram
         based on the current selected states. Opt-in: ``None`` (the default) and
         an overlay without ``children`` render nothing.
+    :parameter fit_on_first_layout: bool
+        opt-in (default ``False``): each view fits the whole diagram, in the browser,
+        after its first layout, so a diagram displayed after it was laid out (when a
+        :py:meth:`fit` message would have reached no view) does not open at 1:1 in
+        the top-left corner. A view that is hidden then (a collapsed accordion, a
+        background tab) fits the first time it is shown. Each view fits once: later
+        layouts, reveals and resizes keep its camera, and a ``set_viewport`` sent
+        while it waits to be shown cancels its fit.
+    :parameter fit_padding: float
+        padding around the diagram, in CSS pixels, for the first-layout fit and for
+        :py:meth:`fit` calls that pass no ``padding`` (default ``0``).
+    :parameter fit_max_zoom: float or ``None``
+        zoom limit for the first-layout fit and for :py:meth:`fit` calls that pass no
+        ``max_zoom``; ``None`` (the default) sets no limit, so a small diagram fills
+        the view.
 
     """
 
@@ -58,6 +74,10 @@ class Viewer(W.Widget):
     control_overlay = T.Instance(
         ControlOverlay, allow_none=True, default_value=None
     ).tag(sync=True, **W.widget_serialization)
+
+    fit_on_first_layout = T.Bool(False).tag(sync=True)
+    fit_padding = T.Float(0.0, min=0.0).tag(sync=True)
+    fit_max_zoom = T.Float(None, allow_none=True).tag(sync=True)
 
     fit_tool = T.Instance(FitTool)
     center_tool = T.Instance(CenterTool)
@@ -130,6 +150,18 @@ class Viewer(W.Widget):
     def _sync_source_value(self, change: T.Bunch) -> None:
         if change.new is not None:
             change.new.sync_value()  # the browser draws ``source.value``
+
+    @T.validate("fit_padding", "fit_max_zoom")
+    def _validate_fit_defaults(self, proposal: T.Bunch) -> float | None:
+        """Refuse values JSON cannot carry or a fit cannot use (NaN, inf, zoom <= 0)."""
+        name, value = proposal["trait"].name, proposal["value"]
+        if value is None:
+            return value
+        if not math.isfinite(value) or (name == "fit_max_zoom" and value <= 0):
+            kind = "a finite padding >= 0" if name == "fit_padding" else "a zoom > 0"
+            msg = f"{name} must be {kind}, not {value!r}"
+            raise T.TraitError(msg)
+        return value
 
     @T.default("fit_tool")
     def _default_fit_tool(self) -> FitTool:

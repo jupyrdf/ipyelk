@@ -68,15 +68,17 @@ class SprottyViewer(DOMWidget, Viewer):
         :param model_ids: one elk model id, or a sequence of them; None (default)
             fits the whole diagram
         :param animate: specify is the view animates to the given marks
-        :param max_zoom: specify if the max zoom level
-        :param padding: specify if the viewport padding around the marks
+        :param max_zoom: specify if the max zoom level; None (default) uses
+            :py:attr:`~ipyelk.diagram.Viewer.fit_max_zoom`
+        :param padding: specify if the viewport padding around the marks; None
+            (default) uses :py:attr:`~ipyelk.diagram.Viewer.fit_padding`
         """
         self.send({
             "action": "fit",
             "model_id": _id_list(model_ids),
             "animate": True if animate is None else animate,
-            "max_zoom": max_zoom,
-            "padding": padding,
+            "max_zoom": self.fit_max_zoom if max_zoom is None else max_zoom,
+            "padding": self.fit_padding if padding is None else padding,
         })
 
     def set_viewport(
