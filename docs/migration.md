@@ -1229,6 +1229,9 @@ diagram.close()
 diagram = Diagram(source=diagram.source, view=SprottyViewer())
 ```
 
+`diagram.close()` also closes `diagram.view`, so give the new diagram a new viewer.
+`Diagram(view=...)` raises `traitlets.TraitError` when the viewer is closed.
+
 A viewer is the view of one open diagram, too. `Diagram(view=...)` raises
 `traitlets.TraitError` when the viewer is the view of another open diagram. In 2.x, both
 diagrams set the source of the viewer, and the last diagram won. When one diagram

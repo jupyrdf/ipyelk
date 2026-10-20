@@ -45,8 +45,8 @@ class Diagram(StyledWidget):
         an inlet/outlet passed in.
     view: :py:class:`~ipyelk.diagram.viewer.Viewer`
         output view that will render the pipe outlet; closed with the diagram.
-        Pass it at construction: assigning a different view, or giving a view of
-        another open diagram, raises ``TraitError``.
+        Pass it at construction: assigning a different view, or giving a closed
+        view or a view of another open diagram, raises ``TraitError``.
     tools: tuple :py:class:`~ipyelk.tools.Tool`
         list of tools that a user of the diagram might use to manipulate the
         state of the diagram; closed with the diagram.
@@ -58,6 +58,13 @@ class Diagram(StyledWidget):
     ``refresh()``, ``register_tool()`` and on setting ``source``, ``pipe``,
     ``view``, ``tools``, ``toolbar``, ``symbols``, ``style``, ``layout`` or
     ``children``.
+
+    A construction that a check refuses (``TraitError``) leaves the source,
+    view and pipe that it was given open. A construction that fails after the
+    checks, for example in a tool's ``on_done``, closes the diagram as
+    ``close()`` does, with the view and pipe that it was given. Both close the
+    ``tools`` and ``toolbar`` that they were given, a refused construction when
+    Python collects it.
 
     """
 
@@ -183,6 +190,14 @@ class Diagram(StyledWidget):
                 "To show one diagram in two places, display the same Diagram twice"
             )
             raise T.TraitError(msg)
+        pipe = self._trait_values.get("pipe")
+        for sub in iter_pipes(pipe) if pipe is not None else ():
+            if sub.comm is None:  # or the new source is wired into half the pipe
+                msg = (
+                    f"{type(sub).__name__} is closed; assign a new pipe before a "
+                    "new source"
+                )
+                raise T.TraitError(msg)
         return source
 
     @T.validate("view")
@@ -196,9 +211,12 @@ class Diagram(StyledWidget):
                 f"it; close this {name}, then build a new {name}(source=..., view=...)"
             )
             raise T.TraitError(msg)
+        name = type(view).__name__
+        if view.comm is None:
+            msg = f"{name} is closed; give this diagram a new {name}"
+            raise T.TraitError(msg)
         owner = open_owner(view._diagram)
         if owner is not None and owner is not self:
-            name = type(view).__name__
             msg = (
                 f"{name} belongs to another open diagram; give this one its own "
                 f"{name}. To show one diagram in two places, display the same "

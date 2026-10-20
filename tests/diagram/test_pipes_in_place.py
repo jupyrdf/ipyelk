@@ -265,3 +265,37 @@ def test_a_kept_stage_that_another_diagram_claimed_is_refused() -> None:
     assert owner(stage) is other
     other.close()
     first.close()
+
+
+class Strict(Pipeline):
+    """A pipeline with a second checked trait, to roll back a held ``pipes``."""
+
+    level = T.Int(0)
+
+    @T.validate("level")
+    def _validate_level(self, proposal: T.Bunch) -> int:
+        if proposal["value"] < 0:
+            raise T.TraitError("level must be >= 0")
+        return proposal["value"]
+
+
+def set_held(pipe: Strict, stage: Pipe) -> None:
+    with pipe.hold_trait_notifications():
+        pipe.pipes = [stage]
+        pipe.level = -1  # the rollback restores ``pipes``, not the record
+
+
+def test_a_stage_rolled_back_from_held_pipes_is_refused_once_closed() -> None:
+    pipe = Strict(pipes=[Pipe()])
+    stage = Pipe()
+    with pytest.raises(T.TraitError, match="level"):
+        set_held(pipe, stage)
+    assert stage not in pipe.pipes
+    stage.close()
+    msg = "^Pipe is closed; use a new pipe$"
+
+    with pytest.raises(T.TraitError, match=msg):
+        pipe.pipes = [stage]
+
+    assert stage not in pipe.pipes
+    pipe.close()

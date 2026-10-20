@@ -141,12 +141,15 @@ def test_a_diagram_that_fails_to_build_releases_its_source(
         raise RuntimeError("boom")
 
     source = make_source()
+    view, pipe = SprottyViewer(), Pipeline(pipes=[Pipe()])
     with monkeypatch.context() as patch:
         patch.setattr(Diagram, "_update_tools", boom)  # user code in a tool raises
         with pytest.raises(RuntimeError, match="boom"):
-            Diagram(source=source)
+            Diagram(source=source, view=view, pipe=pipe)
 
     assert source.diagram is None
+    assert not is_open(view)  # closed with the diagram
+    assert not is_open(pipe)
     assert Diagram(source=source).pipe.inlet is source
 
 
@@ -205,6 +208,20 @@ def test_replacing_the_source_releases_the_old_one() -> None:
     assert first.pipe.inlet is new
     with pytest.raises(T.TraitError, match=SHARED):
         Diagram(source=new)
+
+
+def test_a_new_source_is_refused_before_a_swap_when_a_stage_is_closed() -> None:
+    stage = Pipeline(pipes=[Pipe()])
+    diagram = Diagram(source=make_source(), pipe=Pipeline(pipes=[stage]))
+    stage.close()
+    before, new = snapshot(diagram), make_source()
+    msg = "^Pipeline is closed; assign a new pipe before a new source$"
+
+    with pytest.raises(T.TraitError, match=msg):
+        diagram.source = new
+
+    assert snapshot(diagram) == before
+    assert new.diagram is None
 
 
 def test_closed_diagrams_are_collected_and_leave_no_notifiers() -> None:
@@ -280,6 +297,20 @@ def test_a_refused_construction_leaves_the_given_view_open() -> None:
         Diagram(source=first.source, view=view)
     gc.collect()
     assert is_open(view)
+
+
+def test_the_view_of_a_closed_diagram_is_refused_and_leaks_nothing() -> None:
+    first = Diagram(source=make_source())
+    first.close()
+    widgets = live_widgets()
+    msg = "^SprottyViewer is closed; give this diagram a new SprottyViewer$"
+
+    with pytest.raises(T.TraitError, match=msg):
+        Diagram(source=first.source, view=first.view)
+
+    assert live_widgets() == widgets
+    assert first.source.diagram is None
+    assert Diagram(source=first.source).source.diagram is not None
 
 
 def test_a_closed_diagram_names_its_state_before_the_view_rule() -> None:

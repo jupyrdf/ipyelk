@@ -145,12 +145,14 @@ class Pipeline(SyncedOutletPipe):
     def _refusal(self, stage: Pipe, kept: bool = False) -> str | None:
         """Why ``stage`` cannot be listed, or ``None``.
 
-        A ``kept`` stage was accepted before, so only a new owner refuses it.
+        A ``kept`` stage was accepted before, so only a close or a new owner
+        refuses it. The record of accepted stages can name a stage that a
+        rolled-back ``hold_trait_notifications()`` removed again.
         """
         owner = self._owner()
         for sub in iter_pipes(stage):
             name = type(sub).__name__
-            if sub.comm is None and not kept:
+            if sub.comm is None:
                 return f"{name} is closed; use a new pipe"
             other = sub._owner()
             if other is None or (kept and other is owner):

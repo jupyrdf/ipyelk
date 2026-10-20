@@ -344,15 +344,19 @@
   the pending changes from one source, so a recorded change did not reach both. Both
   diagrams also wrote their layout onto the same elements, so the last layout won. A
   closed diagram releases its source, also when it closes during a run. A diagram
-  releases its old source when it gets a new one. To show one diagram in two places,
-  display the same `Diagram` twice ([#178]).
+  releases its old source when it gets a new one. An assignment to `Diagram.source` also
+  raises `TraitError` while a pipe in the diagram's pipe is closed: assign a new pipe
+  first. Such a new source used to be wired in, and the next run failed. To show one
+  diagram in two places, display the same `Diagram` twice ([#178]).
 - `Diagram.view` is fixed after construction. Pass the viewer as `Diagram(view=viewer)`.
   An assignment of a different viewer raises `TraitError`. The diagram's tools stay
   bound to the viewer that the diagram started with. In 2.x, the assignment moved the
   pipe's output to the new viewer, but the selection, the painter, the Fit and Center
   buttons and `ToggleCollapsedTool` still acted on the old viewer. The old viewer also
   stayed open. An assignment of the same viewer does nothing. `Diagram(view=...)` also
-  raises `TraitError` when the viewer is the view of another open diagram ([#208]).
+  raises `TraitError` when the viewer is closed or is the view of another open diagram.
+  A closed viewer used to be accepted. The construction then failed with an
+  `AttributeError` and left the widgets that it built open ([#208]).
 
 #### Migration
 
@@ -528,7 +532,11 @@ removed names][migration-removed-names] lists every name that raises
     observer then recorded the unchecked stages as accepted. Now only the check, and the
     default of `pipes`, write the record.
   - A kept stage that another diagram took after the `Pipeline` accepted it stayed in
-    both. A kept stage owned by another open diagram now raises `TraitError` ([#198])
+    both. A kept stage owned by another open diagram now raises `TraitError`.
+  - A `hold_trait_notifications()` block that raised put back the old `pipes`, but the
+    record kept the stages that the block had set. Such a stage, once closed, was
+    accepted, and the sync to the browser failed with an `AttributeError`. Now a closed
+    stage raises `TraitError`, also when the record names it ([#198])
 - Log the routine "fixing N ids" message from `ValidationPipe` at debug level instead of
   warning: assigning ids to id-less elements is the normal path (`fix_null_id=True`), so
   every diagram built from id-less elements logged it
