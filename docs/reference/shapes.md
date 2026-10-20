@@ -61,6 +61,15 @@ cuts from the top-right corner. 0 draws no notch, so the node is a rectangle. Th
 renderer limits the notch to the width and the height of the node. A string of a number,
 which ipyelk 2.x wrote, loads as the number.
 
+A `NodeShape`, `LabelShape` or `ElementShape` with the type string of another class
+validates `use` as that class does, and writes it as that class does. So
+`NodeShape(type="node:comment", use="abc")` raises a `ValidationError`, as
+`Comment(use="abc")` does, and `NodeShape(type="node:comment", use="20").use` is `20.0`.
+A type string whose class requires `use`, such as `node:path`, requires it here too. The
+JSON leaves out a `use` of `None`, so a `node:comment` shape with no `use` draws the
+default notch. A `node:widget` shape takes any string, because ELK JSON loads a `Widget`
+with no open widget as a `NodeShape`.
+
 To give a shape class of your own a payload, subclass `NodeShape`, `PortShape` or
 `LabelShape`. Set a new type string, and give `use` or new fields a type. JSON then
 loads the type string as your class, with your validation. The frontend needs a renderer

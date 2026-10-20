@@ -255,6 +255,15 @@
     assignment only on `Comment`.
   - `NodeShape`, `PortShape` and `LabelShape` keep a string `use` for the payload of a
     custom shape type.
+- A `NodeShape`, `LabelShape` or `ElementShape` with the type string of a built-in shape
+  class validates `use` as that class does, so its JSON passes `validate_elk_json`.
+  `NodeShape(type="node:comment", use="abc")` raises `ValidationError`, as
+  `Comment(use="abc")` does, and `NodeShape(type="node:comment", use="20").use` is
+  `20.0`. A type string whose class requires `use`, such as `node:path`, requires it
+  here too. 2.x accepted any string. An assignment of `type` checks the `use` that the
+  shape has. A `node:widget` shape takes any string, so ELK JSON still loads the
+  `NodeShape` of a closed widget. A custom type string keeps a string `use`
+  ([#244](https://github.com/jupyrdf/ipyelk/issues/244)).
 - `ipyelk.elements.Mark` and `ipyelk.elements.MarkFactory` are removed. They served the
   `networkx` transformer that 2.0 removed, and nothing used them since. Importing either
   name, or the `ipyelk.elements.mark_factory` module, raises `DeprecatedImportError`
