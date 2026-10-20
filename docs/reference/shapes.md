@@ -61,9 +61,9 @@ cuts from the top-right corner. 0 draws no notch, so the node is a rectangle. Th
 renderer limits the notch to the width and the height of the node. A string of a number,
 which ipyelk 2.x wrote, loads as the number.
 
-A `NodeShape`, `LabelShape` or `ElementShape` with the type string of another class
-gives `use` the type of that class: its annotation and constraints, but not a
-`field_validator` of the class. It writes `use` as that class does. So
+A `NodeShape`, `PortShape`, `LabelShape` or `ElementShape` with the type string of
+another class gives `use` the type of that class: its annotation and constraints, but
+not a `field_validator` of the class. It writes `use` as that class does. So
 `NodeShape(type="node:comment", use="abc")` raises a `ValidationError`, as
 `Comment(use="abc")` does, and `NodeShape(type="node:comment", use="20").use` is `20.0`.
 A type string whose class requires `use`, such as `node:path`, requires it here too. The

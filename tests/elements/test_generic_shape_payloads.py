@@ -8,11 +8,18 @@ that class does (#244): ``NodeShape(type="node:comment", use="abc")`` raises, as
 from __future__ import annotations
 
 from collections.abc import Iterator
+from typing import Annotated
 
 import jsonschema
 import pytest
 from ipywidgets import IntSlider
-from pydantic import Field, ValidationError, field_validator
+from pydantic import (
+    Field,
+    PlainSerializer,
+    PydanticUserError,
+    ValidationError,
+    field_validator,
+)
 
 from ipyelk.elements import (
     Label,
@@ -420,3 +427,38 @@ def test_only_the_type_of_the_payload_applies(json_classes):
     with pytest.raises(ValidationError):
         Star(use="abc")
     assert shapes.NodeShape(type="node:star", use="abc").use == "abc"
+
+
+def test_a_new_type_keeps_the_other_fields(json_classes):
+    """An assignment of ``type`` validates ``use`` only, also with an aliased field."""
+
+    class Tinted(shapes.NodeShape):
+        type: str | None = "node:tinted"
+        tint: str = Field("red", alias="Tint")
+
+    shape = Tinted(Tint="blue", use="20")
+    shape.type = None
+    assert (shape.type, shape.tint, shape.use) == (None, "blue", "20")
+
+
+def test_a_class_with_a_forward_reference_gets_its_payload_type(json_classes):
+    """A payload type made before ``model_rebuild`` does not stay."""
+
+    class Later(shapes.NodeShape):
+        type: str = "node:later"
+        use: Size | None = None  # ruff: ignore[undefined-name] (defined at the rebuild)
+
+    with pytest.raises(PydanticUserError):
+        shapes.NodeShape(type="node:later", use="5")
+    Later.model_rebuild(_types_namespace={"Size": int})
+    assert shapes.NodeShape(type="node:later", use="5").use == 5
+
+
+def test_the_payload_writes_json_as_its_class_does(json_classes):
+    class Stamped(shapes.NodeShape):
+        type: str = "node:stamped"
+        use: Annotated[int, PlainSerializer(str, when_used="json")] = 0
+
+    shape = shapes.NodeShape(type="node:stamped", use=5)
+    assert shape.model_dump()["use"] == 5
+    assert shape.model_dump(mode="json")["use"] == "5"

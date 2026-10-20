@@ -171,17 +171,26 @@ def payload_class(cls: type[BaseShape], tag: object) -> type[BaseShape] | None:
     return found if found is not None and "use" in found.model_fields else None
 
 
-@functools.cache
 def payload_type(cls: type[BaseShape]) -> TypeAdapter:
     """Return the type of the ``use`` of ``cls``, with its constraints.
 
     It has the annotation of the field and its metadata, such as a ``Field``
     constraint or a ``BeforeValidator``, but not a ``field_validator`` of ``cls``.
     """
+    # a class with a forward reference changes its fields when it is rebuilt
+    if not cls.__pydantic_complete__:
+        return new_payload_type(cls)
+    return cached_payload_type(cls)
+
+
+def new_payload_type(cls: type[BaseShape]) -> TypeAdapter:
     field = cls.model_fields["use"]
     if not field.metadata:
         return TypeAdapter(field.annotation)
     return TypeAdapter(Annotated[(field.annotation, *field.metadata)])
+
+
+cached_payload_type = functools.cache(new_payload_type)
 
 
 def validate_payload(cls: type[BaseShape], value: object) -> object:
@@ -299,7 +308,9 @@ class ElementShape(BaseShape):
         """Validate ``use`` again when ``type`` is assigned."""
         # an assignment validates only its own field, but the type selects the payload
         if info.field_name == "type" and isinstance(data, dict):
-            data = {**data, "use": cls.model_validate(data).use}
+            shape = cls.model_construct(**data)
+            cls.__pydantic_validator__.validate_assignment(shape, "use", shape.use)
+            data = {**data, "use": shape.use}
         return data
 
     @model_serializer(mode="wrap")
