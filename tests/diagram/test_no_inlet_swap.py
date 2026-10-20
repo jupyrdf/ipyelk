@@ -351,3 +351,67 @@ async def test_a_layout_option_change_reaches_the_layout(monkeypatch, collapse):
     assert _node(wire, "a")["layoutOptions"] == {"org.eclipse.elk.padding": padding}
     assert wire["edges"][0]["sources"] == (["c.slack"] if collapse else ["c"])
     diagram.close()
+
+
+@pytest.mark.asyncio
+async def test_a_clean_text_sizer_passes_on_an_edit_it_does_not_observe(monkeypatch):
+    """A custom flow without ``VisibilityPipe``: the text sizer's output is a copy,
+    so a layout option or size that it does not observe reaches ``ElkJS`` through
+    its input, not through its stale copy.
+    """
+    laid_out = []
+
+    def record_and_lay_out(wire: dict):
+        laid_out.append({el["id"]: dict(el) for el in _walk(wire)})
+        lay_out(wire)
+
+    monkeypatch.setattr(BrowserTextSizer, "run", _browser_stage(measure_labels))
+    monkeypatch.setattr(ElkJS, "run", _browser_stage(record_and_lay_out))
+    root, a, _b, _c = user_graph()
+    diagram = Diagram(
+        source=MarkElementWidget(value=root),
+        pipe=Pipeline(pipes=[ValidationPipe(), BrowserTextSizer(), ElkJS()]),
+    )
+    await settle(diagram)
+    options = {"org.eclipse.elk.nodeSize.minimum": "(500, 500)"}
+
+    a.layoutOptions = options
+    a.width = 333
+    diagram.source.record(F.Node.layout_options, F.Node.size)
+    diagram.refresh()
+    await settle(diagram)
+
+    assert diagram.pipe.status.exception is None
+    assert len(laid_out) == 2
+    assert laid_out[-1]["a"]["layoutOptions"] == options
+    assert laid_out[-1]["a"]["width"] == 333
+    assert laid_out[-1]["la"]["width"] == LABEL_WIDTH, "the measured size stays"
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("collapsed", [False, True], ids=["expanded", "collapsed"])
+async def test_a_color_change_reaches_the_view(browser, collapsed):
+    """``record(F.ColorCSS)`` shows a new class without measuring text again, and
+    keeps the projection.
+    """
+    root, a, _b, _c = user_graph()
+    diagram = Diagram(source=MarkElementWidget(value=root))
+    await settle(diagram)
+    if collapsed:
+        await _collapse_a(diagram)
+    _valid, sizer, _vis, _elk = diagram.pipe.pipes
+    sizer_runs = []
+    count_runs(sizer, sizer_runs)
+    before = _view(diagram)
+
+    a.add_class("hot")
+    diagram.source.record(F.ColorCSS)
+    diagram.refresh()
+    await settle(diagram)
+
+    assert diagram.pipe.status.exception is None
+    view = _view(diagram)
+    assert _node(view, "a")["properties"]["cssClasses"] == "hot"
+    assert sizer_runs == []
+    assert view["edges"][0]["sources"] == before["edges"][0]["sources"]
+    assert view["edges"][0]["sources"] == (["c.slack"] if collapsed else ["c"])

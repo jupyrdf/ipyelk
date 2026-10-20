@@ -45,3 +45,24 @@ async def test_a_clean_stage_keeps_its_output_until_its_input_changes():
     assert pipeline.outlet.value is first.outlet.value, "a new input passes through"
     pipeline.close()
     source.close()
+
+
+@pytest.mark.asyncio
+async def test_a_clean_copy_does_not_hide_an_edit_it_does_not_observe():
+    """A change report that no stage observes may be an in-place edit: a clean
+    stage that copies passes its input on, not its stale copy.
+    """
+    root = Node(id="root")
+    source = MarkElementWidget(value=root)
+    pipeline = Pipeline(inlet=source)
+    pipeline.pipes = [_Copy(observes=("a",))]
+    pipeline.inlet.record("a")
+    await pipeline.run()
+    assert pipeline.outlet.value is not root
+
+    root.layoutOptions = {"org.eclipse.elk.direction": "DOWN"}
+    pipeline.inlet.record("b")
+    await pipeline.run()
+    assert pipeline.outlet.value is root
+    pipeline.close()
+    source.close()

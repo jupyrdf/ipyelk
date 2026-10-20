@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import weakref
 from datetime import datetime
 
 import ipywidgets as W
@@ -242,9 +243,12 @@ class Pipeline(SyncedOutletPipe):
     async def _run_pipe(self, i: int, pipe: Pipe, flow: tuple[str, ...]) -> None:
         value = pipe.inlet.value
         if not pipe.status.dirty():
-            # A clean stage keeps what it made from this value, such as the
-            # projection of a VisibilityPipe. A new value passes through (#231).
-            if value is not pipe._ran_on:
+            # A clean stage keeps what it made, such as the projection of a
+            # VisibilityPipe, only while nothing reached it since its last run (#231).
+            # A change report may be an in-place edit that a copy does not have.
+            reached = flow if i == 0 else pipe.inlet.flow
+            ran_on = pipe._ran_on() if pipe._ran_on else None
+            if reached or value is not ran_on:
                 pipe.outlet.value = value
             return
         self.status_update(PipeStatus.running(), pipe=pipe)
@@ -254,7 +258,7 @@ class Pipeline(SyncedOutletPipe):
             await pipe.run(flow=flow if i == 0 else pipe.inlet.flow)
         else:
             await pipe.run()
-        pipe._ran_on = value
+        pipe._ran_on = None if value is None else weakref.ref(value)
 
     def check_dirty(self, flow: tuple[str, ...] | None = None) -> bool:
         # check pipes and propagate flow to downstream pipes
