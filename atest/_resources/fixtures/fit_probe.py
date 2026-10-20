@@ -10,7 +10,7 @@ from IPython.display import display
 
 from ipyelk.diagram import SprottyViewer
 
-#: padding of the first-layout fit, in CSS pixels; the robot test allows for it
+#: padding of the first-layout fit, in diagram units; the robot test allows for it
 PADDING = 10
 
 

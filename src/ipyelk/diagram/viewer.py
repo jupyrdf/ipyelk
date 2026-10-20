@@ -51,15 +51,19 @@ class Viewer(W.Widget):
         :py:meth:`fit` message would have reached no view) does not open at 1:1 in
         the top-left corner. A view that is hidden then (a collapsed accordion, a
         background tab) fits the first time it is shown. Each view fits once: later
-        layouts, reveals and resizes keep its camera, and a ``set_viewport`` sent
-        while it waits to be shown cancels its fit.
+        layouts (a new ``source`` included), reveals and resizes keep its camera, and
+        a ``set_viewport`` sent while it waits to be shown cancels its fit; a
+        :py:meth:`fit` or :py:meth:`center` sent then has no canvas to work on, and
+        the first fit replaces it. Set it before a view's first layout: a view that
+        was already laid out is not fitted when it is turned on.
     :parameter fit_padding: float
-        padding around the diagram, in CSS pixels, for the first-layout fit and for
-        :py:meth:`fit` calls that pass no ``padding`` (default ``0``).
+        padding around the diagram, in diagram units (scaled by the zoom on screen),
+        for the first-layout fit and for :py:meth:`fit` calls that pass no
+        ``padding`` (default ``0``).
     :parameter fit_max_zoom: float or ``None``
         zoom limit for the first-layout fit and for :py:meth:`fit` calls that pass no
-        ``max_zoom``; ``None`` (the default) sets no limit, so a small diagram fills
-        the view.
+        ``max_zoom``; ``None`` (the default) leaves only the viewer's own limit (10),
+        so a small diagram fills the view.
 
     """
 
