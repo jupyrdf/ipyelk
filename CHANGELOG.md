@@ -600,19 +600,18 @@ removed names][migration-removed-names] lists every name that raises
   Before, the serialization of the shape raised `AttributeError`, because a closed
   widget has no `model_id`. The shape now writes the `model_id` that the widget had. ELK
   JSON loads it as a `NodeShape`, with a warning that names the `model_id`. If you give
-  the shape a widget that is closed already, it writes no `model_id`, not the
-  `model_id` of the widget it had before ([#241])
+  the shape a widget that is closed already, it writes no `model_id`, not the `model_id`
+  of the widget it had before ([#241])
 - After `ToggleCollapsedTool` hides a node, a refresh with nothing pending keeps the
   collapsed diagram in the view. Before, each stage with no pending change gave its
   input to the next stage. The view then got your tree without the projection that
   `VisibilityPipe` makes, so it lost the slack port, and an edge pointed at the hidden
   child. A stage with no pending change now keeps its output while nothing reached it
-  since its last run: no change report, and the same input. Otherwise it gives its
-  input to the next stage, as before. If you change your tree in place, for example
-  with a new CSS class or label text, record a change report before you call
-  `refresh()`. For example, call `diagram.source.record(F.Layout)`, with `F` as
-  `ipyelk.pipes.flows`. 2.1.1 did not show such a change at a refresh with nothing
-  pending either ([#231])
+  since its last run: no change report, and the same input. Otherwise it gives its input
+  to the next stage, as before. If you change your tree in place, for example with a new
+  CSS class or label text, record a change report before you call `refresh()`. For
+  example, call `diagram.source.record(F.Layout)`, with `F` as `ipyelk.pipes.flows`.
+  2.1.1 did not show such a change at a refresh with nothing pending either ([#231])
 - After `ToggleCollapsedTool` hides a node, a run that measures text again keeps the
   collapsed diagram in the view. Such a run follows a label text change that you record
   with `F.Text.text`. It also follows `diagram.source.record(F.Layout)` or
@@ -622,8 +621,8 @@ removed names][migration-removed-names] lists every name that raises
   `model_dump()` of a tree leaves out each edge to a hidden element, as it leaves out
   the element. `VisibilityPipe` now observes each change, so it makes the projection
   again after the text sizer. A color class that you record with `F.ColorCSS` now
-  reaches the view too: `VisibilityPipe` makes the projection again, and `ElkJS` lays
-  it out again. The text sizer does not run ([#246])
+  reaches the view too: `VisibilityPipe` makes the projection again, and `ElkJS` lays it
+  out again. The text sizer does not run ([#246])
 - If no event loop runs, for example in a script, `Tool.trigger()` raises a
   `RuntimeError` that says what to do: call it from a coroutine that you run with
   `asyncio.run(...)`. Before, it raised the `RuntimeError` of `asyncio`,
