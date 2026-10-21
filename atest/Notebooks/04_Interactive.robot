@@ -9,27 +9,53 @@ Test Teardown       Clean up after IPyElk Example
 
 
 *** Variables ***
-${SCREENS}              ${SCREENS ROOT}${/}examples${/}04_Interactive
+${SCREENS}                  ${SCREENS ROOT}${/}examples${/}04_Interactive
 # longer than a pipe's 30s wait for the browser: the macOS runners' kernel can be
 # that far behind a burst, and a timed-out pipe may still recover
-${CONVERGE TIMEOUT}     60s
-${PROBE}                interactive_probe.py
-${XP SLIDER}            //div[contains(@class, "widget-slider")][.//label[text()="{}"]]
+${CONVERGE TIMEOUT}         60s
+${PROBE}                    interactive_probe.py
+${XP SLIDER}                //div[contains(@class, "widget-slider")][.//label[text()="{}"]]
 # JupyterLab may scroll the view away to show a new cell, and stops updating
 # outputs it has moved off-screen
 ${JS DRAWN EDGE IDS}
-...                     document.querySelector("${CSS ELK VIEW}").scrollIntoView({block: "center"});
-...                     return [...document.querySelectorAll("${CSS ELK VIEW} ${CSS ELK EDGE}")]
-...                     .filter((el) => !el.closest(".sprotty-hidden"))
-...                     .map((el) => el.id.slice(-36)).sort();
+...                         document.querySelector("${CSS ELK VIEW}").scrollIntoView({block: "center"});
+...                         return [...document.querySelectorAll("${CSS ELK VIEW} ${CSS ELK EDGE}")]
+...                         .filter((el) => !el.closest(".sprotty-hidden"))
+...                         .map((el) => el.id.slice(-36)).sort();
 # tells a kernel that stopped running cells from a page that stopped drawing
 ${JS STALL}
-...                     const cell = [...document.querySelectorAll(".jp-CodeCell")]
-...                     .find((c) => c.querySelector(".jp-InputArea-editor")?.textContent.includes(arguments[0]));
-...                     const prompt = cell?.querySelector(".jp-InputArea-prompt")?.textContent.trim();
-...                     const pipe = document.querySelector(".elk-pipe-status")?.closest("pre");
-...                     const status = pipe ? [...pipe.children].map((el) => el.textContent.trim()).filter(Boolean).join(" ") : "missing";
-...                     return "prompt " + (prompt ?? "missing") + ", pipe " + JSON.stringify(status);
+...                         const cell = [...document.querySelectorAll(".jp-CodeCell")]
+...                         .find((c) => c.querySelector(".jp-InputArea-editor")?.textContent.includes(arguments[0]));
+...                         const prompt = cell?.querySelector(".jp-InputArea-prompt")?.textContent.trim();
+...                         const pipe = document.querySelector(".elk-pipe-status")?.closest("pre");
+...                         const status = pipe ? [...pipe.children].map((el) => el.textContent.trim()).filter(Boolean).join(" ") : "missing";
+...                         return "prompt " + (prompt ?? "missing") + ", pipe " + JSON.stringify(status);
+# gh-232 diagnostics: record every kernel message the page sends or receives
+# (direction, channel, type, msg_id, parent, execution_state, comm_id, method,
+# state) on the notebook's kernel connection, via `window.jupyterapp`
+${JS INSTALL RECORDER}
+...                         const app = window.jupyterapp; if (!app) return "no jupyterapp";
+...                         const panel = [...app.shell.widgets("main")].find((w) => w.sessionContext?.session?.kernel);
+...                         if (!panel) return "no notebook panel";
+...                         const kernel = panel.sessionContext.session.kernel;
+...                         if (window.__k232?.kernel === kernel) return "already installed";
+...                         const rec = { kernel, t0: Date.now(), msgs: [] };
+...                         kernel.anyMessage.connect((_, a) => {
+...                         const m = a.msg, c = m.content || {}, d = c.data || {};
+...                         const payload = d.state ?? d.content ?? "";
+...                         rec.msgs.push([Date.now() - rec.t0, a.direction, m.channel, m.header.msg_type, m.header.msg_id.slice(0, 8),
+...                         (m.parent_header?.msg_id || "").slice(0, 8), c.execution_state || "", (c.comm_id || "").slice(0, 8),
+...                         d.method || "", payload ? JSON.stringify(payload).slice(0, 60) : ""]);
+...                         if (rec.msgs.length > 20000) rec.msgs.splice(0, 5000);
+...                         });
+...                         window.__k232 = rec; return "installed";
+# the last N recorded messages plus the kernel connection's still-pending
+# futures: a slider update whose future is still there never got its idle
+${JS DUMP RECORDER}
+...                         const rec = window.__k232; if (!rec) return "{}";
+...                         const futures = [...rec.kernel._futures.entries()].map(([id, f]) => [id.slice(0, 8),
+...                         f.msg?.header?.msg_type, f.msg?.content?.data?.state ? JSON.stringify(f.msg.content.data.state).slice(0, 60) : ""]);
+...                         return JSON.stringify({ t0: rec.t0, now: Date.now() - rec.t0, futures, msgs: rec.msgs.slice(-arguments[0]) });
 
 
 *** Test Cases ***
@@ -50,6 +76,8 @@ ${JS STALL}
     ...    itself still gates everywhere.
     Example Should Restart-and-Run-All    ${INTERACTIVE}
     Set Tags    gh:95
+    ${recorder} =    Execute Javascript    ${JS INSTALL RECORDER}
+    Log    gh-232 recorder: ${recorder}    console=True
     Copy File    ${FIXTURES}${/}${PROBE}    ${OUTPUT DIR}${/}home${/}${PROBE}
     Run IPyElk Code In A New Cell    _k95 = __import__("interactive_probe").watch(box, elk)
     ...    screen=00-probe.png
@@ -117,6 +145,9 @@ Diagram Should Converge
     Log    round ${round}: ${asked} ${ok}, ${new} new sources, last at ${held}s, drawn by ${drawn}s
     ...    console=True
     Capture Page Screenshot    ${round}-2-${ok.lower()}.png
+    # gh-232 diagnostics: the page's view of the kernel traffic, every round
+    ${dump} =    Execute Javascript    ${JS DUMP RECORDER}    ARGUMENTS    ${1500}
+    Create File    ${OUTPUT DIR}${/}k232-browser-${round}.json    ${dump}
     IF    "${ok}" == "FAIL"
         ${err} =    Evaluate    $err.split("The last error was: ")[-1]
         Fail    round ${round}: no convergence on ${asked} within ${CONVERGE TIMEOUT}: ${err}
