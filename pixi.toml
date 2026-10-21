@@ -385,6 +385,21 @@ outputs = [
   "build/reports/atest/robot.ok",
 ]
 
+[feature.tasks-atest.tasks.bench-render]
+# the browser render benchmark behind #170: build/bench-render/local.md
+cmd = "python scripts/bench_render.py --label local"
+depends-on = ["pip-atest", "setup-js"]
+inputs = [
+  "js/**/*.{ts,tsx}",
+  "scripts/bench_graphs.py",
+  "scripts/bench_pipeline.py",
+  "scripts/bench_render.py",
+  "scripts/bench_render_fixtures.py",
+  "scripts/bench_render/",
+  "style/*.css",
+]
+outputs = ["build/bench-render/local.json", "build/bench-render/local.md"]
+
 [feature.tasks-atest.tasks.report-cov]
 cmd = """python scripts/report-cov.py"""
 inputs = [

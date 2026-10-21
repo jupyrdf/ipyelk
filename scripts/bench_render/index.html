@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>ipyelk render benchmark</title>
+    <style>
+      /* the JupyterLab variables the diagram CSS reads, so styles resolve */
+      :root {
+        --jp-layout-color1: #ffffff;
+        --jp-border-color0: #bdbdbd;
+        --jp-ui-font-color0: rgba(0, 0, 0, 1);
+        --jp-content-font-family: system-ui, sans-serif;
+        --jp-ui-font-size0: 10px;
+        --jp-brand-color2: #1976d2;
+        --jp-brand-color3: #2196f3;
+        --jp-warn-color3: #ffa726;
+      }
+      body {
+        margin: 0;
+      }
+      #host {
+        width: 1200px;
+        height: 800px;
+        position: relative;
+        overflow: hidden;
+      }
+      #result {
+        display: none;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="host" class="jp-ElkView"></div>
+    <pre id="result"></pre>
+    <script type="module" src="./entry.ts"></script>
+  </body>
+</html>
