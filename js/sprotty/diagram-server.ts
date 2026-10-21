@@ -54,6 +54,18 @@ export class JLModelSource extends LocalModelSource {
   elementRegistry: SModelRegistry;
   factory: SSymbolModelFactory;
   diagramWidget: any;
+  /**
+   * Whether this view's renders skip elements outside its canvas.
+   *
+   * Off: a diagram is fit to its canvas when it is laid out, so culling drops
+   * nothing on the usual path while costing an absolute-bounds walk per
+   * element, and it makes everything that reads the rendered SVG -- the
+   * exporter, the acceptance suites, anything scripting the DOM -- depend on
+   * where the diagram happens to be scrolled. Turning it on is #170, which
+   * owns the cost measurement (`scripts/bench_render.py` flips this flag) and
+   * the export path that a partial DOM needs.
+   */
+  culling: boolean = false;
 
   async updateLayout(layout, symbols, idPrefix: string, styles: PainterStyles = {}) {
     this.elkToSprotty = new ElkGraphJsonToSprotty();

@@ -20,18 +20,6 @@ import {
 import { ElkModelRenderer } from '../renderer';
 
 /**
- * Whether viewport culling runs at all.
- *
- * Off: a diagram is fit to its canvas when it is laid out, so culling drops
- * nothing on the usual path while costing an absolute-bounds walk per element,
- * and it makes everything that reads the rendered SVG -- the exporter, the
- * acceptance suites, anything scripting the DOM -- depend on where the diagram
- * happens to be scrolled. Turning it back on is #170, which owns the cost
- * measurement and the export path that a partial DOM needs.
- */
-export const CULLING_ENABLED: boolean = false;
-
-/**
  * Whether the canvas has a known, non-empty size.
  *
  * Culling compares an element against these bounds: before the first
@@ -42,12 +30,21 @@ export function validCanvasBounds(bounds: Bounds): boolean {
   return bounds.width > 0 && bounds.height > 0;
 }
 
+/** The part of the render context that decides whether culling runs. */
+export type CullingContext = Pick<ElkModelRenderer, 'targetKind'> & {
+  source?: { culling: boolean };
+};
+
 /**
- * Whether elements outside the given canvas may be skipped: only when culling
- * is on at all, and only once the canvas size is known.
+ * Whether elements outside the given canvas may be skipped: only when the
+ * view's model source has culling on (see `JLModelSource.culling`), never for
+ * the hidden bounds-measuring render, and only once the canvas size is known.
  */
-export function shouldCull(canvasBounds: Bounds): boolean {
-  return CULLING_ENABLED && validCanvasBounds(canvasBounds);
+export function shouldCull(context: CullingContext, canvasBounds: Bounds): boolean {
+  if (context.targetKind === 'hidden') {
+    return false;
+  }
+  return context.source?.culling === true && validCanvasBounds(canvasBounds);
 }
 
 /** Whether `bounds` overlaps a canvas of the given size at the origin. */
@@ -71,17 +68,12 @@ export abstract class ShapeView implements IView {
     model: Readonly<SChildElementImpl & InternalBoundsAware>,
     context: ElkModelRenderer,
   ): boolean {
-    if (context.targetKind === 'hidden') {
-      // Don't hide any element for hidden rendering
+    const canvasBounds = model.root.canvasBounds;
+    if (!shouldCull(context, canvasBounds)) {
       return true;
     }
     if (!Dimension.isValid(model.bounds)) {
       // We should hide only if we know the element's bounds
-      return true;
-    }
-
-    const canvasBounds = model.root.canvasBounds;
-    if (!shouldCull(canvasBounds)) {
       return true;
     }
 
