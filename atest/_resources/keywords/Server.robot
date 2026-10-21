@@ -120,6 +120,8 @@ Create Lab Launch Command
     ...    --ServerApp.token\='${TOKEN}'
     ...    --ExtensionApp.open_browser\=False
     ...    --ServerApp.open_browser\=False
+    # gh-232 diagnostics: `window.jupyterapp` reaches the kernel connection
+    ...    --LabApp.expose_app_in_browser\=True
     ${path args} =    Catenate
     ...    --LabApp.user_settings_dir\='${SETTINGS DIR.replace('\\', '\\\\')}'
     ...    --LabApp.workspaces_dir\='${WORKSPACES DIR.replace('\\', '\\\\')}'
@@ -152,6 +154,9 @@ Create ATest Kernel Startup
     # error in a later startup file cannot skip it
     Copy File    ${ROOT}${/}scripts${/}kernel_shell_reply_fix.py
     ...    ${startup_dir}${/}00-shell-reply-fix.py
+    # gh-232 diagnostics: trace shell dispatch and status publishes per kernel
+    Copy File    ${FIXTURES}${/}kernel_trace_232.py
+    ...    ${startup_dir}${/}02-kernel-trace-232.py
 
 Initialize User Settings
     [Documentation]    Configure the settings directory, and modify settings that make tests less reproducible
