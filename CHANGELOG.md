@@ -641,6 +641,11 @@ removed names][migration-removed-names] lists every name that raises
   `NodeProperties(shape={"type": "node:widget", "use": "x"})`, raises `ValidationError`,
   as `Widget(use="x")` does. Before, it loaded as a `NodeShape` and warned, as ELK JSON
   does ([#153])
+- Two views of one diagram, from `display(diagram)` twice or a linked output view, no
+  longer loop on hover feedback. A view wrote the feedback that it replays from
+  `hover.hovered_id` back to `hovered_id`. When that feedback arrived late, for example
+  after a second hover, the views wrote stale ids back without end, and the page stopped
+  responding. A view now writes back only the hover feedback from the pointer.
 
 ### Development
 

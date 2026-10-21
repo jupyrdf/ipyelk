@@ -76,6 +76,8 @@ const POLL = 300;
 // trailing debounce for viewport reports: a wheel/drag burst -> one kernel write
 const VIEWPORT_DEBOUNCE = 100;
 const STALE_DELAY_MAX = 10000;
+/** Feedback `updateHover` replays from the kernel's `hovered_id`: shown, never written back. */
+const replayedHover = new WeakSet<Action>();
 
 export class ELKControlModel extends DOMWidgetModel {
   static model_name = 'ELKControlModel';
@@ -449,11 +451,13 @@ export class ELKViewerView extends DOMWidgetView {
       case HoverFeedbackAction.KIND:
         const hoverFeedback = action as HoverFeedbackAction;
         const hover = this.model.get('hover');
-        if (hover != null) {
+        // the feedback updateHover replays lands here too: never write it back.
+        // It is async, so it can land after the id moved on (two hovers in one
+        // tick, or a blocked dispatcher releasing them), and a stale id written
+        // back replays again: one view, or two views of one model, looped.
+        if (hover != null && !replayedHover.has(hoverFeedback)) {
           const current: string | null = hover.get('hovered_id');
           const next = hoverAfterFeedback(current, hoverFeedback);
-          // the feedback this view itself dispatches from updateHover lands
-          // here too: an unchanged id is written back to nothing
           if (next !== current) {
             hover.set('hovered_id', next);
             hover.save_changes();
@@ -619,7 +623,9 @@ export class ELKViewerView extends DOMWidgetView {
     if (hover != null) {
       const hovered: string | null = hover.get('hovered_id');
       const previous: string | null = hover.previous('hovered_id');
-      await this.actionDispatcher.dispatchAll(hoverFeedbackActions(previous, hovered));
+      const actions = hoverFeedbackActions(previous, hovered);
+      actions.forEach((replayed) => replayedHover.add(replayed));
+      await this.actionDispatcher.dispatchAll(actions);
       this.model.diagramUpdated.emit(void 0);
     }
   }
