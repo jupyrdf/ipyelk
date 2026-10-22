@@ -120,8 +120,6 @@ Create Lab Launch Command
     ...    --ServerApp.token\='${TOKEN}'
     ...    --ExtensionApp.open_browser\=False
     ...    --ServerApp.open_browser\=False
-    # gh-232 diagnostics: `window.jupyterapp` reaches the kernel connection
-    ...    --LabApp.expose_app_in_browser\=True
     ${path args} =    Catenate
     ...    --LabApp.user_settings_dir\='${SETTINGS DIR.replace('\\', '\\\\')}'
     ...    --LabApp.workspaces_dir\='${WORKSPACES DIR.replace('\\', '\\\\')}'
@@ -158,9 +156,6 @@ Create ATest Kernel Startup
     # send on that comm, not the subshell JupyterLab 4.6 addressed (#232)
     Copy File    ${ROOT}${/}scripts${/}kernel_comm_subshell_fix.py
     ...    ${startup_dir}${/}00-comm-subshell-fix.py
-    # gh-232 diagnostics: trace shell dispatch and status publishes per kernel
-    Copy File    ${FIXTURES}${/}kernel_trace_232.py
-    ...    ${startup_dir}${/}02-kernel-trace-232.py
 
 Initialize User Settings
     [Documentation]    Configure the settings directory, and modify settings that make tests less reproducible
