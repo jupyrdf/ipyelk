@@ -393,6 +393,11 @@ removed names][migration-removed-names] lists every name that raises
 
 #### Fixed
 
+- `Exporter` exports every label. The export used to serialise the live SVG, whose label
+  view leaves out labels under 3 px tall on screen, so a diagram exported while fitted
+  at a low zoom (any diagram of a few hundred nodes) had no labels. The export is now
+  rendered from the model, at no level of detail and with nothing culled ([#170]).
+
 - PyPI shows the license: the wheel and the source distribution declare
   `License-Expression: BSD-3-Clause AND EPL-1.0 AND EPL-2.0` (PEP 639), because the
   package contains code under each of these licenses, and list `LICENSE.txt`,
@@ -731,6 +736,14 @@ removed names][migration-removed-names] lists every name that raises
   miss the canvas, once the canvas size is known and never for the hidden render. The
   flag is `JLModelSource.culling`, in place of the `CULLING_ENABLED` constant, and a
   change re-renders the model. `scripts/bench_render.py` measures it ([#170]).
+- Render the SVG export from the model: `ELKViewerView.exportSvg()` renders the root
+  again for the `hidden` target -- no culling, no label level of detail, no widget
+  overlays -- with the hidden render's own decorations (ids, classes, positions, edge
+  label placement) into a detached element, instead of serialising the live SVG. The
+  view, its viewer and the command stack take no part, so an export is no render of the
+  view, and the live DOM is never touched. `diagramUpdated` now says why it fired
+  (`layout`, `selection` or `hover`), and the exporter skips hover, which fires on every
+  pointer move ([#170]).
 - Fit each view after its first layout when the viewer's `fit_on_first_layout` is set:
   every node, port and label of the layout (those outside their parent included, and not
   narrowed to a selection), without animation, with the viewer's `fit_padding` and

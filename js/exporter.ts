@@ -141,10 +141,10 @@ export class ELKExporterModel extends WidgetModel {
   /**
    * The diagram's markup and its size in model coordinates.
    *
-   * A viewer renders the whole diagram for the export, so scrolling or zooming
-   * the diagram cannot crop what is exported. Without one -- a viewer that
-   * never initialized Sprotty -- fall back to the rendered DOM, which holds
-   * only what that viewport showed.
+   * A viewer renders the whole diagram from its model for the export, so
+   * scrolling or zooming the diagram cannot crop what is exported. Without one
+   * -- a viewer that never initialized Sprotty -- fall back to the rendered
+   * DOM, which holds only what that viewport showed.
    */
   async capture_svg(): Promise<{
     markup: string;
@@ -199,8 +199,13 @@ export class ELKExporterModel extends WidgetModel {
     }
   }
 
-  _schedule_update() {
-    if (!this.enabled) {
+  /**
+   * Export again, a second after the last change. A viewer's `diagramUpdated`
+   * passes why it fired: hover feedback is transient and fires on every pointer
+   * move, so it is not worth a render of the whole diagram.
+   */
+  _schedule_update(_sender?: unknown, reason?: unknown) {
+    if (!this.enabled || reason === 'hover') {
       return;
     }
     if (this._update_timeout != null) {

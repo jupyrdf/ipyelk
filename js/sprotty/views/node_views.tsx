@@ -429,6 +429,10 @@ export class ElkLabelView extends ShapeView {
     if (!inView) {
       return false;
     }
+    if (context.targetKind === 'hidden') {
+      // an export is read at any zoom: no level of detail
+      return true;
+    }
     // check if label should be rendered due to zoom level and min size
     const root = label.root;
     let zoom = root['zoom']; // should there be a method on the context to get the zoom level?
