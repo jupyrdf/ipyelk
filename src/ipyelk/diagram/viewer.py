@@ -67,9 +67,9 @@ class Viewer(W.Widget):
     :parameter cull_offscreen: bool
         opt-in (default ``False``): each view renders only the elements that touch its
         canvas, which keeps selection, hover and panning cheap on a large diagram that
-        is zoomed in (measured: a hover on 1,000 nodes costs 2-4 ms instead of 16-18,
-        on 5,000 nodes 11 ms instead of 88; where the whole diagram is on screen the
-        check costs 3-8% of a render). The SVG in the page is then not the whole
+        is zoomed in (measured: a hover on 1,000 nodes costs 2-4 ms instead of 15-18,
+        on 5,000 nodes 11-12 ms instead of 88; where the whole diagram is on screen the
+        check costs 1-7% of a render). The SVG in the page is then not the whole
         diagram when the view is zoomed in, so code that reads the browser DOM must
         fit the view first or stay with the default. An
         :py:class:`~ipyelk.diagram.Exporter` is unaffected either way: it renders its
