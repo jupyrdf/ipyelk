@@ -254,28 +254,26 @@ export class Bench {
     for (let round = 0; round <= config.rounds; round++) {
       // a different order each round, so no combination always follows another
       for (const [culling, viewport] of shuffled(combinations, round + 1)) {
-        {
-          const t0 = performance.now();
-          const run = await this.run({
-            culling,
-            viewport,
-            ops: config.ops,
-            repeat: config.repeat,
-          });
-          const line =
-            `${result.case} round ${round} ${run.key}: ${run.samples.length} samples` +
-            ` in ${((performance.now() - t0) / 1000).toFixed(1)} s`;
-          this.log.push(line);
-          result.log.push(line);
-          if (round === 0) {
-            continue; // the warm-up round
-          }
-          const kept = result.runs[run.key];
-          if (kept) {
-            kept.samples.push(...run.samples);
-          } else {
-            result.runs[run.key] = run;
-          }
+        const t0 = performance.now();
+        const run = await this.run({
+          culling,
+          viewport,
+          ops: config.ops,
+          repeat: config.repeat,
+        });
+        const line =
+          `${result.case} round ${round} ${run.key}: ${run.samples.length} samples` +
+          ` in ${((performance.now() - t0) / 1000).toFixed(1)} s`;
+        this.log.push(line);
+        result.log.push(line);
+        if (round === 0) {
+          continue; // the warm-up round
+        }
+        const kept = result.runs[run.key];
+        if (kept) {
+          kept.samples.push(...run.samples);
+        } else {
+          result.runs[run.key] = run;
         }
       }
     }

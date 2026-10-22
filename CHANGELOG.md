@@ -342,14 +342,14 @@ removed names][migration-removed-names] lists every name that raises
 
 - `Viewer.cull_offscreen` (opt-in, default `False`): each view renders only the elements
   that touch its canvas, so selecting, hovering and panning stay cheap on a large
-  diagram that is zoomed in. Measured in a headless browser: on a 1,000-node graph a
-  hover or a pan costs 2 ms of render instead of 10 ms plus 7 ms of style and layout; on
-  5,000 nodes, 12 ms instead of 100 ms; where the whole diagram is on screen, nothing is
-  culled and the check costs 5-8% of a render. The SVG in the page is then not the whole
-  diagram when the view is zoomed in, which is why it is opt-in: two acceptance suites
-  in this repository count the live DOM at 1:1 right after display. `Exporter` is
-  unaffected either way: it renders its export from the model, so it is complete at any
-  zoom ([#170]).
+  diagram that is zoomed in. Measured in a headless browser: zoomed into a 1,000-node
+  graph, a hover or a pan costs 2-4 ms of render instead of 9-11 ms plus 7 ms of style
+  and layout; on 5,000 nodes, 11 ms instead of 46 ms plus 42 ms; where the whole diagram
+  is on screen, nothing is culled and the check costs 0.3-0.8 ms per 1,000 nodes (3-8%
+  of a render). The SVG in the page is then not the whole diagram when the view is
+  zoomed in, which is why it is opt-in: two acceptance suites in this repository count
+  the live DOM at 1:1 right after display. `Exporter` is unaffected either way: it
+  renders its export from the model, so it is complete at any zoom ([#170]).
 - `Viewer.fit_on_first_layout` (default `False`) makes each view fit the whole diagram
   in the browser after its own first layout. `Viewer.fit()` is a message to the views
   that exist when it is sent, so a diagram displayed after it was laid out opened at 1:1
