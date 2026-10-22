@@ -92,16 +92,23 @@ try:
         return msg["header"]["msg_id"]
 
     def events(msgs, ids):
+        # per message, and in IOPub order: its status, and the Output's captured msg_id
         out = {tag: [] for tag in ids}
+        order = []
         for m in msgs:
             tag = next((k for k, v in ids.items() if v == m["parent_header"].get("msg_id")), None)
             if tag is None:
                 continue
             if m["msg_type"] == "status":
-                out[tag].append("status " + m["content"]["execution_state"])
+                event = "status " + m["content"]["execution_state"]
             elif m["msg_type"] == "comm_msg" and "msg_id" in m["content"]["data"].get("state", {}):
                 captured = m["content"]["data"]["state"]["msg_id"]
-                out[tag].append("out.msg_id = " + next((k for k, v in ids.items() if v == captured), "''"))
+                event = "out.msg_id = " + next((k for k, v in ids.items() if v == captured), "''")
+            else:
+                continue
+            out[tag].append(event)
+            order.append(f"{tag}: {event}")
+        out["order"] = order
         return out
 
     # prime b: its first update runs on the main shell and its echo records the subshell
@@ -210,11 +217,17 @@ def test_kernel_dispatches_where_the_client_addressed(tmp_path):
 
 @NEEDS_FIX
 def test_kernel_without_the_fix_leaks_the_inner_idle(tmp_path):
-    """The ipykernel 7.4 behaviour the fix exists for."""
+    """The ipykernel 7.4 behaviour the fix exists for.
+
+    If this fails after an ipykernel upgrade, ipykernel may dispatch where the client
+    addressed again, and ``scripts/kernel_comm_subshell_fix.py`` may be obsolete.
+    """
     events, threads, errors = run_kernel_probe(tmp_path, fixed=False)
     assert threads["a1"] == "MainThread", (threads, events, errors)
     assert threads["b1"].startswith("subshell-"), (threads, events, errors)
-    # b's idle goes out while its Output capture is still the page's hook target
-    b = events["b1"]
-    assert b.index("out.msg_id = b1") < b.index("status idle"), (events, errors)
-    assert "out.msg_id = ''" not in b[: b.index("status idle")], (events, errors)
+    # b's idle goes out while the Output's last published msg_id, the page's hook
+    # target, is still b's: whichever message published it
+    order = events["order"]
+    before_idle = order[: order.index("b1: status idle")]
+    captures = [e for e in before_idle if "out.msg_id" in e]
+    assert captures[-1] == "b1: out.msg_id = b1", (order, errors)

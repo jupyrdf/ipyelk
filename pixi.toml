@@ -256,6 +256,7 @@ export
 depends-on = ["pip-utest"]
 inputs = [
   "build/reports/pip-freeze/utest.txt",
+  "scripts/kernel_*_fix.py",
   "pyproject.toml",
   "{tests,src}/**/*.{py,json}",
   "CHANGELOG.md",
@@ -311,6 +312,7 @@ export JUPYTER_PLATFORM_DIRS=1
 depends-on = ["pip-utest-oldest"]
 inputs = [
   "build/reports/pip-freeze/utest-oldest.txt",
+  "scripts/kernel_*_fix.py",
   "pyproject.toml",
   "{tests,src}/**/*.{py,json}",
   "CHANGELOG.md",
@@ -375,6 +377,7 @@ inputs = [
   "atest",
   "src",
   "scripts/atest.py",
+  "scripts/kernel_*_fix.py",
   "build/labextensions-cov/@jupyrdf/jupyter-elk/package.json",
   "build/labextensions-cov/@jupyrdf/jupyter-elk/static",
   "!**/__pycache__/",
@@ -412,6 +415,7 @@ inputs = [
   "atest",
   "src",
   "scripts/atest.py",
+  "scripts/kernel_*_fix.py",
   "!**/__pycache__/",
   "!**/.ipynb_checkpoints",
 ]

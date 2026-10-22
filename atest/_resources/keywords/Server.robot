@@ -153,9 +153,10 @@ Create ATest Kernel Startup
     Copy File    ${ROOT}${/}scripts${/}kernel_shell_reply_fix.py
     ...    ${startup_dir}${/}00-shell-reply-fix.py
     # ipykernel >= 7.4 dispatches a widget message on the thread of the kernel's last
-    # send on that comm, not the subshell JupyterLab 4.6 addressed (#232)
+    # send on that comm, not the subshell JupyterLab 4.6 addressed (#232); loaded
+    # after the shell reply fix, which stays first
     Copy File    ${ROOT}${/}scripts${/}kernel_comm_subshell_fix.py
-    ...    ${startup_dir}${/}00-comm-subshell-fix.py
+    ...    ${startup_dir}${/}01-comm-subshell-fix.py
 
 Initialize User Settings
     [Documentation]    Configure the settings directory, and modify settings that make tests less reproducible
