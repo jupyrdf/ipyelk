@@ -32,7 +32,7 @@ def _install():
         return
     out = pathlib.Path(ipythondir).parent / "kernel-trace"
     out.mkdir(parents=True, exist_ok=True)
-    trace = open(out / f"{os.getpid()}.log", "a", buffering=1)  # noqa: SIM115
+    trace = pathlib.Path(out / f"{os.getpid()}.log").open("a", buffering=1)  # ruff: ignore[open-file-with-context-handler]
 
     def task_id():
         try:
@@ -54,7 +54,9 @@ def _install():
     def header(kernel, msg):
         try:
             _, frames = kernel.session.feed_identities(msg, copy=False)
-            return kernel.session.deserialize(frames, content=False, copy=False)["header"]
+            return kernel.session.deserialize(frames, content=False, copy=False)[
+                "header"
+            ]
         except Exception as err:  # the "stop aborting" dummy frames, for one
             return {"msg_type": f"?{type(err).__name__}", "msg_id": "?"}
 
@@ -65,7 +67,9 @@ def _install():
 
     async def shell_main(self, subshell_id, msg):
         h = header(self, msg)
-        lock = getattr(self, "_main_asyncio_lock", None) if subshell_id is None else None
+        lock = (
+            getattr(self, "_main_asyncio_lock", None) if subshell_id is None else None
+        )
         log(
             "shell_main",
             subshell_id,
@@ -88,7 +92,13 @@ def _install():
         try:
             p = parent or self.get_parent(channel) or {}
             ph = p.get("header", {}) if isinstance(p, dict) else {}
-            log("status", status, channel, str(ph.get("msg_id", ""))[:8], ph.get("msg_type"))
+            log(
+                "status",
+                status,
+                channel,
+                str(ph.get("msg_id", ""))[:8],
+                ph.get("msg_type"),
+            )
         except Exception:
             log("status", status, channel, "?", "?")
         return orig_publish(self, status, channel, parent)
