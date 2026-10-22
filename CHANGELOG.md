@@ -393,10 +393,10 @@ removed names][migration-removed-names] lists every name that raises
 
 #### Fixed
 
-- `Exporter` exports every label. The export used to serialise the live SVG, whose label
-  view leaves out labels under 3 px tall on screen, so a diagram exported while fitted
-  at a low zoom (any diagram of a few hundred nodes) had no labels. The export is now
-  rendered from the model, at no level of detail and with nothing culled ([#170]).
+- `Exporter` exports every label. The export used to serialize the live SVG, whose label
+  view leaves out labels under 3 pixels tall on screen, so a diagram exported while
+  fitted at a low zoom (any diagram of a few hundred nodes) had no labels. The export is
+  now rendered from the model, at no level of detail and with nothing culled ([#170]).
 
 - PyPI shows the license: the wheel and the source distribution declare
   `License-Expression: BSD-3-Clause AND EPL-1.0 AND EPL-2.0` (PEP 639), because the
@@ -739,7 +739,7 @@ removed names][migration-removed-names] lists every name that raises
 - Render the SVG export from the model: `ELKViewerView.exportSvg()` renders the root
   again for the `hidden` target -- no culling, no label level of detail, no widget
   overlays -- with the hidden render's own decorations (ids, classes, positions, edge
-  label placement) into a detached element, instead of serialising the live SVG. The
+  label placement) into a detached element, instead of serializing the live SVG. The
   view, its viewer and the command stack take no part, so an export is no render of the
   view, and the live DOM is never touched. `diagramUpdated` now says why it fired
   (`layout`, `selection` or `hover`), and the exporter skips hover, which fires on every

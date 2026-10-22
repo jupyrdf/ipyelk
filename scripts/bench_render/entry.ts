@@ -73,7 +73,7 @@ export interface Sample {
    * style and SVG geometry work the DOM change left pending */
   layout: number;
   /** from dispatch to the animation frame after the one that rendered: when a
-   * painted frame could first show the change, quantised to the display's
+   * painted frame could first show the change, rounded up to the display's
    * refresh interval */
   frame: number;
 }
@@ -83,7 +83,7 @@ export interface DomCounts {
   edges: number;
   labels: number;
   ports: number;
-  /** `svg.outerHTML.length`: what the exporter would serialise */
+  /** `svg.outerHTML.length`: what the exporter would serialize */
   svgChars: number;
 }
 
@@ -125,7 +125,7 @@ export interface ScheduleConfig {
   rounds: number;
   /** repeats of every op per round */
   repeat: number;
-  /** the zoomed viewports, each centred on the content */
+  /** the zoomed viewports, each centered on the content */
   zooms: number[];
 }
 

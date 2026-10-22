@@ -81,11 +81,13 @@ def fixture_path(out: Path, shape: str, n: int) -> Path:
 
 
 async def main_async(cases: list[tuple[str, int]], out: Path, force: bool) -> int:
-    todo = [(s, n) for s, n in cases if force or not fixture_path(out, s, n).exists()]
+    pending = [
+        (s, n) for s, n in cases if force or not fixture_path(out, s, n).exists()
+    ]
     for shape, n in cases:
-        if (shape, n) not in todo:
+        if (shape, n) not in pending:
             print(f"[fixtures] {shape} {n}: kept {fixture_path(out, shape, n)}")
-    if not todo:
+    if not pending:
         return 0
 
     bp.install_patches()
@@ -97,7 +99,7 @@ async def main_async(cases: list[tuple[str, int]], out: Path, force: bool) -> in
     elkjs_mod.ElkJS.run = bp.stub_elkjs_run
     bp.ELK = bp.ElkNode()
     try:
-        for shape, n in todo:
+        for shape, n in pending:
             await dump_case(shape, n, fixture_path(out, shape, n))
     finally:
         bp.ELK.close()

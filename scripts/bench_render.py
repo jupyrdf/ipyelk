@@ -2,19 +2,19 @@
 # Distributed under the terms of the Modified BSD License.
 """Browser benchmark of sprotty rendering with viewport culling off and on.
 
-    pixi run -e atest python scripts/bench_render.py --label master
+    pixi run bench-render
 
 The measurement behind jupyrdf/ipyelk#170. It renders laid-out graphs (from
 ``bench_render_fixtures.py``; built on demand) in a real, headless browser --
 by default the Firefox the acceptance tests use -- through the extension's own
-sprotty container (``scripts/bench_render/entry.ts``, bundled with vite), and
+sprotty container (``scripts/bench_render/entry.ts``, bundled with ``vite``), and
 times each kind of update a view performs:
 
 ``first``
     the first render of the model into an empty DOM (once per case);
 ``render``
     one forced ``ModelViewer.update`` of the current model: every view function
-    runs (culling included) and snabbdom diffs a DOM that does not change;
+    runs (culling included) and ``snabbdom`` diffs a DOM that does not change;
 ``select`` / ``hover``
     a ``SelectAction`` / ``HoverFeedbackAction`` on one node -- what a click or
     a mouse move costs, and what ``diagramUpdated`` fires on;
@@ -25,18 +25,18 @@ times each kind of update a view performs:
     costs, including sprotty's update animation (many renders).
 
 Every op is measured at ``fit`` (the whole diagram on screen, the normal path;
-sprotty's zoom floor of 0.01 keeps a very large diagram partly off screen even
-then) and at each ``--zooms`` level centred on the content (so most of the
+sprotty's zoom floor of 0.01 keeps a huge diagram partly off screen even then)
+and at each ``--zooms`` level centered on the content (so most of the
 graph is off screen), with culling off and on. The combinations are
 interleaved round by round (``--rounds``) so JIT warm-up and garbage collection
 drift hit each of them alike; one extra first round warms up and is dropped.
 
 Per sample, ``render`` is the time inside ``ModelViewer.update`` (view
-functions, the culling walk, the snabbdom patch); ``dispatch`` is the whole
+functions, the culling walk, the ``snabbdom`` patch); ``dispatch`` is the whole
 action; ``layout`` is a forced ``getBBox()`` on the diagram group afterwards
 (the style and SVG geometry work the DOM change left pending); ``frame`` is
 the time to the second animation frame after the dispatch, which a headless
-browser quantises to its refresh interval, so it only resolves differences of
+browser rounds up to its refresh interval, so it only resolves differences of
 a frame or more. Paint itself cannot be timed from a page. The report gives
 medians with the 10th and 90th percentiles over all kept samples, and the DOM
 element counts at each viewport, which is what the exporter and the robot
@@ -151,7 +151,7 @@ def chrome(headless: bool):
         options.binary_location = binary
     if headless:
         options.add_argument("--headless=new")
-    # selenium manager finds or fetches a matching chromedriver
+    # selenium manager finds or fetches a matching ``chromedriver``
     return webdriver.Chrome(options=options)
 
 
@@ -243,7 +243,7 @@ def render_markdown(results: dict) -> str:
     setup = (
         f"{results['browser']} on {results['platform']}; canvas "
         f"{canvas['width']}x{canvas['height']}; zoom {', '.join(f'{z:g}' for z in config['zooms'])}"
-        f" centred on the content; {config['rounds']} rounds x {config['repeat']} repeats per op after "
+        f" centered on the content; {config['rounds']} rounds x {config['repeat']} repeats per op after "
         "one dropped warm-up round; ms as median [p10-p90]"
     )
     out = [f"# render benchmark: {results['label']}", "", setup, ""]
@@ -318,7 +318,7 @@ def main(argv: list[str] | None = None) -> int:
         type=float,
         nargs="+",
         default=[1.0],
-        help="the zoomed viewports, each centred on the content",
+        help="the zoomed viewports, each centered on the content",
     )
     parser.add_argument("--browser", choices=sorted(BROWSERS), default="firefox")
     parser.add_argument("--timeout", type=int, default=3600, help="seconds, in-page")
