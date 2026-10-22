@@ -43,7 +43,7 @@ def _install():
         return f"T{id(task) % 100000:05d}" if task else "T-----"
 
     def log(*parts):
-        with contextlib.suppress(Exception):
+        with contextlib.suppress(OSError, ValueError):
             trace.write(
                 f"{time.time():.6f} {threading.current_thread().name} {task_id()} "
                 + " ".join(str(p) for p in parts)
