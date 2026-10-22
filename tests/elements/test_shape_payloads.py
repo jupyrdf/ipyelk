@@ -240,10 +240,31 @@ def test_a_widget_shape_with_a_closed_widget_writes_its_last_model_id(widget):
     assert wire.children[0].properties.shape.use == model_id
 
 
-def test_a_widget_shape_never_writes_the_model_id_of_a_replaced_widget(widget):
+def from_elk_json(widget: IntSlider) -> shapes.BaseShape:
+    shape = {"type": "node:widget", "use": widget.model_id}
+    root = convert_elkjson({
+        "id": "root",
+        "children": [{"id": "n", "properties": {"shape": shape}}],
+    })
+    return root.children[0].properties.shape
+
+
+@pytest.mark.parametrize(
+    "make",
+    [
+        pytest.param(lambda widget: shapes.Widget(widget=widget), id="widget"),
+        pytest.param(
+            lambda widget: shapes.Widget(widget=widget, use=widget.model_id), id="use"
+        ),
+        pytest.param(from_elk_json, id="elk-json"),
+    ],
+)
+def test_a_widget_shape_never_writes_the_model_id_of_a_replaced_widget(widget, make):
     """Only the ``model_id`` of the shape's own widget is remembered (#241)."""
-    shape = shapes.Widget(widget=widget)
+    shape = make(widget)
+    assert shape.widget is widget
     closed = IntSlider()
+    closed_id = closed.model_id
     closed.close()
     shape.widget = closed
     assert shape.model_dump(mode="json")["use"] is None, "not the open widget's"
@@ -252,6 +273,8 @@ def test_a_widget_shape_never_writes_the_model_id_of_a_replaced_widget(widget):
             "id": "root",
             "children": [{"id": "n", "properties": {"shape": shape.model_dump()}}],
         })
+    shape.use = closed_id  # a use you assign for the closed widget
+    assert shape.model_dump(mode="json")["use"] == closed_id
 
     other = IntSlider()
     shape.widget = other

@@ -493,7 +493,8 @@ class Widget(NodeShape):
         - ``widget`` (ipywidgets ``DOMWidget``, required): the widget to draw.
           Serialization writes its ``model_id`` to ``use``. A ``use`` that is not
           the ``model_id`` of an open ``widget`` raises ``ValidationError``, at
-          construction and when you assign ``use``. JSON loads the
+          construction and when you assign ``use``. An assignment of ``widget`` sets
+          ``use`` to ``None``. JSON loads the
           widget that has the ``model_id`` in ``use``. If no open widget has it, ELK
           JSON loads a :py:class:`NodeShape` with the same fields, and a dictionary
           in user code raises.
@@ -522,6 +523,9 @@ class Widget(NodeShape):
         """Load JSON, which has the ``model_id`` of the widget in ``use``."""
         if not isinstance(data, dict):
             return data
+        if info.field_name == "widget":
+            # use names the old widget: a closed new one must not write it (#241)
+            return {**data, "use": None}
         widget, use = data.get("widget"), data.get("use")
         # an assignment passes every field: check use only when it is the new value
         given = info.field_name in {None, "use"}

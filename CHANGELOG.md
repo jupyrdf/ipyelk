@@ -601,7 +601,7 @@ removed names][migration-removed-names] lists every name that raises
   widget has no `model_id`. The shape now writes the `model_id` that the widget had. ELK
   JSON loads it as a `NodeShape`, with a warning that names the `model_id`. If you give
   the shape a widget that is closed already, it writes no `model_id`, not the `model_id`
-  of the widget it had before ([#241])
+  of the widget it had before. An assignment of `widget` sets `use` to `None` ([#241])
 - After `ToggleCollapsedTool` hides a node, a refresh with nothing pending keeps the
   collapsed diagram in the view. Before, each stage with no pending change gave its
   input to the next stage. The view then got your tree without the projection that
