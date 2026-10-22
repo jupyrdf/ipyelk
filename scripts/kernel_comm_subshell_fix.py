@@ -10,13 +10,13 @@ on the comm. JupyterLab 4.6 sends widget comm messages on a subshell of their ow
 it runs on the main shell, the later ones on the subshell, and two widgets' updates
 can run on two threads at once.
 
-ipywidgets' ``interact`` wraps every call in ``with out:``. With two such blocks
-open on two threads, the inner one's exit does not clear the Output's ``msg_id``
-(the outer still holds the count), so the inner message's ``status: idle`` reaches
-the page while the Output hook of JupyterLab's widget manager is still registered on it. The hook
-swallows the idle, ipywidgets' per-model throttle (``_pending_msgs``) never
-releases, and that widget never sends again: the kernel's slider values lag the
-browser's for good (#232).
+ipywidgets' ``interact`` wraps every call in ``with out:``. With two such blocks open on
+two threads, the inner one's exit does not clear the Output's ``msg_id`` (the outer
+still holds the count), so the inner message's ``status: idle`` reaches the page while
+the Output hook of JupyterLab's widget manager is still registered on it. The hook
+swallows the idle, ipywidgets' per-model throttle (``_pending_msgs``) never releases,
+and that widget never sends again: the kernel's slider values lag the browser's for good
+(#232).
 
 This startup file keeps the routing for answers to requests the kernel sent (they
 carry ``content.id``) and otherwise dispatches a comm message where the client
@@ -50,9 +50,14 @@ def patch_reply_subshell_for(comm_cls):
 
     def _reply_subshell_for(self, data, default):
         request_id = request_id_of_(data)
-        with self._reply_subshell_lock:
-            if request_id is not None and request_id in self._reply_subshell_ids:
-                return self._reply_subshell_ids.pop(request_id)
+        lock = getattr(self, "_reply_subshell_lock", None)
+        replies = getattr(self, "_reply_subshell_ids", None)
+        if request_id is None or lock is None or replies is None:
+            # an ipykernel that renamed these must not make this drop every message
+            return default
+        with lock:
+            if request_id in replies:
+                return replies.pop(request_id)
         return default
 
     comm_cls._reply_subshell_for = _reply_subshell_for

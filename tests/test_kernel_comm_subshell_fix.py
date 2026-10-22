@@ -166,6 +166,23 @@ def test_patch_keeps_request_routing_and_honors_the_client():
     assert comm._reply_subshell_for(update, None) is None
 
 
+@NEEDS_FIX
+def test_patch_is_harmless_without_the_routing_state():
+    class Comm:
+        def _reply_subshell_for(self, data, default):
+            return "subshell-of-the-last-send"
+
+    class LockOnly(Comm):
+        _reply_subshell_lock = threading.Lock()
+
+    assert comm_subshell_fix.patch_reply_subshell_for(Comm) is True
+    assert comm_subshell_fix.patch_reply_subshell_for(LockOnly) is True
+    request = {"method": "custom", "content": {"id": "request-1"}}
+    # no lock or no reply table: dispatch where the client addressed, do not raise
+    assert Comm()._reply_subshell_for(request, "addressed") == "addressed"
+    assert LockOnly()._reply_subshell_for(request, "addressed") == "addressed"
+
+
 def run_kernel_probe(tmp_path, fixed):
     pytest.importorskip("jupyter_client.manager")
     pytest.importorskip("ipywidgets")
