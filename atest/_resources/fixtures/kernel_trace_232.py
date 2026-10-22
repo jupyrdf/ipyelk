@@ -17,6 +17,7 @@ It never raises: a kernel that cannot trace still starts.
 """
 
 import asyncio
+import contextlib
 import inspect
 import os
 import pathlib
@@ -32,7 +33,7 @@ def _install():
         return
     out = pathlib.Path(ipythondir).parent / "kernel-trace"
     out.mkdir(parents=True, exist_ok=True)
-    trace = pathlib.Path(out / f"{os.getpid()}.log").open("a", buffering=1)  # ruff: ignore[open-file-with-context-handler]
+    trace = (out / f"{os.getpid()}.log").open("a", buffering=1, encoding="utf-8")  # noqa: SIM115
 
     def task_id():
         try:
@@ -42,14 +43,12 @@ def _install():
         return f"T{id(task) % 100000:05d}" if task else "T-----"
 
     def log(*parts):
-        try:
+        with contextlib.suppress(Exception):
             trace.write(
                 f"{time.time():.6f} {threading.current_thread().name} {task_id()} "
                 + " ".join(str(p) for p in parts)
                 + "\n"
             )
-        except Exception:
-            pass
 
     def header(kernel, msg):
         try:
