@@ -128,6 +128,7 @@ export class ELKViewerModel extends DOMWidgetModel {
       fit_on_first_layout: false,
       fit_padding: 0,
       fit_max_zoom: null,
+      cull_offscreen: true,
     };
     return defaults;
   }
@@ -267,12 +268,14 @@ export class ELKViewerView extends DOMWidgetView {
     this.model.on('msg:custom', this.handleMessage, this);
     this.model.on('change:symbols', this.diagramLayout, this);
     this.model.on('change:control_overlay', this.updateControlOverlay, this);
+    this.model.on('change:cull_offscreen', this.updateCulling, this);
 
     // init for the first time
     this.updateSelectedTool();
     this.updateHoverTool();
     this.updatePainterTool();
     this.updateControlOverlay();
+    this.updateCulling();
 
     this.touch(); //to sync back the diagram state
 
@@ -334,11 +337,30 @@ export class ELKViewerView extends DOMWidgetView {
   }
 
   rerenderControlOverlay() {
+    this.rerender('the control overlay');
+  }
+
+  /**
+   * The kernel's `cull_offscreen`: whether this view's renders leave out the
+   * elements outside its canvas. The flag is read while rendering, so a
+   * change re-renders the current model.
+   */
+  updateCulling() {
+    const culling = this.model.get('cull_offscreen') !== false;
+    if (this.source.culling === culling) {
+      return;
+    }
+    this.source.culling = culling;
+    this.rerender('culling');
+  }
+
+  /** Re-render the submitted model as it is; a no-op before the first layout. */
+  private rerender(what: string) {
     if (this.source?.index == null) {
-      return; // nothing submitted yet; the first layout renders the overlay
+      return; // nothing submitted yet; the first layout renders it
     }
     this.source.updateModel().catch((err) => {
-      console.warn('ELK failed to re-render the control overlay', err);
+      console.warn(`ELK failed to re-render ${what}`, err);
     });
   }
 
