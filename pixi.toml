@@ -685,6 +685,9 @@ pip = "*"
 flit-core = "*"
 
 [feature.deps-utest.dependencies]
+# a kernel for tests/test_kernel_comm_subshell_fix.py (#232)
+ipykernel = "*"
+jupyter_client = "*"
 pytest = "*"
 pytest-html = "*"
 pytest-asyncio = "*"
