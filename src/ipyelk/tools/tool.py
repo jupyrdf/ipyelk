@@ -148,6 +148,10 @@ class Tool(W.Widget):
         Positional arguments are ignored so the method can be an ipywidgets
         callback (``button.on_click(tool.trigger)``). Raises before scheduling
         anything when the request is rejected (see the class docstring).
+
+        Needs a running event loop, as in a Jupyter kernel. Without one, raises
+        ``RuntimeError`` and leaves an earlier task running. In a script, call it
+        from a coroutine that you run with ``asyncio.run(...)``.
         """
         if type(self).run is Tool.run:
             raise NotImplementedError(
@@ -155,12 +159,20 @@ class Tool(W.Widget):
                 "or callback tool, so there is nothing for trigger() to schedule"
             )
         self.check_enabled()
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            raise RuntimeError(
+                f"{type(self).__name__}.trigger() needs a running event loop, as in a "
+                "Jupyter kernel. In a script, call it from a coroutine that you run "
+                "with asyncio.run(...)"
+            ) from None
         # cancel old work if needed
         if self._task is not None:
             self._task.cancel()
 
         # schedule work
-        self._task = asyncio.create_task(self._execute())
+        self._task = loop.create_task(self._execute())
         self._task.add_done_callback(self._finished)
         return self._task
 

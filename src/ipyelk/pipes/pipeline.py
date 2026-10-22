@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import weakref
 from datetime import datetime
 
 import ipywidgets as W
@@ -232,6 +233,7 @@ class Pipeline(SyncedOutletPipe):
         self.check_dirty(flow)
 
         # Look at enabled pipes
+        kept = False
         for i, pipe in enumerate(self.pipes):
             self._cancel_if_closed()
             if i and self.superseded():
@@ -239,7 +241,7 @@ class Pipeline(SyncedOutletPipe):
             pipe_start_time = datetime.now()
             p_name = f"pipe {i}: {type(pipe)}"
             try:
-                await self._run_pipe(i, pipe, flow)
+                kept = await self._run_pipe(i, pipe, flow, kept)
                 self._cancel_if_closed()
             except Exception as err:
                 self._cancel_if_closed()
@@ -255,10 +257,24 @@ class Pipeline(SyncedOutletPipe):
 
             pipe.status_update(PipeStatus.finished(start_time=pipe_start_time))
 
-    async def _run_pipe(self, i: int, pipe: Pipe, flow: tuple[str, ...]) -> None:
+    async def _run_pipe(
+        self, i: int, pipe: Pipe, flow: tuple[str, ...], kept: bool
+    ) -> bool:
+        """Run ``pipe`` if it is dirty. Return whether it kept its last output."""
+        value = pipe.inlet.value
         if not pipe.status.dirty():
-            pipe.outlet.value = pipe.inlet.value
-            return
+            # A clean stage keeps what it made, such as the projection of a
+            # VisibilityPipe, only while nothing reached it since its last run (#231).
+            # A change report may be an in-place edit that a copy does not have.
+            reached = flow if i == 0 else pipe.inlet.flow
+            ran_on = pipe._ran_on() if pipe._ran_on else None
+            # after a stage that kept, its input is the same run's answer, even if
+            # a frontend wrote it again late, for example from a second tab
+            same = value is ran_on or (kept and pipe._ran_on is not None)
+            if reached or not same:
+                pipe.outlet.value = value
+                return False
+            return True
         self.status_update(PipeStatus.running(), pipe=pipe)
         # A progress callback may have closed this pipeline and its stages.
         self._cancel_if_closed()
@@ -266,6 +282,8 @@ class Pipeline(SyncedOutletPipe):
             await pipe.run(flow=flow if i == 0 else pipe.inlet.flow)
         else:
             await pipe.run()
+        pipe._ran_on = None if value is None else weakref.ref(value)
+        return False
 
     def check_dirty(self, flow: tuple[str, ...] | None = None) -> bool:
         # check pipes and propagate flow to downstream pipes

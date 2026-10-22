@@ -16,6 +16,7 @@ from pydantic import ValidationError
 
 from ipyelk.elements import (
     LabelProperties,
+    Node,
     NodeProperties,
     PortProperties,
     convert_elkjson,
@@ -213,3 +214,71 @@ def test_serialization_does_not_change_the_shape(widget):
         shape.model_dump()
         shape.model_dump(mode="json", exclude_none=True)
         assert (dict(shape.__dict__), shape.model_fields_set) == before, shape
+
+
+def test_a_widget_shape_with_a_closed_widget_writes_its_last_model_id(widget):
+    """A closed widget writes the ``model_id`` it had, which loads as a
+    ``NodeShape`` (#241).
+    """
+    shape = shapes.Widget(widget=widget)
+    model_id = widget.model_id
+    assert shape.model_dump(mode="json")["use"] == model_id, "a live widget"
+    widget.close()
+    assert shape.model_dump(mode="json")["use"] == model_id
+    assert shape.model_dump()["use"] == model_id
+    root = Node(
+        id="root", children=[Node(id="n", properties=NodeProperties(shape=shape))]
+    )
+    dumped = root.model_dump(mode="json", exclude_none=True)
+    assert dumped["children"][0]["properties"]["shape"] == {
+        "type": "node:widget",
+        "use": model_id,
+    }
+    with pytest.warns(UserWarning, match=f"model_id {model_id!r}"):
+        wire = convert_elkjson(root.model_dump())
+    assert type(wire.children[0].properties.shape) is shapes.NodeShape
+    assert wire.children[0].properties.shape.use == model_id
+
+
+def from_elk_json(widget: IntSlider) -> shapes.BaseShape:
+    shape = {"type": "node:widget", "use": widget.model_id}
+    root = convert_elkjson({
+        "id": "root",
+        "children": [{"id": "n", "properties": {"shape": shape}}],
+    })
+    return root.children[0].properties.shape
+
+
+@pytest.mark.parametrize(
+    "make",
+    [
+        pytest.param(lambda widget: shapes.Widget(widget=widget), id="widget"),
+        pytest.param(
+            lambda widget: shapes.Widget(widget=widget, use=widget.model_id), id="use"
+        ),
+        pytest.param(from_elk_json, id="elk-json"),
+    ],
+)
+def test_a_widget_shape_never_writes_the_model_id_of_a_replaced_widget(widget, make):
+    """Only the ``model_id`` of the shape's own widget is remembered (#241)."""
+    shape = make(widget)
+    assert shape.widget is widget
+    closed = IntSlider()
+    closed_id = closed.model_id
+    closed.close()
+    shape.widget = closed
+    assert shape.model_dump(mode="json")["use"] is None, "not the open widget's"
+    with pytest.warns(UserWarning, match="has no model_id in use"):
+        convert_elkjson({
+            "id": "root",
+            "children": [{"id": "n", "properties": {"shape": shape.model_dump()}}],
+        })
+    shape.use = closed_id  # a use you assign for the closed widget
+    assert shape.model_dump(mode="json")["use"] == closed_id
+
+    other = IntSlider()
+    shape.widget = other
+    model_id = other.model_id
+    other.close()
+    shape.delay = 5  # validates the shape again, with a closed widget
+    assert shape.model_dump(mode="json")["use"] == model_id

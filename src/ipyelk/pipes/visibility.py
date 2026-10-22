@@ -15,13 +15,9 @@ from .base import Pipe
 
 
 class VisibilityPipe(Pipe):
-    observes = TypedTuple(
-        T.Unicode(),
-        default_value=(
-            F.AnyHidden,
-            F.Layout,
-        ),
-    )
+    #: the projection is a copy of the whole tree, so any change makes it stale
+    #: (#246); a later stage keeps it only while nothing changed (#231)
+    observes = TypedTuple(T.Unicode(), default_value=(".*",))
 
     @T.default("reports")
     def _default_reports(self):

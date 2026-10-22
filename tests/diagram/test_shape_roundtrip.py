@@ -12,10 +12,11 @@ from __future__ import annotations
 import asyncio
 
 import pytest
+from ipywidgets import IntSlider
 
 from ipyelk import Diagram
 from ipyelk.elements import Label, LabelProperties, Node, NodeProperties, shapes
-from ipyelk.pipes import MarkElementWidget
+from ipyelk.pipes import MarkElementWidget, VisibilityPipe
 from ipyelk.pipes import flows as F
 from ipyelk.pipes.elkjs import ElkJS
 from ipyelk.pipes.text_sizer import BrowserTextSizer
@@ -74,8 +75,8 @@ async def test_shape_and_user_size_through_the_pipeline(monkeypatch):
 
 @pytest.mark.asyncio
 async def test_a_refresh_without_a_layout_shows_the_laid_out_size(monkeypatch):
-    """A refresh that runs no stage hands the user's tree to the view, which
-    must show the size the layout gave a node, not the input size.
+    """A refresh that runs no stage leaves the last layout in the view, which
+    shows the size the layout gave a node, not the input size (#231).
     """
     monkeypatch.setattr(BrowserTextSizer, "run", _browser_stage())
     monkeypatch.setattr(ElkJS, "run", _browser_stage(grow=(200.0, 150.0)))
@@ -88,11 +89,11 @@ async def test_a_refresh_without_a_layout_shows_the_laid_out_size(monkeypatch):
     assert node.properties.shape is circle
     assert (node.width, node.height) == (200, 150)
 
-    node.add_class("highlight")
+    laid_out = diagram.view.source.value
     diagram.refresh()
     await settle(diagram)
     assert diagram.pipe.status.exception is None
-    assert diagram.view.source.value is root
+    assert diagram.view.source.value is laid_out
     shown = diagram.view.source.get_state(key="value")["value"]["children"][0]
     assert (shown["width"], shown["height"]) == (200, 150)
     diagram.close()
@@ -151,5 +152,34 @@ async def test_label_input_size_wins_over_measurement_from_the_first_layout(
         assert diagram.pipe.status.exception is None
         assert sent == [expected, expected]
         assert (label.width, label.height) == expected
+    finally:
+        diagram.close()
+
+
+@pytest.mark.asyncio
+async def test_a_closed_widget_shape_does_not_break_the_next_run(monkeypatch):
+    """The node of a closed widget renders as a ``NodeShape`` (#241)."""
+    monkeypatch.setattr(BrowserTextSizer, "run", _browser_stage())
+    monkeypatch.setattr(ElkJS, "run", _browser_stage())
+    slider = IntSlider()
+    node = Node(id="a", properties=NodeProperties(shape=shapes.Widget(widget=slider)))
+    root = Node(id="root", children=[node])
+    source = MarkElementWidget(value=root)
+    source.persist(rebuild_index=True)
+    model_id = slider.model_id
+    slider.close()
+    match = f"model_id {model_id!r}"
+    with pytest.warns(UserWarning, match=match):
+        await VisibilityPipe(inlet=source).run()
+    diagram = Diagram(source=source)
+    with pytest.warns(UserWarning, match=match) as record:
+        await settle(diagram)
+    try:
+        assert diagram.pipe.status.exception is None
+        assert {str(w.message) for w in record} == {str(record[0].message)}
+        shown = diagram.view.source.value.children[0].properties.shape
+        assert type(shown) is shapes.NodeShape
+        assert shown.use == model_id
+        assert node.properties.shape.widget is slider, "the user's shape is kept"
     finally:
         diagram.close()

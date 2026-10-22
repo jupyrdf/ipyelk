@@ -5,6 +5,7 @@
 from __future__ import annotations
 
 import asyncio
+import gc
 import inspect
 import os
 import warnings
@@ -62,6 +63,35 @@ async def test_success_fires_start_then_done_with_reports_recorded():
     assert seen_at_done == [("pending", "r")]  # recorded before on_done
     assert tool.events[-1] == "done:True"  # several on_done listeners coexist
     assert tool._task is None
+
+
+class _OldTask:
+    """Stands in for the task of an earlier ``trigger()``."""
+
+    cancelled = False
+
+    def cancel(self) -> None:
+        self.cancelled = True
+
+
+def test_trigger_outside_an_event_loop_raises_and_schedules_nothing():
+    tool, _pipe = _wired()
+    old = _OldTask()
+    tool._task = old
+    message = ""
+    with warnings.catch_warnings(record=True) as caught:
+        warnings.simplefilter("always")
+        # not pytest.raises: the exception it keeps would keep a dropped coroutine alive
+        try:
+            tool.trigger()
+        except RuntimeError as err:
+            message = str(err)
+        gc.collect()  # a coroutine that was built and dropped warns here at the latest
+    assert [str(w.message) for w in caught if w.category is RuntimeWarning] == []
+    assert "trigger() needs a running event loop" in message
+    assert "asyncio.run(" in message
+    assert tool._task is old
+    assert not old.cancelled
 
 
 @pytest.mark.asyncio

@@ -158,7 +158,9 @@
   and `NotUniqueError`, naming the roots, when more than one node has none. It used to
   fail an `assert` with the message "Multiple roots" for no root, and to take the first
   of several roots without a word, so the checks skipped the other trees
-  ([#217](https://github.com/jupyrdf/ipyelk/issues/217)).
+  ([#217](https://github.com/jupyrdf/ipyelk/issues/217)). A child put in `children`
+  after its parent is made, as with `children.append()`, has no parent link, so it is a
+  second root and the first layout fails: add it with `add_child()` instead.
 - Remove code that nothing used: the `ipyelk.pipes.mappings` module, the
   `GraphWrappingStrategy.horizontal` trait, and `ElkLabel.__eq__`/`__hash__`, which
   served a text sizer cache that is gone. Importing `ipyelk.pipes.mappings` raises
@@ -642,6 +644,42 @@ removed names][migration-removed-names] lists every name that raises
   `NodeProperties(shape={"type": "node:widget", "use": "x"})`, raises `ValidationError`,
   as `Widget(use="x")` does. Before, it loaded as a `NodeShape` and warned, as ELK JSON
   does ([#153])
+- After you close the widget of a `Widget` shape, the next pipeline run no longer fails.
+  Before, the serialization of the shape raised `AttributeError`, because a closed
+  widget has no `model_id`. The shape now writes the `model_id` that the widget had. ELK
+  JSON loads it as a `NodeShape`, with a warning that names the `model_id`. If you give
+  the shape a widget that is closed already, it writes no `model_id`, not the `model_id`
+  of the widget it had before. An assignment of `widget` sets `use` to `None` ([#241])
+- After `ToggleCollapsedTool` hides a node, a refresh with nothing pending keeps the
+  collapsed diagram in the view. Before, each stage with no pending change gave its
+  input to the next stage. The view then got your tree without the projection that
+  `VisibilityPipe` makes, so it lost the slack port, and an edge pointed at the hidden
+  child. A stage with no pending change now keeps its output while nothing reached it
+  since its last run: no change report, and the same input. Otherwise it gives its input
+  to the next stage, as before. The stages after a stage that keeps its output keep
+  their output too, also when a frontend writes that output again after the run. For
+  example, a second tab can answer the text sizer late. If you change your tree in
+  place, for example with a new CSS class or label text, record a change report before
+  you call `refresh()`. For example, call `diagram.source.record(F.Layout)`, with `F` as
+  `ipyelk.pipes.flows`. 2.1.1 did not show such a change at a refresh with nothing
+  pending either ([#231])
+- After `ToggleCollapsedTool` hides a node, a run that measures text again keeps the
+  collapsed diagram in the view. Such a run follows a label text change that you record
+  with `F.Text.text`. It also follows `diagram.source.record(F.Layout)` or
+  `record(F.New)`, then `refresh()`. Before, the text sizer got your tree with an edge
+  to the hidden node, and the load of its answer raised `NotFoundError`. A diagram with
+  a node that is hidden from the start failed the same way at its first run. Now
+  `model_dump()` of a tree leaves out each edge to a hidden element, as it leaves out
+  the element. `VisibilityPipe` now observes each change, so it makes the projection
+  again after the text sizer. A color class that you record with `F.ColorCSS` now
+  reaches the view too: `VisibilityPipe` makes the projection again, and `ElkJS` lays it
+  out again. The text sizer does not run ([#246])
+- If no event loop runs, for example in a script, `Tool.trigger()` raises a
+  `RuntimeError` that says what to do: call it from a coroutine that you run with
+  `asyncio.run(...)`. Before, it raised the `RuntimeError` of `asyncio`,
+  `no running event loop`, and Python warned that the coroutine `Tool._execute` was
+  never awaited. It also cancelled the task of an earlier `trigger()`, which it now
+  keeps
 
 ### Development
 
@@ -938,9 +976,12 @@ removed names][migration-removed-names] lists every name that raises
 [#218]: https://github.com/jupyrdf/ipyelk/issues/218
 [#219]: https://github.com/jupyrdf/ipyelk/issues/219
 [#227]: https://github.com/jupyrdf/ipyelk/issues/227
+[#231]: https://github.com/jupyrdf/ipyelk/issues/231
 [#232]: https://github.com/jupyrdf/ipyelk/issues/232
 [#237]: https://github.com/jupyrdf/ipyelk/issues/237
+[#241]: https://github.com/jupyrdf/ipyelk/issues/241
 [#245]: https://github.com/jupyrdf/ipyelk/issues/245
+[#246]: https://github.com/jupyrdf/ipyelk/issues/246
 [eclipse-sprotty/sprotty#573]: https://github.com/eclipse-sprotty/sprotty/issues/573
 [ipykernel#1529]: https://github.com/ipython/ipykernel/pull/1529
 [migration]: https://ipyelk.readthedocs.io/en/latest/migration.html

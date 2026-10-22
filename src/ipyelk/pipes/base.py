@@ -230,6 +230,8 @@ class Pipe(W.Widget):
     _diagram: weakref.ref | None = None
     _closed: bool = False
     _requested: int = 0
+    #: a weak reference to the ``inlet.value`` this pipe last ran on in a ``Pipeline``
+    _ran_on: weakref.ref | None = None
     status = T.Instance(PipeStatus, kw={})
     status_widget = T.Instance(W.DOMWidget, allow_none=True)
 

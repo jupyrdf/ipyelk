@@ -17,6 +17,7 @@ from .elements import (
     Node,
     Port,
     ShapeElement,
+    is_hidden,
 )
 from .registry import new_id
 
@@ -85,8 +86,8 @@ class VisIndex(BaseModel):
         index = {}
         last_visible = {}
 
-        for el, is_hidden, last in iter_visible(*els):
-            if is_hidden:
+        for el, hidden, last in iter_visible(*els):
+            if hidden:
                 el_id = el.wire_id()
                 if not isinstance(last, BaseElement):
                     raise ValueError(
@@ -215,7 +216,12 @@ class ElementIndex(BaseModel):
             raise NotFoundError("The index has no root: every node has a parent")
         if len(roots) > 1:
             ids = ", ".join(r.wire_id() for r in roots)
-            raise NotUniqueError(f"The index has {len(roots)} roots: {ids}")
+            raise NotUniqueError(
+                f"The index has {len(roots)} roots: {ids}. {len(roots)} nodes have no"
+                " parent link. A child put in `children` after its parent is made,"
+                " as with `children.append()`, has no parent link: add it with"
+                " `add_child()`, or index one tree at a time."
+            )
         root = roots[0]
         assert isinstance(root, Node), f"Root is not of type Node. Not {type(root)}."
         assert len(root.ports) == 0, (
@@ -538,16 +544,6 @@ class HierarchicalIndex(ElementIndex):
             element = element._parent
         assert isinstance(element, Node)
         return element, hidden
-
-
-def is_hidden(el: HierarchicalElement) -> bool:
-    """Whether ``el`` or any of its ancestors is hidden."""
-    node: HierarchicalElement | None = el
-    while node is not None:
-        if node.properties.hidden:
-            return True
-        node = node.get_parent()
-    return False
 
 
 def iter_elements(*els: BaseElement) -> Iterator[BaseElement]:
