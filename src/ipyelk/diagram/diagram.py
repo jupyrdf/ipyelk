@@ -182,7 +182,9 @@ class Diagram(StyledWidget):
         self._check_open("set source")
         source = proposal["value"]
         owner = source.diagram
-        if owner is not None and owner is not self:
+        if owner is self:
+            return source  # already this diagram's source: not a change
+        if owner is not None:
             name = type(source).__name__
             msg = (
                 f"{name} feeds another open diagram; close that diagram with "
@@ -204,6 +206,9 @@ class Diagram(StyledWidget):
     def _validate_view(self, proposal: T.Bunch) -> Viewer:
         self._check_open("set view")
         view = proposal["value"]
+        owner = open_owner(view._diagram)
+        if owner is self:
+            return view  # already this diagram's view: not a change
         if view is not self._trait_values.get("view", view):
             name = type(self).__name__
             msg = (
@@ -215,8 +220,7 @@ class Diagram(StyledWidget):
         if view.comm is None:
             msg = f"{name} is closed; give this diagram a new {name}"
             raise T.TraitError(msg)
-        owner = open_owner(view._diagram)
-        if owner is not None and owner is not self:
+        if owner is not None:
             msg = (
                 f"{name} belongs to another open diagram; give this one its own "
                 f"{name}. To show one diagram in two places, display the same "

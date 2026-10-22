@@ -344,10 +344,11 @@
   the pending changes from one source, so a recorded change did not reach both. Both
   diagrams also wrote their layout onto the same elements, so the last layout won. A
   closed diagram releases its source, also when it closes during a run. A diagram
-  releases its old source when it gets a new one. An assignment to `Diagram.source` also
-  raises `TraitError` while a pipe in the diagram's pipe is closed: assign a new pipe
-  first. Such a new source used to be wired in, and the next run failed. To show one
-  diagram in two places, display the same `Diagram` twice ([#178]).
+  releases its old source when it gets a new one. An assignment of a different source
+  also raises `TraitError` while a pipe in the diagram's pipe is closed: assign a new
+  pipe first. Such a new source used to be wired in, and the next run failed. An
+  assignment of the same source does nothing. To show one diagram in two places,
+  display the same `Diagram` twice ([#178]).
 - `Diagram.view` is fixed after construction. Pass the viewer as `Diagram(view=viewer)`.
   An assignment of a different viewer raises `TraitError`. The diagram's tools stay
   bound to the viewer that the diagram started with. In 2.x, the assignment moved the

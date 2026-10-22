@@ -224,6 +224,17 @@ def test_a_new_source_is_refused_before_a_swap_when_a_stage_is_closed() -> None:
     assert new.diagram is None
 
 
+def test_the_same_source_is_not_a_change_when_a_stage_is_closed() -> None:
+    stage = Pipeline(pipes=[Pipe()])
+    diagram = Diagram(source=make_source(), pipe=Pipeline(pipes=[stage]))
+    stage.close()
+    before = snapshot(diagram)
+
+    diagram.source = diagram.source
+
+    assert snapshot(diagram) == before
+
+
 def test_closed_diagrams_are_collected_and_leave_no_notifiers() -> None:
     source = make_source()
     Diagram(source=source).close()
@@ -311,6 +322,16 @@ def test_the_view_of_a_closed_diagram_is_refused_and_leaks_nothing() -> None:
     assert live_widgets() == widgets
     assert first.source.diagram is None
     assert Diagram(source=first.source).source.diagram is not None
+
+
+def test_the_same_view_is_not_a_change_once_closed() -> None:
+    diagram = Diagram(source=make_source())
+    diagram.view.close()
+    before = snapshot(diagram)
+
+    diagram.view = diagram.view
+
+    assert snapshot(diagram) == before
 
 
 def test_a_closed_diagram_names_its_state_before_the_view_rule() -> None:
