@@ -412,11 +412,6 @@ removed names][migration-removed-names] lists every name that raises
 
 #### Fixed
 
-- Two views of one diagram, from `display(diagram)` twice or a linked output view, no
-  longer loop on hover feedback. A view wrote the feedback that it replays from
-  `hover.hovered_id` back to `hovered_id`. When that feedback arrived late, for example
-  after a second hover, the views wrote stale ids back without end, and the page stopped
-  responding. A view now writes back only the hover feedback from the pointer.
 - PyPI shows the license: the wheel and the source distribution declare
   `License-Expression: BSD-3-Clause AND EPL-1.0 AND EPL-2.0` (PEP 639), because the
   package contains code under each of these licenses, and list `LICENSE.txt`,
@@ -893,6 +888,15 @@ removed names][migration-removed-names] lists every name that raises
   the variant of its view. The comment view draws no notch for 0, and limits the notch
   to the size of the node. A notch that is missing, not a number or negative draws 15
   pixels, and a string notch from 2.x still draws ([#148])
+
+#### Fixed
+
+- Stop two views of one diagram from looping on hover feedback. The two views come from
+  `display(diagram)` twice or from a linked output view. A view wrote the feedback that
+  it replays from `hover.hovered_id` back to `hovered_id`. When that feedback arrived
+  late, for example after a second hover, the views wrote stale ids back without end,
+  and the page stopped responding. A view now writes back only the hover feedback from
+  the pointer ([#255](https://github.com/jupyrdf/ipyelk/issues/255)).
 
 [#29]: https://github.com/jupyrdf/ipyelk/issues/29
 [#31]: https://github.com/jupyrdf/ipyelk/issues/31
