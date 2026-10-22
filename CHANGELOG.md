@@ -608,7 +608,9 @@ removed names][migration-removed-names] lists every name that raises
   `VisibilityPipe` makes, so it lost the slack port, and an edge pointed at the hidden
   child. A stage with no pending change now keeps its output while nothing reached it
   since its last run: no change report, and the same input. Otherwise it gives its input
-  to the next stage, as before. If you change your tree in place, for example with a new
+  to the next stage, as before. The stages after a stage that keeps its output keep
+  their output too, also when a frontend writes that output again after the run. For
+  example, a second tab can answer the text sizer late. If you change your tree in place, for example with a new
   CSS class or label text, record a change report before you call `refresh()`. For
   example, call `diagram.source.record(F.Layout)`, with `F` as `ipyelk.pipes.flows`.
   2.1.1 did not show such a change at a refresh with nothing pending either ([#231])

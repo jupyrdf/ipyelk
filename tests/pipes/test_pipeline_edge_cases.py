@@ -66,3 +66,20 @@ async def test_a_clean_copy_does_not_hide_an_edit_it_does_not_observe():
     assert pipeline.outlet.value is root
     pipeline.close()
     source.close()
+
+
+@pytest.mark.asyncio
+async def test_a_new_stage_after_a_stage_that_kept_passes_its_input_on():
+    """A stage that never ran has no output to keep, so it passes its input on."""
+    first, second = _Copy(observes=("a",)), _Copy(observes=("a",))
+    source = MarkElementWidget(value=Node(id="root"))
+    pipeline = Pipeline(inlet=source)
+    pipeline.pipes = [first]
+    pipeline.inlet.record("a")
+    await pipeline.run()
+
+    pipeline.pipes = [first, second]
+    await pipeline.run()  # nothing pending: the first stage keeps its output
+    assert pipeline.outlet.value is first.outlet.value
+    pipeline.close()
+    source.close()

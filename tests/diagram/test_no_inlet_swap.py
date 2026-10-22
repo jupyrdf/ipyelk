@@ -216,6 +216,33 @@ async def test_a_refresh_after_a_collapse_shows_the_projection(browser):
     diagram.close()
 
 
+@pytest.mark.asyncio
+async def test_a_late_answer_from_a_frontend_keeps_the_projection(browser):
+    """A second tab can answer the ``run`` of the text sizer after the run ended.
+
+    Every frontend model answers, so its late value replaces the outlet.
+    """
+    root, _a, _b, _c = user_graph()
+    diagram = Diagram(source=MarkElementWidget(value=root))
+    await settle(diagram)
+    (sizer,) = (
+        pipe for pipe in diagram.pipe.pipes if isinstance(pipe, BrowserTextSizer)
+    )
+    full = sizer.outlet.get_state(key="value")["value"]
+    diagram.view.selection.ids = ("a",)
+    await diagram.get_tool(ToggleCollapsedTool).trigger()
+    await settle(diagram)
+    collapsed = _view(diagram)
+
+    sizer.outlet.set_state({"value": full})  # the answer of the other tab
+    diagram.refresh()
+    await settle(diagram)
+
+    assert diagram.pipe.status.exception is None
+    assert _view(diagram) == collapsed
+    diagram.close()
+
+
 def _change_text(diagram: Diagram, b: Node) -> None:
     b.labels[0].text = "B longer"
     diagram.source.record(F.Text.text)
