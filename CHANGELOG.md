@@ -661,6 +661,21 @@ removed names][migration-removed-names] lists every name that raises
     kernels of the `nbconvert--` task and of the robot tests load
     `scripts/kernel_shell_reply_fix.py`, a startup file that backports the fix and does
     nothing on ipykernel 7.4 or newer. `utest-oldest` tests it
+- Fix the kernel's slider values lagging the browser's in the `04_Interactive` browser
+  test since ipykernel 7.4 ([#232]). ipykernel 7.4 dispatches a comm message on the
+  (sub)shell the kernel last sent on that comm from ([ipykernel#1565]), not on the
+  subshell JupyterLab 4.6 addresses widget messages to, so a widget's first update after
+  the cell that displayed it runs on the main thread and the next ones on the subshell:
+  two sliders' updates run on two threads at once. ipywidgets' `interact` wraps every
+  call in `with out:`, and with two blocks open on two threads the inner one's
+  `status: idle` goes out before the Output's `msg_id` is cleared. The page's Output
+  hook swallows it, the widget's message throttle never releases, and that slider never
+  reaches the kernel again.
+  - The robot tests' kernels load `scripts/kernel_comm_subshell_fix.py`, a startup file
+    that dispatches a comm message where the client addressed it, as ipykernel 7.3 did,
+    and keeps the routing of answers to requests the kernel sent. It does nothing on
+    ipykernel 7.3 or older. `utest` tests it against a real kernel, so `utest` now
+    installs `ipykernel` and `jupyter_client`
 - Lower the `nbconvert--` cell timeout from 1200 s to 40 s. The slowest healthy notebook
   in 4061 notebook runs from the last 45 CI runs took 8.2 s. The kernel watchdog now
   restarts with every cell and fires after 30 s without a new cell ([#177])
@@ -884,6 +899,7 @@ removed names][migration-removed-names] lists every name that raises
 [#245]: https://github.com/jupyrdf/ipyelk/issues/245
 [eclipse-sprotty/sprotty#573]: https://github.com/eclipse-sprotty/sprotty/issues/573
 [ipykernel#1529]: https://github.com/ipython/ipykernel/pull/1529
+[ipykernel#1565]: https://github.com/ipython/ipykernel/pull/1565
 [migration]: https://ipyelk.readthedocs.io/en/latest/migration.html
 [migration-removed-names]:
   https://ipyelk.readthedocs.io/en/latest/migration.html#migration-removed-names
