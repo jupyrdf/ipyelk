@@ -86,6 +86,10 @@ export class ElkModelRenderer extends ModelRenderer {
   renderJLOverlayControl(args?: object): VNode[] {
     ELK_DEBUG && console.log('render control overlay');
     let vnodes: VNode[] = [];
+    if (this.targetKind === 'hidden') {
+      // an export: SVG only, and no widget view to attach to a detached host
+      return vnodes;
+    }
     const overlay_widget = this.source.control_overlay;
     // opt-in: no overlay, or a Box with nothing to show, renders no container
     if (overlay_widget && overlay_widget.get('children')?.length) {
@@ -136,6 +140,10 @@ export class ElkModelRenderer extends ModelRenderer {
    */
   renderJLNodeWidgets(root?: Readonly<SParentElementImpl>, args?: object): VNode[] {
     let vnodes: VNode[] = [];
+    if (this.targetKind === 'hidden') {
+      // an export: SVG only, and no widget view to attach to a detached host
+      return vnodes;
+    }
     if (root) {
       for (let jlsw of this.collectJLWidgetNodes(root)) {
         let vnode = this.widgetContainer(jlsw, args);

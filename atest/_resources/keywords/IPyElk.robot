@@ -84,6 +84,8 @@ Exported SVG Should Not Depend On The Viewport
     [Arguments]    ${file}    ${nodes}    ${edges}    ${labels}
     ${path} =    Set Variable    ${OUTPUT DIR}${/}home${/}${file}
     Scroll Elk Diagram By    ${5000}    ${5000}
+    # the example opts into culling: the live SVG is empty now, the export is not
+    Elk Counts Should Be    nodes=${0}    edges=${0}    labels=${0}    screen=41-culled.png
     Remove File    ${path}
     # re-attaching the viewer asks the browser for a fresh export; the new
     # padding makes it differ from the file just removed

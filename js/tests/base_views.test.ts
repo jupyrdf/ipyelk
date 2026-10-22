@@ -4,16 +4,17 @@
  */
 import 'reflect-metadata';
 import { VNode } from 'snabbdom';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
 import { Bounds, Point } from 'sprotty-protocol';
 
 import { SChildElementImpl, SGraphImpl } from 'sprotty';
 
+import { JLModelSource } from '../sprotty/diagram-server';
 import { ElkModelRenderer } from '../sprotty/renderer';
 import { ElkEdge, ElkNode } from '../sprotty/sprotty-model';
 import {
-  CULLING_ENABLED,
+  CullingContext,
   ShapeView,
   intersectsCanvas,
   shouldCull,
@@ -21,11 +22,16 @@ import {
 } from '../sprotty/views/base';
 import { ElkEdgeView } from '../sprotty/views/edge_views';
 
-// `isVisible` reads only the rendering target kind off the renderer.
-type RenderContext = Pick<ElkModelRenderer, 'targetKind'>;
-const asContext = (ctx: RenderContext) => ctx as ElkModelRenderer;
-const main = asContext({ targetKind: 'main' });
-const hidden = asContext({ targetKind: 'hidden' });
+// `diagram-server` pulls in `tokens`, which reads `window` at import time
+vi.mock('../tokens', () => ({ ELK_DEBUG: false }));
+
+// `isVisible` reads the rendering target kind and the source's culling flag.
+const asContext = (ctx: CullingContext) => ctx as ElkModelRenderer;
+const main = asContext({ targetKind: 'main', source: { culling: false } });
+const culling = asContext({ targetKind: 'main', source: { culling: true } });
+const hidden = asContext({ targetKind: 'hidden', source: { culling: true } });
+/** a renderer with no model source at all, as the unit tests build them */
+const sourceless = asContext({ targetKind: 'main' });
 
 const CANVAS: Bounds = { x: 0, y: 0, width: 800, height: 600 };
 const NO_CANVAS: Bounds = { x: 0, y: 0, width: 0, height: 0 };
@@ -86,20 +92,29 @@ const OFF_SCREEN: Point[] = [
   { x: 5200, y: 60 },
 ];
 
-describe('CULLING_ENABLED', () => {
-  it('is off, so nothing is culled at any viewport', () => {
+describe('shouldCull', () => {
+  it('is off by default, so nothing is culled at any viewport', () => {
     // #170: turning it on needs a viewport-independent export path first
-    expect(CULLING_ENABLED).toBe(false);
-    expect(shouldCull(CANVAS)).toBe(false);
+    expect(new JLModelSource().culling).toBe(false);
+    expect(shouldCull(main, CANVAS)).toBe(false);
+    expect(shouldCull(sourceless, CANVAS)).toBe(false);
   });
 
-  it('would still not cull before the canvas size is known', () => {
+  it('culls for a source that opted in, on a sized canvas', () => {
+    expect(shouldCull(culling, CANVAS)).toBe(true);
+  });
+
+  it('never culls the hidden bounds-measuring render', () => {
+    expect(shouldCull(hidden, CANVAS)).toBe(false);
+  });
+
+  it('does not cull before the canvas size is known', () => {
     // the 0x0 first frame: `canvasBounds` is only set by an action, later
     expect(validCanvasBounds(CANVAS)).toBe(true);
     expect(validCanvasBounds(NO_CANVAS)).toBe(false);
     expect(validCanvasBounds({ x: 0, y: 0, width: 800, height: 0 })).toBe(false);
     expect(validCanvasBounds({ x: 0, y: 0, width: 0, height: 600 })).toBe(false);
-    expect(shouldCull(NO_CANVAS)).toBe(false);
+    expect(shouldCull(culling, NO_CANVAS)).toBe(false);
   });
 });
 
@@ -139,9 +154,29 @@ describe('ShapeView.isVisible', () => {
     expect(nodeIsVisible({ x: 50, y: 50 })).toBe(true);
   });
 
-  it('draws nodes the viewport does not show', () => {
+  it('draws nodes the viewport does not show while culling is off', () => {
     expect(nodeIsVisible({ x: 5000, y: 50 })).toBe(true);
     expect(nodeIsVisible({ x: -100, y: -100 })).toBe(true);
+  });
+
+  it('skips nodes the viewport does not show while culling is on', () => {
+    expect(nodeIsVisible({ x: 50, y: 50 }, CANVAS, culling)).toBe(true);
+    expect(nodeIsVisible({ x: 790, y: 590 }, CANVAS, culling)).toBe(true); // overlaps
+    expect(nodeIsVisible({ x: 5000, y: 50 }, CANVAS, culling)).toBe(false);
+    expect(nodeIsVisible({ x: -100, y: -100 }, CANVAS, culling)).toBe(false);
+  });
+
+  it('culls against the camera, not the layout origin', () => {
+    // the camera at (4900, 0), zoom 1: the node at x=5000 is on screen now
+    const node = nodeAt({ x: 5000, y: 50 });
+    (node.root as SGraphImpl).scroll = { x: 4900, y: 0 };
+    const view = new TestShapeView();
+    expect(view.isVisible(node as SChildElementImpl & ElkNode, culling)).toBe(true);
+    (node.root as SGraphImpl).zoom = 0.1; // zoomed out: still on screen
+    expect(view.isVisible(node as SChildElementImpl & ElkNode, culling)).toBe(true);
+    (node.root as SGraphImpl).scroll = { x: 0, y: 0 };
+    (node.root as SGraphImpl).zoom = 1;
+    expect(view.isVisible(node as SChildElementImpl & ElkNode, culling)).toBe(false);
   });
 
   it('draws every node while the canvas size is unknown', () => {
@@ -150,7 +185,7 @@ describe('ShapeView.isVisible', () => {
       { x: 5000, y: 50 },
       { x: -100, y: -100 },
     ]) {
-      expect(nodeIsVisible(position, NO_CANVAS)).toBe(true);
+      expect(nodeIsVisible(position, NO_CANVAS, culling)).toBe(true);
     }
   });
 
@@ -171,7 +206,7 @@ describe('ElkEdgeView.isVisible', () => {
     ).toBe(true);
   });
 
-  it('draws edges the viewport does not show', () => {
+  it('draws edges the viewport does not show while culling is off', () => {
     expect(edgeIsVisible(OFF_SCREEN)).toBe(true);
     expect(
       edgeIsVisible([
@@ -181,8 +216,33 @@ describe('ElkEdgeView.isVisible', () => {
     ).toBe(true);
   });
 
+  it('skips edges the viewport does not show while culling is on', () => {
+    expect(edgeIsVisible(OFF_SCREEN, CANVAS, culling)).toBe(false);
+    expect(
+      edgeIsVisible(
+        [
+          { x: 50, y: 50 },
+          { x: 200, y: 200 },
+        ],
+        CANVAS,
+        culling,
+      ),
+    ).toBe(true);
+    // a route crossing the canvas between two off-screen ends is drawn
+    expect(
+      edgeIsVisible(
+        [
+          { x: -500, y: 300 },
+          { x: 5000, y: 300 },
+        ],
+        CANVAS,
+        culling,
+      ),
+    ).toBe(true);
+  });
+
   it('draws every edge while the canvas size is unknown', () => {
-    expect(edgeIsVisible(OFF_SCREEN, NO_CANVAS)).toBe(true);
+    expect(edgeIsVisible(OFF_SCREEN, NO_CANVAS, culling)).toBe(true);
   });
 
   it('draws every edge for hidden rendering', () => {
@@ -190,6 +250,6 @@ describe('ElkEdgeView.isVisible', () => {
   });
 
   it('draws an edge with no route', () => {
-    expect(edgeIsVisible([])).toBe(true);
+    expect(edgeIsVisible([], CANVAS, culling)).toBe(true);
   });
 });

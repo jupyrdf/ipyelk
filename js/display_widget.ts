@@ -49,6 +49,7 @@ import {
 } from './selection_util';
 import createContainer from './sprotty/di-config';
 import { JLModelSource } from './sprotty/diagram-server';
+import { exportMarkup } from './sprotty/export_render';
 import { contentExtent } from './sprotty/export_util';
 import { PainterStyles } from './sprotty/json/elkgraph-to-sprotty';
 // import { VNode } from 'snabbdom';
@@ -76,6 +77,13 @@ const POLL = 300;
 // trailing debounce for viewport reports: a wheel/drag burst -> one kernel write
 const VIEWPORT_DEBOUNCE = 100;
 const STALE_DELAY_MAX = 10000;
+
+/**
+ * Why a view's `diagramUpdated` fired: a (re-)layout, a selection change, or
+ * hover feedback. Hover is transient and fires on every pointer move, so a
+ * listener that does work per update (the exporter) can leave it out.
+ */
+export type DiagramUpdate = 'layout' | 'selection' | 'hover';
 
 export class ELKControlModel extends DOMWidgetModel {
   static model_name = 'ELKControlModel';
@@ -111,7 +119,7 @@ export class ELKViewerModel extends DOMWidgetModel {
     control_overlay: { deserialize },
   };
   layoutUpdated = new Signal<ELKViewerModel, void>(this);
-  diagramUpdated = new Signal<ELKViewerModel, void>(this);
+  diagramUpdated = new Signal<ELKViewerModel, DiagramUpdate>(this);
 
   defaults() {
     let defaults = {
@@ -128,6 +136,7 @@ export class ELKViewerModel extends DOMWidgetModel {
       fit_on_first_layout: false,
       fit_padding: 0,
       fit_max_zoom: null,
+      cull_offscreen: false,
     };
     return defaults;
   }
@@ -267,12 +276,14 @@ export class ELKViewerView extends DOMWidgetView {
     this.model.on('msg:custom', this.handleMessage, this);
     this.model.on('change:symbols', this.diagramLayout, this);
     this.model.on('change:control_overlay', this.updateControlOverlay, this);
+    this.model.on('change:cull_offscreen', this.updateCulling, this);
 
     // init for the first time
     this.updateSelectedTool();
     this.updateHoverTool();
     this.updatePainterTool();
     this.updateControlOverlay();
+    this.updateCulling();
 
     this.touch(); //to sync back the diagram state
 
@@ -334,11 +345,30 @@ export class ELKViewerView extends DOMWidgetView {
   }
 
   rerenderControlOverlay() {
+    this.rerender('the control overlay');
+  }
+
+  /**
+   * The kernel's `cull_offscreen`: whether this view's renders leave out the
+   * elements outside its canvas. The flag is read while rendering, so a
+   * change re-renders the current model.
+   */
+  updateCulling() {
+    const culling = this.model.get('cull_offscreen') !== false;
+    if (this.source.culling === culling) {
+      return;
+    }
+    this.source.culling = culling;
+    this.rerender('culling');
+  }
+
+  /** Re-render the submitted model as it is; a no-op before the first layout. */
+  private rerender(what: string) {
     if (this.source?.index == null) {
-      return; // nothing submitted yet; the first layout renders the overlay
+      return; // nothing submitted yet; the first layout renders it
     }
     this.source.updateModel().catch((err) => {
-      console.warn('ELK failed to re-render the control overlay', err);
+      console.warn(`ELK failed to re-render ${what}`, err);
     });
   }
 
@@ -440,7 +470,7 @@ export class ELKViewerView extends DOMWidgetView {
             }
             selectionTool.set('ids', next);
             selectionTool.save_changes();
-            this.model.diagramUpdated.emit(void 0);
+            this.model.diagramUpdated.emit('selection');
           }
         });
         break;
@@ -457,7 +487,7 @@ export class ELKViewerView extends DOMWidgetView {
           if (next !== current) {
             hover.set('hovered_id', next);
             hover.save_changes();
-            this.model.diagramUpdated.emit(void 0);
+            this.model.diagramUpdated.emit('hover');
           }
         }
         break;
@@ -574,7 +604,7 @@ export class ELKViewerView extends DOMWidgetView {
           deselectedElementsIDs: exiting,
         }),
       );
-      this.model.diagramUpdated.emit(void 0);
+      this.model.diagramUpdated.emit('selection');
     }
   }
 
@@ -620,7 +650,7 @@ export class ELKViewerView extends DOMWidgetView {
       const hovered: string | null = hover.get('hovered_id');
       const previous: string | null = hover.previous('hovered_id');
       await this.actionDispatcher.dispatchAll(hoverFeedbackActions(previous, hovered));
-      this.model.diagramUpdated.emit(void 0);
+      this.model.diagramUpdated.emit('hover');
     }
   }
 
@@ -680,7 +710,7 @@ export class ELKViewerView extends DOMWidgetView {
       this.firstFit.afterLayout(layout);
     }
     this.model.layoutUpdated.emit();
-    this.model.diagramUpdated.emit();
+    this.model.diagramUpdated.emit('layout');
     // a re-layout moves elements under a camera that did not change: re-report
     this.scheduleViewportReport();
   }
@@ -698,17 +728,18 @@ export class ELKViewerView extends DOMWidgetView {
   }
 
   /**
-   * The rendered diagram as SVG markup, with the model-space size of its
-   * content. The extent comes from the model, so scrolling or zooming cannot
-   * change the exported size.
+   * The whole diagram as SVG markup, with the model-space size of its content.
+   * Both come from the model, not from the live SVG: scrolling or zooming the
+   * view, which culls what is off screen and drops labels too small to read,
+   * cannot crop or resize the export.
    */
   exportSvg(): { markup: string; extent: Bounds } | null {
     const root = this.source?.root;
-    const svg: SVGElement | null = this.el?.querySelector('svg');
-    if (root == null || svg == null) {
+    if (root == null || this.container == null) {
       return null;
     }
-    return { markup: svg.outerHTML, extent: contentExtent(root) };
+    const markup = exportMarkup(this.container, root);
+    return markup == null ? null : { markup, extent: contentExtent(root) };
   }
 
   /** The kernel's `fit_padding` and `fit_max_zoom` (no limit when unset). */
