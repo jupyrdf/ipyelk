@@ -181,14 +181,10 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        vm: [ubuntu-latest, windows-latest, macos-14, macos-latest]
         # gh-232 diagnostics branch: only the jobs that show the lag
+        vm: [ubuntu-latest, windows-latest, macos-latest]
         task: [test]
-        exclude:
-          - { vm: macos-14, task: test }
-          - { vm: macos-latest, task: test-oldest }
         include:
-          - { vm: macos-14, atest-args: '' }
           - { vm: macos-latest, atest-args: '' }
           - { vm: ubuntu-latest, atest-args: '' }
           - { vm: windows-latest, atest-args: '--exclude ci:skip-win' }

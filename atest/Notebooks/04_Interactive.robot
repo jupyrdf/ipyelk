@@ -45,7 +45,8 @@ ${JS RECORD MSGS}
 ...                     const payload = d.state ?? d.content ?? "";
 ...                     rec.msgs.push([Date.now() - rec.t0, a.direction, m.channel, m.header.msg_type, m.header.msg_id.slice(0, 8),
 ...                     (m.parent_header?.msg_id || "").slice(0, 8), c.execution_state || "", (c.comm_id || "").slice(0, 8),
-...                     d.method || "", payload ? JSON.stringify(payload).slice(0, 60) : ""]);
+...                     d.method || "", payload ? JSON.stringify(payload).slice(0, 60) : "",
+...                     (m.header.subshell_id || "").slice(0, 8)]);
 ...                     if (rec.msgs.length > 20000) rec.msgs.splice(0, 5000);
 ...                     });
 ...                     window.__k232 = rec; return "installed";
