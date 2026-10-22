@@ -16,6 +16,7 @@ from ..pipes import flows as F
 from ..pipes.util import iter_pipes
 from ..styled_widget import StyledWidget
 from ..tools import PipelineProgressBar, ToggleCollapsedTool, Tool, Toolbar
+from ..util import open_owner
 from .sprotty_viewer import SprottyViewer
 from .viewer import Viewer
 
@@ -28,7 +29,10 @@ class Diagram(StyledWidget):
     Attributes
     ----------
     source: :py:class:`~ipyelk.pipes.MarkElementWidget`
-        input source to the diagram's processing pipe
+        input source to the diagram's processing pipe. A source feeds one open
+        diagram: a source of another open diagram is refused with
+        ``TraitError``; ``source.diagram`` is that diagram. A diagram releases
+        its source when it closes or gets a new one.
     pipe: :py:class:`~ipyelk.pipes.Pipe`
         processing pipe (that may contain sub-pipes). Pipes perform various
         tasks like adding x/y and width/height layouts or calculating text label sizes.
@@ -40,7 +44,9 @@ class Diagram(StyledWidget):
         widgets they created (such as status views), but never ``source`` or
         an inlet/outlet passed in.
     view: :py:class:`~ipyelk.diagram.viewer.Viewer`
-        output view that will render the pipe outlet; closed with the diagram
+        output view that will render the pipe outlet; closed with the diagram.
+        Pass it at construction: assigning a different view, or giving a closed
+        view or a view of another open diagram, raises ``TraitError``.
     tools: tuple :py:class:`~ipyelk.tools.Tool`
         list of tools that a user of the diagram might use to manipulate the
         state of the diagram; closed with the diagram.
@@ -50,7 +56,15 @@ class Diagram(StyledWidget):
 
     A closed diagram (``closed`` is True) raises ``ClosedError`` on
     ``refresh()``, ``register_tool()`` and on setting ``source``, ``pipe``,
-    ``view``, ``tools``, ``toolbar``, ``symbols`` or ``style``.
+    ``view``, ``tools``, ``toolbar``, ``symbols``, ``style``, ``layout`` or
+    ``children``.
+
+    A construction that a check refuses (``TraitError``) leaves the source,
+    view and pipe that it was given open. A construction that fails after the
+    checks, for example in a tool's ``on_done``, closes the diagram as
+    ``close()`` does, with the view and pipe that it was given. Both close the
+    ``tools`` and ``toolbar`` that they were given, a refused construction when
+    Python collects it.
 
     """
 
@@ -73,9 +87,13 @@ class Diagram(StyledWidget):
         #: links to the default view and toolbar
         self._links: list[T.link] = []
         super().__init__(*args, **kwargs)
-        self.add_class("jp-ElkApp")
-        self._update_children()
-        self._update_tools()
+        try:
+            self.add_class("jp-ElkApp")
+            self._update_children()
+            self._update_tools()  # runs user code: a tool's tee or on_done
+        except BaseException:
+            self.close()  # release the source and view this diagram claimed
+            raise
 
     @T.default("layout")
     def _default_layout(self):
@@ -149,10 +167,67 @@ class Diagram(StyledWidget):
             msg = f"{name} is closed and cannot {action}; build a new {name}"
             raise ClosedError(msg)
 
-    @T.validate("source", "view", "tools", "toolbar", "symbols", "style")
+    @T.validate("tools", "toolbar", "symbols", "style", "layout")
     def _validate_open(self, proposal: T.Bunch):
         self._check_open(f"set {proposal['trait'].name}")
         return proposal["value"]
+
+    @T.validate("children")
+    def _valid_children(self, proposal: T.Bunch):
+        self._check_open("set children")
+        return super()._valid_children(proposal)
+
+    @T.validate("source")
+    def _validate_source(self, proposal: T.Bunch) -> MarkElementWidget:
+        self._check_open("set source")
+        source = proposal["value"]
+        owner = source.diagram
+        if owner is self:
+            return source  # already this diagram's source: not a change
+        if owner is not None:
+            name = type(source).__name__
+            msg = (
+                f"{name} feeds another open diagram; close that diagram with "
+                f"source.diagram.close() or give this one its own {name}. "
+                "To show one diagram in two places, display the same Diagram twice"
+            )
+            raise T.TraitError(msg)
+        pipe = self._trait_values.get("pipe")
+        for sub in iter_pipes(pipe) if pipe is not None else ():
+            if sub.comm is None:  # or the new source is wired into half the pipe
+                msg = (
+                    f"{type(sub).__name__} is closed; assign a new pipe before a "
+                    "new source"
+                )
+                raise T.TraitError(msg)
+        return source
+
+    @T.validate("view")
+    def _validate_view(self, proposal: T.Bunch) -> Viewer:
+        self._check_open("set view")
+        view = proposal["value"]
+        owner = open_owner(view._diagram)
+        if owner is self:
+            return view  # already this diagram's view: not a change
+        if view is not self._trait_values.get("view", view):
+            name = type(self).__name__
+            msg = (
+                f"{name}.view cannot be replaced, because the tools are bound to "
+                f"it; close this {name}, then build a new {name}(source=..., view=...)"
+            )
+            raise T.TraitError(msg)
+        name = type(view).__name__
+        if view.comm is None:
+            msg = f"{name} is closed; give this diagram a new {name}"
+            raise T.TraitError(msg)
+        if owner is not None:
+            msg = (
+                f"{name} belongs to another open diagram; give this one its own "
+                f"{name}. To show one diagram in two places, display the same "
+                "Diagram twice"
+            )
+            raise T.TraitError(msg)
+        return view
 
     @T.validate("pipe")
     def _validate_pipe(self, proposal: T.Bunch) -> Pipe:
@@ -203,6 +278,9 @@ class Diagram(StyledWidget):
         Closing again does nothing.
         """
         self._closed = True
+        source = self._trait_values.get("source")
+        if source is not None and source._diagram and source._diagram() is self:
+            source._diagram = None  # free for another diagram
         pipe = self._trait_values.get("pipe")
         if pipe is not None and pipe._diagram and pipe._diagram() is self:
             self._release_pipe(pipe)
@@ -213,24 +291,21 @@ class Diagram(StyledWidget):
         for tool in self._trait_values.get("tools", ()):
             tool.on_done(self.refresh, remove=True)
             tool.close()
-        for name in ("toolbar", "view"):
-            widget = self._trait_values.get(name)
-            if widget is not None:
-                widget.close()
+        toolbar = self._trait_values.get("toolbar")
+        if toolbar is not None:
+            toolbar.close()
+        view = self._trait_values.get("view")
+        if view is not None and view._diagram and view._diagram() is self:
+            view.close()  # not a view a refused construction was given
         super().close()
 
-    @T.observe("view")
-    def _update_children(self, change: T.Bunch | None = None):
-        """Handle if the viewer instance changes by reobserving handler
-        functions
-
-        :param change: viewer change event
-        """
-        # TODO(#208): should the `view` instance be allowed to change?
+    def _update_children(self):
+        """Wire the source, pipe and view, and show the view and toolbar."""
         self._update_view_sources()
         self.children = [self.view, self.toolbar]
 
     def _update_view_sources(self):
+        self.source._diagram = self.view._diagram = weakref.ref(self)  # see _validate_*
         self.source.record(F.New)
         self.pipe.inlet = self.source
         self.view.source = self.pipe.outlet
@@ -239,7 +314,8 @@ class Diagram(StyledWidget):
     def _change_pipe(self, change):
         """Rewire and refresh. A new pipe or source cancels the in-flight run,
         whose answer would land in an index nobody views, and a replaced pipe
-        is closed; a style change only requests a new run.
+        is closed and a replaced source released; a style change only requests
+        a new run.
         """
         old = change.old if change.name == "pipe" else None
         if isinstance(old, Pipe):
@@ -248,6 +324,8 @@ class Diagram(StyledWidget):
             self._wire_pipe(change.new)
         elif change.name == "source":
             self.pipe.cancel()
+            if isinstance(change.old, MarkElementWidget):
+                change.old._diagram = None  # free for another diagram
         self._update_view_sources()
         if isinstance(old, Pipe):
             old.close()

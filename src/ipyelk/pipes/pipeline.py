@@ -114,6 +114,11 @@ class Pipeline(SyncedOutletPipe):
         if self._closed:
             raise asyncio.CancelledError
 
+    @T.validate("inlet", "outlet")
+    def _validate_open_ends(self, proposal: T.Bunch):
+        self._check_open(f"set {proposal['trait'].name}")
+        return proposal["value"]
+
     @T.validate("pipes")
     def _validate_pipes(self, proposal: T.Bunch) -> list[Pipe]:
         """Refuse any change once closed, a closed stage, a stage listed twice,
@@ -127,7 +132,7 @@ class Pipeline(SyncedOutletPipe):
             if id(stage) in seen:
                 msg = f"{type(stage).__name__} is listed twice; use a new pipe"
             else:
-                msg = None if id(stage) in kept else self._refusal(stage)
+                msg = self._refusal(stage, kept=id(stage) in kept)
             seen.add(id(stage))
             if msg:
                 if self.comm is None:
@@ -137,20 +142,31 @@ class Pipeline(SyncedOutletPipe):
         self._stages = tuple(pipes)
         return pipes
 
-    def _refusal(self, stage: Pipe) -> str | None:
+    def _refusal(self, stage: Pipe, kept: bool = False) -> str | None:
+        """Why ``stage`` cannot be listed, or ``None``.
+
+        A ``kept`` stage was accepted before, so only a close or a new owner
+        refuses it. The record of accepted stages can name a stage that a
+        rolled-back ``hold_trait_notifications()`` removed again.
+        """
         owner = self._owner()
         for sub in iter_pipes(stage):
             name = type(sub).__name__
             if sub.comm is None:
                 return f"{name} is closed; use a new pipe"
             other = sub._owner()
-            if other is None:
+            if other is None or (kept and other is owner):
                 continue
             if other is owner:
                 return f"{name} is part of the current pipe; use a new pipe"
             where = "an open diagram" if owner is None else "another diagram"
             return f"{name} belongs to {where}; use a new pipe"
         return None
+
+    @T.observe("pipes", type="default")
+    def _record_default_stages(self, change: T.Bunch) -> None:
+        # a default skips ``_validate_pipes``, which records every other accepted value
+        self._stages = tuple(change.value)
 
     @T.observe("pipes")
     def _restage(self, change: T.Bunch) -> None:
@@ -160,7 +176,6 @@ class Pipeline(SyncedOutletPipe):
 
     @T.observe("pipes", "inlet")
     def _update_pipes(self, change=None):
-        self._stages = tuple(self.pipes)
         prev = self.inlet
         for pipe in self.pipes:
             pipe.inlet = prev
@@ -188,8 +203,9 @@ class Pipeline(SyncedOutletPipe):
         """Run the dirty pipes for the pending flow.
 
         The flow is taken from the inlet at the start (``MarkElementWidget.take``)
-        and re-recorded unless the run succeeds. A source should therefore feed
-        one pipeline: a second would find the flow already taken.
+        and re-recorded unless the run succeeds. A second pipeline on the same
+        source would find the flow already taken, so a ``Diagram`` refuses a
+        source that feeds another open diagram.
 
         ``flow`` is passed by a parent pipeline to a nested one, since the
         parent already took it.

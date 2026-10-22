@@ -83,8 +83,8 @@ class Tool(W.Widget):
     reports = TypedTuple(T.Unicode(), kw={})
     _task: asyncio.Task | None = None
     _closed: bool = False
-    #: the ``ui`` the tool built for itself, closed with it
-    _default_ui: W.DOMWidget | None = None
+    #: the ``ui`` the tool built for itself, closed with it even after a replacement
+    _built_ui: W.DOMWidget | None = None
     ui = T.Instance(W.DOMWidget, allow_none=True)
     priority = T.Int(default_value=10)
     _on_start_handlers = T.Instance(W.CallbackDispatcher, kw={})
@@ -133,9 +133,8 @@ class Tool(W.Widget):
         Closing again does nothing.
         """
         self._closed = True
-        ui = self._trait_values.get("ui")
-        if ui is not None and ui is self._default_ui:
-            close_tree(ui)
+        if self._built_ui is not None:
+            close_tree(self._built_ui)
         super().close()
 
     @property
@@ -198,7 +197,7 @@ class Tool(W.Widget):
     @T.observe("ui", type="default")
     def _update_default_ui_controls(self, change: T.Bunch) -> None:
         # the lazily built default ``ui`` emits a "default" event, not a "change"
-        self._default_ui = change.value
+        self._built_ui = change.value
         for control in _controls(change.value):
             control.disabled = self._controls_disabled()
 

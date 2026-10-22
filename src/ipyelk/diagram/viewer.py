@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import math
+import weakref
 from collections.abc import Sequence
 
 import ipywidgets as W
@@ -85,6 +86,8 @@ class Viewer(W.Widget):
 
     fit_tool = T.Instance(FitTool)
     center_tool = T.Instance(CenterTool)
+    #: the diagram this is the ``view`` of (see ``Diagram.view``)
+    _diagram: weakref.ref | None = None
 
     #: removed names raise :class:`~ipyelk.exceptions.DeprecatedAPIError` through 3.x
     zoom = RemovedAPI(

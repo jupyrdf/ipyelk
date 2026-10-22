@@ -1058,6 +1058,201 @@ if fit.closed:
 fit.ui.click()
 ```
 
+### Set `layout`, `children`, `inlet` and `outlet` before you close
+
+Four more assignments raise `ClosedError` after `close()`:
+
+- On a closed `Diagram`, an assignment to `Diagram.layout` or `Diagram.children`.
+- On a closed `Pipeline`, an assignment to `Pipeline.inlet` or `Pipeline.outlet`.
+
+In 2.x, these assignments did not raise. A closed widget has no connection to the
+browser, so the browser did not show the change. The message of the `ClosedError` is the
+same as for the other assignments in the section above.
+
+This change affects code that sets one of these four traits after `close()`. The change
+is in [#198].
+
+```python
+# both versions
+import ipywidgets as W
+
+from ipyelk import Diagram, from_element
+from ipyelk.elements import Node
+
+diagram = from_element(Node(id="root"))
+diagram.close()
+```
+
+```python
+# 2.x
+diagram.layout = W.Layout(height="400px")
+```
+
+The 2.x code raises this error on 3.0:
+
+```text
+ClosedError: Diagram is closed and cannot set layout; build a new Diagram
+```
+
+```python
+# 3.0: make a new diagram with the layout
+diagram = Diagram(source=diagram.source, layout=W.Layout(height="400px"))
+```
+
+(migration-one-source)=
+
+### Give each open diagram its own source
+
+A source is the `MarkElementWidget` that holds the elements of a diagram,
+`Diagram.source`. In 3.0, a source feeds one open diagram. `Diagram(source=...)` and an
+assignment to `Diagram.source` raise `traitlets.TraitError` when another open `Diagram`
+has that source.
+
+In 2.x, two diagrams could share a source, but they did not work together:
+
+- Each run of a diagram took the pending changes from the source. Thus, a recorded
+  change did not reach both diagrams.
+- Each layout wrote its positions and sizes onto the same elements. Thus, the last
+  layout won, also in the other diagram.
+
+A closed diagram releases its source. A diagram also releases its old source when it
+gets a new one. To show one diagram in two places, display the same `Diagram` twice.
+
+`MarkElementWidget.diagram` is the open diagram of a source, or `None`. You cannot set
+it. The outlet of a pipe stage, such as `first.pipe.outlet`, is not a source. This rule
+does not apply to it.
+
+This change affects code that gives the source of an open diagram to a second diagram.
+The change is in [#178].
+
+```python
+# both versions
+from ipyelk import Diagram, from_element
+from ipyelk.elements import Node
+
+first = from_element(Node(id="root"))
+```
+
+```python
+# 2.x
+second = Diagram(source=first.source)
+```
+
+The 2.x code raises this error on 3.0:
+
+```text
+TraitError: MarkElementWidget feeds another open diagram; close that diagram with source.diagram.close() or give this one its own MarkElementWidget. To show one diagram in two places, display the same Diagram twice
+```
+
+```python
+# 3.0: give the second diagram its own source
+second = from_element(Node(id="root"))
+```
+
+```python
+# 3.0: or close the first diagram, and give its source to the second diagram
+first.close()
+second = Diagram(source=first.source)
+```
+
+#### Close the last diagram before you run its cell again
+
+In a notebook, the source and the diagram are often in different cells. If you run the
+cell of the diagram again, `Diagram(source=source)` raises the error above. The diagram
+of the last run is still open, because ipywidgets keeps every open widget. This is also
+true when no name refers to that diagram. Use `source.diagram` to close it.
+
+```python
+# both versions
+from ipyelk.pipes import MarkElementWidget
+
+source = MarkElementWidget(value=Node(id="root"))  # cell 1
+diagram = Diagram(source=source)  # cell 2, first run
+```
+
+```python
+# 2.x
+diagram = Diagram(source=source)  # cell 2, second run
+```
+
+The 2.x code raises this error on 3.0:
+
+```text
+TraitError: MarkElementWidget feeds another open diagram; close that diagram with source.diagram.close() or give this one its own MarkElementWidget. To show one diagram in two places, display the same Diagram twice
+```
+
+```python
+# 3.0: close the diagram of the last run, then make the new diagram
+if source.diagram is not None:
+    source.diagram.close()
+diagram = Diagram(source=source)  # cell 2
+```
+
+(migration-fixed-view)=
+
+### Give the viewer to the diagram when you make it
+
+In 3.0, `Diagram.view` is fixed after construction. Give the viewer to the diagram with
+`Diagram(view=...)`. An assignment of a different viewer raises `traitlets.TraitError`.
+An assignment of the same viewer does nothing.
+
+The tools of a diagram stay bound to the viewer that the diagram started with. In 2.x,
+an assignment of a new viewer moved the output of the pipe to the new viewer. But the
+selection, the painter, the Fit and Center buttons and `ToggleCollapsedTool` still acted
+on the old viewer, and the old viewer stayed open.
+
+This change affects code that assigns `Diagram.view`. The change is in [#208].
+
+```python
+# both versions
+from ipyelk import Diagram, from_element
+from ipyelk.diagram import SprottyViewer
+from ipyelk.elements import Node
+
+diagram = from_element(Node(id="root"))
+```
+
+```python
+# 2.x
+diagram.view = SprottyViewer()
+```
+
+The 2.x code raises this error on 3.0:
+
+```text
+TraitError: Diagram.view cannot be replaced, because the tools are bound to it; close this Diagram, then build a new Diagram(source=..., view=...)
+```
+
+```python
+# 3.0: close the diagram, and give its source and the new viewer to a new diagram
+diagram.close()
+diagram = Diagram(source=diagram.source, view=SprottyViewer())
+```
+
+`diagram.close()` also closes `diagram.view`, so give the new diagram a new viewer.
+`Diagram(view=...)` raises `traitlets.TraitError` when the viewer is closed.
+
+A viewer is the view of one open diagram, too. `Diagram(view=...)` raises
+`traitlets.TraitError` when the viewer is the view of another open diagram. In 2.x, both
+diagrams set the source of the viewer, and the last diagram won. When one diagram
+closed, it also closed the viewer of the other diagram.
+
+```python
+# 2.x
+second = Diagram(view=diagram.view)
+```
+
+The 2.x code raises this error on 3.0:
+
+```text
+TraitError: SprottyViewer belongs to another open diagram; give this one its own SprottyViewer. To show one diagram in two places, display the same Diagram twice
+```
+
+```python
+# 3.0: give the second diagram its own viewer
+second = Diagram(view=SprottyViewer())
+```
+
 (migration-value-sync)=
 
 ### Call `sync_value()` for browser code that reads a mark
@@ -2033,9 +2228,8 @@ print(mark.index.document[el_id] is element)
 
 `ElementIndex.from_els`, `VisIndex.from_els` and `HierarchicalIndex.from_els` index an
 element without an id by its `wire_id`. In 2.x, they raised `ValueError` outside a
-`Registry`. `Painter.paint(element)` stores the `wire_id` of an element that has no id.
-In 2.x, it raised `ValueError`. The `id` of the element stays `None` until a `Document`
-writes it.
+`Registry`. 3.0 adds `Painter.paint`, which also stores the `wire_id` of an element that
+has no id. The `id` of the element stays `None` until a `Document` writes it.
 
 This change affects code that expects the `ValueError`. The change is in [#160].
 
@@ -2047,7 +2241,7 @@ node = Node()
 ```
 
 ```python
-# 2.x: this raised ValueError("Cannot index element without an id ...")
+# 2.x: this raised a ValueError, "none is not an allowed value"
 index = ElementIndex.from_els(node)
 ```
 
@@ -2073,12 +2267,13 @@ The rest stays as in 2.x:
 - `Document.resolve` returns the hidden element, with `via_slack=True`.
 - `properties.key` of the slack port is the id of the hidden element.
 
-`Painter.paint` of the id of a hidden element does not style its slack port. In 2.x, it
-did, because the two elements had one id. To style the slack port, paint its id too.
-`ElementIndex.update` does not add the slack ports of a browser answer to the index.
+`Painter.paint`, which is new in 3.0, styles only the elements with the ids that you
+give it. Thus, the id of a hidden element does not style its slack port. To style the
+slack port, paint its id too. `ElementIndex.update` does not add the slack ports of a
+browser answer to the index.
 
 This change affects code that compares the id of a slack port with the id of a hidden
-element, and code that paints a hidden element. The change is in [#160].
+element. The change is in [#160].
 
 ```python
 # both versions: the node "h" is hidden inside the node "C"
@@ -2316,9 +2511,12 @@ is gone. Thus, the 2.x imports fail.
 [#157]: https://github.com/jupyrdf/ipyelk/pull/157
 [#160]: https://github.com/jupyrdf/ipyelk/issues/160
 [#161]: https://github.com/jupyrdf/ipyelk/issues/161
+[#178]: https://github.com/jupyrdf/ipyelk/issues/178
 [#192]: https://github.com/jupyrdf/ipyelk/pull/192
+[#198]: https://github.com/jupyrdf/ipyelk/issues/198
 [#202]: https://github.com/jupyrdf/ipyelk/pull/202
 [#206]: https://github.com/jupyrdf/ipyelk/pull/206
+[#208]: https://github.com/jupyrdf/ipyelk/issues/208
 [#214]: https://github.com/jupyrdf/ipyelk/issues/214
 [#223]: https://github.com/jupyrdf/ipyelk/pull/223
 [#226]: https://github.com/jupyrdf/ipyelk/pull/226

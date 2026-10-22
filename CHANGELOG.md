@@ -141,6 +141,11 @@
   implement `run()` reject `trigger()`, and closed `ToolButton`s reject button callbacks
   with `ClosedError`, including tools closed with their diagram. Closing a diagram twice
   still does nothing ([#197]).
+- Raise on four more assignments to a closed widget. Setting `Diagram.layout` or
+  `Diagram.children` on a closed `Diagram`, or `Pipeline.inlet` or `Pipeline.outlet` on
+  a closed `Pipeline`, raises `ClosedError` with the same message as the other traits.
+  These assignments did not raise. A closed widget has no comm, so the browser did not
+  show the change ([#198]).
 - A closed tool names its class in the `ClosedError` from `trigger()` and button clicks,
   as a closed diagram or pipe does: "ToggleCollapsedTool is closed and cannot run; build
   a new ToggleCollapsedTool". It used to say "use a new tool". `Tool.closed` says
@@ -330,6 +335,29 @@
   `MarkIndex.comm`, `MarkIndex.close` and `MarkElementWidget.layout` raise
   `DeprecatedAPIError` throughout 3.x. The index stays shared:
   `source.index.elements = None` makes the next run rebuild it, as in 2.x ([#237]).
+- A source feeds one open diagram. `Diagram(source=...)` and an assignment to
+  `Diagram.source` raise `TraitError` when the `MarkElementWidget` is the source of
+  another open `Diagram`. The message names the fix: close the other diagram with
+  `source.diagram.close()`, or give this one its own `MarkElementWidget`.
+  `MarkElementWidget.diagram` is the open diagram of a source, or `None`. Thus, a
+  notebook can close the diagram of the last run of a cell. In 2.x, both diagrams took
+  the pending changes from one source, so a recorded change did not reach both. Both
+  diagrams also wrote their layout onto the same elements, so the last layout won. A
+  closed diagram releases its source, also when it closes during a run. A diagram
+  releases its old source when it gets a new one. An assignment of a different source
+  also raises `TraitError` while a pipe in the diagram's pipe is closed: assign a new
+  pipe first. Such a new source used to be wired in, and the next run failed. An
+  assignment of the same source does nothing. To show one diagram in two places, display
+  the same `Diagram` twice ([#178]).
+- `Diagram.view` is fixed after construction. Pass the viewer as `Diagram(view=viewer)`.
+  An assignment of a different viewer raises `TraitError`. The diagram's tools stay
+  bound to the viewer that the diagram started with. In 2.x, the assignment moved the
+  pipe's output to the new viewer, but the selection, the painter, the Fit and Center
+  buttons and `ToggleCollapsedTool` still acted on the old viewer. The old viewer also
+  stayed open. An assignment of the same viewer does nothing. `Diagram(view=...)` also
+  raises `TraitError` when the viewer is closed or is the view of another open diagram.
+  A closed viewer used to be accepted. The construction then failed with an
+  `AttributeError` and left the widgets that it built open ([#208]).
 
 #### Migration
 
@@ -470,8 +498,8 @@ removed names][migration-removed-names] lists every name that raises
   pipe ([#180])
   - A pipe belongs to one diagram, with every pipe nested in it. Assigning a pipe that
     nests a pipe another open diagram owns raises `TraitError`: both diagrams used to
-    share its outlet, so one silently showed the other's graph. Two diagrams sharing a
-    _source_ is a separate question ([#178])
+    share its outlet, so one silently showed the other's graph. A _source_ feeds one
+    open diagram too ([#178])
   - A replaced pipe is closed, so assigning a pipe that nests a closed pipe, or any part
     of the current pipe (wrapping it, or reusing its stages), raises `TraitError` too:
     build a new pipe instead
@@ -490,6 +518,26 @@ removed names][migration-removed-names] lists every name that raises
   and a `layout` or tool `ui` passed in. A closed diagram's pipe is closed, so another
   diagram can no longer take it. `Tool.close()` also closes the `ui` the tool built, and
   `Viewer.close()` its tools ([#191])
+- Close a default `layout` or tool `ui` that user code replaced. A `Diagram`, a `Viewer`
+  or a `Toolbar` closed the `layout` it built only while it still used that layout, and
+  a tool closed the `ui` it built only while it still used that `ui`. Each replacement
+  thus left the default open after `close()`: one widget for a `layout`, and three for
+  the default button of a tool. A replacement that user code assigned stays open
+  ([#198])
+- Keep the record of the stages that a `Pipeline` accepted. A `Pipeline` refuses a new
+  stage that is closed, part of the current pipe, or owned by another open diagram, and
+  it does not check again a stage that it accepted before. Two gaps let a stage skip the
+  check:
+  - An observer of `pipes` also wrote the record. A subclass `@validate` method that set
+    `pipes` under `hold_trait_notifications()` skipped the check of `pipes`, and the
+    observer then recorded the unchecked stages as accepted. Now only the check, and the
+    default of `pipes`, write the record.
+  - A kept stage that another diagram took after the `Pipeline` accepted it stayed in
+    both. A kept stage owned by another open diagram now raises `TraitError`.
+  - A `hold_trait_notifications()` block that raised put back the old `pipes`, but the
+    record kept the stages that the block had set. Such a stage, once closed, was
+    accepted, and the sync to the browser failed with an `AttributeError`. Now a closed
+    stage raises `TraitError`, also when the record names it ([#198])
 - Log the routine "fixing N ids" message from `ValidationPipe` at debug level instead of
   warning: assigning ids to id-less elements is the normal path (`fix_null_id=True`), so
   every diagram built from id-less elements logged it
@@ -841,6 +889,15 @@ removed names][migration-removed-names] lists every name that raises
   to the size of the node. A notch that is missing, not a number or negative draws 15
   pixels, and a string notch from 2.x still draws ([#148])
 
+#### Fixed
+
+- Stop two views of one diagram from looping on hover feedback. The two views come from
+  `display(diagram)` twice or from a linked output view. A view wrote the feedback that
+  it replays from `hover.hovered_id` back to `hovered_id`. When that feedback arrived
+  late, for example after a second hover, the views wrote stale ids back without end,
+  and the page stopped responding. A view now writes back only the hover feedback from
+  the pointer ([#255](https://github.com/jupyrdf/ipyelk/issues/255)).
+
 [#29]: https://github.com/jupyrdf/ipyelk/issues/29
 [#31]: https://github.com/jupyrdf/ipyelk/issues/31
 [#66]: https://github.com/jupyrdf/ipyelk/issues/66
@@ -868,10 +925,12 @@ removed names][migration-removed-names] lists every name that raises
 [#187]: https://github.com/jupyrdf/ipyelk/issues/187
 [#191]: https://github.com/jupyrdf/ipyelk/issues/191
 [#197]: https://github.com/jupyrdf/ipyelk/issues/197
+[#198]: https://github.com/jupyrdf/ipyelk/issues/198
 [#199]: https://github.com/jupyrdf/ipyelk/issues/199
 [#200]: https://github.com/jupyrdf/ipyelk/issues/200
 [#201]: https://github.com/jupyrdf/ipyelk/issues/201
 [#205]: https://github.com/jupyrdf/ipyelk/issues/205
+[#208]: https://github.com/jupyrdf/ipyelk/issues/208
 [#214]: https://github.com/jupyrdf/ipyelk/issues/214
 [#215]: https://github.com/jupyrdf/ipyelk/issues/215
 [#216]: https://github.com/jupyrdf/ipyelk/issues/216

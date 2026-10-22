@@ -41,7 +41,7 @@ import {
 } from '@jupyter-widgets/base';
 
 import { FirstFit, elementFirstFitHost } from './first_fit';
-import { hoverAfterFeedback, hoverFeedbackActions } from './hover_util';
+import { hoverAfterFeedback, hoverFeedbackActions, isHoverReplay } from './hover_util';
 import {
   canonicalSelection,
   selectionAfterLayout,
@@ -449,11 +449,13 @@ export class ELKViewerView extends DOMWidgetView {
       case HoverFeedbackAction.KIND:
         const hoverFeedback = action as HoverFeedbackAction;
         const hover = this.model.get('hover');
-        if (hover != null) {
+        // the feedback updateHover replays lands here too: never write it back.
+        // It is async, so it can land after the id moved on (two hovers in one
+        // tick, or a blocked dispatcher releasing them), and a stale id written
+        // back replays again: one view, or two views of one model, looped.
+        if (hover != null && !isHoverReplay(hoverFeedback)) {
           const current: string | null = hover.get('hovered_id');
           const next = hoverAfterFeedback(current, hoverFeedback);
-          // the feedback this view itself dispatches from updateHover lands
-          // here too: an unchanged id is written back to nothing
           if (next !== current) {
             hover.set('hovered_id', next);
             hover.save_changes();

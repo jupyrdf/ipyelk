@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import warnings
+import weakref
+from typing import TYPE_CHECKING
 
 import ipywidgets as W
 import traitlets as T
@@ -17,6 +19,10 @@ from ..elements import (
     elk_serialization,
 )
 from ..exceptions import RemovedAPI, check_removed
+from ..util import open_owner
+
+if TYPE_CHECKING:
+    from ..diagram import Diagram
 
 #: the warning that reading or writing ``MarkIndex.context`` emits through 3.x
 CONTEXT_DEPRECATED = (
@@ -145,12 +151,23 @@ class MarkElementWidget(W.Widget):
     _browser_value: Node | None = None
     #: the mark whose index this one shares, set by ``share_index``
     _index_of: MarkElementWidget | None = None
+    #: the diagram this mark is the ``source`` of (see ``Diagram.source``)
+    _diagram: weakref.ref | None = None
     #: the synced trait names (``Widget.keys``), typed for mypy
     keys: list[str]
 
     def __init__(self, **kwargs) -> None:
         check_removed(type(self), kwargs)
         super().__init__(**kwargs)
+
+    @property
+    def diagram(self) -> Diagram | None:
+        """The open diagram this mark is the ``source`` of, or ``None``.
+
+        Read-only. A source feeds one open diagram, so ``source.diagram.close()``
+        frees the source for a new diagram, also when no name holds the old one.
+        """
+        return open_owner(self._diagram)
 
     @T.default("index")
     def _default_index(self) -> MarkIndex:
