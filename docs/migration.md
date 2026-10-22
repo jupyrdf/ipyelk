@@ -1928,6 +1928,36 @@ print(shapes.Rect().use)
 own. To validate the payload of your class, subclass one of them, set a new type string
 and give `use` a type.
 
+With the type string of a built-in class, a `NodeShape`, a `LabelShape` or an
+`ElementShape` validates `use` with the type of that class. For example,
+`NodeShape(type="node:comment")` takes a notch in pixels, as `Comment` does. A type
+string whose class requires `use`, such as `node:path`, requires it here too. A
+`node:widget` shape takes any string or `None`. 2.x took any string for every type
+string, and the JSON did not pass `validate_elk_json`. The change is in [#244].
+
+```python
+# 2.x
+from ipyelk.elements import shapes
+
+shapes.NodeShape(type="node:comment", use="big")
+```
+
+The 2.x code raises this error on 3.0:
+
+```text
+ValidationError: 1 validation error for NodeShape
+use
+  Input should be a valid number, unable to parse string as a number [type=float_parsing, input_value='big', input_type=str]
+```
+
+```python
+# 3.0: give the payload of the type string, or use its class
+from ipyelk.elements import shapes
+
+print(shapes.NodeShape(type="node:comment", use=30).use)
+print(shapes.Comment(use=30).use)
+```
+
 ### Expect `NotFoundError` or `NotUniqueError` from `ElementIndex.root()`
 
 A root is a node that has no parent. `ElementIndex.root()` raises
@@ -2522,3 +2552,4 @@ is gone. Thus, the 2.x imports fail.
 [#226]: https://github.com/jupyrdf/ipyelk/pull/226
 [#233]: https://github.com/jupyrdf/ipyelk/pull/233
 [#237]: https://github.com/jupyrdf/ipyelk/issues/237
+[#244]: https://github.com/jupyrdf/ipyelk/issues/244
