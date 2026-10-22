@@ -41,7 +41,7 @@ import {
 } from '@jupyter-widgets/base';
 
 import { FirstFit, elementFirstFitHost } from './first_fit';
-import { hoverAfterFeedback, hoverFeedbackActions } from './hover_util';
+import { hoverAfterFeedback, hoverFeedbackActions, isHoverReplay } from './hover_util';
 import {
   canonicalSelection,
   selectionAfterLayout,
@@ -76,8 +76,6 @@ const POLL = 300;
 // trailing debounce for viewport reports: a wheel/drag burst -> one kernel write
 const VIEWPORT_DEBOUNCE = 100;
 const STALE_DELAY_MAX = 10000;
-/** Feedback `updateHover` replays from the kernel's `hovered_id`: shown, never written back. */
-const replayedHover = new WeakSet<Action>();
 
 export class ELKControlModel extends DOMWidgetModel {
   static model_name = 'ELKControlModel';
@@ -455,7 +453,7 @@ export class ELKViewerView extends DOMWidgetView {
         // It is async, so it can land after the id moved on (two hovers in one
         // tick, or a blocked dispatcher releasing them), and a stale id written
         // back replays again: one view, or two views of one model, looped.
-        if (hover != null && !replayedHover.has(hoverFeedback)) {
+        if (hover != null && !isHoverReplay(hoverFeedback)) {
           const current: string | null = hover.get('hovered_id');
           const next = hoverAfterFeedback(current, hoverFeedback);
           if (next !== current) {
@@ -623,9 +621,7 @@ export class ELKViewerView extends DOMWidgetView {
     if (hover != null) {
       const hovered: string | null = hover.get('hovered_id');
       const previous: string | null = hover.previous('hovered_id');
-      const actions = hoverFeedbackActions(previous, hovered);
-      actions.forEach((replayed) => replayedHover.add(replayed));
-      await this.actionDispatcher.dispatchAll(actions);
+      await this.actionDispatcher.dispatchAll(hoverFeedbackActions(previous, hovered));
       this.model.diagramUpdated.emit(void 0);
     }
   }
