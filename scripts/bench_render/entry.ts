@@ -19,6 +19,7 @@ import {
   Bounds,
   FitToScreenAction,
   HoverFeedbackAction,
+  Point,
   SelectAction,
   SetViewportAction,
   Viewport,
@@ -29,6 +30,7 @@ import {
   CommandStack,
   ModelViewer,
   SModelRootImpl,
+  SNodeImpl,
   TYPES,
   isViewport,
 } from 'sprotty';
@@ -150,6 +152,36 @@ ModelViewer.prototype.update = function (
   renders.push([t1 - t0, t1]);
 };
 
+/** A deterministic Fisher-Yates shuffle (seeded LCG), the same for every run. */
+function shuffled<T>(items: readonly T[], seed: number): T[] {
+  const out = [...items];
+  let state = (seed * 2654435761 + 1) % 4294967296;
+  for (let i = out.length - 1; i > 0; i--) {
+    state = (state * 1664525 + 1013904223) % 4294967296;
+    const j = state % (i + 1);
+    [out[i], out[j]] = [out[j], out[i]];
+  }
+  return out;
+}
+
+/** The centre of the root's child node nearest `point`, or `point` itself. */
+function nearestNodeCentre(root: SModelRootImpl, point: Point): Point {
+  let best = point;
+  let bestDistance = Infinity;
+  for (const child of root.children) {
+    if (!(child instanceof SNodeImpl)) {
+      continue;
+    }
+    const centre = Bounds.center(child.bounds);
+    const distance = Point.euclideanDistance(centre, point);
+    if (distance < bestDistance) {
+      bestDistance = distance;
+      best = centre;
+    }
+  }
+  return best;
+}
+
 function nextFrame(): Promise<void> {
   return new Promise((resolve) => requestAnimationFrame(() => resolve()));
 }
@@ -213,9 +245,16 @@ export class Bench {
       'fit',
       ...config.zooms.map((zoom) => ({ zoom })),
     ];
+    const combinations: [boolean, ViewportSpec][] = [];
+    for (const culling of [false, true]) {
+      for (const viewport of viewports) {
+        combinations.push([culling, viewport]);
+      }
+    }
     for (let round = 0; round <= config.rounds; round++) {
-      for (const culling of [false, true]) {
-        for (const viewport of viewports) {
+      // a different order each round, so no combination always follows another
+      for (const [culling, viewport] of shuffled(combinations, round + 1)) {
+        {
           const t0 = performance.now();
           const run = await this.run({
             culling,
@@ -387,9 +426,12 @@ export class Bench {
       );
       return;
     }
+    // centre on the top-level node nearest the content's centre, not on the
+    // centre itself: in a nested layout that can fall between the containers
+    // and show an empty canvas
     const content: Bounds = contentBounds(root);
     const zoom = target.zoom;
-    const centre = Bounds.center(content);
+    const centre = nearestNodeCentre(root, Bounds.center(content));
     await this.dispatcher.dispatch(
       SetViewportAction.create(
         root.id,

@@ -12,10 +12,13 @@ import { HoverFeedbackAction, SelectAction, SetViewportAction } from 'sprotty-pr
 import {
   ActionDispatcher,
   CommandStack,
+  HiddenBoundsUpdater,
   ModelViewer,
   SModelRootImpl,
   TYPES,
 } from 'sprotty';
+
+import { Widget } from '@lumino/widgets';
 
 import createContainer from '../sprotty/di-config';
 import { JLModelSource } from '../sprotty/diagram-server';
@@ -31,7 +34,10 @@ vi.mock('../tokens', () => ({ ELK_DEBUG: false }));
 
 const CANVAS = { x: 0, y: 0, width: 800, height: 600 };
 
-/** Ten 30x30 nodes in a row 500 px apart, chained by edges, each with a label. */
+/**
+ * Ten 30x30 nodes in a row 500 px apart, chained by edges, each with a label;
+ * the last one a widget node, whose JupyterLab widget floats over the SVG.
+ */
 const LAYOUT: ElkNode = {
   id: 'root',
   width: 5000,
@@ -43,6 +49,7 @@ const LAYOUT: ElkNode = {
     width: 30,
     height: 30,
     labels: [{ id: `n${i}.l`, text: `node ${i}`, x: 0, y: 32, width: 40, height: 14 }],
+    ...(i === 9 ? { properties: { shape: { type: 'node:widget', use: 'w9' } } } : {}),
   })),
   edges: Array.from({ length: 9 }, (_, i) => ({
     id: `e${i}`,
@@ -66,6 +73,12 @@ function nextFrame(): Promise<void> {
 function withoutCamera(markup: string): string {
   return markup.replace(/ transform=".*?"/, '');
 }
+
+/** The widget manager a view attaches JupyterLab widgets through, faked. */
+const widgetManager = {
+  get_model: vi.fn(async (id: string) => ({ model_id: id })),
+  create_view: vi.fn(async () => ({ luminoWidget: new Widget(), remove: vi.fn() })),
+};
 
 describe('culling and the export', () => {
   let div: HTMLDivElement;
@@ -92,6 +105,8 @@ describe('culling and the export', () => {
     stack = container.get<CommandStack>(TYPES.ICommandStack);
     viewer = container.get(ModelViewer);
     update = vi.spyOn(ModelViewer.prototype, 'update');
+    source.widget_manager = widgetManager as any;
+    widgetManager.create_view.mockClear();
     source.culling = true;
     source.resize(CANVAS);
     await source.updateLayout(LAYOUT, { library: {} }, 'c0', {});
@@ -164,6 +179,12 @@ describe('culling and the export', () => {
     expect(live('.elknode')).toBe(2); // the view is culled ...
     const culled = exportMarkup(container, zoomed)!;
     expect(withoutCamera(culled)).toBe(withoutCamera(full!)); // ... the export is not
+    // a culled node is exported where the layout put it, under its DOM id
+    expect(live('#c0_n7')).toBe(0);
+    expect(culled).toMatch(/<g[^>]*\bid="c0_n7"[^>]*transform="translate\(3510, 10\)"/);
+    expect(culled).toMatch(
+      /<text[^>]*\bid="c0_n7\.l"[^>]*transform="translate\(0, 32\)"/,
+    );
 
     source.culling = false;
     const uncut = exportMarkup(container, await camera({ x: 0, y: 0 }, 1))!;
@@ -202,11 +223,27 @@ describe('culling and the export', () => {
     expect(update).toHaveBeenCalledTimes(2);
   });
 
-  it('attaches no widget container for an export', async () => {
+  it("attaches no widget for an export, and leaves sprotty's hidden pipeline alone", async () => {
     const root = await rendered();
-    const markup = exportMarkup(container, root)!;
-    expect(markup.startsWith('<svg')).toBe(true);
-    expect(markup).not.toContain('elkcontainer');
-    expect(markup).not.toContain('sprotty-overlay');
+    // the live render attached the widget node's JupyterLab widget once
+    expect(widgetManager.create_view).toHaveBeenCalledTimes(1);
+    const containers = document.querySelectorAll('.elkcontainer').length;
+    expect(containers).toBe(1);
+    const updater = container
+      .getAll<unknown>(TYPES.HiddenVNodePostprocessor)
+      .find((p) => p instanceof HiddenBoundsUpdater) as HiddenBoundsUpdater;
+    const collected = () => (updater as any).element2boundsData.size as number;
+    expect(collected()).toBe(0);
+
+    for (let i = 0; i < 3; i++) {
+      const markup = exportMarkup(container, root)!;
+      expect(markup.startsWith('<svg')).toBe(true);
+      expect(markup).toContain('node:widget'); // the widget node's own mark
+      expect(markup).not.toContain('elkcontainer');
+    }
+    await rendered(); // let any insert hook of the detached render run
+    expect(widgetManager.create_view).toHaveBeenCalledTimes(1);
+    expect(document.querySelectorAll('.elkcontainer').length).toBe(containers);
+    expect(collected()).toBe(0);
   });
 });
