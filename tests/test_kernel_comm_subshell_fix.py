@@ -150,7 +150,7 @@ def test_no_op_without_last_send_routing():
 
 
 @NEEDS_FIX
-def test_patch_keeps_request_routing_and_honours_the_client():
+def test_patch_keeps_request_routing_and_honors_the_client():
     class Comm(FakeComm):
         pass
 
@@ -217,7 +217,7 @@ def test_kernel_dispatches_where_the_client_addressed(tmp_path):
 
 @NEEDS_FIX
 def test_kernel_without_the_fix_leaks_the_inner_idle(tmp_path):
-    """The ipykernel 7.4 behaviour the fix exists for.
+    """The ipykernel 7.4 behavior the fix exists for.
 
     If this fails after an ipykernel upgrade, ipykernel may dispatch where the client
     addressed again, and ``scripts/kernel_comm_subshell_fix.py`` may be obsolete.
@@ -225,8 +225,8 @@ def test_kernel_without_the_fix_leaks_the_inner_idle(tmp_path):
     events, threads, errors = run_kernel_probe(tmp_path, fixed=False)
     assert threads["a1"] == "MainThread", (threads, events, errors)
     assert threads["b1"].startswith("subshell-"), (threads, events, errors)
-    # b's idle goes out while the Output's last published msg_id, the page's hook
-    # target, is still b's: whichever message published it
+    # the idle of `b` goes out while the Output's last published msg_id, the page's
+    # hook target, is still that of `b`: whichever message published it
     order = events["order"]
     before_idle = order[: order.index("b1: status idle")]
     captures = [e for e in before_idle if "out.msg_id" in e]

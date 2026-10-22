@@ -13,7 +13,7 @@ can run on two threads at once.
 ipywidgets' ``interact`` wraps every call in ``with out:``. With two such blocks
 open on two threads, the inner one's exit does not clear the Output's ``msg_id``
 (the outer still holds the count), so the inner message's ``status: idle`` reaches
-the page while jupyterlab-manager's Output hook is still registered on it. The hook
+the page while the Output hook of JupyterLab's widget manager is still registered on it. The hook
 swallows the idle, ipywidgets' per-model throttle (``_pending_msgs``) never
 releases, and that widget never sends again: the kernel's slider values lag the
 browser's for good (#232).
@@ -39,7 +39,7 @@ def request_id_of(data):
 
 
 def patch_reply_subshell_for(comm_cls):
-    """Make ``comm_cls`` honour the client's ``subshell_id`` unless a request matches.
+    """Make ``comm_cls`` honor the client's ``subshell_id`` unless a request matches.
 
     Return ``False`` and change nothing when ``comm_cls`` does not route by last send.
     """
