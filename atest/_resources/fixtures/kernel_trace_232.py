@@ -33,7 +33,7 @@ def _install():
         return
     out = pathlib.Path(ipythondir).parent / "kernel-trace"
     out.mkdir(parents=True, exist_ok=True)
-    trace = (out / f"{os.getpid()}.log").open("a", buffering=1, encoding="utf-8")  # noqa: SIM115
+    trace = (out / f"{os.getpid()}.log").open("a", buffering=1, encoding="utf-8")
 
     def task_id():
         try:
