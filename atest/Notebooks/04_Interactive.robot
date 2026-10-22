@@ -83,11 +83,14 @@ ${JS DUMP MSGS}
     ...    screen=00-probe.png
     Set Test Variable    ${SOURCES SEEN}    ${0}
     Diagram Should Converge    00
-    Burst Sliders And Converge    01    ARROW_RIGHT    7    number_of_nodes    ARROW_RIGHT
-    Burst Sliders And Converge    02    ARROW_LEFT    14    number_of_nodes    ARROW_LEFT
-    Burst Sliders And Converge    03    ARROW_RIGHT    11    percent_of_edges    ARROW_LEFT
-    Burst Sliders And Converge    04    ARROW_LEFT    6    number_of_nodes    ARROW_LEFT
-    Burst Sliders And Converge    05    ARROW_RIGHT    8
+    # gh-232 diagnostics: repeat the bursts to raise the odds of catching the lag
+    FOR    ${rep}    IN RANGE    4
+        Burst Sliders And Converge    ${rep}-01    ARROW_RIGHT    7    number_of_nodes    ARROW_RIGHT
+        Burst Sliders And Converge    ${rep}-02    ARROW_LEFT    14    number_of_nodes    ARROW_LEFT
+        Burst Sliders And Converge    ${rep}-03    ARROW_RIGHT    11    percent_of_edges    ARROW_LEFT
+        Burst Sliders And Converge    ${rep}-04    ARROW_LEFT    6    number_of_nodes    ARROW_LEFT
+        Burst Sliders And Converge    ${rep}-05    ARROW_RIGHT    8
+    END
 
 
 *** Keywords ***

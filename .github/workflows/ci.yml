@@ -182,7 +182,8 @@ jobs:
       fail-fast: false
       matrix:
         vm: [ubuntu-latest, windows-latest, macos-14, macos-latest]
-        task: [test, test-oldest]
+        # gh-232 diagnostics branch: only the jobs that show the lag
+        task: [test]
         exclude:
           - { vm: macos-14, task: test }
           - { vm: macos-latest, task: test-oldest }
@@ -241,7 +242,7 @@ jobs:
           # a literal block: prettier rewraps a folded (`>-`) one past 88 columns
           ATEST_ARGS: |-
             ${{ matrix.atest-args }}
-            ${{ (startsWith(matrix.vm, 'macos') && matrix.task == 'test') && '--skiponfailure gh:95' || '' }}
+            ${{ (startsWith(matrix.vm, 'macos') && matrix.task == 'test-never') && '--skiponfailure gh:95' || '' }}
         # a browser that dies mid-test (Firefox 128 ESR went out of memory after
         # a kernel restart in 02_Transformer) leaves geckodriver unreachable, and
         # the teardown then spends ~10 minutes per Selenium call on urllib3
