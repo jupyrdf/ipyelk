@@ -55,15 +55,18 @@ export class JLModelSource extends LocalModelSource {
   factory: SSymbolModelFactory;
   diagramWidget: any;
   /**
-   * Whether this view's renders skip elements outside its canvas.
+   * Whether this view's renders skip elements outside its canvas: the view's
+   * copy of the kernel's `Viewer.cull_offscreen` (#170).
    *
-   * Off: a diagram is fit to its canvas when it is laid out, so culling drops
-   * nothing on the usual path while costing an absolute-bounds walk per
-   * element, and it makes everything that reads the rendered SVG -- the
-   * exporter, the acceptance suites, anything scripting the DOM -- depend on
-   * where the diagram happens to be scrolled. Turning it on is #170, which
-   * owns the cost measurement (`scripts/bench_render.py` flips this flag) and
-   * the export path that a partial DOM needs.
+   * The node, label and edge views skip an element whose absolute bounds (an
+   * edge's route) miss the canvas, once the canvas size is known and never for
+   * the hidden render. Zoomed into a large diagram that saves most of a
+   * render and all of the style and layout work a change costs; where the
+   * whole diagram is on screen it adds a bounds walk per element, 5-8% of a
+   * render (`scripts/bench_render.py`). A node is skipped whole, with its
+   * ports and labels, even when an outside-placed label of it would still
+   * touch the canvas. The export does not read the live SVG, so it is whole
+   * either way (`export_render.ts`).
    */
   culling: boolean = false;
 

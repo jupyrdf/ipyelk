@@ -340,15 +340,16 @@ removed names][migration-removed-names] lists every name that raises
 
 #### Added
 
-- `Viewer.cull_offscreen` (default `True`): each view renders only the elements that
-  touch its canvas, so selecting, hovering and panning stay cheap on a large diagram
-  that is zoomed in (measured in a headless browser on a 1,000-node graph: a hover or a
-  pan costs 2 ms of render instead of 10 ms plus 8 ms of style and layout; on 5,000
-  nodes, 12 ms instead of 100 ms; at fit, where nothing is culled, the check costs under
-  1 ms per 1,000 nodes). The SVG in the page is then not the whole diagram when the view
-  is zoomed in. `Exporter` is unaffected: it renders its export from the model, so it is
-  complete at any zoom. Code that reads the browser DOM and needs every element there
-  can set it to `False` ([#170]).
+- `Viewer.cull_offscreen` (opt-in, default `False`): each view renders only the elements
+  that touch its canvas, so selecting, hovering and panning stay cheap on a large
+  diagram that is zoomed in. Measured in a headless browser: on a 1,000-node graph a
+  hover or a pan costs 2 ms of render instead of 10 ms plus 7 ms of style and layout; on
+  5,000 nodes, 12 ms instead of 100 ms; where the whole diagram is on screen, nothing is
+  culled and the check costs 5-8% of a render. The SVG in the page is then not the whole
+  diagram when the view is zoomed in, which is why it is opt-in: two acceptance suites
+  in this repository count the live DOM at 1:1 right after display. `Exporter` is
+  unaffected either way: it renders its export from the model, so it is complete at any
+  zoom ([#170]).
 - `Viewer.fit_on_first_layout` (default `False`) makes each view fit the whole diagram
   in the browser after its own first layout. `Viewer.fit()` is a message to the views
   that exist when it is sent, so a diagram displayed after it was laid out opened at 1:1
@@ -731,7 +732,7 @@ removed names][migration-removed-names] lists every name that raises
 
 ### `@jupyrdf/jupyter-elk 3.0.0-alpha0`
 
-- Cull what is off screen when the viewer's `cull_offscreen` is set (the default): the
+- Cull what is off screen when the viewer's `cull_offscreen` is set (an opt-in): the
   node, label and edge views skip an element whose absolute bounds (an edge's route)
   miss the canvas, once the canvas size is known and never for the hidden render. The
   flag is `JLModelSource.culling`, in place of the `CULLING_ENABLED` constant, and a

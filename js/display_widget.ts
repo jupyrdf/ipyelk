@@ -136,7 +136,7 @@ export class ELKViewerModel extends DOMWidgetModel {
       fit_on_first_layout: false,
       fit_padding: 0,
       fit_max_zoom: null,
-      cull_offscreen: true,
+      cull_offscreen: false,
     };
     return defaults;
   }
