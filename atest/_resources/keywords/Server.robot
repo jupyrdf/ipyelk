@@ -154,6 +154,10 @@ Create ATest Kernel Startup
     # error in a later startup file cannot skip it
     Copy File    ${ROOT}${/}scripts${/}kernel_shell_reply_fix.py
     ...    ${startup_dir}${/}00-shell-reply-fix.py
+    # ipykernel >= 7.4 dispatches a widget message on the thread of the kernel's last
+    # send on that comm, not the subshell JupyterLab 4.6 addressed (#232)
+    Copy File    ${ROOT}${/}scripts${/}kernel_comm_subshell_fix.py
+    ...    ${startup_dir}${/}00-comm-subshell-fix.py
     # gh-232 diagnostics: trace shell dispatch and status publishes per kernel
     Copy File    ${FIXTURES}${/}kernel_trace_232.py
     ...    ${startup_dir}${/}02-kernel-trace-232.py
