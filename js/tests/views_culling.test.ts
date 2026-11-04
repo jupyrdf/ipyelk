@@ -14,7 +14,7 @@ import { ElkModelRenderer } from '../sprotty/renderer';
 import { ElkEdge, ElkJunction, ElkLabel, ElkNode } from '../sprotty/sprotty-model';
 import { CullingContext } from '../sprotty/views/base';
 import { ElkEdgeView, JunctionView } from '../sprotty/views/edge_views';
-import { ElkLabelView, ElkNodeView } from '../sprotty/views/node_views';
+import { ElkLabelView, ElkNodeView, ElkPortView } from '../sprotty/views/node_views';
 
 // The views consult `isVisible` before drawing (#170 item 3): a mutation that
 // drops those calls must fail here, not only in the predicate's own tests.
@@ -112,6 +112,27 @@ describe('ElkNodeView', () => {
       expect(view.render(n, ON)).toBeUndefined();
     },
   );
+
+  it('retains the node and port ancestors of an on-screen port label', () => {
+    const n = node({ x: -40, y: 100 });
+    const port = new SPortImpl();
+    port.id = 'port';
+    port.position = { x: 10, y: 0 };
+    port.size = { width: 8, height: 8 };
+    n.add(port);
+    const text = new ElkLabel();
+    text.id = 'port.label';
+    text.position = { x: 40, y: 0 };
+    text.size = { width: 60, height: 14 };
+    port.add(text);
+    const view = new ElkNodeView();
+    const portView = new ElkPortView();
+    expect(view.render(n, ON)).toBeDefined();
+    expect(portView.isVisible(port, ON)).toBe(true);
+    text.position = { x: -100, y: 0 };
+    expect(view.render(n, ON)).toBeUndefined();
+    expect(portView.isVisible(port, ON)).toBe(false);
+  });
 
   it('draws an off-screen node while culling is off, or for the hidden render', () => {
     const view = new ElkNodeView();

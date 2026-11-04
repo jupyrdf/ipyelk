@@ -81,15 +81,15 @@ export abstract class ShapeView implements IView {
     if (intersectsCanvas(getAbsoluteBounds(model), canvasBounds)) {
       return true;
     }
-    // A node owns its ports and labels: dropping the group would also drop
-    // children that extend into the canvas beyond the node's own bounds.
+    // Nodes and ports own their labels: dropping an ancestor group would
+    // also drop a label that extends into the canvas. Traverse decorations
+    // only; child nodes remain bounded by the compound node layout.
     return (
-      model instanceof SNodeImpl &&
+      (model instanceof SNodeImpl || model instanceof SPortImpl) &&
       model.children.some(
         (child) =>
           (child instanceof SPortImpl || child instanceof SLabelImpl) &&
-          (!Dimension.isValid(child.bounds) ||
-            intersectsCanvas(getAbsoluteBounds(child), canvasBounds)),
+          this.isVisible(child, context),
       )
     );
   }
