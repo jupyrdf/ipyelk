@@ -300,6 +300,9 @@ export class ElkModelRenderer extends ModelRenderer {
     node: ElkNode,
     visible: boolean,
   ) {
+    if (this.targetKind === 'hidden') {
+      return;
+    }
     this.widgets[node.id] = await this.wrapJLWidget(vnode, node, visible);
   }
 

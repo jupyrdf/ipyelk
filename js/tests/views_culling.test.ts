@@ -8,12 +8,12 @@ import { describe, expect, it } from 'vitest';
 
 import { Point } from 'sprotty-protocol';
 
-import { SGraphImpl } from 'sprotty';
+import { SGraphImpl, SPortImpl } from 'sprotty';
 
 import { ElkModelRenderer } from '../sprotty/renderer';
-import { ElkEdge, ElkLabel, ElkNode } from '../sprotty/sprotty-model';
+import { ElkEdge, ElkJunction, ElkLabel, ElkNode } from '../sprotty/sprotty-model';
 import { CullingContext } from '../sprotty/views/base';
-import { ElkEdgeView } from '../sprotty/views/edge_views';
+import { ElkEdgeView, JunctionView } from '../sprotty/views/edge_views';
 import { ElkLabelView, ElkNodeView } from '../sprotty/views/node_views';
 
 // The views consult `isVisible` before drawing (#170 item 3): a mutation that
@@ -97,6 +97,22 @@ describe('ElkNodeView', () => {
     expect(view.render(node(OFF_SCREEN), ON)).toBeUndefined();
   });
 
+  it.each(['label', 'port'])(
+    'retains an off-screen node with an on-screen %s',
+    (kind) => {
+      const n = node({ x: -40, y: 100 });
+      const child = kind === 'label' ? new ElkLabel() : new SPortImpl();
+      child.id = 'outside';
+      child.position = { x: 42, y: 0 };
+      child.size = { width: 60, height: 14 };
+      n.add(child);
+      const view = new ElkNodeView();
+      expect(view.render(n, ON)).toBeDefined();
+      child.position = { x: -100, y: 0 };
+      expect(view.render(n, ON)).toBeUndefined();
+    },
+  );
+
   it('draws an off-screen node while culling is off, or for the hidden render', () => {
     const view = new ElkNodeView();
     expect(view.render(node(OFF_SCREEN), OFF)).toBeDefined();
@@ -152,5 +168,21 @@ describe('ElkEdgeView', () => {
     const vnode = off.view.render(off.edge, ON);
     expect(vnode?.sel).toBe('g');
     expect(classes(vnode)).not.toContain('elkedge');
+  });
+});
+
+describe('JunctionView', () => {
+  it('culls junctions only outside the canvas in the main render', () => {
+    const junction = new ElkJunction();
+    junction.id = 'junction';
+    junction.size = { width: 4, height: 4 };
+    junction.position = OFF_SCREEN;
+    root().add(junction);
+    const view = new JunctionView();
+    expect(view.render(junction, ON)).toBeUndefined();
+    expect(view.render(junction, OFF)).toBeDefined();
+    expect(view.render(junction, HIDDEN)).toBeDefined();
+    junction.position = ON_SCREEN;
+    expect(view.render(junction, ON)).toBeDefined();
   });
 });

@@ -62,5 +62,10 @@ export function exportMarkup(
   const patcher = container.get<PatcherProvider>(TYPES.PatcherProvider).patcher;
   const patched = patcher(document.createElement('div'), html('div', {}, graph));
   const svg = (patched.elm as Element | undefined)?.querySelector('svg');
+  // Hover belongs to the pointer, not the saved diagram. Keep selection, but
+  // never freeze a transient hover when the exporter skips hover-only updates.
+  svg?.querySelectorAll('.mouseover').forEach((element) => {
+    element.classList.remove('mouseover');
+  });
   return svg == null ? null : svg.outerHTML;
 }

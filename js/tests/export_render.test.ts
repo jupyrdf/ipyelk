@@ -220,11 +220,21 @@ describe('culling and the export', () => {
     expect(live('.elknode.mouseover')).toBe(1);
     // the export carries the selection, which the kernel also knows, as before
     expect(count(exportMarkup(container, root)!, 'selected')).toBe(1);
+    expect(count(exportMarkup(container, root)!, 'mouseover')).toBe(0);
+    expect(live('.elknode.mouseover')).toBe(1);
     expect(update).toHaveBeenCalledTimes(2);
   });
 
   it("attaches no widget for an export, and leaves sprotty's hidden pipeline alone", async () => {
+    await dispatcher.dispatch(
+      SelectAction.create({ selectedElementsIDs: ['n0'], deselectedElementsIDs: [] }),
+    );
+    source.control_overlay = {
+      model_id: 'controls',
+      get: () => [{ model_id: 'button' }],
+    } as any;
     const root = await rendered();
+    const getModelCalls = widgetManager.get_model.mock.calls.length;
     // the live render attached the widget node's JupyterLab widget once
     expect(widgetManager.create_view).toHaveBeenCalledTimes(1);
     const containers = document.querySelectorAll('.elkcontainer').length;
@@ -240,10 +250,12 @@ describe('culling and the export', () => {
       expect(markup.startsWith('<svg')).toBe(true);
       expect(markup).toContain('node:widget'); // the widget node's own mark
       expect(markup).not.toContain('elkcontainer');
+      expect(markup).not.toContain('_entropy');
     }
     await rendered(); // let any insert hook of the detached render run
     expect(widgetManager.create_view).toHaveBeenCalledTimes(1);
     expect(document.querySelectorAll('.elkcontainer').length).toBe(containers);
     expect(collected()).toBe(0);
+    expect(widgetManager.get_model).toHaveBeenCalledTimes(getModelCalls);
   });
 });

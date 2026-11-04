@@ -10,6 +10,7 @@ import {
   IViewArgs,
   InternalBoundsAware,
   SChildElementImpl,
+  SLabelImpl,
   SNodeImpl,
   SPortImpl,
   SShapeElementImpl,
@@ -77,7 +78,20 @@ export abstract class ShapeView implements IView {
       return true;
     }
 
-    return intersectsCanvas(getAbsoluteBounds(model), canvasBounds);
+    if (intersectsCanvas(getAbsoluteBounds(model), canvasBounds)) {
+      return true;
+    }
+    // A node owns its ports and labels: dropping the group would also drop
+    // children that extend into the canvas beyond the node's own bounds.
+    return (
+      model instanceof SNodeImpl &&
+      model.children.some(
+        (child) =>
+          (child instanceof SPortImpl || child instanceof SLabelImpl) &&
+          (!Dimension.isValid(child.bounds) ||
+            intersectsCanvas(getAbsoluteBounds(child), canvasBounds)),
+      )
+    );
   }
 
   abstract render(

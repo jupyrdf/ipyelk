@@ -354,7 +354,7 @@ export class ELKViewerView extends DOMWidgetView {
    * change re-renders the current model.
    */
   updateCulling() {
-    const culling = this.model.get('cull_offscreen') !== false;
+    const culling = this.model.get('cull_offscreen') === true;
     if (this.source.culling === culling) {
       return;
     }

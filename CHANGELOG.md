@@ -398,7 +398,6 @@ removed names][migration-removed-names] lists every name that raises
   view leaves out labels under 3 pixels tall on screen, so a diagram exported while
   fitted at a low zoom (any diagram of a few hundred nodes) had no labels. The export is
   now rendered from the model, at no level of detail and with nothing culled ([#170]).
-
 - PyPI shows the license: the wheel and the source distribution declare
   `License-Expression: BSD-3-Clause AND EPL-1.0 AND EPL-2.0` (PEP 639), because the
   package contains code under each of these licenses, and list `LICENSE.txt`,

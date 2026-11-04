@@ -5,7 +5,7 @@
 import { WidgetModel, WidgetView } from '@jupyter-widgets/base';
 import { unpack_models as deserialize } from '@jupyter-widgets/base';
 
-import { ELKViewerModel, ELKViewerView } from './display_widget';
+import { DiagramUpdate, ELKViewerModel, ELKViewerView } from './display_widget';
 import { ELK_DEBUG, NAME, VERSION } from './tokens';
 
 import elkRawCSS from '!!raw-loader!../style/diagram.css';
@@ -204,7 +204,7 @@ export class ELKExporterModel extends WidgetModel {
    * passes why it fired: hover feedback is transient and fires on every pointer
    * move, so it is not worth a render of the whole diagram.
    */
-  _schedule_update(_sender?: unknown, reason?: unknown) {
+  _schedule_update(_sender?: ELKViewerModel, reason?: DiagramUpdate) {
     if (!this.enabled || reason === 'hover') {
       return;
     }

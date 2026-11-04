@@ -63,9 +63,9 @@ export class JLModelSource extends LocalModelSource {
    * the hidden render. Zoomed into a large diagram that saves most of a
    * render and all of the style and layout work a change costs; where the
    * whole diagram is on screen it adds a bounds walk per element, 5-8% of a
-   * render (`scripts/bench_render.py`). A node is skipped whole, with its
-   * ports and labels, even when an outside-placed label of it would still
-   * touch the canvas. The export does not read the live SVG, so it is whole
+   * render (`scripts/bench_render.py`). A node stays visible while any of its
+   * direct ports or labels touches the canvas. The export does not read the
+   * live SVG, so it is whole
    * either way (`export_render.ts`).
    */
   culling: boolean = false;

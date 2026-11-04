@@ -35,7 +35,10 @@ import { coveredRoutePoints, routeEndAngle, symbolReach } from './edge_views_uti
 
 @injectable()
 export class JunctionView extends CircularNodeView {
-  render(node: ElkJunction, context: ElkModelRenderer): VNode {
+  render(node: ElkJunction, context: ElkModelRenderer): VNode | undefined {
+    if (!this.isVisible(node, context)) {
+      return undefined;
+    }
     const radius = this.getRadius(node);
     return (
       <g>
