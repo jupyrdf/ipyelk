@@ -14,6 +14,8 @@ import jsonschema
 import pytest
 from ipywidgets import IntSlider
 from pydantic import (
+    BaseModel,
+    ConfigDict,
     Field,
     PlainSerializer,
     PydanticUserError,
@@ -462,3 +464,58 @@ def test_the_payload_writes_json_as_its_class_does(json_classes):
     shape = shapes.NodeShape(type="node:stamped", use=5)
     assert shape.model_dump()["use"] == 5
     assert shape.model_dump(mode="json")["use"] == "5"
+
+
+def test_payload_class_config_allows_arbitrary_types(json_classes):
+    class Box(shapes.NodeShape):
+        type: str = "node:box"
+        use: IntSlider | None = None
+        model_config = ConfigDict(arbitrary_types_allowed=True)
+
+    assert shapes.NodeShape(type="node:box").model_dump()["use"] is None
+    slider = IntSlider()
+    try:
+        shape = shapes.NodeShape(type="node:box", use=slider)
+        assert shape.use is slider
+        assert shape.model_dump()["use"] is slider
+        with pytest.raises(ValidationError):
+            shapes.NodeShape(type="node:box", use="invalid")
+    finally:
+        slider.close()
+
+
+def test_payload_class_config_applies_constraints(json_classes):
+    class Stripped(shapes.NodeShape):
+        type: str = "node:stripped"
+        use: shapes.SymbolId
+        model_config = ConfigDict(str_strip_whitespace=True)
+
+    for cls in (Stripped, shapes.NodeShape):
+        with pytest.raises(ValidationError, match="string_too_short"):
+            cls(type="node:stripped", use="  ")
+        assert cls(type="node:stripped", use="  star  ").use == "star"
+
+
+def test_model_payload_keeps_its_own_config(json_classes):
+    class Payload(BaseModel):
+        model_config = ConfigDict(str_strip_whitespace=True)
+        name: str
+
+    class Box(shapes.NodeShape):
+        type: str = "node:model-box"
+        use: Payload
+
+    shape = shapes.NodeShape(type="node:model-box", use={"name": "  star  "})
+    assert shape.model_dump()["use"] == {"name": "star"}
+
+
+def test_invalid_type_assignment_reports_type_first():
+    shape = shapes.ElementShape(use="abc")
+    with pytest.raises(ValidationError) as info:
+        shape.type = "node:comment"
+    assert info.value.errors()[0]["loc"] == ("type",)
+    assert "Unexpected Subtype" in str(info.value)
+
+
+def test_complete_payload_adapter_is_cached():
+    assert shapes.payload_type(shapes.Comment) is shapes.payload_type(shapes.Comment)

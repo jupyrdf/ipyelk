@@ -62,7 +62,7 @@ renderer limits the notch to the width and the height of the node. A string of a
 which ipyelk 2.x wrote, loads as the number.
 
 A `NodeShape`, `PortShape`, `LabelShape` or `ElementShape` with the type string of
-another class gives `use` the type of that class: its annotation and constraints, but
+another class gives `use` the type of that class: its annotation, constraints and model configuration, but
 not a `field_validator` of the class. It writes `use` as that class does. So
 `NodeShape(type="node:comment", use="abc")` raises a `ValidationError`, as
 `Comment(use="abc")` does, and `NodeShape(type="node:comment", use="20").use` is `20.0`.
@@ -288,3 +288,7 @@ renderer, which has no shape class.
 .. autoclass:: NodeShape
 .. autoclass:: Point
 ```
+
+When assigning `type` on a shape subclass, payload validation uses a temporary copy.
+Its `model_post_init` runs on that copy, and `mode="after"` model validators run on
+both the copy and the original shape. Subclass hooks should allow these extra calls.

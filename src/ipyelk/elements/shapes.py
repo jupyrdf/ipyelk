@@ -18,6 +18,7 @@ from pydantic import (
     BeforeValidator,
     ConfigDict,
     Field,
+    PydanticUserError,
     SerializationInfo,
     SerializerFunctionWrapHandler,
     TypeAdapter,
@@ -185,9 +186,16 @@ def payload_type(cls: type[BaseShape]) -> TypeAdapter:
 
 def new_payload_type(cls: type[BaseShape]) -> TypeAdapter:
     field = cls.model_fields["use"]
-    if not field.metadata:
-        return TypeAdapter(field.annotation)
-    return TypeAdapter(Annotated[(field.annotation, *field.metadata)])
+    payload = field.annotation
+    if field.metadata:
+        payload = Annotated[(payload, *field.metadata)]
+    try:
+        return TypeAdapter(payload, config=cls.model_config)
+    except PydanticUserError as error:
+        # Models, dataclasses and TypedDicts use their own configuration.
+        if error.code != "type-adapter-config-unused":
+            raise
+        return TypeAdapter(payload)
 
 
 cached_payload_type = functools.cache(new_payload_type)
@@ -307,7 +315,11 @@ class ElementShape(BaseShape):
     def use_of_new_type(cls, data, info: ValidationInfo):
         """Validate ``use`` again when ``type`` is assigned."""
         # an assignment validates only its own field, but the type selects the payload
-        if info.field_name == "type" and isinstance(data, dict):
+        if (
+            info.field_name == "type"
+            and isinstance(data, dict)
+            and data.get("type") in cls.valid_subtypes()
+        ):
             # on a copy, so its `model_post_init` and `mode="after"` hooks run on it too
             shape = cls.model_construct(**data)
             cls.__pydantic_validator__.validate_assignment(shape, "use", shape.use)
