@@ -234,6 +234,8 @@ describe('culling and the export', () => {
       get: () => [{ model_id: 'button' }],
     } as any;
     const root = await rendered();
+    // The view normally records the selected ids on the model source.
+    source.selectedNodes = [{ id: 'n0' }];
     const getModelCalls = widgetManager.get_model.mock.calls.length;
     // the live render attached the widget node's JupyterLab widget once
     expect(widgetManager.create_view).toHaveBeenCalledTimes(1);
