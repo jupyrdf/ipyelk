@@ -62,9 +62,9 @@ renderer limits the notch to the width and the height of the node. A string of a
 which ipyelk 2.x wrote, loads as the number.
 
 A `NodeShape`, `PortShape`, `LabelShape` or `ElementShape` with the type string of
-another class gives `use` the type of that class: its annotation, constraints and model configuration, but
-not a `field_validator` of the class. It writes `use` as that class does. So
-`NodeShape(type="node:comment", use="abc")` raises a `ValidationError`, as
+another class gives `use` the type of that class: its annotation, constraints and model
+configuration, but not a `field_validator` of the class. It writes `use` as that class
+does. So `NodeShape(type="node:comment", use="abc")` raises a `ValidationError`, as
 `Comment(use="abc")` does, and `NodeShape(type="node:comment", use="20").use` is `20.0`.
 A type string whose class requires `use`, such as `node:path`, requires it here too. The
 JSON leaves out a `use` of `None`, so a `node:comment` shape with no `use` draws the
@@ -289,6 +289,6 @@ renderer, which has no shape class.
 .. autoclass:: Point
 ```
 
-When assigning `type` on a shape subclass, payload validation uses a temporary copy.
-Its `model_post_init` runs on that copy, and `mode="after"` model validators run on
-both the copy and the original shape. Subclass hooks should allow these extra calls.
+When assigning `type` on a shape subclass, payload validation uses a temporary copy. Its
+`model_post_init` runs on that copy, and `mode="after"` model validators run on both the
+copy and the original shape. Subclass hooks should allow these extra calls.
