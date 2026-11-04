@@ -723,7 +723,7 @@ __metadata:
     "@types/lodash": ^4.14.162
     "@types/node": ^22.8.6
     elkjs: 0.12.0
-    happy-dom: 20.14.5
+    happy-dom: 21.0.4
     inversify: 6.2.2
     nyc: ^17.1.0
     prettier: ^3.3.0
@@ -4024,9 +4024,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"happy-dom@npm:20.14.5":
-  version: 20.14.5
-  resolution: "happy-dom@npm:20.14.5"
+"happy-dom@npm:21.0.4":
+  version: 21.0.4
+  resolution: "happy-dom@npm:21.0.4"
   dependencies:
     "@types/node": ">=20.0.0"
     "@types/whatwg-mimetype": ^3.0.2
@@ -4035,7 +4035,7 @@ __metadata:
     entities: ^7.0.1
     whatwg-mimetype: ^3.0.0
     ws: ^8.21.0
-  checksum: 62b3f893a28de9184cd988faff57570c94364816087fda1e821ac422f45e4ab0496df1bfeb03a46e9fc31f47a0d833cad397faa469e64b1275a286c4ad46aea8
+  checksum: 36807bb77175bc8607d0aa0c7fcaffc41f7b0d7659796c01ce140c9b732a8fa5a500186e619e522546875d3bafb22d00abb0607d087c0f457738cb0176f380d2
   languageName: node
   linkType: hard
 
