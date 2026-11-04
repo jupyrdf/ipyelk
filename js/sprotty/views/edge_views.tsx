@@ -35,7 +35,10 @@ import { coveredRoutePoints, routeEndAngle, symbolReach } from './edge_views_uti
 
 @injectable()
 export class JunctionView extends CircularNodeView {
-  render(node: ElkJunction, context: ElkModelRenderer): VNode {
+  render(node: ElkJunction, context: ElkModelRenderer): VNode | undefined {
+    if (!this.isVisible(node, context)) {
+      return undefined;
+    }
     const radius = this.getRadius(node);
     return (
       <g>
@@ -56,17 +59,12 @@ export class ElkEdgeView extends PolylineEdgeView {
     route: Point[],
     context: ElkModelRenderer,
   ): boolean {
-    if (context.targetKind === 'hidden') {
-      // Don't hide any element for hidden rendering
+    const canvasBounds = model.root.canvasBounds;
+    if (!shouldCull(context, canvasBounds)) {
       return true;
     }
     if (route.length === 0) {
       // We should hide only if we know the element's route
-      return true;
-    }
-
-    const canvasBounds = model.root.canvasBounds;
-    if (!shouldCull(canvasBounds)) {
       return true;
     }
     return intersectsCanvas(getAbsoluteRouteBounds(model, route), canvasBounds);

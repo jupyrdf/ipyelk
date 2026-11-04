@@ -1,0 +1,13 @@
+{
+  "compilerOptions": {
+    "composite": false,
+    "declaration": false,
+    "incremental": false,
+    "noEmit": true,
+    "moduleResolution": "bundler",
+    "rootDir": "../..",
+    "types": ["node", "vite/client"]
+  },
+  "extends": "../../tsconfigbase.json",
+  "include": ["./*.ts", "./*.mts"]
+}
