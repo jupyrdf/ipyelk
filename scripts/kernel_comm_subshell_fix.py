@@ -20,7 +20,15 @@ and that widget never sends again: the kernel's slider values lag the browser's 
 
 This startup file keeps the routing for answers to requests the kernel sent (they
 carry ``content.id``) and otherwise dispatches a comm message where the client
-addressed it, as ipykernel 7.3 did. It does nothing on ipykernel 7.3 or older.
+addressed it, as ipykernel 7.3 did. It also avoids routing subshell-addressed
+updates onto a busy main shell while a cell awaits: ipykernel 7.4's concurrent
+main-shell dispatch publishes no busy/idle, which also wedges the widget throttle.
+This is a robot-test-only workaround, not part of installed ipyelk or user kernels.
+It applies only to ipykernel 7.4; newer versions require revalidation before use.
+Track routing changes in https://github.com/ipython/ipykernel/pull/1565 and
+https://github.com/jupyterlab/jupyterlab/issues/19719. Remove this file only when
+both unfixed-kernel canaries demonstrate upstream fixes for routing and async-cell
+status, and the fixed tests still pass without the startup file.
 """
 
 
@@ -65,9 +73,19 @@ def patch_reply_subshell_for(comm_cls):
 
 
 def _install():
+    import sys
+
     try:
+        from ipykernel import version_info
         from ipykernel.comm.comm import BaseComm
     except ImportError:
+        return
+    if version_info[:2] != (7, 4):
+        if version_info[:2] > (7, 4):
+            print(
+                "kernel_comm_subshell_fix: not applied, revalidate comm routing",
+                file=sys.__stderr__,
+            )
         return
     patch_reply_subshell_for(BaseComm)
 

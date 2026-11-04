@@ -19,6 +19,7 @@ order, each idle after its reset.
 import importlib.util
 import json
 import os
+import runpy
 import subprocess
 import sys
 import threading
@@ -54,7 +55,7 @@ try:
         if reply["parent_header"].get("msg_id") == req["header"]["msg_id"]:
             subshell = reply["content"]["subshell_id"]
             break
-    kc.execute(
+    setup_id = kc.execute(
         "import ipywidgets as W, threading, time\\n"
         "calls = []\\n"
         "@W.interact(a=W.IntSlider(0, 0, 9, continuous_update=False),"
@@ -62,19 +63,25 @@ try:
         "def f(a, b):\\n"
         "    calls.append((a, b, threading.current_thread().name))\\n"
         "    if (a, b) == (1, 1):\\n"
+        "        print('slow call started', flush=True)\\n"
         "        time.sleep(0.5)  # keeps its `with out:` open\\n"
     )
 
-    def drain(seconds):
-        out, deadline = [], time.time() + seconds
-        while time.time() < deadline:
-            try:
-                out.append(kc.get_iopub_msg(timeout=0.1))
-            except Exception:
-                pass
-        return out
+    def until(predicate):
+        out, deadline = [], time.monotonic() + 30
+        while time.monotonic() < deadline:
+            m = kc.get_iopub_msg(timeout=30)
+            out.append(m)
+            if predicate(m):
+                return out
+        raise TimeoutError("IOPub event did not arrive")
 
-    msgs = drain(3)
+    def idle(msg_id):
+        return lambda m: (m["parent_header"].get("msg_id") == msg_id
+                          and m["msg_type"] == "status"
+                          and m["content"]["execution_state"] == "idle")
+
+    msgs = until(idle(setup_id))
     a, b = [
         m["content"]["comm_id"]
         for m in msgs
@@ -112,13 +119,21 @@ try:
         return out
 
     # prime b: its first update runs on the main shell and its echo records the subshell
-    events(drain(1.5), {"b0": send(b, 1)})
+    prime = send(b, 1)
+    until(idle(prime))
     ids = {"a1": send(a, 1)}
-    time.sleep(0.05)
+    msgs = until(lambda m: m["msg_type"] == "stream"
+                 and "slow call started" in m["content"]["text"])
     ids["b1"] = send(b, 2)
-    result = {"events": events(drain(2.5), ids)}
-    kc.execute("import json; print(json.dumps(calls))")
-    for m in drain(3):
+    pending = set(ids.values())
+    def both_idle(m):
+        if m["msg_type"] == "status" and m["content"]["execution_state"] == "idle":
+            pending.discard(m["parent_header"].get("msg_id"))
+        return not pending
+    msgs += until(both_idle)
+    result = {"events": events(msgs, ids)}
+    read_id = kc.execute("import json; print(json.dumps(calls))")
+    for m in until(idle(read_id)):
         if m["msg_type"] == "stream" and m["content"]["text"].startswith("[["):
             result["threads"] = {f"{a}{b}": t for a, b, t in json.loads(m["content"]["text"])}
     print(json.dumps(result))
@@ -161,6 +176,7 @@ def test_patch_keeps_request_routing_and_honors_the_client():
     assert comm._reply_subshell_for(request, "addressed") == "subshell-of-the-request"
     assert comm._reply_subshell_ids == {}
     assert comm._reply_subshell_for(request, "addressed") == "addressed"
+    assert comm._reply_subshell_for({"content": {"id": 42}}, "addressed") == "addressed"
     update = {"method": "update", "state": {"value": 1}, "buffer_paths": []}
     assert comm._reply_subshell_for(update, "addressed") == "addressed"
     assert comm._reply_subshell_for(update, None) is None
@@ -248,3 +264,120 @@ def test_kernel_without_the_fix_leaks_the_inner_idle(tmp_path):
     before_idle = order[: order.index("b1: status idle")]
     captures = [e for e in before_idle if "out.msg_id" in e]
     assert captures[-1] == "b1: out.msg_id = b1", (order, errors)
+
+
+ASYNC_PROBE = """
+import json
+from jupyter_client.manager import start_new_kernel
+
+km, kc = start_new_kernel(startup_timeout=60)
+try:
+    def collect(msg_id):
+        out = []
+        while True:
+            m = kc.get_iopub_msg(timeout=30)
+            out.append(m)
+            if (m["parent_header"].get("msg_id") == msg_id
+                and m["msg_type"] == "status"
+                and m["content"]["execution_state"] == "idle"):
+                return out
+
+    req = kc.session.msg("create_subshell_request", {})
+    kc.control_channel.send(req)
+    while True:
+        reply = kc.get_control_msg(timeout=30)
+        if reply["parent_header"].get("msg_id") == req["header"]["msg_id"]:
+            subshell = reply["content"]["subshell_id"]
+            break
+    msgs = collect(kc.execute(
+        "import asyncio, threading, ipywidgets as W; slider = W.IntSlider(); display(slider)"
+    ))
+    comm_id = next(m["content"]["comm_id"] for m in msgs
+                   if m["msg_type"] == "comm_open"
+                   and m["content"]["data"].get("state", {}).get("_model_name") == "IntSliderModel")
+    cell = kc.execute("print('awaiting', flush=True); await asyncio.sleep(1)")
+    while True:
+        m = kc.get_iopub_msg(timeout=30)
+        if m["msg_type"] == "stream" and "awaiting" in m["content"]["text"]:
+            break
+    msg = kc.session.msg("comm_msg", {"comm_id": comm_id, "data": {
+        "method": "update", "state": {"value": 1}, "buffer_paths": []}})
+    if ADDRESSED:
+        msg["header"]["subshell_id"] = subshell
+    kc.shell_channel.send(msg)
+    msgs = collect(cell)
+    # A barrier on the addressed subshell ensures all its messages have finished.
+    barrier = kc.session.msg("execute_request", {"code": "pass", "silent": True,
+        "store_history": False, "user_expressions": {}, "allow_stdin": False,
+        "stop_on_error": True})
+    barrier["header"]["subshell_id"] = subshell
+    kc.shell_channel.send(barrier)
+    msgs += collect(barrier["header"]["msg_id"])
+    status = [m["content"]["execution_state"] for m in msgs
+              if m["parent_header"].get("msg_id") == msg["header"]["msg_id"]
+              and m["msg_type"] == "status"]
+    msgs = collect(kc.execute("print('value:', slider.value)"))
+    assert any('value: 1' in m["content"].get("text", "") for m in msgs), msgs
+    print(json.dumps(status))
+finally:
+    kc.stop_channels()
+    km.shutdown_kernel(now=True)
+"""
+
+
+@NEEDS_FIX
+@pytest.mark.parametrize(
+    ("fixed", "addressed", "expected"),
+    [
+        (False, True, []),
+        (False, False, []),
+        (True, True, ["busy", "idle"]),
+    ],
+)
+def test_async_cell_comm_status(tmp_path, fixed, addressed, expected):
+    """Canary: disabling subshell addressing alone cannot fix concurrent dispatch.
+
+    When stock ipykernel supplies status here, revalidate the workaround upstream.
+    """
+    startup = tmp_path / "profile_default" / "startup"
+    startup.mkdir(parents=True)
+    if fixed:
+        (startup / "00-comm-subshell-fix.py").write_text(SCRIPT.read_text())
+    env = {**os.environ, "IPYTHONDIR": str(tmp_path), "JUPYTER_PLATFORM_DIRS": "1"}
+    result = subprocess.run(
+        [sys.executable, "-c", f"ADDRESSED = {addressed!r}\n" + ASYNC_PROBE],
+        env=env,
+        capture_output=True,
+        text=True,
+        timeout=90,
+        check=False,
+    )
+    assert result.returncode == 0, result.stderr
+    assert json.loads(result.stdout.strip().splitlines()[-1]) == expected, result.stderr
+
+
+def test_startup_cleans_its_namespace():
+    namespace = runpy.run_path(str(SCRIPT), run_name="__main__")
+    assert (
+        not {
+            "_install",
+            "patch_reply_subshell_for",
+            "request_id_of",
+            "routes_by_last_send",
+        }
+        & namespace.keys()
+    )
+
+
+@pytest.mark.parametrize(
+    ("version", "warning"), [((7, 3, 0), False), ((7, 5, 0), True)]
+)
+def test_install_does_not_patch_other_versions(monkeypatch, capsys, version, warning):
+    monkeypatch.setattr(ipykernel, "version_info", version)
+    patched = []
+    monkeypatch.setattr(comm_subshell_fix, "patch_reply_subshell_for", patched.append)
+    # sys.__stderr__ intentionally bypasses IPython capture in a real kernel.
+    monkeypatch.setattr(sys, "__stderr__", sys.stderr)
+    comm_subshell_fix._install()
+    assert not patched
+    assert ("not applied" in capsys.readouterr().err) is warning
