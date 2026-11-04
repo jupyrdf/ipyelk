@@ -598,7 +598,9 @@ removed names][migration-removed-names] lists every name that raises
   does ([#153])
 - After you close the widget of a `Widget` shape, the next pipeline run no longer fails.
   Before, the serialization of the shape raised `AttributeError`, because a closed
-  widget has no `model_id`. The shape now writes the `model_id` that the widget had. ELK
+  widget has no `model_id`. The shape now writes the `model_id` that the widget had. The
+  frontend keeps its node mark without attaching a missing widget or raising a browser
+  error. ELK
   JSON loads it as a `NodeShape`, with a warning that names the `model_id`. If you give
   the shape a widget that is closed already, it writes no `model_id`, not the `model_id`
   of the widget it had before. An assignment of `widget` sets `use` to `None` ([#241])
