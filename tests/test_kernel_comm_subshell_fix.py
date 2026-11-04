@@ -337,7 +337,7 @@ finally:
 def test_async_cell_comm_status(tmp_path, fixed, addressed, expected):
     """Canary: disabling subshell addressing alone cannot fix concurrent dispatch.
 
-    When stock ipykernel supplies status here, revalidate the workaround upstream.
+    When stock ipykernel supplies status here, check the workaround against upstream.
     """
     startup = tmp_path / "profile_default" / "startup"
     startup.mkdir(parents=True)

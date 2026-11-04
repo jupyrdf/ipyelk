@@ -24,7 +24,7 @@ addressed it, as ipykernel 7.3 did. It also avoids routing subshell-addressed
 updates onto a busy main shell while a cell awaits: ipykernel 7.4's concurrent
 main-shell dispatch publishes no busy/idle, which also wedges the widget throttle.
 This is a robot-test-only workaround, not part of installed ipyelk or user kernels.
-It applies only to ipykernel 7.4; newer versions require revalidation before use.
+It applies only to ipykernel 7.4; newer versions require verification before use.
 Track routing changes in https://github.com/ipython/ipykernel/pull/1565 and
 https://github.com/jupyterlab/jupyterlab/issues/19719. Remove this file only when
 both unfixed-kernel canaries demonstrate upstream fixes for routing and async-cell
