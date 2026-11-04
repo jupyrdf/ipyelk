@@ -192,7 +192,7 @@ def new_payload_type(cls: type[BaseShape]) -> TypeAdapter:
     try:
         return TypeAdapter(payload, config=cls.model_config)
     except PydanticUserError as error:
-        # Models, dataclasses and TypedDicts use their own configuration.
+        # Some payload types define their own configuration.
         if error.code != "type-adapter-config-unused":
             raise
         return TypeAdapter(payload)

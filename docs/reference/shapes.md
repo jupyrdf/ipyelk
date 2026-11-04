@@ -290,5 +290,5 @@ renderer, which has no shape class.
 ```
 
 When assigning `type` on a shape subclass, payload validation uses a temporary copy. Its
-`model_post_init` runs on that copy, and `mode="after"` model validators run on both the
-copy and the original shape. Subclass hooks should allow these extra calls.
+`model_post_init` runs on that copy, and `model_validator(mode="after")` methods run on
+both the copy and the original shape. Subclass hooks should allow these extra calls.
