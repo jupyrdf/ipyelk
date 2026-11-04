@@ -318,6 +318,7 @@ class ElementShape(BaseShape):
         if (
             info.field_name == "type"
             and isinstance(data, dict)
+            and (data.get("type") is None or isinstance(data.get("type"), str))
             and data.get("type") in cls.valid_subtypes()
         ):
             # on a copy, so its `model_post_init` and `mode="after"` hooks run on it too

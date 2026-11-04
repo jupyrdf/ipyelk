@@ -519,3 +519,19 @@ def test_invalid_type_assignment_reports_type_first():
 
 def test_complete_payload_adapter_is_cached():
     assert shapes.payload_type(shapes.Comment) is shapes.payload_type(shapes.Comment)
+
+
+@pytest.mark.parametrize(
+    "cls", [shapes.NodeShape, shapes.PortShape, shapes.LabelShape, shapes.ElementShape]
+)
+@pytest.mark.parametrize("tag", [[], {}, 42])
+def test_invalid_type_assignment_keeps_validation_errors(cls, tag):
+    with pytest.raises(ValidationError) as constructed:
+        cls(type=tag)
+    assert constructed.value.errors()[0]["loc"] == ("type",)
+    shape = cls()
+    original = shape.type
+    with pytest.raises(ValidationError) as info:
+        shape.type = tag
+    assert info.value.errors()[0]["loc"] == ("type",)
+    assert shape.type == original
