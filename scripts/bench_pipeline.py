@@ -695,10 +695,7 @@ async def measure_case(shape: str, n: int, case: dict) -> None:
 
     case["burst"] = await burst(diagram)
 
-    # a fresh pipeline re-sizes every label, and the sizer stub cannot answer
-    # for a tree with hidden nodes (their edges would dangle in its reply)
-    for el in pipe.inlet.index.elements.elements.values():
-        el.properties.hidden = None
+    # a fresh pipeline measures every label again, with nodes still hidden (#246)
     case["replace"] = await replace(diagram)
     case["close"] = await close(root)
 

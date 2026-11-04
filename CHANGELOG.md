@@ -6,6 +6,22 @@
 
 ### `ipyelk 3.0.0a0`
 
+#### Known issues
+
+- With JupyterLab 4.6 and ipykernel 7.4, an `interact` slider can stop sending updates
+  to the kernel ([#232], [ipykernel#1565]). Set **Settings > Kernels > Comms over
+  subshells** (`commsOverSubshells`) to `disabled` to avoid concurrent slider callbacks.
+  Administrators can use
+  `{"@jupyterlab/apputils-extension:kernels-settings": {"commsOverSubshells": "disabled"}}`
+  in `overrides.json`. See
+  [the JupyterLab discussion](https://github.com/jupyterlab/jupyterlab/issues/19719). A
+  widget update during an awaiting cell (including `await diagram.refresh()`) can also
+  lose its idle status and stop sending updates. Disabling subshells does **not**
+  address that case; wait for the cell to finish before interacting. If a slider has
+  already stopped, restart the kernel and rerun the notebook. The startup workaround
+  below applies only to robot-test kernels, not installed ipyelk, examples,
+  documentation kernels, or user kernels.
+
 #### Breaking changes
 
 - Tools no longer replace the pipe's pending flow when they run. `Tool` merges its
@@ -141,6 +157,11 @@
   implement `run()` reject `trigger()`, and closed `ToolButton`s reject button callbacks
   with `ClosedError`, including tools closed with their diagram. Closing a diagram twice
   still does nothing ([#197]).
+- Raise on four more assignments to a closed widget. Setting `Diagram.layout` or
+  `Diagram.children` on a closed `Diagram`, or `Pipeline.inlet` or `Pipeline.outlet` on
+  a closed `Pipeline`, raises `ClosedError` with the same message as the other traits.
+  These assignments did not raise. A closed widget has no comm, so the browser did not
+  show the change ([#198]).
 - A closed tool names its class in the `ClosedError` from `trigger()` and button clicks,
   as a closed diagram or pipe does: "ToggleCollapsedTool is closed and cannot run; build
   a new ToggleCollapsedTool". It used to say "use a new tool". `Tool.closed` says
@@ -153,7 +174,9 @@
   and `NotUniqueError`, naming the roots, when more than one node has none. It used to
   fail an `assert` with the message "Multiple roots" for no root, and to take the first
   of several roots without a word, so the checks skipped the other trees
-  ([#217](https://github.com/jupyrdf/ipyelk/issues/217)).
+  ([#217](https://github.com/jupyrdf/ipyelk/issues/217)). A child put in `children`
+  after its parent is made, as with `children.append()`, has no parent link, so it is a
+  second root and the first layout fails: add it with `add_child()` instead.
 - Remove code that nothing used: the `ipyelk.pipes.mappings` module, the
   `GraphWrappingStrategy.horizontal` trait, and `ElkLabel.__eq__`/`__hash__`, which
   served a text sizer cache that is gone. Importing `ipyelk.pipes.mappings` raises
@@ -341,6 +364,29 @@
   `MarkIndex.comm`, `MarkIndex.close` and `MarkElementWidget.layout` raise
   `DeprecatedAPIError` throughout 3.x. The index stays shared:
   `source.index.elements = None` makes the next run rebuild it, as in 2.x ([#237]).
+- A source feeds one open diagram. `Diagram(source=...)` and an assignment to
+  `Diagram.source` raise `TraitError` when the `MarkElementWidget` is the source of
+  another open `Diagram`. The message names the fix: close the other diagram with
+  `source.diagram.close()`, or give this one its own `MarkElementWidget`.
+  `MarkElementWidget.diagram` is the open diagram of a source, or `None`. Thus, a
+  notebook can close the diagram of the last run of a cell. In 2.x, both diagrams took
+  the pending changes from one source, so a recorded change did not reach both. Both
+  diagrams also wrote their layout onto the same elements, so the last layout won. A
+  closed diagram releases its source, also when it closes during a run. A diagram
+  releases its old source when it gets a new one. An assignment of a different source
+  also raises `TraitError` while a pipe in the diagram's pipe is closed: assign a new
+  pipe first. Such a new source used to be wired in, and the next run failed. An
+  assignment of the same source does nothing. To show one diagram in two places, display
+  the same `Diagram` twice ([#178]).
+- `Diagram.view` is fixed after construction. Pass the viewer as `Diagram(view=viewer)`.
+  An assignment of a different viewer raises `TraitError`. The diagram's tools stay
+  bound to the viewer that the diagram started with. In 2.x, the assignment moved the
+  pipe's output to the new viewer, but the selection, the painter, the Fit and Center
+  buttons and `ToggleCollapsedTool` still acted on the old viewer. The old viewer also
+  stayed open. An assignment of the same viewer does nothing. `Diagram(view=...)` also
+  raises `TraitError` when the viewer is closed or is the view of another open diagram.
+  A closed viewer used to be accepted. The construction then failed with an
+  `AttributeError` and left the widgets that it built open ([#208]).
 
 #### Migration
 
@@ -351,6 +397,27 @@ removed names][migration-removed-names] lists every name that raises
 
 #### Added
 
+- `Viewer.cull_offscreen` (opt-in, default `False`): each view renders only the elements
+  that touch its canvas, so selecting, hovering and panning stay cheap on a large
+  diagram that is zoomed in. Measured in a headless browser: zoomed into a 1,000-node
+  graph, a hover or a pan costs 2-5 ms of render instead of 8-11 ms plus 7 ms of style
+  and layout; on 5,000 nodes, 11-12 ms instead of 46 ms plus 42 ms; where the whole
+  diagram is on screen, nothing is culled and the check costs 0.1-0.6 ms per 1,000 nodes
+  (1-7% of a render). The SVG in the page is then not the whole diagram when the view is
+  zoomed in, which is why it is opt-in: two acceptance suites in this repository count
+  the live DOM at 1:1 right after display. `Exporter` is unaffected either way: it
+  renders its export from the model, so it is complete at any zoom ([#170]).
+- `Viewer.fit_on_first_layout` (default `False`) makes each view fit the whole diagram
+  in the browser after its own first layout. `Viewer.fit()` is a message to the views
+  that exist when it is sent, so a diagram displayed after it was laid out opened at 1:1
+  in the top-left corner, and so did every later view of it. A view that is hidden at
+  its first layout (in a collapsed accordion or a background tab) fits the first time it
+  is shown. Each view fits once: later layouts (a new `source` included), reveals and
+  resizes keep its camera, a view laid out before the trait was set is not fitted, and a
+  `set_viewport()` sent while a hidden view waits cancels its fit. `Viewer.fit_padding`
+  (default `0`, in diagram units) and `Viewer.fit_max_zoom` (default `None`: only the
+  viewer's own limit of 10) set the padding and zoom limit of that fit, and of `fit()`
+  calls and Fit button clicks that pass none ([#245]).
 - `Node.clone(prefix)` copies a node with everything under it, for a fragment that is
   used in several places. The copy of an element with the id `X` has the id
   `"<prefix>.X"`, where `X` is the id or the `wire_id` of the original. So two clones
@@ -384,6 +451,10 @@ removed names][migration-removed-names] lists every name that raises
 
 #### Fixed
 
+- `Exporter` exports every label. The export used to serialize the live SVG, whose label
+  view leaves out labels under 3 pixels tall on screen, so a diagram exported while
+  fitted at a low zoom (any diagram of a few hundred nodes) had no labels. The export is
+  now rendered from the model, at no level of detail and with nothing culled ([#170]).
 - PyPI shows the license: the wheel and the source distribution declare
   `License-Expression: BSD-3-Clause AND EPL-1.0 AND EPL-2.0` (PEP 639), because the
   package contains code under each of these licenses, and list `LICENSE.txt`,
@@ -470,8 +541,8 @@ removed names][migration-removed-names] lists every name that raises
   pipe ([#180])
   - A pipe belongs to one diagram, with every pipe nested in it. Assigning a pipe that
     nests a pipe another open diagram owns raises `TraitError`: both diagrams used to
-    share its outlet, so one silently showed the other's graph. Two diagrams sharing a
-    _source_ is a separate question ([#178])
+    share its outlet, so one silently showed the other's graph. A _source_ feeds one
+    open diagram too ([#178])
   - A replaced pipe is closed, so assigning a pipe that nests a closed pipe, or any part
     of the current pipe (wrapping it, or reusing its stages), raises `TraitError` too:
     build a new pipe instead
@@ -490,6 +561,26 @@ removed names][migration-removed-names] lists every name that raises
   and a `layout` or tool `ui` passed in. A closed diagram's pipe is closed, so another
   diagram can no longer take it. `Tool.close()` also closes the `ui` the tool built, and
   `Viewer.close()` its tools ([#191])
+- Close a default `layout` or tool `ui` that user code replaced. A `Diagram`, a `Viewer`
+  or a `Toolbar` closed the `layout` it built only while it still used that layout, and
+  a tool closed the `ui` it built only while it still used that `ui`. Each replacement
+  thus left the default open after `close()`: one widget for a `layout`, and three for
+  the default button of a tool. A replacement that user code assigned stays open
+  ([#198])
+- Keep the record of the stages that a `Pipeline` accepted. A `Pipeline` refuses a new
+  stage that is closed, part of the current pipe, or owned by another open diagram, and
+  it does not check again a stage that it accepted before. Two gaps let a stage skip the
+  check:
+  - An observer of `pipes` also wrote the record. A subclass `@validate` method that set
+    `pipes` under `hold_trait_notifications()` skipped the check of `pipes`, and the
+    observer then recorded the unchecked stages as accepted. Now only the check, and the
+    default of `pipes`, write the record.
+  - A kept stage that another diagram took after the `Pipeline` accepted it stayed in
+    both. A kept stage owned by another open diagram now raises `TraitError`.
+  - A `hold_trait_notifications()` block that raised put back the old `pipes`, but the
+    record kept the stages that the block had set. Such a stage, once closed, was
+    accepted, and the sync to the browser failed with an `AttributeError`. Now a closed
+    stage raises `TraitError`, also when the record names it ([#198])
 - Log the routine "fixing N ids" message from `ValidationPipe` at debug level instead of
   warning: assigning ids to id-less elements is the normal path (`fix_null_id=True`), so
   every diagram built from id-less elements logged it
@@ -594,6 +685,44 @@ removed names][migration-removed-names] lists every name that raises
   `NodeProperties(shape={"type": "node:widget", "use": "x"})`, raises `ValidationError`,
   as `Widget(use="x")` does. Before, it loaded as a `NodeShape` and warned, as ELK JSON
   does ([#153])
+- After you close the widget of a `Widget` shape, the next pipeline run no longer fails.
+  Before, the serialization of the shape raised `AttributeError`, because a closed
+  widget has no `model_id`. The shape now writes the `model_id` that the widget had. The
+  frontend keeps its node mark without attaching a missing widget or raising a browser
+  error. ELK JSON loads it as a `NodeShape`, with a warning that names the `model_id`.
+  If you give the shape a widget that is closed already, it writes no `model_id`, not
+  the `model_id` of the widget it had before. An assignment of `widget` sets `use` to
+  `None` ([#241])
+- After `ToggleCollapsedTool` hides a node, a refresh with nothing pending keeps the
+  collapsed diagram in the view. Before, each stage with no pending change gave its
+  input to the next stage. The view then got your tree without the projection that
+  `VisibilityPipe` makes, so it lost the slack port, and an edge pointed at the hidden
+  child. A stage with no pending change now keeps its output while nothing reached it
+  since its last run: no change report, and the same input. Otherwise it gives its input
+  to the next stage, as before. The stages after a stage that keeps its output keep
+  their output too, also when a frontend writes that output again after the run. For
+  example, a second tab can answer the text sizer late. If you change your tree in
+  place, for example with a new CSS class or label text, record a change report before
+  you call `refresh()`. For example, call `diagram.source.record(F.Layout)`, with `F` as
+  `ipyelk.pipes.flows`. 2.1.1 did not show such a change at a refresh with nothing
+  pending either ([#231])
+- After `ToggleCollapsedTool` hides a node, a run that measures text again keeps the
+  collapsed diagram in the view. Such a run follows a label text change that you record
+  with `F.Text.text`. It also follows `diagram.source.record(F.Layout)` or
+  `record(F.New)`, then `refresh()`. Before, the text sizer got your tree with an edge
+  to the hidden node, and the load of its answer raised `NotFoundError`. A diagram with
+  a node that is hidden from the start failed the same way at its first run. Now
+  `model_dump()` of a tree leaves out each edge to a hidden element, as it leaves out
+  the element. `VisibilityPipe` now observes each change, so it makes the projection
+  again after the text sizer. A color class that you record with `F.ColorCSS` now
+  reaches the view too: `VisibilityPipe` makes the projection again, and `ElkJS` lays it
+  out again. The text sizer does not run ([#246])
+- If no event loop runs, for example in a script, `Tool.trigger()` raises a
+  `RuntimeError` that says what to do: call it from a coroutine that you run with
+  `asyncio.run(...)`. Before, it raised the `RuntimeError` of `asyncio`,
+  `no running event loop`, and Python warned that the coroutine `Tool._execute` was
+  never awaited. It also cancelled the task of an earlier `trigger()`, which it now
+  keeps
 
 ### Development
 
@@ -661,6 +790,21 @@ removed names][migration-removed-names] lists every name that raises
     kernels of the `nbconvert--` task and of the robot tests load
     `scripts/kernel_shell_reply_fix.py`, a startup file that backports the fix and does
     nothing on ipykernel 7.4 or newer. `utest-oldest` tests it
+- Work around the kernel's slider values lagging the browser's in the `04_Interactive`
+  robot tests' kernels with ipykernel 7.4 ([#232]). ipykernel 7.4 dispatches a comm
+  message on the (sub)shell the kernel last sent on that comm from ([ipykernel#1565]),
+  not on the subshell JupyterLab 4.6 addresses widget messages to, so a widget's first
+  update after the cell that displayed it runs on the main thread and the next ones on
+  the subshell: two sliders' updates run on two threads at once. ipywidgets' `interact`
+  wraps every call in `with out:`, and with two blocks open on two threads the inner
+  one's `status: idle` goes out before the Output's `msg_id` is cleared. The page's
+  Output hook swallows it, the widget's message throttle never releases, and that slider
+  never reaches the kernel again.
+  - The robot tests' kernels load `scripts/kernel_comm_subshell_fix.py`, a startup file
+    that dispatches a comm message where the client addressed it, as ipykernel 7.3 did,
+    and keeps the routing of answers to requests the kernel sent. It does nothing on
+    ipykernel 7.3 or older. `utest` tests it against a real kernel, so `utest` now
+    installs `ipykernel` and `jupyter_client`
 - Lower the `nbconvert--` cell timeout from 1200 s to 40 s. The slowest healthy notebook
   in 4061 notebook runs from the last 45 CI runs took 8.2 s. The kernel watchdog now
   restarts with every cell and fires after 30 s without a new cell ([#177])
@@ -717,6 +861,26 @@ removed names][migration-removed-names] lists every name that raises
 
 ### `@jupyrdf/jupyter-elk 3.0.0-alpha0`
 
+- Cull what is off screen when the viewer's `cull_offscreen` is set (an opt-in): the
+  node, label and edge views skip an element whose absolute bounds (an edge's route)
+  miss the canvas, once the canvas size is known and never for the hidden render. The
+  flag is `JLModelSource.culling`, in place of the `CULLING_ENABLED` constant, and a
+  change re-renders the model. `scripts/bench_render.py` measures it ([#170]).
+- Render the SVG export from the model: `ELKViewerView.exportSvg()` renders the root
+  again for the `hidden` target -- no culling, no label level of detail, no widget
+  overlays -- with the hidden render's own decorations (ids, classes, positions, edge
+  label placement) into a detached element, instead of serializing the live SVG. The
+  view, its viewer and the command stack take no part, so an export is no render of the
+  view, and the live DOM is never touched. `diagramUpdated` now says why it fired
+  (`layout`, `selection` or `hover`), and the exporter skips hover, which fires on every
+  pointer move ([#170]).
+- Fit each view after its first layout when the viewer's `fit_on_first_layout` is set:
+  every node, port and label of the layout (those outside their parent included, and not
+  narrowed to a selection), without animation, with the viewer's `fit_padding` and
+  `fit_max_zoom`. A layout with no sized top-level node does not count as the first. A
+  view with no size on the page then waits for an `after-show` or `resize` message or a
+  `ResizeObserver` callback (a CSS reveal), and stops observing once it fits, is
+  removed, or a `viewport` command addressed to it arrives ([#245]).
 - Write `hovered_id` back on pointer leave, but only when the departed element is still
   the hovered one, so a stale leave cannot erase a newer enter; never dispatch `null` to
   sprotty as an element id; re-wiring the hover tool releases the previous tool's
@@ -834,6 +998,15 @@ removed names][migration-removed-names] lists every name that raises
   to the size of the node. A notch that is missing, not a number or negative draws 15
   pixels, and a string notch from 2.x still draws ([#148])
 
+#### Fixed
+
+- Stop two views of one diagram from looping on hover feedback. The two views come from
+  `display(diagram)` twice or from a linked output view. A view wrote the feedback that
+  it replays from `hover.hovered_id` back to `hovered_id`. When that feedback arrived
+  late, for example after a second hover, the views wrote stale ids back without end,
+  and the page stopped responding. A view now writes back only the hover feedback from
+  the pointer ([#255](https://github.com/jupyrdf/ipyelk/issues/255)).
+
 [#29]: https://github.com/jupyrdf/ipyelk/issues/29
 [#31]: https://github.com/jupyrdf/ipyelk/issues/31
 [#66]: https://github.com/jupyrdf/ipyelk/issues/66
@@ -852,6 +1025,7 @@ removed names][migration-removed-names] lists every name that raises
 [#161]: https://github.com/jupyrdf/ipyelk/issues/161
 [#164]: https://github.com/jupyrdf/ipyelk/issues/164
 [#167]: https://github.com/jupyrdf/ipyelk/issues/167
+[#170]: https://github.com/jupyrdf/ipyelk/issues/170
 [#171]: https://github.com/jupyrdf/ipyelk/issues/171
 [#176]: https://github.com/jupyrdf/ipyelk/issues/176
 [#177]: https://github.com/jupyrdf/ipyelk/issues/177
@@ -861,10 +1035,12 @@ removed names][migration-removed-names] lists every name that raises
 [#187]: https://github.com/jupyrdf/ipyelk/issues/187
 [#191]: https://github.com/jupyrdf/ipyelk/issues/191
 [#197]: https://github.com/jupyrdf/ipyelk/issues/197
+[#198]: https://github.com/jupyrdf/ipyelk/issues/198
 [#199]: https://github.com/jupyrdf/ipyelk/issues/199
 [#200]: https://github.com/jupyrdf/ipyelk/issues/200
 [#201]: https://github.com/jupyrdf/ipyelk/issues/201
 [#205]: https://github.com/jupyrdf/ipyelk/issues/205
+[#208]: https://github.com/jupyrdf/ipyelk/issues/208
 [#214]: https://github.com/jupyrdf/ipyelk/issues/214
 [#215]: https://github.com/jupyrdf/ipyelk/issues/215
 [#216]: https://github.com/jupyrdf/ipyelk/issues/216
@@ -872,10 +1048,15 @@ removed names][migration-removed-names] lists every name that raises
 [#218]: https://github.com/jupyrdf/ipyelk/issues/218
 [#219]: https://github.com/jupyrdf/ipyelk/issues/219
 [#227]: https://github.com/jupyrdf/ipyelk/issues/227
+[#231]: https://github.com/jupyrdf/ipyelk/issues/231
 [#232]: https://github.com/jupyrdf/ipyelk/issues/232
 [#237]: https://github.com/jupyrdf/ipyelk/issues/237
+[#241]: https://github.com/jupyrdf/ipyelk/issues/241
+[#245]: https://github.com/jupyrdf/ipyelk/issues/245
+[#246]: https://github.com/jupyrdf/ipyelk/issues/246
 [eclipse-sprotty/sprotty#573]: https://github.com/eclipse-sprotty/sprotty/issues/573
 [ipykernel#1529]: https://github.com/ipython/ipykernel/pull/1529
+[ipykernel#1565]: https://github.com/ipython/ipykernel/pull/1565
 [migration]: https://ipyelk.readthedocs.io/en/latest/migration.html
 [migration-removed-names]:
   https://ipyelk.readthedocs.io/en/latest/migration.html#migration-removed-names

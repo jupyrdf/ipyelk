@@ -83,8 +83,8 @@ class Tool(W.Widget):
     reports = TypedTuple(T.Unicode(), kw={})
     _task: asyncio.Task | None = None
     _closed: bool = False
-    #: the ``ui`` the tool built for itself, closed with it
-    _default_ui: W.DOMWidget | None = None
+    #: the ``ui`` the tool built for itself, closed with it even after a replacement
+    _built_ui: W.DOMWidget | None = None
     ui = T.Instance(W.DOMWidget, allow_none=True)
     priority = T.Int(default_value=10)
     _on_start_handlers = T.Instance(W.CallbackDispatcher, kw={})
@@ -133,9 +133,8 @@ class Tool(W.Widget):
         Closing again does nothing.
         """
         self._closed = True
-        ui = self._trait_values.get("ui")
-        if ui is not None and ui is self._default_ui:
-            close_tree(ui)
+        if self._built_ui is not None:
+            close_tree(self._built_ui)
         super().close()
 
     @property
@@ -149,6 +148,10 @@ class Tool(W.Widget):
         Positional arguments are ignored so the method can be an ipywidgets
         callback (``button.on_click(tool.trigger)``). Raises before scheduling
         anything when the request is rejected (see the class docstring).
+
+        Needs a running event loop, as in a Jupyter kernel. Without one, raises
+        ``RuntimeError`` and leaves an earlier task running. In a script, call it
+        from a coroutine that you run with ``asyncio.run(...)``.
         """
         if type(self).run is Tool.run:
             raise NotImplementedError(
@@ -156,12 +159,20 @@ class Tool(W.Widget):
                 "or callback tool, so there is nothing for trigger() to schedule"
             )
         self.check_enabled()
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            raise RuntimeError(
+                f"{type(self).__name__}.trigger() needs a running event loop, as in a "
+                "Jupyter kernel. In a script, call it from a coroutine that you run "
+                "with asyncio.run(...)"
+            ) from None
         # cancel old work if needed
         if self._task is not None:
             self._task.cancel()
 
         # schedule work
-        self._task = asyncio.create_task(self._execute())
+        self._task = loop.create_task(self._execute())
         self._task.add_done_callback(self._finished)
         return self._task
 
@@ -198,7 +209,7 @@ class Tool(W.Widget):
     @T.observe("ui", type="default")
     def _update_default_ui_controls(self, change: T.Bunch) -> None:
         # the lazily built default ``ui`` emits a "default" event, not a "change"
-        self._default_ui = change.value
+        self._built_ui = change.value
         for control in _controls(change.value):
             control.disabled = self._controls_disabled()
 

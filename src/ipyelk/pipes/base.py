@@ -15,7 +15,7 @@ import traitlets as T
 from ipywidgets.widgets.trait_types import TypedTuple
 
 from ..exceptions import ClosedError
-from ..util import close_widget
+from ..util import close_widget, open_owner
 from .marks import MarkElementWidget
 from .util import resync_stale, settle
 
@@ -230,6 +230,8 @@ class Pipe(W.Widget):
     _diagram: weakref.ref | None = None
     _closed: bool = False
     _requested: int = 0
+    #: a weak reference to the ``inlet.value`` this pipe last ran on in a ``Pipeline``
+    _ran_on: weakref.ref | None = None
     status = T.Instance(PipeStatus, kw={})
     status_widget = T.Instance(W.DOMWidget, allow_none=True)
 
@@ -240,8 +242,7 @@ class Pipe(W.Widget):
 
     def _owner(self) -> W.Widget | None:
         """The open diagram that owns this pipe, if any."""
-        owner = self._diagram() if self._diagram else None
-        return owner if owner is not None and owner.comm is not None else None
+        return open_owner(self._diagram)
 
     def _own(self, widget: AnyWidget) -> AnyWidget:
         self._owned.append(widget)

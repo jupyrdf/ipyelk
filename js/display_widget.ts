@@ -40,7 +40,8 @@ import {
   unpack_models as deserialize,
 } from '@jupyter-widgets/base';
 
-import { hoverAfterFeedback, hoverFeedbackActions } from './hover_util';
+import { FirstFit, elementFirstFitHost } from './first_fit';
+import { hoverAfterFeedback, hoverFeedbackActions, isHoverReplay } from './hover_util';
 import {
   canonicalSelection,
   selectionAfterLayout,
@@ -48,6 +49,7 @@ import {
 } from './selection_util';
 import createContainer from './sprotty/di-config';
 import { JLModelSource } from './sprotty/diagram-server';
+import { exportMarkup } from './sprotty/export_render';
 import { contentExtent } from './sprotty/export_util';
 import { PainterStyles } from './sprotty/json/elkgraph-to-sprotty';
 // import { VNode } from 'snabbdom';
@@ -75,6 +77,13 @@ const POLL = 300;
 // trailing debounce for viewport reports: a wheel/drag burst -> one kernel write
 const VIEWPORT_DEBOUNCE = 100;
 const STALE_DELAY_MAX = 10000;
+
+/**
+ * Why a view's `diagramUpdated` fired: a (re-)layout, a selection change, or
+ * hover feedback. Hover is transient and fires on every pointer move, so a
+ * listener that does work per update (the exporter) can leave it out.
+ */
+export type DiagramUpdate = 'layout' | 'selection' | 'hover';
 
 export class ELKControlModel extends DOMWidgetModel {
   static model_name = 'ELKControlModel';
@@ -110,7 +119,7 @@ export class ELKViewerModel extends DOMWidgetModel {
     control_overlay: { deserialize },
   };
   layoutUpdated = new Signal<ELKViewerModel, void>(this);
-  diagramUpdated = new Signal<ELKViewerModel, void>(this);
+  diagramUpdated = new Signal<ELKViewerModel, DiagramUpdate>(this);
 
   defaults() {
     let defaults = {
@@ -124,6 +133,10 @@ export class ELKViewerModel extends DOMWidgetModel {
       symbols: {},
       source: null,
       control_overlay: null,
+      fit_on_first_layout: false,
+      fit_padding: 0,
+      fit_max_zoom: null,
+      cull_offscreen: false,
     };
     return defaults;
   }
@@ -176,6 +189,20 @@ export class ELKViewerView extends DOMWidgetView {
   );
   /** Sprotty animation length; animated viewport actions settle after this delay. */
   private animationDuration = 0;
+  /** Counts the `diagramLayout` calls that render, so a superseded one can tell. */
+  private layoutCalls = 0;
+  /** The kernel's `fit_on_first_layout`, applied once to this view. */
+  private readonly firstFit = new FirstFit(
+    elementFirstFitHost(
+      () => this.el,
+      () => !!this.model.get('fit_on_first_layout'),
+      (ids) => {
+        this.resize(); // the canvas the fit fills is the one on the page now
+        this.source.fit(ids, ...this.fitDefaults(), false);
+      },
+      () => this.firstFit.revealed(),
+    ),
+  );
 
   initialize(parameters: WidgetView.IInitializeParameters) {
     super.initialize(parameters);
@@ -249,12 +276,14 @@ export class ELKViewerView extends DOMWidgetView {
     this.model.on('msg:custom', this.handleMessage, this);
     this.model.on('change:symbols', this.diagramLayout, this);
     this.model.on('change:control_overlay', this.updateControlOverlay, this);
+    this.model.on('change:cull_offscreen', this.updateCulling, this);
 
     // init for the first time
     this.updateSelectedTool();
     this.updateHoverTool();
     this.updatePainterTool();
     this.updateControlOverlay();
+    this.updateCulling();
 
     this.touch(); //to sync back the diagram state
 
@@ -316,11 +345,30 @@ export class ELKViewerView extends DOMWidgetView {
   }
 
   rerenderControlOverlay() {
+    this.rerender('the control overlay');
+  }
+
+  /**
+   * The kernel's `cull_offscreen`: whether this view's renders leave out the
+   * elements outside its canvas. The flag is read while rendering, so a
+   * change re-renders the current model.
+   */
+  updateCulling() {
+    const culling = this.model.get('cull_offscreen') === true;
+    if (this.source.culling === culling) {
+      return;
+    }
+    this.source.culling = culling;
+    this.rerender('culling');
+  }
+
+  /** Re-render the submitted model as it is; a no-op before the first layout. */
+  private rerender(what: string) {
     if (this.source?.index == null) {
-      return; // nothing submitted yet; the first layout renders the overlay
+      return; // nothing submitted yet; the first layout renders it
     }
     this.source.updateModel().catch((err) => {
-      console.warn('ELK failed to re-render the control overlay', err);
+      console.warn(`ELK failed to re-render ${what}`, err);
     });
   }
 
@@ -377,6 +425,9 @@ export class ELKViewerView extends DOMWidgetView {
         this.resize();
         break;
     }
+    if (msg.type === 'resize' || msg.type === 'after-show') {
+      this.firstFit.revealed();
+    }
   }
 
   // The selection write-back below is ASYNC (getSelection resolves one
@@ -419,7 +470,7 @@ export class ELKViewerView extends DOMWidgetView {
             }
             selectionTool.set('ids', next);
             selectionTool.save_changes();
-            this.model.diagramUpdated.emit(void 0);
+            this.model.diagramUpdated.emit('selection');
           }
         });
         break;
@@ -428,15 +479,17 @@ export class ELKViewerView extends DOMWidgetView {
       case HoverFeedbackAction.KIND:
         const hoverFeedback = action as HoverFeedbackAction;
         const hover = this.model.get('hover');
-        if (hover != null) {
+        // the feedback updateHover replays lands here too: never write it back.
+        // It is async, so it can land after the id moved on (two hovers in one
+        // tick, or a blocked dispatcher releasing them), and a stale id written
+        // back replays again: one view, or two views of one model, looped.
+        if (hover != null && !isHoverReplay(hoverFeedback)) {
           const current: string | null = hover.get('hovered_id');
           const next = hoverAfterFeedback(current, hoverFeedback);
-          // the feedback this view itself dispatches from updateHover lands
-          // here too: an unchanged id is written back to nothing
           if (next !== current) {
             hover.set('hovered_id', next);
             hover.save_changes();
-            this.model.diagramUpdated.emit(void 0);
+            this.model.diagramUpdated.emit('hover');
           }
         }
         break;
@@ -515,6 +568,7 @@ export class ELKViewerView extends DOMWidgetView {
       window.clearTimeout(this.viewportReportTimer);
       this.viewportReportTimer = null;
     }
+    this.firstFit.dispose();
     return super.remove();
   }
 
@@ -552,7 +606,7 @@ export class ELKViewerView extends DOMWidgetView {
           deselectedElementsIDs: exiting,
         }),
       );
-      this.model.diagramUpdated.emit(void 0);
+      this.model.diagramUpdated.emit('selection');
     }
   }
 
@@ -598,7 +652,7 @@ export class ELKViewerView extends DOMWidgetView {
       const hovered: string | null = hover.get('hovered_id');
       const previous: string | null = hover.previous('hovered_id');
       await this.actionDispatcher.dispatchAll(hoverFeedbackActions(previous, hovered));
-      this.model.diagramUpdated.emit(void 0);
+      this.model.diagramUpdated.emit('hover');
     }
   }
 
@@ -633,6 +687,7 @@ export class ELKViewerView extends DOMWidgetView {
       // bailing
       return null;
     }
+    const call = ++this.layoutCalls;
     await this.source.updateLayout(layout, symbols, this.div_id, this.painterStyles());
     // Apply kernel selection on the initial model and on structural replacements.
     // Ordinary coordinate-only updates already retain sprotty selection.
@@ -651,8 +706,13 @@ export class ELKViewerView extends DOMWidgetView {
         }),
       );
     }
+    // overlapping calls can settle out of order: only the latest call's layout may
+    // be the first fit's, or its ids would frame a model sprotty no longer shows
+    if (call === this.layoutCalls) {
+      this.firstFit.afterLayout(layout);
+    }
     this.model.layoutUpdated.emit();
-    this.model.diagramUpdated.emit();
+    this.model.diagramUpdated.emit('layout');
     // a re-layout moves elements under a camera that did not change: re-report
     this.scheduleViewportReport();
   }
@@ -670,17 +730,25 @@ export class ELKViewerView extends DOMWidgetView {
   }
 
   /**
-   * The rendered diagram as SVG markup, with the model-space size of its
-   * content. The extent comes from the model, so scrolling or zooming cannot
-   * change the exported size.
+   * The whole diagram as SVG markup, with the model-space size of its content.
+   * Both come from the model, not from the live SVG: scrolling or zooming the
+   * view, which culls what is off screen and drops labels too small to read,
+   * cannot crop or resize the export.
    */
   exportSvg(): { markup: string; extent: Bounds } | null {
     const root = this.source?.root;
-    const svg: SVGElement | null = this.el?.querySelector('svg');
-    if (root == null || svg == null) {
+    if (root == null || this.container == null) {
       return null;
     }
-    return { markup: svg.outerHTML, extent: contentExtent(root) };
+    const markup = exportMarkup(this.container, root);
+    return markup == null ? null : { markup, extent: contentExtent(root) };
+  }
+
+  /** The kernel's `fit_padding` and `fit_max_zoom` (no limit when unset). */
+  fitDefaults(): [number, number] {
+    const padding = this.model.get('fit_padding');
+    const maxZoom = this.model.get('fit_max_zoom');
+    return [padding == null ? 0 : padding, maxZoom == null ? Infinity : maxZoom];
   }
 
   handleMessage(content: TAnyELKMessage) {
@@ -706,6 +774,7 @@ export class ELKViewerView extends DOMWidgetView {
         if (content.view_id != null && content.view_id !== this.view_id) {
           break; // addressed to another view of this diagram
         }
+        this.firstFit.cancel(); // an explicit camera wins over a waiting first fit
         this.resize(); // ensure bounds are accurate before moving
         this.source
           .setViewport(content.origin, content.zoom, content.animate)

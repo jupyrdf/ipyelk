@@ -4,7 +4,9 @@
 
 from unittest import mock
 
-from ipyelk.diagram import Diagram, SprottyViewer
+from ipyelk.diagram import Diagram
+from ipyelk.diagram.flow import DefaultFlow
+from ipyelk.pipes import Pipe
 from ipyelk.pipes import flows as F
 from ipyelk.tools import ToggleCollapsedTool, Tool
 
@@ -38,12 +40,12 @@ def test_replacing_tools_unregisters_refresh_from_the_old_ones():
     assert new.tee is diagram.pipe
 
 
-def test_rewiring_the_view_merges_new_into_pending_reports():
+def test_rewiring_the_pipe_merges_new_into_pending_reports():
     """``_update_view_sources`` merges ``F.New`` into the flow, never assigns over it."""
     diagram = Diagram()
     diagram.source.flow = ("r", F.New)  # what a tool recorded before the rewire
-    with mock.patch.object(diagram.pipe, "schedule_run", return_value=None):
-        diagram.view = SprottyViewer()
+    with mock.patch.object(Pipe, "schedule_run", return_value=None):
+        diagram.pipe = DefaultFlow()
     assert diagram.source.flow == ("r", F.New)  # merged: kept, deduplicated
     diagram.source.flow = ()
     diagram._update_view_sources()

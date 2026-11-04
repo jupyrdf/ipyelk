@@ -28,7 +28,7 @@ from ipyelk.pipes import (
 )
 from ipyelk.pipes import flows as F
 from ipyelk.pipes.pipeline import Pipeline
-from ipyelk.tools import ControlOverlay, SetTool, Tool, Toolbar
+from ipyelk.tools import ControlOverlay, SetTool, ToggleCollapsedTool, Tool, Toolbar
 from ipyelk.util import close_widget
 
 from .test_pipe_replacement import ROUNDS, is_open, live_widgets, make_source, refresh
@@ -481,3 +481,58 @@ async def test_stage_waiting_observer_closing_parent_keeps_cancelled_status() ->
         assert pipe.inlet.flow == (F.New,)
     finally:
         pipe.close()
+
+
+def replace_defaults(diagram: Diagram) -> list[W.Widget]:
+    """Replace the default ``layout`` and ``ui`` widgets; return the replacements."""
+    tool = diagram.get_tool(ToggleCollapsedTool)
+    given = []
+    for widget in (diagram, diagram.view, diagram.toolbar):
+        widget.layout = W.Layout()
+        given.append(widget.layout)
+    tool.ui = W.Button()
+    given += [tool.ui, tool.ui.layout, tool.ui.style]
+    return given
+
+
+def build_replace_and_close() -> list[W.Widget]:
+    source = make_source()
+    diagram = Diagram(source=source)
+    given = replace_defaults(diagram)
+    diagram.close()
+    close_widget(source)
+    return given
+
+
+def test_closing_closes_a_replaced_default_layout_and_ui() -> None:
+    build_replace_and_close()
+    before = live_widgets()
+    given = [build_replace_and_close() for _ in range(ROUNDS)]
+
+    assert live_widgets() - before == sum(map(len, given))
+    assert all(is_open(widget) for widgets in given for widget in widgets)
+
+
+CLOSED_TRAITS = {
+    "Diagram.layout": (lambda: Diagram(source=make_source()), "layout", W.Layout),
+    "Diagram.children": (lambda: Diagram(source=make_source()), "children", tuple),
+    "Pipeline.inlet": (DefaultFlow, "inlet", MarkElementWidget),
+    "Pipeline.outlet": (DefaultFlow, "outlet", MarkElementWidget),
+}
+
+
+@pytest.mark.parametrize("name", CLOSED_TRAITS)
+def test_a_closed_widget_refuses_layout_children_inlet_and_outlet(name: str) -> None:
+    build, trait, value = CLOSED_TRAITS[name]
+    widget = build()
+    widget.close()
+    before = getattr(widget, trait)
+    cls = type(widget).__name__
+    again = "build a new Diagram" if cls == "Diagram" else "use a new pipe"
+    msg = f"^{cls} is closed and cannot set {trait}; {again}$"
+
+    with pytest.raises(ClosedError, match=msg):
+        setattr(widget, trait, value())
+
+    assert getattr(widget, trait) is before
+    widget.close()

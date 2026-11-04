@@ -21,10 +21,22 @@ export function hoverAfterFeedback(
   return current === action.mouseoverElement ? null : current;
 }
 
+/** The actions `hoverFeedbackActions` built: replays of the kernel's `hovered_id`. */
+const replays = new WeakSet<HoverFeedbackAction>();
+
+/**
+ * Whether `action` replays the kernel's `hovered_id`, and so is not feedback
+ * from the pointer. A view shows a replay but never writes it back.
+ */
+export function isHoverReplay(action: HoverFeedbackAction): boolean {
+  return replays.has(action);
+}
+
 /**
  * Feedback to dispatch when the kernel's `hovered_id` changes: un-highlight
  * the previous element, highlight the next. `null` is "nothing hovered" and is
- * never sent to sprotty as an element id.
+ * never sent to sprotty as an element id. Each action is a replay
+ * (`isHoverReplay`).
  */
 export function hoverFeedbackActions(
   previous: string | null | undefined,
@@ -41,5 +53,6 @@ export function hoverFeedbackActions(
       HoverFeedbackAction.create({ mouseoverElement: next, mouseIsOver: true }),
     );
   }
+  actions.forEach((action) => replays.add(action));
   return actions;
 }

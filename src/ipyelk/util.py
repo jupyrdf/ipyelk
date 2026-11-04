@@ -2,6 +2,8 @@
 # Distributed under the terms of the Modified BSD License.
 from __future__ import annotations
 
+import weakref
+
 
 def strip_none(data: dict) -> dict:
     """A copy of ``data`` without its ``None`` values and empty lists, also in the
@@ -21,6 +23,12 @@ def strip_none(data: dict) -> dict:
     return result
 
 
+def open_owner(ref: weakref.ref | None):
+    """The widget ``ref`` points to, if it is still alive and open; else ``None``."""
+    owner = ref() if ref else None
+    return owner if owner is not None and owner.comm is not None else None
+
+
 def close_widget(widget) -> None:
     """Close a widget with its ``layout`` and ``style`` widgets, if it has them."""
     widget.close()
@@ -38,9 +46,9 @@ def own_layout(widget, kwargs: dict):
 
 
 def close_own_layout(widget) -> None:
-    """Close the ``layout`` recorded by ``own_layout``, if it is still in use."""
+    """Close the ``layout`` recorded by ``own_layout``, also after a replacement."""
     layout = getattr(widget, "_own_layout", None)
-    if layout is not None and widget._trait_values.get("layout") is layout:
+    if layout is not None:
         layout.close()
 
 

@@ -6,7 +6,7 @@ import { describe, expect, it } from 'vitest';
 
 import { HoverFeedbackAction } from 'sprotty-protocol';
 
-import { hoverAfterFeedback, hoverFeedbackActions } from '../hover_util';
+import { hoverAfterFeedback, hoverFeedbackActions, isHoverReplay } from '../hover_util';
 
 const enter = (id: string) =>
   HoverFeedbackAction.create({ mouseoverElement: id, mouseIsOver: true });
@@ -52,5 +52,11 @@ describe('hoverFeedbackActions', () => {
 
   it('re-asserts an unchanged id without un-highlighting it first', () => {
     expect(pairs(hoverFeedbackActions('a', 'a'))).toEqual([['a', true]]);
+  });
+
+  it('marks its actions as replays, and pointer feedback as none', () => {
+    expect(hoverFeedbackActions('a', 'b').map(isHoverReplay)).toEqual([true, true]);
+    expect(isHoverReplay(enter('a'))).toBe(false);
+    expect(isHoverReplay(leave('a'))).toBe(false);
   });
 });

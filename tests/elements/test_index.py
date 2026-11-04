@@ -395,8 +395,80 @@ def test_root_without_a_parentless_node_is_not_found():
 
 def test_root_of_several_parentless_nodes_is_not_unique():
     index = ElementIndex.from_els(Node(id="a"), Node(id="b"))
-    with pytest.raises(NotUniqueError, match="2 roots"):
+    with pytest.raises(NotUniqueError, match=r"2 roots: a, b\. 2 nodes have no"):
         index.root()
+
+
+#: ways to change a list of a node after the node is made: none sets a parent link
+LIST_WAYS = {
+    "append": lambda els, el: els.append(el),
+    "extend": lambda els, el: els.extend([el]),
+    "insert": lambda els, el: els.insert(0, el),
+    "item": lambda els, el: els.__setitem__(0, el),
+}
+
+
+@pytest.mark.parametrize(
+    "way",
+    ["constructor", "add_child", "set_parent", "attribute", "new list", *LIST_WAYS],
+)
+def test_which_ways_to_add_a_child_set_its_parent_link(way):
+    child = Node(id="c")
+    parent = Node(id="p", children=[child if way == "constructor" else Node(id="o")])
+    if way == "add_child":
+        parent.add_child(child)
+    elif way == "set_parent":
+        parent.children.append(child.set_parent(parent))
+    elif way == "attribute":
+        parent.c = child
+    elif way == "new list":
+        parent.children = [child]
+    elif way in LIST_WAYS:
+        LIST_WAYS[way](parent.children, child)
+    index = ElementIndex.from_els(parent)
+    if way in {"constructor", "add_child", "set_parent", "attribute"}:
+        assert child.get_parent() is parent
+        assert index.root() is parent
+        return
+    assert child.get_parent() is None
+    with pytest.raises(NotUniqueError, match=r"roots: p, c\. .* with `add_child\(\)`"):
+        index.root()
+
+
+@pytest.mark.parametrize(
+    "way", ["constructor", "add_port", "attribute", "new list", *LIST_WAYS]
+)
+def test_which_ways_to_add_a_port_set_its_parent_link(way):
+    port = Port(id="x")
+    node = Node(id="n", ports=[port if way == "constructor" else Port(id="o")])
+    if way == "add_port":
+        node.add_port(port)
+    elif way == "attribute":
+        node.east = port  # any name that is not a field, such as `x`
+    elif way == "new list":
+        node.ports = [port]
+    elif way in LIST_WAYS:
+        LIST_WAYS[way](node.ports, port)
+    linked = way in {"constructor", "add_port", "attribute"}
+    assert (port.get_parent() is node) is linked
+    # a port is not a node, so it is never a root
+    assert ElementIndex.from_els(Node(id="r", children=[node])).root().id == "r"
+
+
+@pytest.mark.parametrize("way", ["constructor", "new list", *LIST_WAYS])
+def test_which_ways_to_add_a_label_set_its_parent_link(way):
+    label = Label(id="L")
+    node = Node(id="n", labels=[label if way == "constructor" else Label(id="o")])
+    if way == "new list":
+        node.labels = [label]
+    elif way in LIST_WAYS:
+        LIST_WAYS[way](node.labels, label)
+    if way in {"constructor", "new list"}:
+        # the link shows: a second parent is refused
+        with pytest.raises(ValueError, match="Label 'L' is already under Node 'n'"):
+            Node(id="B", labels=[label])
+    else:
+        Node(id="B", labels=[label])
 
 
 @pytest.mark.parametrize("deep", [False, True])

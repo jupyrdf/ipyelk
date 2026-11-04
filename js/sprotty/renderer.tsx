@@ -86,6 +86,10 @@ export class ElkModelRenderer extends ModelRenderer {
   renderJLOverlayControl(args?: object): VNode[] {
     ELK_DEBUG && console.log('render control overlay');
     let vnodes: VNode[] = [];
+    if (this.targetKind === 'hidden') {
+      // an export: SVG only, and no widget view to attach to a detached host
+      return vnodes;
+    }
     const overlay_widget = this.source.control_overlay;
     // opt-in: no overlay, or a Box with nothing to show, renders no container
     if (overlay_widget && overlay_widget.get('children')?.length) {
@@ -136,6 +140,10 @@ export class ElkModelRenderer extends ModelRenderer {
    */
   renderJLNodeWidgets(root?: Readonly<SParentElementImpl>, args?: object): VNode[] {
     let vnodes: VNode[] = [];
+    if (this.targetKind === 'hidden') {
+      // an export: SVG only, and no widget view to attach to a detached host
+      return vnodes;
+    }
     if (root) {
       for (let jlsw of this.collectJLWidgetNodes(root)) {
         let vnode = this.widgetContainer(jlsw, args);
@@ -247,7 +255,10 @@ export class ElkModelRenderer extends ModelRenderer {
       }
       let widget_model: DOMWidgetModel;
       if (typeof widget === 'string' || widget instanceof String) {
-        widget_model = await this.source.widget_manager.get_model(widget as any);
+        widget_model = await this.findWidgetModel(widget as string);
+        if (!widget_model) {
+          return;
+        }
       } else {
         widget_model = widget;
       }
@@ -292,6 +303,9 @@ export class ElkModelRenderer extends ModelRenderer {
     node: ElkNode,
     visible: boolean,
   ) {
+    if (this.targetKind === 'hidden') {
+      return;
+    }
     this.widgets[node.id] = await this.wrapJLWidget(vnode, node, visible);
   }
 
@@ -304,7 +318,7 @@ export class ElkModelRenderer extends ModelRenderer {
     let id = shapeOf<WidgetShape | HTMLShape>(node)?.use;
     if (getSubType(node) == 'widget') {
       if (id) {
-        widget = await this.source.widget_manager.get_model(id);
+        widget = await this.findWidgetModel(id);
         html = undefined;
       }
     } else {
@@ -319,6 +333,17 @@ export class ElkModelRenderer extends ModelRenderer {
       visible: visible,
       html: html,
     };
+  }
+
+  /** A closed widget keeps its wire id, but no longer has a frontend model. */
+  private async findWidgetModel(id: string): Promise<DOMWidgetModel | undefined> {
+    try {
+      return await this.source.widget_manager.get_model(id);
+    } catch {
+      // Kernel deserialization already reports the missing widget. Keep the
+      // node's mark and geometry without trying to attach a widget view.
+      return undefined;
+    }
   }
 
   getConnector(id): SElkConnectorSymbol {
