@@ -16,6 +16,7 @@ import pytest
 from ipyelk import Diagram
 from ipyelk.elements import Label, Node, NodeProperties
 from ipyelk.pipes import MarkElementWidget, Pipeline, ValidationPipe, VisibilityPipe
+from ipyelk.pipes import flows as F
 from ipyelk.pipes.elkjs import ElkJS
 from ipyelk.pipes.text_sizer import BrowserTextSizer
 from ipyelk.tools import ToggleCollapsedTool
@@ -190,3 +191,254 @@ async def test_collapse_does_not_remeasure(browser):
     assert document.resolve("c.slack") == (c, True), "selecting it selects c"
     diagram.view.selection.ids = ("c.slack",)
     assert list(diagram.view.selection.elements()) == [c]
+
+
+@pytest.mark.asyncio
+async def test_a_refresh_after_a_collapse_shows_the_projection(browser):
+    """Nothing pending after a collapse: the view keeps the slack port (#231).
+
+    Fit, Center and a new ``diagram.view`` do not refresh, so this is the only path.
+    """
+    root, _a, _b, _c = user_graph()
+    diagram = Diagram(source=MarkElementWidget(value=root))
+    await settle(diagram)
+    diagram.view.selection.ids = ("a",)
+    await diagram.get_tool(ToggleCollapsedTool).trigger()
+    await settle(diagram)
+    collapsed = diagram.view.source.get_state(key="value")["value"]
+    assert collapsed["edges"][0]["sources"] == ["c.slack"]
+
+    diagram.refresh()
+    await settle(diagram)
+
+    assert diagram.pipe.status.exception is None
+    assert diagram.view.source.get_state(key="value")["value"] == collapsed
+    diagram.close()
+
+
+@pytest.mark.asyncio
+async def test_a_late_answer_from_a_frontend_keeps_the_projection(browser):
+    """A second tab can answer the ``run`` of the text sizer after the run ended.
+
+    Every frontend model answers, so its late value replaces the outlet.
+    """
+    root, _a, _b, _c = user_graph()
+    diagram = Diagram(source=MarkElementWidget(value=root))
+    await settle(diagram)
+    (sizer,) = (
+        pipe for pipe in diagram.pipe.pipes if isinstance(pipe, BrowserTextSizer)
+    )
+    full = sizer.outlet.get_state(key="value")["value"]
+    diagram.view.selection.ids = ("a",)
+    await diagram.get_tool(ToggleCollapsedTool).trigger()
+    await settle(diagram)
+    collapsed = _view(diagram)
+
+    sizer.outlet.set_state({"value": full})  # the answer of the other tab
+    diagram.refresh()
+    await settle(diagram)
+
+    assert diagram.pipe.status.exception is None
+    assert _view(diagram) == collapsed
+    diagram.close()
+
+
+def _change_text(diagram: Diagram, b: Node) -> None:
+    b.labels[0].text = "B longer"
+    diagram.source.record(F.Text.text)
+
+
+def _record(tag: str):
+    def change(diagram: Diagram, _b: Node) -> None:
+        diagram.source.record(tag)
+
+    return change
+
+
+#: runs that measure text again (#246)
+REMEASURE = {
+    "text": _change_text,
+    "layout": _record(F.Layout),
+    "new": _record(F.New),
+}
+
+
+def _view(diagram: Diagram) -> dict:
+    return diagram.view.source.get_state(key="value")["value"]
+
+
+def _node(wire: dict, node_id: str) -> dict:
+    return next(n for n in wire["children"] if n["id"] == node_id)
+
+
+async def _collapse_a(diagram: Diagram) -> None:
+    diagram.view.selection.ids = ("a",)
+    await diagram.get_tool(ToggleCollapsedTool).trigger()
+    await settle(diagram)
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("change", REMEASURE.values(), ids=REMEASURE.keys())
+async def test_a_run_that_measures_text_after_a_collapse_shows_the_projection(
+    browser, change
+):
+    """The answer of the text sizer has no edge to the hidden ``c``, and the view
+    keeps the slack port (#246).
+    """
+    root, _a, b, c = user_graph()
+    diagram = Diagram(source=MarkElementWidget(value=root))
+    await settle(diagram)
+    await _collapse_a(diagram)
+    sizer = diagram.pipe.pipes[1]
+    sizer_runs = []
+    count_runs(sizer, sizer_runs)
+
+    change(diagram, b)
+    diagram.refresh()
+    await settle(diagram)
+
+    assert diagram.pipe.status.exception is None
+    assert sizer_runs == [{"action": "run"}], "the text is measured again"
+    view = _view(diagram)
+    assert _node(view, "a").get("children", []) == []
+    assert [p["id"] for p in _node(view, "a")["ports"]] == ["c.slack"]
+    assert view["edges"][0]["sources"] == ["c.slack"]
+    assert _node(view, "b")["labels"][0]["text"] == b.labels[0].text
+    assert diagram.pipe.inlet.index.elements.get("c") is c
+    diagram.close()
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("change", REMEASURE.values(), ids=REMEASURE.keys())
+async def test_an_expand_after_a_run_that_measures_text_shows_the_child(
+    browser, change
+):
+    """After #246's run, expanding ``a`` brings back ``c`` and its edge."""
+    root, _a, b, c = user_graph()
+    diagram = Diagram(source=MarkElementWidget(value=root))
+    await settle(diagram)
+    await _collapse_a(diagram)
+    change(diagram, b)
+    diagram.refresh()
+    await settle(diagram)
+
+    await _collapse_a(diagram)  # toggles ``c`` back
+
+    assert diagram.pipe.status.exception is None
+    assert c.properties.hidden is False
+    view = _view(diagram)
+    a_wire = _node(view, "a")
+    assert [n["id"] for n in a_wire["children"]] == ["c"]
+    assert a_wire["children"][0]["labels"][0]["width"] == pytest.approx(LABEL_WIDTH)
+    assert a_wire.get("ports", []) == []
+    assert view["edges"][0]["sources"] == ["c"]
+    diagram.close()
+
+
+@pytest.mark.asyncio
+async def test_a_node_hidden_from_the_start_lays_out_with_the_text_sizer(browser):
+    """The first run measures text with an edge to a hidden node (#246)."""
+    root, _a, _hidden = hidden_graph()
+    diagram = Diagram(source=MarkElementWidget(value=root))
+    await settle(diagram)
+
+    assert diagram.pipe.status.exception is None
+    view = _view(diagram)
+    assert [p["id"] for p in _node(view, "a")["ports"]] == ["hidden.slack"]
+    assert view["edges"][0]["sources"] == ["hidden.slack"]
+    diagram.close()
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("collapse", [False, True], ids=["expanded", "collapsed"])
+async def test_a_layout_option_change_reaches_the_layout(monkeypatch, collapse):
+    """``VisibilityPipe`` projects again for a change that ``ElkJS`` lays out (#246)."""
+    laid_out = []
+
+    def record_and_lay_out(wire: dict) -> None:
+        laid_out.append(wire)
+        lay_out(wire)
+
+    monkeypatch.setattr(BrowserTextSizer, "run", _browser_stage(measure_labels))
+    monkeypatch.setattr(ElkJS, "run", _browser_stage(record_and_lay_out))
+    root, a, _b, _c = user_graph()
+    diagram = Diagram(source=MarkElementWidget(value=root))
+    await settle(diagram)
+    if collapse:
+        await _collapse_a(diagram)
+    padding = "[top=1,left=1,bottom=1,right=1]"
+
+    a.layoutOptions = {"org.eclipse.elk.padding": padding}
+    diagram.source.record(F.Node.layout_options)
+    diagram.refresh()
+    await settle(diagram)
+
+    assert diagram.pipe.status.exception is None
+    wire = laid_out[-1]
+    assert _node(wire, "a")["layoutOptions"] == {"org.eclipse.elk.padding": padding}
+    assert wire["edges"][0]["sources"] == (["c.slack"] if collapse else ["c"])
+    diagram.close()
+
+
+@pytest.mark.asyncio
+async def test_a_clean_text_sizer_passes_on_an_edit_it_does_not_observe(monkeypatch):
+    """A custom flow without ``VisibilityPipe``: the output of the text sizer is a
+    copy, so a layout option or size that it does not observe reaches ``ElkJS``
+    through its input, not through its stale copy.
+    """
+    laid_out = []
+
+    def record_and_lay_out(wire: dict):
+        laid_out.append({el["id"]: dict(el) for el in _walk(wire)})
+        lay_out(wire)
+
+    monkeypatch.setattr(BrowserTextSizer, "run", _browser_stage(measure_labels))
+    monkeypatch.setattr(ElkJS, "run", _browser_stage(record_and_lay_out))
+    root, a, _b, _c = user_graph()
+    diagram = Diagram(
+        source=MarkElementWidget(value=root),
+        pipe=Pipeline(pipes=[ValidationPipe(), BrowserTextSizer(), ElkJS()]),
+    )
+    await settle(diagram)
+    options = {"org.eclipse.elk.nodeSize.minimum": "(500, 500)"}
+
+    a.layoutOptions = options
+    a.width = 333
+    diagram.source.record(F.Node.layout_options, F.Node.size)
+    diagram.refresh()
+    await settle(diagram)
+
+    assert diagram.pipe.status.exception is None
+    assert len(laid_out) == 2
+    assert laid_out[-1]["a"]["layoutOptions"] == options
+    assert laid_out[-1]["a"]["width"] == 333
+    assert laid_out[-1]["la"]["width"] == LABEL_WIDTH, "the measured size stays"
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("collapsed", [False, True], ids=["expanded", "collapsed"])
+async def test_a_color_change_reaches_the_view(browser, collapsed):
+    """``record(F.ColorCSS)`` shows a new class without measuring text again, and
+    keeps the projection.
+    """
+    root, a, _b, _c = user_graph()
+    diagram = Diagram(source=MarkElementWidget(value=root))
+    await settle(diagram)
+    if collapsed:
+        await _collapse_a(diagram)
+    _valid, sizer, _vis, _elk = diagram.pipe.pipes
+    sizer_runs = []
+    count_runs(sizer, sizer_runs)
+    before = _view(diagram)
+
+    a.add_class("hot")
+    diagram.source.record(F.ColorCSS)
+    diagram.refresh()
+    await settle(diagram)
+
+    assert diagram.pipe.status.exception is None
+    view = _view(diagram)
+    assert _node(view, "a")["properties"]["cssClasses"] == "hot"
+    assert sizer_runs == []
+    assert view["edges"][0]["sources"] == before["edges"][0]["sources"]
+    assert view["edges"][0]["sources"] == (["c.slack"] if collapsed else ["c"])

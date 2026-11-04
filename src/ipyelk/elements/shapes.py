@@ -17,6 +17,7 @@ from pydantic import (
     BeforeValidator,
     ConfigDict,
     Field,
+    PrivateAttr,
     SerializationInfo,
     SerializerFunctionWrapHandler,
     ValidationInfo,
@@ -492,7 +493,8 @@ class Widget(NodeShape):
         - ``widget`` (ipywidgets ``DOMWidget``, required): the widget to draw.
           Serialization writes its ``model_id`` to ``use``. A ``use`` that is not
           the ``model_id`` of an open ``widget`` raises ``ValidationError``, at
-          construction and when you assign ``use``. JSON loads the
+          construction and when you assign ``use``. An assignment of ``widget`` sets
+          ``use`` to ``None``. JSON loads the
           widget that has the ``model_id`` in ``use``. If no open widget has it, ELK
           JSON loads a :py:class:`NodeShape` with the same fields, and a dictionary
           in user code raises.
@@ -512,12 +514,18 @@ class Widget(NodeShape):
 
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
+    #: the last open ``widget`` and its ``model_id``: closing drops its comm
+    _model_id: tuple[DOMWidget, str] | None = PrivateAttr(None)
+
     @model_validator(mode="before")
     @classmethod
     def find_widget(cls, data, info: ValidationInfo):
         """Load JSON, which has the ``model_id`` of the widget in ``use``."""
         if not isinstance(data, dict):
             return data
+        if info.field_name == "widget":
+            # use names the old widget: a closed new one must not write it (#241)
+            return {**data, "use": None}
         widget, use = data.get("widget"), data.get("use")
         # an assignment passes every field: check use only when it is the new value
         given = info.field_name in {None, "use"}
@@ -540,12 +548,25 @@ class Widget(NodeShape):
                 raise ValueError(msg)
         return data
 
+    @model_validator(mode="after")
+    def remember_model_id(self) -> Widget:
+        if self.widget.comm is not None:
+            self._model_id = (self.widget, self.widget.model_id)
+        return self
+
     @model_serializer(mode="wrap")
     def serialize_shape(
         self, handler: SerializerFunctionWrapHandler, info: SerializationInfo
     ):
         data = super().serialize_shape(handler, info)
-        serialize_value(data, "use", self.widget.model_id, info)
+        # a closed widget writes the model_id it had, which ELK JSON loads as a
+        # NodeShape with a warning (#241)
+        widget, seen = self.widget, self._model_id
+        if widget.comm is not None:
+            model_id = widget.model_id
+        else:  # only the model_id of this widget, not of one it replaced
+            model_id = seen[1] if seen and seen[0] is widget else None
+        serialize_value(data, "use", model_id or self.use, info)
         return data
 
 
@@ -588,10 +609,13 @@ def shape_class(
         model_id = data.get("use")
         if open_widget(model_id) is None:
             # a closed widget, or JSON from another kernel: keep the layout result
-            msg = (
-                f"No open widget has the model_id {model_id!r} of a {tag!r} shape. The"
-                " shape loads as a NodeShape with the same JSON."
+            missing = (
+                f"No open widget has the model_id {model_id!r} of a {tag!r} shape."
+                if model_id is not None
+                # the widget was closed before the shape saw it open
+                else f"A {tag!r} shape has no model_id in use."
             )
+            msg = f"{missing} The shape loads as a NodeShape with the same JSON."
             warnings.warn(msg, UserWarning, stacklevel=2)
             return NodeShape
     return cls
