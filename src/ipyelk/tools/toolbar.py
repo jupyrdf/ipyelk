@@ -2,6 +2,7 @@
 # Distributed under the terms of the Modified BSD License.
 from __future__ import annotations
 
+import weakref
 from collections import defaultdict
 from itertools import chain
 
@@ -20,6 +21,9 @@ class Toolbar(W.HBox, StyledWidget):
     ``priority``; tools without a UI (``Selection``, ``Hover``, ``Viewport``,
     ``Painter``) hold state only and are not rendered.
     """
+
+    #: weak owner, maintained by Diagram when this widget is attached
+    _diagram: weakref.ref | None = None
 
     tools = T.List(T.Instance(Tool), kw={})
     close_btn = T.Instance(W.Button)

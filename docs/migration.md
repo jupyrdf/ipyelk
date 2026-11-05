@@ -977,6 +977,19 @@ view.set_viewport(origin=(0, 0), zoom=1.5)  # every view, animated
 view.set_viewport(zoom=2, animate=False, view_id=view.viewport.view_id)
 ```
 
+### Give each diagram its own tools and toolbar
+
+Passing another open diagram's `tools` or `toolbar`, assigning them later, or
+registering one of its tools now raises `TraitError` before any binding changes. In 2.x,
+this redirected tools to the second diagram and closing either diagram could close the
+other's tools. Create fresh tools and a fresh toolbar for each independent diagram. To
+show the same diagram in two places, display the same `Diagram` twice.
+
+A custom tool can move between diagrams: first remove it from the old diagram's `tools`,
+then call `new_diagram.register_tool(tool)`. The viewer's own selection, hover,
+viewport, painter, fit and center tools stay with that viewer even when removed from
+`Diagram.tools`; use a fresh tool for a different viewer.
+
 ### Make a new diagram or tool after you close one
 
 A closed `Diagram`, `Pipe` or tool raises `ipyelk.exceptions.ClosedError` when you use

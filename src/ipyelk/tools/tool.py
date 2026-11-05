@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import weakref
 from collections.abc import Iterator
 from typing import TYPE_CHECKING
 
@@ -73,6 +74,11 @@ class Tool(W.Widget):
     coexist. Assigning ``tool.on_start = callback`` or ``tool.on_done = callback``
     (the 2.x single-slot form) is an error.
     """
+
+    #: weak owner, maintained by Diagram when this widget is attached
+    _diagram: weakref.ref | None = None
+    #: state tools remain part of their viewer even when absent from Diagram.tools
+    _viewer: weakref.ref | None = None
 
     tee = T.Instance(Pipe, allow_none=True).tag(sync=True, **W.widget_serialization)
     disabled = T.Bool(
