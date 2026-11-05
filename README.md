@@ -73,6 +73,9 @@ In the browser, `@jupyrdf/jupyter-elk`:
 - [sprotty][] draws the diagram as SVG
 - interaction information (like selection and hovering) are passed back to the browser
 
+For upstream widget limitations and their workarounds, see the [known issues in the
+changelog][known-issues].
+
 ## Uninstall
 
 ```bash
@@ -93,6 +96,7 @@ package's license expression is `BSD-3-Clause AND EPL-1.0 AND EPL-2.0`.
 [examples]: https://github.com/jupyrdf/ipyelk/tree/master/examples/_index.ipynb
 [contributing]: https://github.com/jupyrdf/ipyelk/tree/master/CONTRIBUTING.md
 [changelog]: https://github.com/jupyrdf/ipyelk/tree/master/CHANGELOG.md
+[known-issues]: https://github.com/jupyrdf/ipyelk/blob/master/CHANGELOG.md#known-issues
 [migration]: https://ipyelk.readthedocs.io/en/latest/migration.html
 [ci-badge]: https://github.com/jupyrdf/ipyelk/workflows/CI/badge.svg
 [ci]: https://github.com/jupyrdf/ipyelk/actions?query=workflow%3ACI+branch%3Amaster
