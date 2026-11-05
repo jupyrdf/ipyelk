@@ -18,18 +18,18 @@ ${JS VIEWS}     return [...document.querySelectorAll('.tools-probe .jp-ElkView')
 Selection Before First Layout And Bidirectional Updates
     [Tags]    tool:selection    gh:165
     Tool Classes Should Be    tools-a    selected    2
-    Run IPyElk Code In A New Cell    _tools.selection.ids = ()    screen=${EMPTY}
+    Run Tool Code In A New Cell    _tools.selection.ids = ()    screen=${EMPTY}
     Wait Until Keyword Succeeds    20x    0.25s    Tool Classes Should Be    tools-a    selected    0
     ${node} =    Get WebElement    css:.tools-probe [id$="_tools-a"] > .elknode
     Execute Javascript    arguments[0].scrollIntoView({block:"center"})    ARGUMENTS    ${node}
     Click Element At Coordinates    ${node}    0    0
     Tool State Should Satisfy    state['selection'] == ['tools-a']
-    Run IPyElk Code In A New Cell    _tools.selection.ids = ('tools-b',)    screen=${EMPTY}
+    Run Tool Code In A New Cell    _tools.selection.ids = ('tools-b',)    screen=${EMPTY}
     Wait Until Keyword Succeeds    20x    0.25s    Tool Classes Should Be    tools-b    selected    2
 
 Hover Enter Leave And Descendant Transitions
     [Tags]    tool:hover    gh:165
-    Run IPyElk Code In A New Cell    _tools.reset_events()    screen=${EMPTY}
+    Run Tool Code In A New Cell    _tools.reset_events()    screen=${EMPTY}
     ${node} =    Get WebElement    css:.tools-probe [id$="_tools-a"] > .elknode
     Execute Javascript    arguments[0].scrollIntoView({block:"center"})    ARGUMENTS    ${node}
     Mouse Over    ${node}
@@ -45,20 +45,20 @@ Hover Enter Leave And Descendant Transitions
     Tool State Should Satisfy    state['hovered'] == 'tools-port' and None not in state['hover_changes']
     Mouse Over    css:.jp-NotebookPanel-toolbar
     Tool State Should Satisfy    state['hovered'] is None
-    Run IPyElk Code In A New Cell    _tools.diagram.view.hover.hovered_id = 'tools-b'    screen=${EMPTY}
+    Run Tool Code In A New Cell    _tools.diagram.view.hover.hovered_id = 'tools-b'    screen=${EMPTY}
     Wait Until Keyword Succeeds    20x    0.25s    Tool Classes Should Be    tools-b    hover    2
-    Run IPyElk Code In A New Cell    _tools.diagram.view.hover.hovered_id = None    screen=${EMPTY}
+    Run Tool Code In A New Cell    _tools.diagram.view.hover.hovered_id = None    screen=${EMPTY}
     Wait Until Keyword Succeeds    20x    0.25s    Tool Classes Should Be    tools-b    hover    0
 
 Control Overlay Default Assignment And Removal
     [Tags]    tool:overlay    gh:165
     # Deliberately unconditional: this gates oldest as well as newest frontend.
     Page Should Not Contain Element    css:.tools-probe [id*="_entropy"]
-    Run IPyElk Code In A New Cell    _tools.overlay()    screen=${EMPTY}
+    Run Tool Code In A New Cell    _tools.overlay()    screen=${EMPTY}
     Wait Until Page Contains Element
     ...    xpath://div[contains(@class,'tools-probe')]//button[normalize-space()='tools-overlay']
     ...    timeout=30s
-    Run IPyElk Code In A New Cell    _tools.diagram.view.control_overlay = None    screen=${EMPTY}
+    Run Tool Code In A New Cell    _tools.diagram.view.control_overlay = None    screen=${EMPTY}
     Wait Until Page Does Not Contain Element
     ...    xpath://div[contains(@class,'tools-probe')]//button[normalize-space()='tools-overlay']
     ...    timeout=30s
@@ -66,7 +66,7 @@ Control Overlay Default Assignment And Removal
 Viewport Wheel Reports Originating View And Coalesces Burst
     [Tags]    tool:viewport    gh:165
     ${before} =    Execute Javascript    ${JS VIEWS}
-    Run IPyElk Code In A New Cell    _tools.reset_events()    screen=${EMPTY}
+    Run Tool Code In A New Cell    _tools.reset_events()    screen=${EMPTY}
     Execute Javascript
     ...    const v=document.querySelectorAll('.tools-probe .sprotty-root')[0]; for(let i=0;i<10;i++) v.dispatchEvent(new WheelEvent('wheel',{altKey:true,deltaX:5,deltaY:7,bubbles:true}));
     Tool State Should Satisfy    len(state['camera_changes']) == 1 and len(state['camera_updates']) == 1
@@ -82,7 +82,7 @@ Viewport Wheel Reports Originating View And Coalesces Burst
 Viewport Drag Reports Originating View
     [Tags]    tool:viewport    gh:165
     ${before} =    Execute Javascript    ${JS VIEWS}
-    Run IPyElk Code In A New Cell    _tools.reset_events()    screen=${EMPTY}
+    Run Tool Code In A New Cell    _tools.reset_events()    screen=${EMPTY}
     ${canvas} =    Get WebElement    css:.tools-probe .sprotty-root
     Execute Javascript    arguments[0].scrollIntoView({block:'center'})    ARGUMENTS    ${canvas}
     Drag And Drop By Offset    ${canvas}    35    20
@@ -93,17 +93,21 @@ Viewport Drag Reports Originating View
 
 Viewport Targeted And Broadcast Commands
     [Tags]    tool:viewport    gh:165
-    # Produce a report so the target id is obtained from the public kernel API.
+    # Wait for this wheel report, rather than accepting either view's initial
+    # snapshot. Keep its public view id even if another view reports afterward.
+    Run Tool Code In A New Cell    _tools.reset_events()    screen=${EMPTY}
     Execute Javascript
     ...    document.querySelectorAll('.tools-probe .sprotty-root')[0].dispatchEvent(new WheelEvent('wheel',{altKey:true,deltaX:8,deltaY:9,bubbles:true}));
-    Tool State Should Satisfy    state['camera_id'] is not None
+    Tool State Should Satisfy    any(r['origin'] == [8, 9] and r['zoom'] == 1 for r in state['camera_changes'])
     ${state} =    Tool State
+    ${view id} =    Evaluate
+    ...    next(r['view'] for r in $state['camera_changes'] if r['origin'] == [8, 9] and r['zoom'] == 1)
     ${before} =    Execute Javascript    ${JS VIEWS}
-    Run IPyElk Code In A New Cell
-    ...    _tools.diagram.view.set_viewport(origin=(31, 43), zoom=0.75, animate=False, view_id='${state}[camera_id]')
+    Run Tool Code In A New Cell
+    ...    _tools.diagram.view.set_viewport(origin=(31, 43), zoom=0.75, animate=False, view_id='${view id}')
     ...    screen=${EMPTY}
     Wait Until Keyword Succeeds    20x    0.25s    Target Camera Should Move    ${before}
-    Run IPyElk Code In A New Cell
+    Run Tool Code In A New Cell
     ...    _tools.diagram.view.set_viewport(origin=(17, 23), zoom=0.9, animate=False)
     ...    screen=${EMPTY}
     Wait Until Keyword Succeeds    20x    0.25s    Cameras Should Match
@@ -111,14 +115,14 @@ Viewport Targeted And Broadcast Commands
 Painter All Views Relayout Export Purity And Clear
     [Tags]    tool:painter    gh:165
     ${before} =    Tool State
-    Run IPyElk Code In A New Cell    _tools.diagram.view.painter.paint('tools-a', 'tools-painted')    screen=${EMPTY}
+    Run Tool Code In A New Cell    _tools.diagram.view.painter.paint('tools-a', 'tools-painted')    screen=${EMPTY}
     Wait Until Keyword Succeeds    20x    0.25s    Tool Classes Should Be    tools-a    tools-painted    2
     Tool State Should Satisfy    state['elk'] == ${before}[elk] and 'tools-painted' not in json.dumps(state['source'])
     Start Tool Operation And Wait    relayout
     Tool Classes Should Be    tools-a    tools-painted    2
-    Run IPyElk Code In A New Cell    _tools.export()    screen=${EMPTY}
+    Run Tool Code In A New Cell    _tools.export()    screen=${EMPTY}
     Wait Until Keyword Succeeds    30x    0.5s    Export Should Include Paint
-    Run IPyElk Code In A New Cell    _tools.diagram.view.painter.clear()    screen=${EMPTY}
+    Run Tool Code In A New Cell    _tools.diagram.view.painter.clear()    screen=${EMPTY}
     Wait Until Keyword Succeeds    20x    0.25s    Tool Classes Should Be    tools-a    tools-painted    0
     Tool Classes Should Be    tools-a    tools-model-class    2
 
@@ -141,8 +145,9 @@ Headless Full Refresh Completes
 *** Keywords ***
 Open Tool Probe
     Open Tool Introduction
+    Execute Javascript    window.toolProbeTransport={failure:null,answers:{}};
     Copy File    ${FIXTURES}${/}tool_probe.py    ${OUTPUT DIR}${/}home${/}tool_probe.py
-    Run IPyElk Code In A New Cell    _tools = __import__('tool_probe').Probe()    screen=${EMPTY}
+    Run Tool Code In A New Cell    _tools = __import__('tool_probe').Probe()    screen=${EMPTY}
     Wait Until Tool Operation Finishes    ready
     Page Should Not Contain Contain Standard Errors
     Wait Until Keyword Succeeds    30x    0.5s    Tool Classes Should Be    tools-a    selected    2
@@ -179,7 +184,7 @@ Tool Notebook Should Be Active
 
 Start Tool Operation And Wait
     [Arguments]    ${operation}
-    Run IPyElk Code In A New Cell    _tools.start('${operation}')    screen=${EMPTY}
+    Run Tool Code In A New Cell    _tools.start('${operation}')    screen=${EMPTY}
     Wait Until Tool Operation Finishes    ${operation}
 
 Wait Until Tool Operation Finishes
@@ -192,6 +197,23 @@ Tool Operation Should Be Finished
     ${state} =    Tool State
     Should Be Equal    ${state}[operation]    ${operation}
     Should Be True    $state['done'] and not $state['cancelled'] and $state['error'] is None    ${state}
+
+Run Tool Code In A New Cell
+    [Arguments]    ${code}    ${screen}=${EMPTY}
+    ${token} =    Evaluate    'TOOLSCELLx' + secrets.token_hex(5)    secrets
+    Run IPyElk Code In A New Cell    ${code}; print('${token}')    screen=${screen}
+    # Idle may still describe the preceding cell. Verify this cell's own output
+    # before sending another request, and expose its Python errors immediately.
+    Wait For Condition
+    ...    return (()=>{const token='${token}',cells=window.jupyterapp.shell.currentWidget.content.widgets;const cell=cells.find(c=>c.model.sharedModel.getSource().includes(token));const outputs=cell?.model.toJSON().outputs||[],text=o=>Array.isArray(o.text)?o.text.join(''):o.text||'';return outputs.some(o=>o.output_type==='error'||o.output_type==='stream'&&text(o).includes(token));})();
+    ...    timeout=30s
+    Page Should Not Contain Contain Standard Errors
+    ${cell result} =    Execute Javascript
+    ...    const token=arguments[0],cell=window.jupyterapp.shell.currentWidget.content.widgets.find(c=>c.model.sharedModel.getSource().includes(token));const outputs=cell.model.toJSON().outputs,text=o=>Array.isArray(o.text)?o.text.join(''):o.text||'';return {completed:outputs.some(o=>o.output_type==='stream'&&text(o).includes(token)),errors:outputs.filter(o=>o.output_type==='error').map(o=>o.ename+': '+o.evalue)};
+    ...    ARGUMENTS
+    ...    ${token}
+    Should Be Empty    ${cell result}[errors]    tool cell failed: ${cell result}
+    Should Be True    ${cell result}[completed]    the requested tool cell did not emit its completion token
 
 Tool Element
     [Arguments]    ${id}    ${index}
@@ -212,14 +234,21 @@ Tool State
     # Query without scrolling or moving the pointer off the diagram under test.
     ${token} =    Evaluate    'TOOLSx' + secrets.token_hex(5)    secrets
     Execute Javascript
-    ...    window.toolProbeAnswers ??= {}; const token=arguments[0]; const f=window.jupyterapp.shell.currentWidget.sessionContext.session.kernel.requestExecute({code:"_tools.report('"+token+"')"}); f.onIOPub=m=>{if(m.header.msg_type==='stream' && m.content.text.startsWith(token+' ')) window.toolProbeAnswers[token]=JSON.parse(m.content.text.slice(token.length+1));};
+    ...    const transport=window.toolProbeTransport;if(transport.failure)throw Error(transport.failure);const token=arguments[0],q={done:false,stdout:'',stderr:'',reply:null,error:null,answer:null};transport.answers[token]=q;
+    ...    const fail=error=>{q.error=String(error);transport.failure=q.error;q.done=true;};
+    ...    try{const f=window.jupyterapp.shell.currentWidget.sessionContext.session.kernel.requestExecute({code:"_tools.report('"+token+"')"});
+    ...    f.onIOPub=m=>{if(m.header.msg_type==='stream'){q[m.content.name==='stderr'?'stderr':'stdout']+=m.content.text;if(m.content.name==='stderr')fail(q.stderr);}else if(m.header.msg_type==='error'){fail(m.content.ename+': '+m.content.evalue);}};
+    ...    f.done.then(reply=>{q.reply=reply.content;if(q.error||q.stderr||q.reply.status!=='ok'){fail(q.error||q.stderr||JSON.stringify(q.reply));return;}const line=q.stdout.split('\\n').find(line=>line.startsWith(token+' '));if(!line){fail('completed query has no token: '+q.stdout);return;}try{q.answer=JSON.parse(line.slice(token.length+1));q.done=true;}catch(error){fail('invalid query JSON: '+error);}}).catch(fail);
+    ...    }catch(error){fail(error);}
     ...    ARGUMENTS
     ...    ${token}
-    Wait For Condition    return window.toolProbeAnswers?.['${token}'] != null    timeout=30s
-    ${state} =    Execute Javascript
-    ...    const answer=window.toolProbeAnswers[arguments[0]]; delete window.toolProbeAnswers[arguments[0]]; return answer;
+    Wait For Condition    return window.toolProbeTransport.answers['${token}']?.done    timeout=30s
+    ${query} =    Execute Javascript
+    ...    const answers=window.toolProbeTransport.answers,answer=answers[arguments[0]];delete answers[arguments[0]];return answer;
     ...    ARGUMENTS
     ...    ${token}
+    Should Be Equal    ${query}[error]    ${None}    tool query failed: ${query}
+    ${state} =    Set Variable    ${query}[answer]
     RETURN    ${state}
 
 Tool State Should Satisfy
@@ -244,6 +273,6 @@ Cameras Should Match
 
 Export Should Include Paint
     Tool State Should Satisfy    state['export_ready']
-    Run IPyElk Code In A New Cell    _tools.assert_export(); print('TOOLS-EXPORT-PASS')    screen=${EMPTY}
+    Run Tool Code In A New Cell    _tools.assert_export(); print('TOOLS-EXPORT-PASS')    screen=${EMPTY}
     Wait Until Page Contains    TOOLS-EXPORT-PASS    timeout=2s
     Page Should Not Contain Contain Standard Errors
