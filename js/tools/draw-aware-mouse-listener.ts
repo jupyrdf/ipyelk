@@ -10,6 +10,7 @@ import {
   findParentByFeature,
   isHoverable,
 } from 'sprotty';
+import { DOMHelper } from 'sprotty/lib/base/views/dom-helper';
 
 import { DiagramTool } from './tool';
 
@@ -60,6 +61,7 @@ export class DragAwareHoverMouseListener extends DragAwareMouseListener {
   constructor(
     protected elementTypeId: string,
     protected tool: DiagramTool,
+    protected domHelper?: DOMHelper,
   ) {
     super();
   }
@@ -83,6 +85,19 @@ export class DragAwareHoverMouseListener extends DragAwareMouseListener {
   }
 
   mouseOut(target: SModelElementImpl, event: MouseEvent): (Action | Promise<Action>)[] {
+    // mouseout fires between a node and its own label/port as well as when
+    // leaving the diagram. Let the following mouseover select the next target
+    // without publishing an intermediate "nothing hovered" to the kernel.
+    let related = event.relatedTarget as Element | null;
+    while (related != null && this.domHelper != null) {
+      const next = target.root.index.getById(
+        this.domHelper.findSModelIdByDOMElement(related),
+      );
+      if (next != null && findParentByFeature(next, isHoverable) != null) {
+        return [];
+      }
+      related = related.parentElement;
+    }
     const hoverTarget = findParentByFeature(target, isHoverable);
     if (hoverTarget === undefined) {
       return [];

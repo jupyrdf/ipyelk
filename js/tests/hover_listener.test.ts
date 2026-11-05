@@ -8,6 +8,7 @@ import { describe, expect, it } from 'vitest';
 import { HoverFeedbackAction } from 'sprotty-protocol';
 
 import { SModelRootImpl, SNodeImpl, createFeatureSet, isHoverable } from 'sprotty';
+import { DOMHelper } from 'sprotty/lib/base/views/dom-helper';
 
 import { ElkLabel, ElkNode } from '../sprotty/sprotty-model';
 import { DragAwareHoverMouseListener } from '../tools/draw-aware-mouse-listener';
@@ -63,5 +64,58 @@ describe('DragAwareHoverMouseListener target attribution', () => {
     const root = new SModelRootImpl();
     expect(listener.mouseOver(root, {} as MouseEvent)).toEqual([]);
     expect(listener.mouseOut(root, {} as MouseEvent)).toEqual([]);
+  });
+});
+
+describe('hover pointer boundaries', () => {
+  const dom = (id: string, parentElement: Element | null = null) =>
+    ({ id, parentElement }) as Element;
+  const boundaryListener = new DragAwareHoverMouseListener(
+    'node',
+    new DiagramTool(),
+    new DOMHelper(),
+  );
+
+  it('does not clear between a node and its own non-hoverable label', () => {
+    const { node, label } = nodeWithLabel();
+    expect(
+      boundaryListener.mouseOut(node, {
+        relatedTarget: dom(label.id),
+      } as unknown as MouseEvent),
+    ).toEqual([]);
+    expect(
+      boundaryListener.mouseOut(label, {
+        relatedTarget: dom('', dom(node.id)),
+      } as unknown as MouseEvent),
+    ).toEqual([]);
+  });
+
+  it('leaves directly for another hoverable target without an intermediate clear', () => {
+    const { node, label } = nodeWithLabel();
+    label.properties = { selectable: true };
+    expect(
+      boundaryListener.mouseOut(node, {
+        relatedTarget: dom(label.id),
+      } as unknown as MouseEvent),
+    ).toEqual([]);
+    const actions = boundaryListener.mouseOver(
+      label,
+      {} as MouseEvent,
+    ) as HoverFeedbackAction[];
+    expect(actions.map((a) => [a.mouseoverElement, a.mouseIsOver])).toEqual([
+      [label.id, true],
+    ]);
+  });
+
+  it('still clears when leaving for empty canvas or outside the view', () => {
+    const { node } = nodeWithLabel();
+    for (const relatedTarget of [null, dom('not-in-model')]) {
+      const actions = boundaryListener.mouseOut(node, {
+        relatedTarget,
+      } as unknown as MouseEvent) as HoverFeedbackAction[];
+      expect(actions.map((a) => [a.mouseoverElement, a.mouseIsOver])).toEqual([
+        [node.id, false],
+      ]);
+    }
   });
 });
