@@ -83,11 +83,15 @@ def tree():
 class CountViewport(Viewport):
     def __init__(self, **kwargs):
         self.updates = []
+        self.canvas_sizes = {}
         super().__init__(**kwargs)
 
     def set_state(self, sync_data):
         self.updates.append(dict(sync_data))
-        return super().set_state(sync_data)
+        result = super().set_state(sync_data)
+        if self.view_id is not None and self.canvas_size is not None:
+            self.canvas_sizes[self.view_id] = list(self.canvas_size)
+        return result
 
 
 class Probe:
@@ -167,6 +171,7 @@ class Probe:
             camera_changes=self.camera_changes,
             camera_id=view.viewport.view_id,
             camera_updates=view.viewport.updates,
+            camera_sizes=view.viewport.canvas_sizes,
             export_ready=bool(getattr(getattr(self, "exporter", None), "value", None)),
             elk=self.elk.calls,
             validation=self.validation.calls,

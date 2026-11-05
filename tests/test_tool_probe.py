@@ -101,3 +101,26 @@ async def test_initial_and_pipeline_errors_cannot_pass_or_start_next_operation(f
     assert probe.operation_state()["error"] is not None
     with pytest.raises(RuntimeError, match="Previous operation did not succeed"):
         probe.start("relayout")
+
+
+def test_viewport_geometry_readiness_preserves_partial_raw_updates():
+    viewport_class = Probe.__init__.__globals__["CountViewport"]
+    viewport = viewport_class()
+    updates = [
+        {"view_id": "first", "canvas_size": [384, 300]},
+        {"view_id": "second"},
+        {"view_id": "first", "canvas_size": [372, 300]},
+        {"canvas_size": [360, 300]},
+    ]
+    try:
+        for update in updates:
+            viewport.set_state(update)
+        assert viewport.canvas_sizes == {
+            "first": [360, 300],
+            "second": [384, 300],
+        }
+        # Readiness snapshots must never filter a partial size-only message out
+        # of the strict communication-count assertions.
+        assert viewport.updates == updates
+    finally:
+        viewport.close()

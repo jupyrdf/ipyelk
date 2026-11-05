@@ -65,8 +65,7 @@ Control Overlay Default Assignment And Removal
 
 Viewport Wheel Reports Originating View And Coalesces Burst
     [Tags]    tool:viewport    gh:165
-    ${before} =    Execute Javascript    ${JS VIEWS}
-    Run Tool Code In A New Cell    _tools.reset_events()    screen=${EMPTY}
+    ${before}    ${sizes before} =    Prepare Tool Viewport Gesture
     Execute Javascript
     ...    const v=document.querySelectorAll('.tools-probe .sprotty-root')[0]; for(let i=0;i<10;i++) v.dispatchEvent(new WheelEvent('wheel',{altKey:true,deltaX:5,deltaY:7,bubbles:true}));
     Tool State Should Satisfy    len(state['camera_changes']) == 1 and len(state['camera_updates']) == 1
@@ -78,18 +77,24 @@ Viewport Wheel Reports Originating View And Coalesces Burst
     Sleep    1s
     Tool State Should Satisfy
     ...    len(state['camera_changes']) == 1 and len(state['camera_updates']) == 1 and state['camera_changes'][0]['view'] == '${view id}'
+    ${sizes after} =    Tool Canvas Sizes
+    Should Be Equal    ${sizes before}    ${sizes after}    the wheel burst must not resize its canvas
 
 Viewport Drag Reports Originating View
     [Tags]    tool:viewport    gh:165
-    ${before} =    Execute Javascript    ${JS VIEWS}
-    Run Tool Code In A New Cell    _tools.reset_events()    screen=${EMPTY}
+    ${before}    ${sizes before} =    Prepare Tool Viewport Gesture
     ${canvas} =    Get WebElement    css:.tools-probe .sprotty-root
-    Execute Javascript    arguments[0].scrollIntoView({block:'center'})    ARGUMENTS    ${canvas}
     Drag And Drop By Offset    ${canvas}    35    20
     Tool State Should Satisfy    len(state['camera_changes']) == 1 and len(state['camera_updates']) == 1
     ${after} =    Execute Javascript    ${JS VIEWS}
     Should Not Be Equal    ${before}[0]    ${after}[0]
     Should Be Equal    ${before}[1]    ${after}[1]
+    ${sizes after} =    Tool Canvas Sizes
+    Should Be Equal    ${sizes before}    ${sizes after}    the gesture must not resize its canvas
+    Sleep    1s
+    Tool State Should Satisfy    len(state['camera_changes']) == 1 and len(state['camera_updates']) == 1
+    ${sizes late} =    Tool Canvas Sizes
+    Should Be Equal    ${sizes before}    ${sizes late}    the settled canvas must remain unchanged
 
 Viewport Targeted And Broadcast Commands
     [Tags]    tool:viewport    gh:165
@@ -231,17 +236,19 @@ Tool Classes Should Be
     Should Be Equal As Integers    ${found}    ${count}
 
 Tool State
+    [Arguments]    ${reset}=${FALSE}
     # Query without scrolling or moving the pointer off the diagram under test.
     ${token} =    Evaluate    'TOOLSx' + secrets.token_hex(5)    secrets
     Execute Javascript
-    ...    const transport=window.toolProbeTransport;if(transport.failure)throw Error(transport.failure);const token=arguments[0],q={done:false,stdout:'',stderr:'',reply:null,error:null,answer:null};transport.answers[token]=q;
+    ...    const transport=window.toolProbeTransport;if(transport.failure)throw Error(transport.failure);const token=arguments[0],reset=arguments[1],q={done:false,stdout:'',stderr:'',reply:null,error:null,answer:null};transport.answers[token]=q;
     ...    const fail=error=>{q.error=String(error);transport.failure=q.error;q.done=true;};
-    ...    try{const f=window.jupyterapp.shell.currentWidget.sessionContext.session.kernel.requestExecute({code:"_tools.report('"+token+"')"});
+    ...    try{const f=window.jupyterapp.shell.currentWidget.sessionContext.session.kernel.requestExecute({code:(reset?"_tools.reset_events(); ":"")+"_tools.report('"+token+"')"});
     ...    f.onIOPub=m=>{if(m.header.msg_type==='stream'){q[m.content.name==='stderr'?'stderr':'stdout']+=m.content.text;if(m.content.name==='stderr')fail(q.stderr);}else if(m.header.msg_type==='error'){fail(m.content.ename+': '+m.content.evalue);}};
     ...    f.done.then(reply=>{q.reply=reply.content;if(q.error||q.stderr||q.reply.status!=='ok'){fail(q.error||q.stderr||JSON.stringify(q.reply));return;}const line=q.stdout.split('\\n').find(line=>line.startsWith(token+' '));if(!line){fail('completed query has no token: '+q.stdout);return;}try{q.answer=JSON.parse(line.slice(token.length+1));q.done=true;}catch(error){fail('invalid query JSON: '+error);}}).catch(fail);
     ...    }catch(error){fail(error);}
     ...    ARGUMENTS
     ...    ${token}
+    ...    ${reset}
     Wait For Condition    return window.toolProbeTransport.answers['${token}']?.done    timeout=30s
     ${query} =    Execute Javascript
     ...    const answers=window.toolProbeTransport.answers,answer=answers[arguments[0]];delete answers[arguments[0]];return answer;
@@ -260,6 +267,32 @@ Tool State Should Really Satisfy
     ${state} =    Tool State
     ${satisfied} =    Evaluate    eval($expression, {'state': $state, 'json': json})    json
     Should Be True    ${satisfied}    ${expression}: ${state}
+
+Prepare Tool Viewport Gesture
+    ${canvas} =    Get WebElement    css:.tools-probe .sprotty-root
+    Execute Javascript    arguments[0].scrollIntoView({block:'center'})    ARGUMENTS    ${canvas}
+    # Wait for both actual public canvas reports after visible preparation.
+    # Arm without another UI cell, which would scroll the diagram away again.
+    Wait Until Keyword Succeeds    30s    0.5s    Tool Canvas Reports Should Match DOM
+    ${sizes} =    Tool Canvas Sizes
+    ${before} =    Execute Javascript    ${JS VIEWS}
+    ${reset} =    Tool State    reset=${TRUE}
+    Should Be Empty    ${reset}[camera_changes]
+    Should Be Empty    ${reset}[camera_updates]
+    RETURN    ${before}    ${sizes}
+
+Tool Canvas Sizes
+    ${sizes} =    Execute Javascript
+    ...    return [...document.querySelectorAll('.tools-probe svg.sprotty-graph')].map(svg=>{const r=svg.getBoundingClientRect();return [r.width,r.height];});
+    RETURN    ${sizes}
+
+Tool Canvas Reports Should Match DOM
+    ${sizes} =    Tool Canvas Sizes
+    ${state} =    Tool State
+    ${reported} =    Evaluate    sorted($state['camera_sizes'].values())
+    ${expected} =    Evaluate    sorted($sizes)
+    Should Be Equal As Integers    ${reported.__len__()}    2
+    Should Be Equal    ${reported}    ${expected}    both public canvas reports must match the visible SVG canvases
 
 Target Camera Should Move
     [Arguments]    ${before}
