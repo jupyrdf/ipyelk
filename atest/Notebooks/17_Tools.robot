@@ -36,6 +36,10 @@ Hover Enter Leave And Descendant Transitions
     Tool State Should Satisfy    state['hovered'] == 'tools-a'
     ${label} =    Tool Element    tools-label    1
     Mouse Over    ${label}
+    Tool State Should Satisfy    state['hovered'] == 'tools-a' and None not in state['hover_changes']
+    # Return through the node body and then horizontally onto its side port:
+    # continuity must not depend on interpolation of a diagonal trajectory.
+    Mouse Over    ${node}
     ${port} =    Tool Element    tools-port    1
     Mouse Over    ${port}
     Tool State Should Satisfy    state['hovered'] == 'tools-port' and None not in state['hover_changes']
@@ -136,12 +140,42 @@ Headless Full Refresh Completes
 
 *** Keywords ***
 Open Tool Probe
-    Example Should Restart-and-Run-All    ${INTRODUCTION}
+    Open Tool Introduction
     Copy File    ${FIXTURES}${/}tool_probe.py    ${OUTPUT DIR}${/}home${/}tool_probe.py
     Run IPyElk Code In A New Cell    _tools = __import__('tool_probe').Probe()    screen=${EMPTY}
     Wait Until Tool Operation Finishes    ready
     Page Should Not Contain Contain Standard Errors
     Wait Until Keyword Succeeds    30x    0.5s    Tool Classes Should Be    tools-a    selected    2
+
+Open Tool Introduction
+    Set Screenshot Directory    ${SCREENS}${/}${INTRODUCTION.lower()}
+    Set Tags    notebook:${INTRODUCTION}
+    ${files} =    Get All IPyElk Example Paths
+    Copy Support Files    ${files}
+    # Open the requested document directly. A context-menu race once left the
+    # all-Markdown index active, so kernel-idle alone cannot establish readiness.
+    Execute Javascript
+    ...    window.toolNotebookOpen={done:false}; const app=window.jupyterapp; app.commands.execute('docmanager:open',{path:'${INTRODUCTION}.ipynb',factory:'Notebook'}).then(async panel=>{await panel.context.ready; await panel.revealed; app.shell.activateById(panel.id); window.toolNotebookOpen={done:true};}).catch(error=>{window.toolNotebookOpen={done:true,error:String(error)};});
+    Wait For Condition    return window.toolNotebookOpen.done    timeout=30s
+    ${error} =    Execute Javascript    return window.toolNotebookOpen.error || null;
+    Should Be Equal    ${error}    ${None}
+    Tool Notebook Should Be Active    ${INTRODUCTION}.ipynb
+    Capture Page Screenshot    00-opened.png
+    Wait Until Element Is Visible    ${JLAB XP KERNEL IDLE}    timeout=30s
+    Lab Command    Clear Outputs of All Cells
+    Ensure Sidebar Is Closed
+    Capture Page Screenshot    01-loaded.png
+    Elk Counts Should Be
+    Restart and Run All
+    Wait For All Cells To Run    300s
+    Capture Each Cell Output    09-
+    Page Should Not Contain Contain Standard Errors
+    Capture Page Screenshot    10-ran-all-without-stderr.png
+
+Tool Notebook Should Be Active
+    [Arguments]    ${path}
+    ${active} =    Execute Javascript    return window.jupyterapp.shell.currentWidget?.context?.path;
+    Should Be Equal    ${active}    ${path}    the active notebook must be the requested tool-test host
 
 Start Tool Operation And Wait
     [Arguments]    ${operation}
