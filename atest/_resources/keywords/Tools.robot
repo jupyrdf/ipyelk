@@ -13,7 +13,7 @@ ${JS VIEWS}     return [...document.querySelectorAll('.tools-probe .jp-ElkView')
 
 *** Keywords ***
 Open Tool Probe
-    Open Tool Introduction
+    Open Tool Host
     Execute Javascript    window.toolProbeTransport={failure:null,answers:{}};
     Copy File    ${FIXTURES}${/}tool_probe.py    ${OUTPUT DIR}${/}home${/}tool_probe.py
     Run Tool Code In A New Cell    _tools = __import__('tool_probe').Probe()    screen=${EMPTY}
@@ -21,19 +21,18 @@ Open Tool Probe
     Page Should Not Contain Contain Standard Errors
     Wait Until Keyword Succeeds    30x    0.5s    Tool Classes Should Be    tools-a    selected    2
 
-Open Tool Introduction
-    Set Screenshot Directory    ${SCREENS}${/}${INTRODUCTION.lower()}
-    Set Tags    notebook:${INTRODUCTION}
-    ${files} =    Get All IPyElk Example Paths
-    Copy Support Files    ${files}
+Open Tool Host
+    Set Screenshot Directory    ${SCREENS}${/}tool_host
+    Set Tags    notebook:tool_host
+    Copy File    ${FIXTURES}${/}tool_host.ipynb    ${OUTPUT DIR}${/}home${/}tool_host.ipynb
     # Open the requested document directly. A context-menu race once left the
     # all-Markdown index active, so kernel-idle alone cannot establish readiness.
     Execute Javascript
-    ...    window.toolNotebookOpen={done:false}; const app=window.jupyterapp; app.commands.execute('docmanager:open',{path:'${INTRODUCTION}.ipynb',factory:'Notebook'}).then(async panel=>{await panel.context.ready; await panel.revealed; app.shell.activateById(panel.id); window.toolNotebookOpen={done:true};}).catch(error=>{window.toolNotebookOpen={done:true,error:String(error)};});
+    ...    window.toolNotebookOpen={done:false}; const app=window.jupyterapp; app.commands.execute('docmanager:open',{path:'tool_host.ipynb',factory:'Notebook'}).then(async panel=>{await panel.context.ready; await panel.revealed; app.shell.activateById(panel.id); window.toolNotebookOpen={done:true};}).catch(error=>{window.toolNotebookOpen={done:true,error:String(error)};});
     Wait For Condition    return window.toolNotebookOpen.done    timeout=30s
     ${error} =    Execute Javascript    return window.toolNotebookOpen.error || null;
     Should Be Equal    ${error}    ${None}
-    Tool Notebook Should Be Active    ${INTRODUCTION}.ipynb
+    Tool Notebook Should Be Active    tool_host.ipynb
     Capture Page Screenshot    00-opened.png
     Wait Until Element Is Visible    ${JLAB XP KERNEL IDLE}    timeout=30s
     Lab Command    Clear Outputs of All Cells

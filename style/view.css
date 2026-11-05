@@ -20,6 +20,9 @@
   flex: 1;
   display: flex;
   flex-direction: column;
+  /* Keep panned HTML overlays inside the same viewport as the SVG graph. */
+  position: relative;
+  overflow: hidden;
 }
 
 .jp-ElkView .sprotty > .sprotty-root > svg.sprotty-graph {
