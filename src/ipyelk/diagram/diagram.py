@@ -49,7 +49,9 @@ class Diagram(StyledWidget):
         view or a view of another open diagram, raises ``TraitError``.
     tools: tuple :py:class:`~ipyelk.tools.Tool`
         list of tools that a user of the diagram might use to manipulate the
-        state of the diagram; closed with the diagram.
+        state of the diagram; closed with the diagram. Tools and the toolbar
+        belong to one open diagram. Remove a tool from ``tools`` before
+        registering it on another diagram; give each diagram its own toolbar.
     symbols: :py:class:`~ipyelk.elements.SymbolSpec`
         additional shape definitions that can be used in rendering the diagram.
         For example unique arrow head shapes or custom node shapes.
@@ -62,9 +64,9 @@ class Diagram(StyledWidget):
     A construction that a check refuses (``TraitError``) leaves the source,
     view and pipe that it was given open. A construction that fails after the
     checks, for example in a tool's ``on_done``, closes the diagram as
-    ``close()`` does, with the view and pipe that it was given. Both close the
-    ``tools`` and ``toolbar`` that they were given, a refused construction when
-    Python collects it.
+    ``close()`` does, with the view and pipe that it was given. Tools and the
+    toolbar close only after the diagram has claimed them;
+    a refused construction never closes another diagram's widgets.
 
     """
 
@@ -167,10 +169,54 @@ class Diagram(StyledWidget):
             msg = f"{name} is closed and cannot {action}; build a new {name}"
             raise ClosedError(msg)
 
-    @T.validate("tools", "toolbar", "symbols", "style", "layout")
+    @T.validate("symbols", "style", "layout")
     def _validate_open(self, proposal: T.Bunch):
         self._check_open(f"set {proposal['trait'].name}")
         return proposal["value"]
+
+    def _validate_owned_widget(self, widget: Tool | Toolbar) -> None:
+        owner = open_owner(widget._diagram)
+        if isinstance(widget, Tool):
+            viewer = open_owner(widget._viewer)
+            if viewer is not None:
+                owner = open_owner(viewer._diagram) or owner
+        if owner is not None and owner is not self:
+            name = type(widget).__name__
+            msg = (
+                f"{name} belongs to another open diagram; give this diagram its "
+                f"own {name}. Remove a tool from its diagram's tools before "
+                "registering it elsewhere. To show one diagram in two places, "
+                "display the same Diagram twice"
+            )
+            raise T.TraitError(msg)
+
+    @T.validate("tools")
+    def _validate_tools(self, proposal: T.Bunch):
+        self._check_open("set tools")
+        for tool in proposal["value"]:
+            self._validate_owned_widget(tool)
+        return proposal["value"]
+
+    @T.validate("toolbar")
+    def _validate_toolbar(self, proposal: T.Bunch):
+        self._check_open("set toolbar")
+        self._validate_owned_widget(proposal["value"])
+        return proposal["value"]
+
+    @T.observe("toolbar")
+    def _claim_toolbar(self, change: T.Bunch):
+        old = change.get("old")
+        if isinstance(old, Toolbar) and old._diagram and old._diagram() is self:
+            old._diagram = None
+            for link in self._links[:]:
+                if link.target == (old, "tools"):
+                    link.unlink()
+                    self._links.remove(link)
+        change.new._diagram = weakref.ref(self)
+
+    @T.observe("toolbar", type="default")
+    def _claim_default_toolbar(self, change: T.Bunch):
+        change.value._diagram = weakref.ref(self)
 
     @T.validate("children")
     def _valid_children(self, proposal: T.Bunch):
@@ -289,10 +335,13 @@ class Diagram(StyledWidget):
         for link in links:
             link.unlink()
         for tool in self._trait_values.get("tools", ()):
-            tool.on_done(self.refresh, remove=True)
-            tool.close()
+            if tool._diagram and tool._diagram() is self:
+                tool._diagram = None
+                tool.on_done(self.refresh, remove=True)
+                tool.close()
         toolbar = self._trait_values.get("toolbar")
-        if toolbar is not None:
+        if toolbar is not None and toolbar._diagram and toolbar._diagram() is self:
+            toolbar._diagram = None
             toolbar.close()
         view = self._trait_values.get("view")
         if view is not None and view._diagram and view._diagram() is self:
@@ -346,10 +395,13 @@ class Diagram(StyledWidget):
     def _update_tools(self, change: T.Bunch | None = None):
         if change and isinstance(change.old, tuple):
             for tool in change.old or []:
-                tool.tee = None
-                tool.on_done(self.refresh, remove=True)
+                if tool._diagram and tool._diagram() is self:
+                    tool._diagram = None
+                    tool.tee = None
+                    tool.on_done(self.refresh, remove=True)
 
         for tool in self.tools:
+            tool._diagram = weakref.ref(self)
             tool.tee = self.pipe
             tool.on_done(self.refresh)
 
@@ -388,6 +440,7 @@ class Diagram(StyledWidget):
         :return: current Diagram instance
         """
         self._check_open("register a tool")
+        self._validate_owned_widget(tool)  # before changing any dependencies
         view = self.view
         bindings = {
             "diagram": self,

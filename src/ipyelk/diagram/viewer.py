@@ -21,7 +21,7 @@ from ..tools import (
     Selection,
     Viewport,
 )
-from ..util import close_own_layout, own_layout
+from ..util import close_own_layout, open_owner, own_layout
 
 
 class Viewer(W.Widget):
@@ -127,6 +127,42 @@ class Viewer(W.Widget):
         self._own_layout = own_layout(self, kwargs)
         self.on_msg(self._handle_browser_msg)
 
+    @T.validate("selection", "hover", "viewport", "painter", "fit_tool", "center_tool")
+    def _validate_tool(self, proposal: T.Bunch):
+        tool = proposal["value"]
+        viewer = open_owner(tool._viewer)
+        owner = open_owner(tool._diagram)
+        if (viewer is not None and viewer is not self) or (
+            owner is not None and owner is not open_owner(self._diagram)
+        ):
+            name = type(tool).__name__
+            raise T.TraitError(
+                f"{name} belongs to another open viewer or diagram; give this "
+                f"viewer its own {name}. To show one diagram in two places, "
+                "display the same Diagram twice"
+            )
+        return tool
+
+    @T.observe("selection", "hover", "viewport", "painter", "fit_tool", "center_tool")
+    def _claim_tool(self, change: T.Bunch) -> None:
+        old = change.old
+        if old is not change.new and getattr(old, "_viewer", None):
+            if old._viewer() is self:
+                old._viewer = None
+        change.new._viewer = weakref.ref(self)
+
+    @T.observe(
+        "selection",
+        "hover",
+        "viewport",
+        "painter",
+        "fit_tool",
+        "center_tool",
+        type="default",
+    )
+    def _claim_default_tool(self, change: T.Bunch) -> None:
+        change.value._viewer = weakref.ref(self)
+
     def _handle_browser_msg(
         self, widget: W.Widget, content: dict[str, object], buffers: list[bytes] | None
     ):
@@ -153,7 +189,8 @@ class Viewer(W.Widget):
             "center_tool",
         ):
             tool = self._trait_values.get(name)
-            if tool is not None:
+            if tool is not None and tool._viewer and tool._viewer() is self:
+                tool._viewer = None
                 tool.close()
         super().close()
         close_own_layout(self)
