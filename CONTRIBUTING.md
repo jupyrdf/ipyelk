@@ -275,12 +275,13 @@ qualifying a release. Publication remains a separate maintainer action.
    shasum -a 256 -c SHA256SUMS
    ```
 
-   Inspect the Python metadata and npm tarball's `package/package.json`: their versions
-   must match the release PR. Keep the run URL and checksums with the release record. In
-   a fresh environment, install the downloaded wheel and its dependencies, check
-   `jupyter labextension list`, and exercise the interactive examples in JupyterLab.
-   Confirm the installed versions and test the documented upstream widget limitations.
-   Do not substitute a development install for this package smoke test.
+   Inspect the Python metadata and `package/package.json` in the npm tarball: their
+   versions must match the release PR. Keep the run URL and `SHA256SUMS` with the
+   release record. In a fresh environment, install the downloaded wheel and its
+   dependencies, check `jupyter labextension list`, and exercise the interactive
+   examples in JupyterLab. Confirm the installed versions and test the documented
+   upstream widget limitations. Do not substitute a development install for this package
+   smoke test.
 
 ### Tag and publish the verified files
 
@@ -308,10 +309,11 @@ Use npm's `next` tag for a candidate and `latest` for a final release. Do not us
 partially succeeds, inspect both registries before retrying; do not overwrite or rebuild
 a published version.
 
-Create the GitHub release from the exact tag, mark candidates as prereleases, and attach
-the verified distributions and checksums. Include migration guidance, known limitations
-and the qualifying CI run. Verify the published package versions and ReadTheDocs build;
-point stable documentation at the final release only after its validation.
+Create the GitHub release from the exact tag. For a candidate, use the
+`gh release create` option `--prerelease`. Attach the verified distributions and
+`SHA256SUMS`. Include migration guidance, known limitations and the qualifying CI run.
+Verify the published package versions and ReadTheDocs build; point stable documentation
+at the final release only after its validation.
 
 ## Updating Dependencies
 
