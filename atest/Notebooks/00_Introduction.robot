@@ -98,11 +98,20 @@ ${JS HOVER}
     Example Should Restart-and-Run-All    ${INTRODUCTION}
     Copy File    ${FIXTURES}${/}hidden_label_probe.py    ${OUTPUT DIR}${/}home${/}hidden_label_probe.py
     Run IPyElk Code In A New Cell    _hidden = __import__("hidden_label_probe").Probe()    screen=70-hidden.png
-    Run IPyElk Code In A New Cell    await _hidden.reveal()    screen=71-revealed.png
-    ${initial} =    Hidden Label Should Have Measured Width
-    Run IPyElk Code In A New Cell    await _hidden.edit_hidden()    screen=72-edited-hidden.png
-    Run IPyElk Code In A New Cell    await _hidden.reveal()    screen=73-revealed-edit.png
-    ${edited} =    Hidden Label Should Have Measured Width
+    ${hidden} =    Wait Until Keyword Succeeds    10s    100ms    Hidden Label Probe Should Be Finished
+    Should Be True    $hidden["hidden"]    the initial layout must finish while the child is hidden
+    Should Be True    not $hidden["width"]    the initially hidden label must not already be measured
+    Run IPyElk Code In A New Cell    _hidden.start_reveal()    screen=71-revealed.png
+    ${initial} =    Wait Until Keyword Succeeds
+    ...    10s    100ms    Hidden Label Should Have Measured Width    Initially hidden label
+    Run IPyElk Code In A New Cell    _hidden.start_edit_hidden()    screen=72-edited-hidden.png
+    ${hidden} =    Wait Until Keyword Succeeds    10s    100ms    Hidden Label Probe Should Be Finished
+    Should Be True    $hidden["hidden"]    editing must finish before revealing the label
+    Should Be Equal    ${hidden}[text]    A substantially longer hidden label after its text changed
+    Run IPyElk Code In A New Cell    _hidden.start_reveal()    screen=73-revealed-edit.png
+    ${edited} =    Wait Until Keyword Succeeds
+    ...    10s    100ms    Hidden Label Should Have Measured Width
+    ...    A substantially longer hidden label after its text changed
     Should Be True    $edited > $initial    the longer label kept its old measurement
 
 
@@ -150,24 +159,40 @@ Elk View Should Be Fitted
     Should Be True    abs($fit["dx"]) < 15 and abs($fit["dy"]) < 15    the diagram is off centre: ${fit}
     Should Be True    0.8 < $fit["fill"] < 1.02    the diagram does not fill the view: ${fit}
 
-Hidden Label Should Have Measured Width
+Hidden Label Probe Should Be Finished
     ${token} =    Evaluate    "ELK248x%s" % secrets.token_hex(4)    secrets
     Run IPyElk Code In A New Cell    _hidden.report("${token}")    screen=${EMPTY}
     ${xp} =    Set Variable    xpath://*[contains(@class, "jp-OutputArea-output")][contains(., "${token} ")]
     Wait Until Page Contains Element    ${xp}    timeout=30s
     ${out} =    Get Text    ${xp}
     ${state} =    Evaluate    json.loads($out.split(" ", 1)[1])    json
+    Should Be True    $state["done"]    the probe's refresh has not completed: ${state}
+    Should Be True    $state["error"] is None    the probe's refresh failed: ${state}
+    RETURN    ${state}
+
+Hidden Label Should Have Measured Width
+    [Arguments]    ${expected text}
+    ${state} =    Hidden Label Probe Should Be Finished
+    Should Be True    not $state["hidden"]    the label is still hidden: ${state}
+    Should Be Equal    ${state}[text]    ${expected text}
     Should Be True    $state["width"] > 0    revealed label has no measured width: ${state}
     Wait Until Keyword Succeeds    10s    100ms    Hidden Label Should Match Rendered Width    ${state}
     RETURN    ${state}[width]
 
 Hidden Label Should Match Rendered Width
     [Arguments]    ${state}
+    # Match the sizer's client bounds, removing this probe's uniform viewport
+    # scale. getBBox reports SVG bounds and can differ from client text bounds.
     ${rendered} =    Execute Javascript
-    ...    return [...document.querySelectorAll(".elklabel")].find(el => el.textContent === arguments[0])?.getBBox().width || 0;
+    ...    const label = [...document.querySelectorAll(".elklabel")].find(el => el.textContent === arguments[0]);
+    ...    if (!label) return {width: 0};
+    ...    const matrix = label.getScreenCTM();
+    ...    const scale = matrix ? Math.hypot(matrix.a, matrix.b) : 0;
+    ...    const client = label.getBoundingClientRect().width;
+    ...    return {width: scale ? client / scale : 0, client, scale, bbox: label.getBBox().width};
     ...    ARGUMENTS
     ...    ${state}[text]
-    Should Be True    $rendered > 0    revealed text did not render
+    Should Be True    $rendered["width"] > 0    revealed text did not render: ${rendered}
     Should Be True
-    ...    abs($rendered - $state["width"]) < 2
+    ...    abs($rendered["width"] - $state["width"]) < 2
     ...    measured and rendered widths differ: ${state}, ${rendered}

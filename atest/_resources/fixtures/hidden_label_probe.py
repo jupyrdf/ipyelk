@@ -2,6 +2,7 @@
 # Copyright (c) 2026 ipyelk contributors.
 # Distributed under the terms of the Modified BSD License.
 
+import asyncio
 import json
 import sys
 
@@ -21,7 +22,16 @@ class Probe:
         self.child = Node(labels=[self.label], properties=NodeProperties(hidden=True))
         root = Node(children=[Node(children=[self.child])])
         self.diagram = Diagram(source=MarkElementWidget(value=root))
+        self.task = self.diagram.pipe._task
         display(self.diagram)
+
+    def start_reveal(self):
+        """Return the cell to idle while the browser answers the refresh."""
+        self.task = asyncio.create_task(self.reveal())
+
+    def start_edit_hidden(self):
+        """Run the two hidden refreshes without holding an executing cell."""
+        self.task = asyncio.create_task(self.edit_hidden())
 
     async def reveal(self):
         """Reveal and wait for the real sizing and layout roundtrips."""
@@ -40,7 +50,17 @@ class Probe:
 
     def report(self, token):
         """Report the kernel's measured width and text for a browser assertion."""
+        done = self.task is not None and self.task.done()
         error = self.diagram.pipe.status.exception
-        assert error is None, str(error)
-        state = {"text": self.label.text, "width": self.label.width}
+        if done:
+            error = (
+                "cancelled" if self.task.cancelled() else self.task.exception() or error
+            )
+        state = {
+            "done": done,
+            "error": None if error is None else str(error),
+            "hidden": self.child.properties.hidden,
+            "text": self.label.text,
+            "width": self.label.width,
+        }
         sys.stdout.write(f"{token} {json.dumps(state)}\n")
