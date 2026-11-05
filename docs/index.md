@@ -14,6 +14,7 @@
 
 ```{toctree}
 migration
+layout
 changelog
 contributing
 ```
