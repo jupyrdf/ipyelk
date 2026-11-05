@@ -91,6 +91,20 @@ ${JS HOVER}
     Should Be True    $second["id"] is None    the pointer left the diagrams: ${second}
     Capture Page Screenshot    63-settled.png
 
+00_Introduction Hidden Label Sizing
+    [Documentation]    Labels first revealed after layout, and edited while hidden,
+    ...    have measured widths in the kernel and rendered text in the browser.
+    [Tags]    gh:248    text:sizing
+    Example Should Restart-and-Run-All    ${INTRODUCTION}
+    Copy File    ${FIXTURES}${/}hidden_label_probe.py    ${OUTPUT DIR}${/}home${/}hidden_label_probe.py
+    Run IPyElk Code In A New Cell    _hidden = __import__("hidden_label_probe").Probe()    screen=70-hidden.png
+    Run IPyElk Code In A New Cell    await _hidden.reveal()    screen=71-revealed.png
+    ${initial} =    Hidden Label Should Have Measured Width
+    Run IPyElk Code In A New Cell    await _hidden.edit_hidden()    screen=72-edited-hidden.png
+    Run IPyElk Code In A New Cell    await _hidden.reveal()    screen=73-revealed-edit.png
+    ${edited} =    Hidden Label Should Have Measured Width
+    Should Be True    $edited > $initial    the longer label kept its old measurement
+
 
 *** Keywords ***
 Hover Elk Node
@@ -135,3 +149,21 @@ Elk View Should Be Fitted
     Should Be True    $fit["canvas"][0] > 100 and $fit["canvas"][1] > 100    the view has no size: ${fit}
     Should Be True    abs($fit["dx"]) < 15 and abs($fit["dy"]) < 15    the diagram is off centre: ${fit}
     Should Be True    0.8 < $fit["fill"] < 1.02    the diagram does not fill the view: ${fit}
+
+Hidden Label Should Have Measured Width
+    ${token} =    Evaluate    "ELK248x%s" % secrets.token_hex(4)    secrets
+    Run IPyElk Code In A New Cell    _hidden.report("${token}")    screen=${EMPTY}
+    ${xp} =    Set Variable    xpath://*[contains(@class, "jp-OutputArea-output")][contains(., "${token} ")]
+    Wait Until Page Contains Element    ${xp}    timeout=30s
+    ${out} =    Get Text    ${xp}
+    ${state} =    Evaluate    json.loads($out.split(" ", 1)[1])    json
+    Should Be True    $state["width"] > 0    revealed label has no measured width: ${state}
+    ${rendered} =    Execute Javascript
+    ...    return [...document.querySelectorAll(".elklabel")].find(el => el.textContent === arguments[0])?.getBBox().width || 0;
+    ...    ARGUMENTS
+    ...    ${state}[text]
+    Should Be True    $rendered > 0    revealed text did not render
+    Should Be True
+    ...    abs($rendered - $state["width"]) < 2
+    ...    measured and rendered widths differ: ${state}, ${rendered}
+    RETURN    ${state}[width]

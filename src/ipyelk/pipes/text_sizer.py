@@ -4,14 +4,17 @@
 # Distributed under the terms of the Modified BSD License.
 import asyncio
 import os
+import re
+import weakref
 
 import traitlets as T
 
 from ..constants import EXTENSION_NAME, EXTENSION_SPEC_VERSION
-from ..elements import Label, index
+from ..elements import Edge, Label, Node, index
+from ..elements.elements import is_hidden
 from ..styled_widget import StyledWidget
 from . import flows as F
-from .base import Pipe, SyncedPipe
+from .base import Pipe, PipeStatus, SyncedPipe
 from .util import browser_roundtrip
 
 
@@ -93,11 +96,89 @@ class BrowserTextSizer(SyncedPipe, StyledWidget, TextSizer):
         ),
     )
 
+    def __init__(self, *args, **kwargs):
+        # Sizes alone cannot say whether text edited while hidden was measured.
+        # Weak references distinguish replacement labels with the same wire id.
+        self._measured: dict[str, tuple[weakref.ReferenceType[Label], tuple]] = {}
+        super().__init__(*args, **kwargs)
+
+    def _size_key(self, label: Label) -> tuple:
+        return (
+            label.text,
+            label.properties.cssClasses,
+            self.namespaced_css,
+            self._dom_classes,
+        )
+
+    def _visible_labels(self):
+        """Labels that survive the inlet's serialization, including nested ones."""
+
+        def visit(el):
+            if el.properties.hidden:
+                return
+            if isinstance(el, Edge) and (is_hidden(el.source) or is_hidden(el.target)):
+                return
+            if isinstance(el, Label):
+                shape = el.properties.shape
+                # Match the browser: a fully specified shape needs no DOM.
+                if not (shape and shape.width and shape.height):
+                    yield el
+            for label in el.labels:
+                yield from visit(label)
+            if isinstance(el, Node):
+                for child in [*el.children, *el.ports, *el.edges]:
+                    yield from visit(child)
+
+        if self.inlet.value is not None:
+            yield from visit(self.inlet.value)
+
+    def check_dirty(self, flow: tuple[str, ...] | None = None) -> bool:
+        if flow is None:
+            flow = self.inlet.flow
+        if super().check_dirty(flow):
+            return True
+        if not any(re.fullmatch(F.AnyHidden, tag) for tag in flow):
+            return False
+        for label in self._visible_labels():
+            measured = self._measured.get(label.wire_id())
+            if (
+                measured is None
+                or measured[0]() is not label
+                or measured[1] != self._size_key(label)
+            ):
+                # A reveal needs sizing only for newly visible or changed text.
+                self.status = PipeStatus.waiting()
+                self.outlet.flow = tuple(dict.fromkeys((*flow, *self.reports)))
+                return True
+        return False
+
     async def run(self):
         """Go measure some DOM"""
         # watch once
         if self.outlet is None:
             return
+
+        labels = [
+            (weakref.ref(label), self._size_key(label))
+            for label in self._visible_labels()
+        ]
+        # Discard removed/replaced labels, but retain valid sizes of hidden ones.
+        value = self.inlet.value
+        current = (
+            {}
+            if value is None
+            else {el.wire_id(): el for el in index.iter_elements(value)}
+        )
+        self._measured = {
+            key: measured
+            for key, measured in self._measured.items()
+            if measured[0]() is current.get(key) and measured[0]() is not None
+        }
+
+        for ref, _key in labels:
+            label = ref()
+            if label is not None:
+                self._measured.pop(label.wire_id(), None)
 
         # signal to browser (re-sending until a frontend answers) and wait
         # for done, browser error, or deadline
@@ -110,4 +191,20 @@ class BrowserTextSizer(SyncedPipe, StyledWidget, TextSizer):
                 raise
             await TextSizer.run(self)
         else:
+            # Check before persist, which merges the reply into the user's tree.
+            unchanged = [
+                (ref, key)
+                for ref, key in labels
+                if (label := ref()) is not None and self._size_key(label) == key
+            ]
             self.outlet.persist()
+            for ref, key in unchanged:
+                label = ref()
+                if (
+                    label is not None
+                    and self._size_key(label) == key
+                    and label.width is not None
+                    and label.height is not None
+                ):
+                    if label.width or label.height or not label.text:
+                        self._measured[label.wire_id()] = (ref, key)
