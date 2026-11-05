@@ -263,10 +263,15 @@ not repeat the browser acceptance suite.
 
 The workflow publishes the verified npm tarball and Python files through trusted
 publishing, verifies registry identities, then creates the exact-commit tag and GitHub
-release with the distributions and `SHA256SUMS`. Candidates are GitHub prereleases;
-final versions use npm `latest`. It runs only for commits changing the release version,
-so ordinary development commits do not publish. Tags created with `GITHUB_TOKEN` do not
-trigger another CI run; publication uses the already-qualified master run instead.
+release with the distributions and `SHA256SUMS`. npm source provenance is disabled:
+`workflow_run` can identify a newer workflow invocation commit than the CI commit that
+built the downloaded package. OIDC still authenticates publication. The exact CI run,
+artifact digest, distribution checksums and release tag establish the package identity;
+the publisher does not claim that its invocation commit built those files. Candidates
+are GitHub prereleases; final versions use npm `latest`. It runs only for commits
+changing the release version, so ordinary development commits do not publish. Tags
+created with `GITHUB_TOKEN` do not trigger another CI run; publication uses the
+already-qualified master run instead.
 
 If a step fails, rerun the workflow or dispatch `Release` with the original successful
 CI `run_id`. Never rebuild an already-published version. Existing PyPI and npm files

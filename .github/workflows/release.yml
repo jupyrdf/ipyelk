@@ -122,7 +122,7 @@ jobs:
         run: >-
           npm publish "release-artifact/dist/jupyrdf-jupyter-elk-${{
           steps.artifact.outputs.npm }}.tgz" --access public --tag "${{
-          steps.artifact.outputs.channel }}" --ignore-scripts
+          steps.artifact.outputs.channel }}" --ignore-scripts --provenance=false
       - name: Publish missing verified Python files
         if:
           steps.version.outputs.changed == 'true' && steps.artifact.outputs.pypi_pending
