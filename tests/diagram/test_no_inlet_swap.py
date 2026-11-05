@@ -35,12 +35,13 @@ def _walk(el: dict):
 def _browser_stage(mutate):
     """A ``run`` for a synced pipe that answers like the frontend would."""
 
-    async def run(self):
+    async def run(self, **_kwargs):
         self.send({"action": "run"})
         wire = self.inlet.value.model_dump(mode="json", exclude_none=True)
         mutate(wire)
         self.outlet.set_state({"value": wire})
-        self.outlet.persist()
+        if not isinstance(self, BrowserTextSizer):
+            self.outlet.persist()
 
     return run
 
@@ -61,7 +62,9 @@ def lay_out(wire: dict):
 
 @pytest.fixture
 def browser(monkeypatch):
-    monkeypatch.setattr(BrowserTextSizer, "run", _browser_stage(measure_labels))
+    monkeypatch.setattr(
+        "ipyelk.pipes.text_sizer.browser_roundtrip", _browser_stage(measure_labels)
+    )
     monkeypatch.setattr(ElkJS, "run", _browser_stage(lay_out))
 
 
@@ -359,7 +362,9 @@ async def test_a_layout_option_change_reaches_the_layout(monkeypatch, collapse):
         laid_out.append(wire)
         lay_out(wire)
 
-    monkeypatch.setattr(BrowserTextSizer, "run", _browser_stage(measure_labels))
+    monkeypatch.setattr(
+        "ipyelk.pipes.text_sizer.browser_roundtrip", _browser_stage(measure_labels)
+    )
     monkeypatch.setattr(ElkJS, "run", _browser_stage(record_and_lay_out))
     root, a, _b, _c = user_graph()
     diagram = Diagram(source=MarkElementWidget(value=root))
@@ -392,7 +397,9 @@ async def test_a_clean_text_sizer_passes_on_an_edit_it_does_not_observe(monkeypa
         laid_out.append({el["id"]: dict(el) for el in _walk(wire)})
         lay_out(wire)
 
-    monkeypatch.setattr(BrowserTextSizer, "run", _browser_stage(measure_labels))
+    monkeypatch.setattr(
+        "ipyelk.pipes.text_sizer.browser_roundtrip", _browser_stage(measure_labels)
+    )
     monkeypatch.setattr(ElkJS, "run", _browser_stage(record_and_lay_out))
     root, a, _b, _c = user_graph()
     diagram = Diagram(
