@@ -5,7 +5,7 @@ Resource            ../_resources/keywords/IPyElk.robot
 Resource            ../_resources/variables/Server.robot
 Library             Collections
 
-Test Teardown       Clean up after IPyElk Example
+Test Teardown       Clean Up Interactive
 
 
 *** Variables ***
@@ -50,6 +50,7 @@ ${JS STALL}
     ...    itself still gates everywhere.
     Example Should Restart-and-Run-All    ${INTERACTIVE}
     Set Tags    gh:95
+    Execute Javascript    ${FIXTURES}${/}interactive_diagnostics.js    ARGUMENTS    start
     Copy File    ${FIXTURES}${/}${PROBE}    ${OUTPUT DIR}${/}home${/}${PROBE}
     Run IPyElk Code In A New Cell    _k95 = __import__("interactive_probe").watch(box, elk)
     ...    screen=00-probe.png
@@ -119,6 +120,7 @@ Diagram Should Converge
     Capture Page Screenshot    ${round}-2-${ok.lower()}.png
     IF    "${ok}" == "FAIL"
         ${err} =    Evaluate    $err.split("The last error was: ")[-1]
+        Run Keyword And Ignore Error    Capture Interactive Failure    ${round}    ${state}
         Fail    round ${round}: no convergence on ${asked} within ${CONVERGE TIMEOUT}: ${err}
     END
     IF    "${round}" != "00"
@@ -155,3 +157,37 @@ Get Kernel State
     ${state} =    Evaluate    json.loads($out.split(" ", 1)[1])    json
     Log    ${state}
     RETURN    ${state}
+
+Capture Interactive Failure
+    [Documentation]    Failure-only context, never a replacement acceptance snapshot.
+    [Arguments]    ${round}    ${initial}
+    ${browser_status}    ${browser} =    Run Keyword And Ignore Error
+    ...    Execute Javascript    ${FIXTURES}${/}interactive_diagnostics.js    ARGUMENTS    capture
+    ${kernel_status}    ${kernel} =    Run Keyword And Ignore Error    Get Diagnostic Kernel State
+    ${context} =    Create Dictionary    initial=${initial}    browser_status=${browser_status}
+    ...    browser=${browser}    kernel_status=${kernel_status}    kernel=${kernel}
+    ${json} =    Evaluate    json.dumps($context, indent=2)    json
+    Create File    ${OUTPUT DIR}${/}interactive-${round}-failure.json    ${json}
+    Log    ${json}
+
+Get Diagnostic Kernel State
+    [Documentation]    Submit without waiting for Idle; poll the token for 5s after submission.
+    ...    Editor gestures retain the existing Selenium transport bounds.
+    ${token} =    Evaluate    "ELK95diagnostic%s" % secrets.token_hex(4)    secrets
+    Scroll To Last Cell
+    Click Element    ${JLAB XP LAST INPUT PROMPT}
+    Press Keys    None    ESCAPE
+    Press Keys    None    b
+    Press Keys    None    RETURN
+    Press Keys    None    _k95("${token}", diagnostic=True)
+    Press Keys    None    CTRL+RETURN
+    ${xp} =    Set Variable    xpath://*[contains(@class, "jp-OutputArea-output")][contains(., "${token} ")]
+    Wait Until Page Contains Element    ${xp}    timeout=5s
+    ${out} =    Get Text    ${xp}
+    ${state} =    Evaluate    json.loads($out.split(" ", 1)[1])    json
+    RETURN    ${state}
+
+Clean Up Interactive
+    Run Keyword And Ignore Error
+    ...    Execute Javascript    ${FIXTURES}${/}interactive_diagnostics.js    ARGUMENTS    stop
+    Clean up after IPyElk Example

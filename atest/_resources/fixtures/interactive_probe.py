@@ -10,6 +10,7 @@ import time
 import networkx as nx
 
 from ipyelk.elements import Edge, Port, index
+from ipyelk.pipes.util import iter_pipes
 
 SLIDERS = ("number_of_nodes", "percent_of_edges", "seed")
 
@@ -34,6 +35,85 @@ def held_fingerprint(edges):
     return _fingerprint(sorted([_node_id(e.source), _node_id(e.target)]) for e in edges)
 
 
+def _read(reader):
+    """A broken reader must not hide the other layers of a failed run."""
+    try:
+        return reader()
+    except Exception as err:
+        return {"unavailable": f"{type(err).__name__}: {err}"}
+
+
+def _mark(mark):
+    return {
+        "model_id": mark.model_id,
+        "gen": mark.gen,
+        "edges": sorted(
+            el.id for el in index.iter_elements(mark.value) if isinstance(el, Edge)
+        ),
+    }
+
+
+def _task(task):
+    if task is None:
+        return {"unavailable": "no task"}
+    done, cancelled = task.done(), task.cancelled()
+    return {
+        "done": done,
+        "cancelled": cancelled,
+        "error": (str(task.exception()) if task.exception() is not None else None)
+        if done and not cancelled
+        else None,
+    }
+
+
+def diagnostic_layers(elk):
+    """Read identities only; never refresh, await or change the pipeline."""
+    marks = {}
+
+    def reference(mark):
+        key = mark.model_id
+        if key not in marks:
+            marks[key] = _read(lambda: _mark(mark))
+        return key
+
+    def pipe_state(pipe):
+        return {
+            "model_id": pipe.model_id,
+            "type": type(pipe).__name__,
+            "inlet": _read(lambda: reference(pipe.inlet)),
+            "outlet": _read(lambda: reference(pipe.outlet)),
+            "requested": pipe._requested,
+            "generation": pipe._generation,
+            "browser_generation": getattr(
+                pipe, "_roundtrip_gen", {"unavailable": "not a browser pipe"}
+            ),
+            "task": _read(lambda: _task(pipe._task)),
+            "status_error": _read(
+                lambda: (
+                    str(pipe.status.exception)
+                    if pipe.status.exception is not None
+                    else None
+                )
+            ),
+        }
+
+    result = {
+        "captured_at": time.time(),
+        "source": _read(lambda: reference(elk.source)),
+        "viewer": _read(
+            lambda: {
+                "model_id": elk.view.model_id,
+                "source": reference(elk.view.source),
+            }
+        ),
+        "pipes": _read(
+            lambda: [_read(lambda p=p: pipe_state(p)) for p in iter_pipes(elk.pipe)]
+        ),
+        "marks": marks,
+    }
+    return result
+
+
 def watch(box, elk):
     """Return ``check(token)``, which prints ``token`` and one line of JSON."""
     sliders = {
@@ -47,12 +127,12 @@ def watch(box, elk):
 
     elk.observe(on_source, "source")
 
-    def check(token):
+    def snapshot():
         values = [sliders[name].value for name in SLIDERS]
         edges = [
             el for el in index.iter_elements(elk.source.value) if isinstance(el, Edge)
         ]
-        state = {
+        return {
             "sliders": "/".join(map(str, values)),
             "requested": requested_fingerprint(*values),
             "held": held_fingerprint(edges),
@@ -60,6 +140,11 @@ def watch(box, elk):
             "changes": changes["count"],
             "changed_at": changes["at"],
         }
+
+    def check(token, diagnostic=False):
+        state = _read(snapshot) if diagnostic else snapshot()
+        if diagnostic:
+            state["layers"] = diagnostic_layers(elk)
         sys.stdout.write(f"{token} {json.dumps(state)}\n")
 
     return check
