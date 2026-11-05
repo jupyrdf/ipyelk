@@ -27,7 +27,12 @@ Viewport Drag Reports Originating View
     [Tags]    tool:viewport    gh:165
     ${before}    ${sizes before} =    Prepare Tool Viewport Gesture
     ${canvas} =    Get WebElement    css:.tools-probe .sprotty-root
-    Drag And Drop By Offset    ${canvas}    35    20
+    # One native movement burst: Selenium's default 250ms interpolation can
+    # span several independent 100ms viewport debounce windows.
+    ${selenium} =    Get Library Instance    SeleniumLibrary
+    Evaluate
+    ...    selenium.webdriver.ActionChains($selenium.driver, duration=0).click_and_hold($canvas).move_by_offset(35, 20).release().perform()
+    ...    modules=selenium.webdriver
     Tool State Should Satisfy    len(state['camera_changes']) == 1 and len(state['camera_updates']) == 1
     ${after} =    Execute Javascript    ${JS VIEWS}
     Should Not Be Equal    ${before}[0]    ${after}[0]
