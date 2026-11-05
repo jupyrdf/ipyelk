@@ -110,7 +110,7 @@ Painter All Views Relayout Export Purity And Clear
     Run IPyElk Code In A New Cell    _tools.diagram.view.painter.paint('tools-a', 'tools-painted')    screen=${EMPTY}
     Wait Until Keyword Succeeds    20x    0.25s    Tool Classes Should Be    tools-a    tools-painted    2
     Tool State Should Satisfy    state['elk'] == ${before}[elk] and 'tools-painted' not in json.dumps(state['source'])
-    Run IPyElk Code In A New Cell    await _tools.relayout()    screen=${EMPTY}
+    Start Tool Operation And Wait    relayout
     Tool Classes Should Be    tools-a    tools-painted    2
     Run IPyElk Code In A New Cell    _tools.export()    screen=${EMPTY}
     Wait Until Keyword Succeeds    30x    0.5s    Export Should Include Paint
@@ -120,20 +120,17 @@ Painter All Views Relayout Export Purity And Clear
 
 Collapse Avoids Text Requests And Validation
     [Tags]    tool:substrate    gh:165
-    Run IPyElk Code In A New Cell    await _tools.collapse(); print('TOOLS-COLLAPSE-PASS')    screen=${EMPTY}
-    Wait Until Page Contains    TOOLS-COLLAPSE-PASS
+    Start Tool Operation And Wait    collapse
     Page Should Not Contain Contain Standard Errors
 
 Ten Refreshes Cost Exactly One Layout
     [Tags]    tool:substrate    gh:165
-    Run IPyElk Code In A New Cell    await _tools.refresh_burst(); print('TOOLS-BURST-PASS')    screen=${EMPTY}
-    Wait Until Page Contains    TOOLS-BURST-PASS
+    Start Tool Operation And Wait    refresh_burst
     Page Should Not Contain Contain Standard Errors
 
 Headless Full Refresh Completes
     [Tags]    tool:substrate    gh:165
-    Run IPyElk Code In A New Cell    await _tools.headless(); print('TOOLS-HEADLESS-PASS')    screen=${EMPTY}
-    Wait Until Page Contains    TOOLS-HEADLESS-PASS    timeout=20s
+    Start Tool Operation And Wait    headless
     Page Should Not Contain Contain Standard Errors
 
 
@@ -141,9 +138,26 @@ Headless Full Refresh Completes
 Open Tool Probe
     Example Should Restart-and-Run-All    ${INTRODUCTION}
     Copy File    ${FIXTURES}${/}tool_probe.py    ${OUTPUT DIR}${/}home${/}tool_probe.py
-    Run IPyElk Code In A New Cell    _tools = __import__('tool_probe').Probe(); await _tools.ready()    screen=${EMPTY}
+    Run IPyElk Code In A New Cell    _tools = __import__('tool_probe').Probe()    screen=${EMPTY}
+    Wait Until Tool Operation Finishes    ready
     Page Should Not Contain Contain Standard Errors
     Wait Until Keyword Succeeds    30x    0.5s    Tool Classes Should Be    tools-a    selected    2
+
+Start Tool Operation And Wait
+    [Arguments]    ${operation}
+    Run IPyElk Code In A New Cell    _tools.start('${operation}')    screen=${EMPTY}
+    Wait Until Tool Operation Finishes    ${operation}
+
+Wait Until Tool Operation Finishes
+    [Arguments]    ${operation}
+    # The cell must return first: browser-backed widget replies require idle.
+    Wait Until Keyword Succeeds    30s    0.5s    Tool Operation Should Be Finished    ${operation}
+
+Tool Operation Should Be Finished
+    [Arguments]    ${operation}
+    ${state} =    Tool State
+    Should Be Equal    ${state}[operation]    ${operation}
+    Should Be True    $state['done'] and not $state['cancelled'] and $state['error'] is None    ${state}
 
 Tool Element
     [Arguments]    ${id}    ${index}

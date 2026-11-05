@@ -107,6 +107,10 @@ class Probe:
             view=SprottyViewer(selection=self.selection, viewport=CountViewport()),
             layout=W.Layout(height="300px"),
         )
+        # Retain the first layout task before any later operation can coalesce it.
+        self.initial_task = self.diagram.refresh()
+        self.operation = "ready"
+        self.task = asyncio.create_task(self.ready())
         self.diagram.add_class("tools-probe")
         # The tool contracts drive the canvas; a floating toolbar can cover labels.
         self.diagram.toolbar.layout.display = "none"
@@ -125,9 +129,34 @@ class Probe:
         })
 
     async def ready(self):
-        await self.diagram.refresh()
+        assert self.initial_task is not None
+        await self.initial_task
         assert self.elk.calls > 0
         assert self.text.requests > 0, "no actual browser text measurement was counted"
+
+    def operation_state(self):
+        """Pending, cancelled and failed work must never look successful."""
+        done = self.task is not None and self.task.done()
+        error = self.diagram.pipe.status.exception
+        cancelled = done and self.task.cancelled()
+        if done:
+            error = "cancelled" if cancelled else self.task.exception() or error
+        return {
+            "operation": self.operation,
+            "done": done,
+            "cancelled": cancelled,
+            "error": None if error is None else str(error),
+        }
+
+    def start(self, operation):
+        """Schedule browser-dependent work and immediately return the cell."""
+        if operation not in {"relayout", "collapse", "refresh_burst", "headless"}:
+            raise ValueError(f"Unknown tool probe operation: {operation}")
+        state = self.operation_state()
+        if not state["done"] or state["error"] is not None:
+            raise RuntimeError(f"Previous operation did not succeed: {state}")
+        self.operation = operation
+        self.task = asyncio.create_task(getattr(self, operation)())
 
     def report(self, token):
         view = self.diagram.view
@@ -144,6 +173,7 @@ class Probe:
             text=self.text.requests,
             source=self.diagram.source.value.model_dump(mode="json"),
         )
+        state.update(self.operation_state())
         sys.stdout.write(f"{token} {json.dumps(state)}\n")
 
     def reset_events(self):
