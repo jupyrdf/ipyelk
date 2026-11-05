@@ -40,15 +40,15 @@ To upgrade from `ipyelk` 2.x, read [Migrating from ipyelk 2.x to 3.0][migration]
 ### `ipyelk` with `conda` (recommended)
 
 ```bash
-conda install -c conda-forge ipyelk "jupyterlab=4.*"
+conda install -c conda-forge ipyelk "jupyterlab>=4.1,<5"
 # or
-mamba install -c conda-forge ipyelk "jupyterlab=4.*"
+mamba install -c conda-forge ipyelk "jupyterlab>=4.1,<5"
 ```
 
 ### `ipyelk` with `pip`
 
 ```bash
-pip install ipyelk "jupyterlab=4.*"
+pip install ipyelk "jupyterlab>=4.1,<5"
 ```
 
 ### Developing

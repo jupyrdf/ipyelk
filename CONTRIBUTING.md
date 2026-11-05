@@ -24,7 +24,7 @@ pixi run lab        # start lab
 Presently, on GitHub:
 
 - `master`: the `3.x` development line, which distributes the lab extension inside the
-  python distribution for JupyterLab `>=4.2`
+  python distribution for JupyterLab `>=4.1,<5`
   - generates the `latest` tag on ReadTheDocs
 
 ## Important Paths
