@@ -1,10 +1,10 @@
 # Changelog
 
-## `3.0.0a0` (unreleased)
+## `3.0.0` (2026-11-05)
 
 > 2.1.2 and 2.1.3 were not released: their changes are in this release ([#227]).
 
-### `ipyelk 3.0.0a0`
+### `ipyelk 3.0.0`
 
 #### Known issues
 
@@ -884,7 +884,7 @@ removed names][migration-removed-names] lists every name that raises
 - Document the shape API: a docstring for each class in `ipyelk.elements.shapes`, and a
   _Shapes_ page in the API reference with one table row for each shape ([#66])
 
-### `@jupyrdf/jupyter-elk 3.0.0-alpha0`
+### `@jupyrdf/jupyter-elk 3.0.0`
 
 - Cull what is off screen when the viewer's `cull_offscreen` is set (an opt-in): the
   node, label and edge views skip an element whose absolute bounds (an edge's route)
