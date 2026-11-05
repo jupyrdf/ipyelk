@@ -14,10 +14,35 @@
   Administrators can use
   `{"@jupyterlab/apputils-extension:kernels-settings": {"commsOverSubshells": "disabled"}}`
   in `overrides.json`. See
-  [the JupyterLab discussion](https://github.com/jupyterlab/jupyterlab/issues/19719). A
-  widget update during an awaiting cell (including `await diagram.refresh()`) can also
-  lose its idle status and stop sending updates. Disabling subshells does **not**
-  address that case; wait for the cell to finish before interacting. If a slider has
+  [the JupyterLab discussion](https://github.com/jupyterlab/jupyterlab/issues/19719).
+- Separately, widget updates during an awaiting cell can stall, including the automatic
+  text-sizing and layout replies needed by `await diagram.refresh()`. This can happen
+  without user interaction and also affects older kernel and widget combinations.
+  Disabling subshells does not address this case. Start the refresh without awaiting it
+  in that cell, let the cell return, then check completion and errors in a later cell.
+  While it is pending, let the kernel return to idle; do not wait in a loop inside the
+  cell.
+
+  First cell, after making the intended diagram changes:
+
+  ```python
+  refresh_task = diagram.refresh()
+  ```
+
+  Later cell; run it again after allowing idle time if the refresh is still pending:
+
+  ```python
+  if refresh_task is None:
+      raise RuntimeError("Refresh was not scheduled: no running event loop")
+  if not refresh_task.done():
+      print("Refresh is still running; check again in a later cell.")
+  else:
+      refresh_task.result()  # raises a task failure or cancellation
+      diagram.pipe.error()  # raises any captured pipeline error
+      print("Refresh completed.")
+  ```
+
+  This avoids keeping the cell open during the browser roundtrip. If widget updates have
   already stopped, restart the kernel and rerun the notebook. The startup workaround
   below applies only to robot-test kernels, not installed ipyelk, examples,
   documentation kernels, or user kernels.

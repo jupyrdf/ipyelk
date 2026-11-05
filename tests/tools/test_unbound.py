@@ -94,6 +94,7 @@ def test_register_tool_moves_a_progress_bar_off_the_old_pipe():
     bar = PipelineProgressBar()
     old.register_tool(bar)
     assert old.pipe.on_progress == bar.update
+    old.tools = ()  # release before rebinding to another open diagram
     new.register_tool(bar)
     assert bar.pipe is new.pipe
     assert new.pipe.on_progress == bar.update

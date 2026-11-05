@@ -490,7 +490,7 @@ class StubBrowser:
 BROWSER: StubBrowser | None = None
 
 
-async def stub_text_sizer_run(self) -> None:  # ruff: ignore[unused-async]
+async def stub_text_sizer_run(self, **_kwargs) -> None:  # ruff: ignore[unused-async]
     """Stand-in for js/measure_text.ts ``measure()``: fixed width per char."""
     if self.outlet is None:
         return
@@ -504,7 +504,7 @@ async def stub_text_sizer_run(self) -> None:  # ruff: ignore[unused-async]
         # the browser stamps a fresh `out` so the value always differs
         data["out"] = CALLS["browser stub: text sizer"]
         raw = json.dumps(data)
-    kernel_receive(self.outlet, raw)
+    kernel_receive(self.outlet, raw, persist=False)
 
 
 async def stub_elkjs_run(self) -> None:  # ruff: ignore[unused-async]
@@ -1030,7 +1030,7 @@ async def main_async(args) -> dict:
     import ipyelk.pipes.elkjs as elkjs_mod
     import ipyelk.pipes.text_sizer as text_sizer_mod
 
-    text_sizer_mod.BrowserTextSizer.run = stub_text_sizer_run
+    text_sizer_mod.browser_roundtrip = stub_text_sizer_run
     if args.slow_browser:
         # keep the real ElkJS.run (browser_roundtrip + persist); the stub
         # browser answers the comm messages it sends

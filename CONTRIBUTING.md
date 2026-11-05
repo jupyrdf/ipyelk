@@ -23,8 +23,8 @@ pixi run lab        # start lab
 
 Presently, on GitHub:
 
-- `master`: the `2.x` line, which distributes the lab extension inside the python
-  distribution for JupyterLab `>=4.2`
+- `master`: the `3.x` development line, which distributes the lab extension inside the
+  python distribution for JupyterLab `>=4.1,<5`
   - generates the `latest` tag on ReadTheDocs
 
 ## Important Paths
@@ -231,27 +231,89 @@ pixi run watch-docs
 
 ## Releasing
 
-- After merging to `master`, download the ipyelk dist artifacts
-- Inspect the files in `./dist`.
-- Check out master
-- Tag appropriately
+`pixi run release` builds and checks the project; it does not publish packages. It also
+runs `fix`, which can change tracked files. Review and commit those changes before
+qualifying a release. Publication remains a separate maintainer action.
+
+### Prepare and qualify a candidate
+
+1. Open a release PR updating `pyproject.toml` and `package.json`, the dated changelog,
+   and migration guidance. Keep Python and npm versions synchronized:
+
+   | Release   | Python     | npm         |
+   | --------- | ---------- | ----------- |
+   | Candidate | `3.0.0rc1` | `3.0.0-rc1` |
+   | Final     | `3.0.0`    | `3.0.0`     |
+
+   The widget module requirement converts Python `rc1` to npm `-rc1`. `3.0.0-rc.1` does
+   not satisfy that exact requirement. Do not bump a version just to rebuild an already
+   published release.
+
+2. Run `pixi run release` and review any resulting changes. Merge the reviewed release
+   PR, then select the successful **CI** run for that exact `master` commit. Record its
+   full commit SHA, run ID and run number. Require every release check to pass; inspect
+   acceptance reports and retry logs for failures hidden by retries or skips. Review the
+   changelog's known issues before deciding whether the candidate meets the
+   final-release threshold.
+3. Download only that run's `ipyelk-<run-number>-dist` artifact into a new, empty
+   directory. For example, with GitHub CLI, substitute the recorded values:
+
+   ```bash
+   gh run view <run-id> --repo jupyrdf/ipyelk --json headSha,conclusion,url
+   gh run download <run-id> --repo jupyrdf/ipyelk \
+     --name ipyelk-<run-number>-dist --dir <artifact-directory>
+   ```
+
+   Check `headSha` against the recorded release commit and `conclusion` against
+   `success`. The artifact contains `dist/` and task-cache metadata; publish only the
+   distribution files inside `dist/`. It must contain one wheel, one source archive, one
+   npm tarball and `SHA256SUMS`, all for the intended version.
+
+4. Verify the downloaded files against `dist/SHA256SUMS` from inside `dist/`:
+
+   ```bash
+   shasum -a 256 -c SHA256SUMS
+   ```
+
+   Inspect the Python metadata and `package/package.json` in the npm tarball: their
+   versions must match the release PR. Keep the run URL and `SHA256SUMS` with the
+   release record. In a fresh environment, install the downloaded wheel and its
+   dependencies, check `jupyter labextension list`, and exercise the interactive
+   examples in JupyterLab. Confirm the installed versions and test the documented
+   upstream widget limitations. Do not substitute a development install for this package
+   smoke test.
+
+### Tag and publish the verified files
+
+Use a clean checkout of the recorded release commit. Confirm `git rev-parse HEAD`
+matches it, then create and push only the intended tag (historically `v2.1.1`; for
+example, `v3.0.0rc1` or `v3.0.0`). Check `git remote -v` and choose the release remote
+pointing to `jupyrdf/ipyelk`. Substitute the recorded values below:
 
 ```bash
-git push upstream --tags
+git tag -a v<python-version> <release-commit-sha> -m "ipyelk <python-version>"
+git push <release-remote> refs/tags/v<python-version>
 ```
 
-- Ensure you have credentials for `pypi` and `npmjs`
-  - `npmjs` requires you have set up two-factor authentication (2FA)... this is
-    _strongly recommended_ for `pypi`
-  - do _not_ use `jlpm publish` or `yarn publish`, as this appears to drop files from
-    the distribution
+Authenticate to PyPI and npm using the maintainers' configured credentials. Publish
+explicit downloaded files, without rebuilding or publishing the working directory:
 
 ```bash
-npm login
-npm publish
-npm logout
-twine upload where-you-expanded-the-archive/ipyelk-*
+npm publish <artifact-directory>/dist/jupyrdf-jupyter-elk-<npm-version>.tgz --tag next
+twine upload <artifact-directory>/dist/ipyelk-<python-version>-py3-none-any.whl \
+  <artifact-directory>/dist/ipyelk-<python-version>.tar.gz
 ```
+
+Use npm's `next` tag for a candidate and `latest` for a final release. Do not use
+`jlpm publish` or `yarn publish`: they can omit distribution files. If publication
+partially succeeds, inspect both registries before retrying; do not overwrite or rebuild
+a published version.
+
+Create the GitHub release from the exact tag. For a candidate, use the
+`gh release create` option `--prerelease`. Attach the verified distributions and
+`SHA256SUMS`. Include migration guidance, known limitations and the qualifying CI run.
+Verify the published package versions and ReadTheDocs build; point stable documentation
+at the final release only after its validation.
 
 ## Updating Dependencies
 
