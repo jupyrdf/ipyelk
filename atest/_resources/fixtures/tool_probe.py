@@ -208,7 +208,7 @@ class Probe:
 
     def export(self):
         self.exporter = Exporter(viewer=self.diagram.view, strip_ids=False)
-        display(self.exporter)
+        # Exporter is a nonvisual Widget: its comm-open model captures the SVG.
 
     def assert_export(self):
         classes = re.findall(r'class="([^"]*)"', self.exporter.value or "")
