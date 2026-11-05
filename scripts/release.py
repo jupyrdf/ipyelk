@@ -30,7 +30,7 @@ REQUIRED = {
     "test (macos-latest)",
     "test-oldest (ubuntu-latest)",
     "test-oldest (windows-latest)",
-    "test-oldest (macos-14)",
+    "test-oldest (macos-15)",
 }
 
 
@@ -328,7 +328,7 @@ def download_dist(run, dist, py, npm):
             and len(selected) == len(allowed),
             "Unexpected or duplicate distribution archive paths",
         )
-        # Copy only the four allowlisted direct children: never extract task caches or paths.
+        # Copy only the four allowed direct children: never extract task caches or paths.
         for info in selected:
             (dist / info.filename.removeprefix("dist/")).write_bytes(archive.read(info))
 
