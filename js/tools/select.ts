@@ -14,11 +14,13 @@ import {
   MouseTool,
   SModelElementImpl,
   SRoutingHandleImpl,
+  TYPES,
   findParentByFeature,
   isCtrlOrCmd,
   isSelectable,
   setClass,
 } from 'sprotty';
+import { DOMHelper } from 'sprotty/lib/base/views/dom-helper';
 import { toArray } from 'sprotty/lib/utils/iterable';
 
 import { DragAwareHoverMouseListener } from './draw-aware-mouse-listener';
@@ -35,6 +37,7 @@ export class NodeSelectTool extends DiagramTool {
 
   constructor(
     @inject(MouseTool) protected mouseTool: IMouseTool,
+    @inject(TYPES.DOMHelper) protected domHelper: DOMHelper,
     @inject(ToolTYPES.IFeedbackActionDispatcher)
     protected feedbackDispatcher: IFeedbackActionDispatcher,
   ) {
@@ -45,6 +48,7 @@ export class NodeSelectTool extends DiagramTool {
     this.selectionToolMouseListener = new NodeSelectToolMouseListener(
       this.elementTypeId,
       this,
+      this.domHelper,
     );
     this.mouseTool.register(this.selectionToolMouseListener);
   }
@@ -59,8 +63,9 @@ export class NodeSelectToolMouseListener extends DragAwareHoverMouseListener {
   constructor(
     protected elementTypeId: string,
     protected tool: NodeSelectTool,
+    domHelper?: DOMHelper,
   ) {
-    super(elementTypeId, tool);
+    super(elementTypeId, tool, domHelper);
   }
 
   nonDraggingMouseUp(target: SModelElementImpl, event: MouseEvent): Action[] {

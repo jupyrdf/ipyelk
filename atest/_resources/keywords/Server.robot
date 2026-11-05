@@ -114,6 +114,7 @@ Create Lab Launch Command
     ${WORKSPACES DIR} =    Set Variable    ${OUTPUT DIR}${/}workspaces
     ${app args} =    Catenate
     ...    --no-browser
+    ...    --LabApp.expose_app_in_browser\=True
     ...    --debug
     ...    --port\=${PORT}
     ...    --ServerApp.base_url\='${URL PREFIX}'
