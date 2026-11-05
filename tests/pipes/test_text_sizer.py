@@ -196,3 +196,54 @@ async def test_hidden_edge_labels_do_not_trigger_sizing(measured_sizer):
     assert edge.labels[0].width > 0
     child.properties.hidden = True
     assert not pipe.check_dirty((F.Node.hidden,))
+
+
+@pytest.mark.asyncio
+async def test_reveal_syncs_in_place_changes_before_browser_sizing(
+    measured_sizer, monkeypatch
+):
+    """The browser reads transmitted widget state, not the current Python tree."""
+    import copy
+
+    pipe, _root, child, label, _calls = measured_sizer
+    frontend = pipe.inlet.get_state("value")["value"]
+    synced = []
+
+    def send_state(key=None, **_kwargs):
+        nonlocal frontend
+        synced.append(key)
+        frontend = pipe.inlet.get_state("value")["value"]
+
+    async def retained_browser(pipe, **_kwargs):
+        wire = copy.deepcopy(frontend)
+        for node in wire["children"]:
+            for text in node["labels"]:
+                text["width"] = len(text["text"]) * 7
+                text["height"] = 12
+        pipe.outlet.set_state({"value": wire})
+
+    monkeypatch.setattr(pipe.inlet, "send_state", send_state)
+    monkeypatch.setattr("ipyelk.pipes.text_sizer.browser_roundtrip", retained_browser)
+    await pipe.run()
+    child.properties.hidden = False
+    assert pipe.check_dirty((F.Node.hidden,))
+    await pipe.run()
+    assert label.width == 42
+    assert synced == ["value", "value"]
+    child.properties.hidden = True
+    assert not pipe.check_dirty((F.Node.hidden,))
+    child.properties.hidden = False
+    assert not pipe.check_dirty((F.Node.hidden,))
+    assert synced == ["value", "value"]
+
+    child.properties.hidden = True
+    label.text = "changed while hidden"
+    edited_text = label.text
+    assert pipe.check_dirty((F.Text.text,))
+    await pipe.run()
+    assert label.text == edited_text
+    child.properties.hidden = False
+    assert pipe.check_dirty((F.Node.hidden,))
+    await pipe.run()
+    assert label.width == len(edited_text) * 7
+    assert synced == ["value"] * 4

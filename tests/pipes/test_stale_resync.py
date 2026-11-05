@@ -46,6 +46,10 @@ async def test_stale_report_resyncs_state_and_keeps_the_roundtrip_alive(cls):
     def fake_send(content, *_args, **_kwargs):
         sends.append(content)
         if len(sends) == 1:
+            # Text sizing first syncs in-place edits; the stale recovery below
+            # still re-emits all endpoints if that update did not arrive.
+            assert synced == (["inlet"] if cls is BrowserTextSizer else [])
+            synced.clear()
             # frontend got the run request but its inlet value never arrived
             pipe._handle_browser_msg(
                 pipe, {"action": "stale", "missing": {"value": True}}, None

@@ -6,11 +6,12 @@ import asyncio
 import os
 import re
 import weakref
+from collections.abc import Iterator
 
 import traitlets as T
 
 from ..constants import EXTENSION_NAME, EXTENSION_SPEC_VERSION
-from ..elements import Edge, Label, Node, index
+from ..elements import BaseElement, Edge, Label, Node, index
 from ..elements.elements import is_hidden
 from ..styled_widget import StyledWidget
 from . import flows as F
@@ -110,10 +111,10 @@ class BrowserTextSizer(SyncedPipe, StyledWidget, TextSizer):
             self._dom_classes,
         )
 
-    def _visible_labels(self):
+    def _visible_labels(self) -> Iterator[Label]:
         """Labels that survive the inlet's serialization, including nested ones."""
 
-        def visit(el):
+        def visit(el: BaseElement) -> Iterator[Label]:
             if el.properties.hidden:
                 return
             if isinstance(el, Edge) and (is_hidden(el.source) or is_hidden(el.target)):
@@ -141,9 +142,10 @@ class BrowserTextSizer(SyncedPipe, StyledWidget, TextSizer):
             return False
         for label in self._visible_labels():
             measured = self._measured.get(label.wire_id())
+            previous = None if measured is None else measured[0]()
             if (
                 measured is None
-                or measured[0]() is not label
+                or previous is not label
                 or measured[1] != self._size_key(label)
             ):
                 # A reveal needs sizing only for newly visible or changed text.
@@ -179,6 +181,10 @@ class BrowserTextSizer(SyncedPipe, StyledWidget, TextSizer):
             label = ref()
             if label is not None:
                 self._measured.pop(label.wire_id(), None)
+
+        # In-place edits keep the same inlet object, so traitlets sends no
+        # change. Every sizing request must read the current tree in the browser.
+        self.inlet.send_state("value")
 
         # signal to browser (re-sending until a frontend answers) and wait
         # for done, browser error, or deadline
