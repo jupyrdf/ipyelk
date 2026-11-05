@@ -158,6 +158,11 @@ Hidden Label Should Have Measured Width
     ${out} =    Get Text    ${xp}
     ${state} =    Evaluate    json.loads($out.split(" ", 1)[1])    json
     Should Be True    $state["width"] > 0    revealed label has no measured width: ${state}
+    Wait Until Keyword Succeeds    10s    100ms    Hidden Label Should Match Rendered Width    ${state}
+    RETURN    ${state}[width]
+
+Hidden Label Should Match Rendered Width
+    [Arguments]    ${state}
     ${rendered} =    Execute Javascript
     ...    return [...document.querySelectorAll(".elklabel")].find(el => el.textContent === arguments[0])?.getBBox().width || 0;
     ...    ARGUMENTS
@@ -166,4 +171,3 @@ Hidden Label Should Have Measured Width
     Should Be True
     ...    abs($rendered - $state["width"]) < 2
     ...    measured and rendered widths differ: ${state}, ${rendered}
-    RETURN    ${state}[width]
