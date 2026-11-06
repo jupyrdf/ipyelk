@@ -181,13 +181,13 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        vm: [ubuntu-latest, windows-latest, macos-14, macos-latest]
+        vm: [ubuntu-latest, windows-latest, macos-15, macos-latest]
         task: [test, test-oldest]
         exclude:
-          - { vm: macos-14, task: test }
+          - { vm: macos-15, task: test }
           - { vm: macos-latest, task: test-oldest }
         include:
-          - { vm: macos-14, atest-args: '' }
+          - { vm: macos-15, atest-args: '' }
           - { vm: macos-latest, atest-args: '' }
           - { vm: ubuntu-latest, atest-args: '' }
           - { vm: windows-latest, atest-args: '--exclude ci:skip-win' }

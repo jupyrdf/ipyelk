@@ -1,0 +1,136 @@
+name: Release
+
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [master]
+  workflow_dispatch:
+    inputs:
+      run_id:
+        description: Successful master CI run ID to resume
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    if: >-
+      github.repository == 'jupyrdf/ipyelk' && (github.event_name == 'workflow_dispatch'
+      ||
+       (github.event.workflow_run.conclusion == 'success' &&
+        github.event.workflow_run.event == 'push' &&
+        github.event.workflow_run.head_repository.full_name == github.repository))
+    runs-on: ubuntu-latest
+    environment: release
+    permissions:
+      contents: write
+      actions: read
+      id-token: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      RUN_ID: ${{ inputs.run_id || github.event.workflow_run.id }}
+    steps:
+      - name: Identify qualifying commit
+        id: run
+        env:
+          GH_REPO: jupyrdf/ipyelk
+        run: |
+          [[ "$RUN_ID" =~ ^[0-9]+$ ]]
+          gh api "repos/$GH_REPO/actions/runs/$RUN_ID" > "$RUNNER_TEMP/run.json"
+          python - <<'PY'
+          import json, os
+          from pathlib import Path
+          run = json.loads(Path(os.environ['RUNNER_TEMP'], 'run.json').read_text())
+          assert run['repository']['full_name'] == 'jupyrdf/ipyelk'
+          assert run['path'] == '.github/workflows/ci.yml'
+          assert run['event'] in ('push', 'workflow_dispatch')
+          assert run['head_branch'] == 'master'
+          assert run['status'] == 'completed' and run['conclusion'] == 'success'
+          with open(os.environ['GITHUB_OUTPUT'], 'a') as output:
+              output.write(f"sha={run['head_sha']}\n")
+          PY
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ steps.run.outputs.sha }}
+          fetch-depth: 2
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Detect a release commit
+        id: version
+        run: |
+          python - <<'PY'
+          import os, subprocess, tomllib
+          from pathlib import Path
+          now = tomllib.loads(Path('pyproject.toml').read_text())['project']['version']
+          previous = tomllib.loads(subprocess.check_output(
+              ['git', 'show', 'HEAD^:pyproject.toml'], text=True))['project']['version']
+          with open(os.environ['GITHUB_OUTPUT'], 'a') as output:
+              output.write(f"changed={str(now != previous).lower()}\n")
+          PY
+      - name: Retrieve and verify immutable tested distributions
+        if: steps.version.outputs.changed == 'true'
+        id: artifact
+        run: python scripts/release.py prepare --run-id "$RUN_ID"
+      - name: Clean installed wheel smoke
+        if: steps.version.outputs.changed == 'true'
+        run: |
+          python -m venv "$RUNNER_TEMP/release-smoke"
+          "$RUNNER_TEMP/release-smoke/bin/python" -m pip install release-artifact/dist/*.whl "jupyterlab>=4.1,<5"
+          cd "$RUNNER_TEMP"
+          "$RUNNER_TEMP/release-smoke/bin/python" - <<'PY'
+          import importlib.metadata, json, pathlib, sys
+          import ipyelk
+          version = importlib.metadata.version('ipyelk')
+          assert version == '${{ steps.artifact.outputs.python }}'
+          assert ipyelk.__version__ == version
+          assert 'site-packages' in str(pathlib.Path(ipyelk.__file__).resolve())
+          ext = pathlib.Path(sys.prefix, 'share/jupyter/labextensions/@jupyrdf/jupyter-elk')
+          package = json.loads((ext / 'package.json').read_text())
+          assert package['version'] == version.replace('rc', '-rc').replace('a', '-alpha').replace('b', '-beta')
+          paths = ipyelk._jupyter_labextension_paths()
+          assert len(paths) == 1 and paths[0]['dest'] == '@jupyrdf/jupyter-elk'
+          assert pathlib.Path(paths[0]['src']).is_dir()
+          assert list((ext / 'static').glob('remoteEntry.*.js'))
+          ipyelk.Diagram()
+          PY
+          "$RUNNER_TEMP/release-smoke/bin/jupyter" labextension list 2>&1 | tee "$RUNNER_TEMP/labextensions.txt"
+          grep -E '@jupyrdf/jupyter-elk.*enabled.*OK' "$RUNNER_TEMP/labextensions.txt"
+      - uses: actions/setup-node@v6
+        if: steps.version.outputs.changed == 'true'
+        with:
+          node-version: '24'
+          package-manager-cache: false
+      - name: Require OIDC capable npm
+        if: steps.version.outputs.changed == 'true'
+        run: |
+          node -e 'const v=process.versions.node.split(".").map(Number); if(v[0]<24) process.exit(1)'
+          npm --version
+          node -e 'const v=require("child_process").execSync("npm --version").toString().trim().split(".").map(Number); if(v[0]<11 || (v[0]===11 && (v[1]<5 || (v[1]===5 && v[2]<1)))) process.exit(1)'
+      - name: Publish verified npm tarball
+        if:
+          steps.version.outputs.changed == 'true' && steps.artifact.outputs.npm_exists
+          != 'true'
+        run: >-
+          npm publish "release-artifact/dist/jupyrdf-jupyter-elk-${{
+          steps.artifact.outputs.npm }}.tgz" --access public --tag "${{
+          steps.artifact.outputs.channel }}" --ignore-scripts --provenance=false
+      - name: Publish missing verified Python files
+        if:
+          steps.version.outputs.changed == 'true' && steps.artifact.outputs.pypi_pending
+          == 'true'
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          packages-dir: pending-pypi/
+      - name: Verify registries and finalize tag and GitHub release
+        if: steps.version.outputs.changed == 'true'
+        run: |
+          python scripts/release.py finish --run-id "$RUN_ID"

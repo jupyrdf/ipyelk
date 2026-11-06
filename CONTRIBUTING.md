@@ -231,89 +231,81 @@ pixi run watch-docs
 
 ## Releasing
 
-`pixi run release` builds and checks the project; it does not publish packages. It also
-runs `fix`, which can change tracked files. Review and commit those changes before
-qualifying a release. Publication remains a separate maintainer action.
+Merge a reviewed release PR to publish. Update `pyproject.toml`, `package.json`, the
+dated changelog and migration guidance together. The release commit must change its
+Python version relative to its first parent. Version mappings are:
 
-### Prepare and qualify a candidate
+| Release   | Python     | npm            | npm channel |
+| --------- | ---------- | -------------- | ----------- |
+| Alpha     | `3.0.0a1`  | `3.0.0-alpha1` | `next`      |
+| Beta      | `3.0.0b1`  | `3.0.0-beta1`  | `next`      |
+| Candidate | `3.0.0rc1` | `3.0.0-rc1`    | `next`      |
+| Final     | `3.0.0`    | `3.0.0`        | `latest`    |
 
-1. Open a release PR updating `pyproject.toml` and `package.json`, the dated changelog,
-   and migration guidance. Keep Python and npm versions synchronized:
+`pixi run release` builds and checks the project; it does not publish. It runs `fix`,
+which can change tracked files. Review and commit those changes before merging.
 
-   | Release   | Python     | npm         |
-   | --------- | ---------- | ----------- |
-   | Candidate | `3.0.0rc1` | `3.0.0-rc1` |
-   | Final     | `3.0.0`    | `3.0.0`     |
+### Automated publication
 
-   The widget module requirement converts Python `rc1` to npm `-rc1`. `3.0.0-rc.1` does
-   not satisfy that exact requirement. Do not bump a version just to rebuild an already
-   published release.
+The `Release` workflow waits for successful `CI` on the exact merged `master` commit. It
+requires all ten build, lint, documentation and platform test jobs to succeed. Inspect
+acceptance reports and retry logs when qualifying a release; green CI can include the
+documented automatic retries and known platform skips. Review the changelog's known
+limitations against the intended release threshold.
 
-2. Run `pixi run release` and review any resulting changes. Merge the reviewed release
-   PR, then select the successful **CI** run for that exact `master` commit. Record its
-   full commit SHA, run ID and run number. Require every release check to pass; inspect
-   acceptance reports and retry logs for failures hidden by retries or skips. Review the
-   changelog's known issues before deciding whether the candidate meets the
-   final-release threshold.
-3. Download only that run's `ipyelk-<run-number>-dist` artifact into a new, empty
-   directory. For example, with GitHub CLI, substitute the recorded values:
+The publisher downloads that run's immutable distribution artifact, verifies its archive
+digest and `SHA256SUMS`, and checks the three distribution versions. It copies only the
+wheel, source archive, npm tarball and manifest into its publication directory. It does
+not rebuild or publish a working directory. The qualifying CI already runs
+installed-wheel acceptance tests. An additional fresh environment checks the installed
+Python package, extension registration and static assets; this short smoke check does
+not repeat the browser acceptance suite.
 
-   ```bash
-   gh run view <run-id> --repo jupyrdf/ipyelk --json headSha,conclusion,url
-   gh run download <run-id> --repo jupyrdf/ipyelk \
-     --name ipyelk-<run-number>-dist --dir <artifact-directory>
-   ```
+The workflow publishes the verified npm tarball and Python files through trusted
+publishing, verifies registry identities, then creates the exact-commit tag and GitHub
+release with the distributions and `SHA256SUMS`. npm source provenance is disabled:
+`workflow_run` can identify a newer workflow invocation commit than the CI commit that
+built the downloaded package. OIDC still authenticates publication. The exact CI run,
+artifact digest, distribution checksum values and release tag establish the package
+identity; the publisher does not claim that its invocation commit built those files.
+Candidates are GitHub pre-release versions; final versions use npm `latest`. It runs
+only for commits changing the release version, so ordinary development commits do not
+publish. Tags created with `GITHUB_TOKEN` do not trigger another CI run; publication
+uses the already-qualified master run instead.
 
-   Check `headSha` against the recorded release commit and `conclusion` against
-   `success`. The artifact contains `dist/` and task-cache metadata; publish only the
-   distribution files inside `dist/`. It must contain one wheel, one source archive, one
-   npm tarball and `SHA256SUMS`, all for the intended version.
+If a step fails, rerun the workflow or dispatch `Release` with the original successful
+CI `run_id`. Never rebuild an already-published version. Existing PyPI and npm files
+must match the tested hashes before they count as published. Only missing Python files
+are uploaded, and matching partial GitHub assets are completed without replacement.
+Conflicting tags, versions, release channels or asset bytes fail before publication.
+Registry authentication failures require correcting the account settings below, then
+resuming the same run. Verify conda-forge and ReadTheDocs after publication; those are
+separate services, and their completion is not implied by this workflow succeeding.
 
-4. Verify the downloaded files against `dist/SHA256SUMS` from inside `dist/`:
+### One-time publishing settings
 
-   ```bash
-   shasum -a 256 -c SHA256SUMS
-   ```
+Configure these existing projects to trust GitHub Actions:
 
-   Inspect the Python metadata and `package/package.json` in the npm tarball: their
-   versions must match the release PR. Keep the run URL and `SHA256SUMS` with the
-   release record. In a fresh environment, install the downloaded wheel and its
-   dependencies, check `jupyter labextension list`, and exercise the interactive
-   examples in JupyterLab. Confirm the installed versions and test the documented
-   upstream widget limitations. Do not substitute a development install for this package
-   smoke test.
+- PyPI project `ipyelk`: owner `jupyrdf`, repository `ipyelk`, workflow `release.yml`,
+  environment `release`.
+- npm package `@jupyrdf/jupyter-elk`: GitHub Actions owner `jupyrdf`, repository
+  `ipyelk`, workflow `release.yml`, environment `release`.
+- GitHub environment `release`: allow the default branch. To avoid routine manual
+  approval, do not require a reviewer for this environment. The repository must allow
+  its release job to write contents and request an OIDC token.
 
-### Tag and publish the verified files
+The workflow uses Node 24 and checks npm is at least 11.5.1. No long-lived PyPI or npm
+publishing token is needed. See the official
+[PyPI publisher settings](https://docs.pypi.org/trusted-publishers/adding-a-publisher/)
+and [npm trusted publishing instructions](https://docs.npmjs.com/trusted-publishers/).
+Repository files cannot establish whether these account settings already exist.
 
-Use a clean checkout of the recorded release commit. Confirm `git rev-parse HEAD`
-matches it, then create and push only the intended tag (historically `v2.1.1`; for
-example, `v3.0.0rc1` or `v3.0.0`). Check `git remote -v` and choose the release remote
-pointing to `jupyrdf/ipyelk`. Substitute the recorded values below:
-
-```bash
-git tag -a v<python-version> <release-commit-sha> -m "ipyelk <python-version>"
-git push <release-remote> refs/tags/v<python-version>
-```
-
-Authenticate to PyPI and npm using the maintainers' configured credentials. Publish
-explicit downloaded files, without rebuilding or publishing the working directory:
-
-```bash
-npm publish <artifact-directory>/dist/jupyrdf-jupyter-elk-<npm-version>.tgz --tag next
-twine upload <artifact-directory>/dist/ipyelk-<python-version>-py3-none-any.whl \
-  <artifact-directory>/dist/ipyelk-<python-version>.tar.gz
-```
-
-Use npm's `next` tag for a candidate and `latest` for a final release. Do not use
-`jlpm publish` or `yarn publish`: they can omit distribution files. If publication
-partially succeeds, inspect both registries before retrying; do not overwrite or rebuild
-a published version.
-
-Create the GitHub release from the exact tag. For a candidate, use the
-`gh release create` option `--prerelease`. Attach the verified distributions and
-`SHA256SUMS`. Include migration guidance, known limitations and the qualifying CI run.
-Verify the published package versions and ReadTheDocs build; point stable documentation
-at the final release only after its validation.
+Conda-forge packages the published source archive through the canonical
+[`ipyelk-feedstock`](https://github.com/conda-forge/ipyelk-feedstock). Keep its recipe
+dependencies aligned with this project and enable its `bot.automerge: version` policy
+after recipe CI passes. Stable PyPI publication lets the conda-forge version bot
+discover releases; conda builds and publication remain under conda-forge's
+infrastructure.
 
 ## Updating Dependencies
 
