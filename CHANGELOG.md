@@ -1,5 +1,18 @@
 # Changelog
 
+## `3.0.1` (unreleased)
+
+### `ipyelk 3.0.1`
+
+#### Fixed
+
+- `add_class` and `remove_class` keep the caller's class order, and `remove_class`
+  leaves `cssClasses` untouched when nothing is removed. Both rebuilt the string from
+  a `set`, so the order followed the process hash seed: the same model serialized to
+  different bytes in different kernels, and `VisibilityPipe.clear_slack`, which calls
+  `remove_class` on every port and edge on every refresh, could reorder a class list
+  between two consecutive passes ([#262]).
+
 ## `3.0.0` (2026-11-05)
 
 > 2.1.2 and 2.1.3 were not released: their changes are in this release ([#227]).
@@ -1253,6 +1266,7 @@ removed names][migration-removed-names] lists every name that raises
 [#27]: https://github.com/jupyrdf/ipyelk/pull/27
 [#34]: https://github.com/jupyrdf/ipyelk/pull/34
 [#36]: https://github.com/jupyrdf/ipyelk/pull/36
+[#262]: https://github.com/jupyrdf/ipyelk/issues/262
 
 ## `0.1.3`
 
