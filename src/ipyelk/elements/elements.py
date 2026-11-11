@@ -271,22 +271,27 @@ class BaseElement(IDElement, abc.ABC):
     def add_class(self, *className: str) -> Self:
         """Adds a class to the top level element of the widget.
 
-        Doesn't add the class if it already exists.
+        Doesn't add the class if it already exists. Keeps the existing
+        order, so the same model serializes to the same bytes in every
+        process (issue #262: a ``set`` join followed the hash seed).
         """
-        dom_classes = set(self.properties.cssClasses.split(" "))
-        dom_classes |= set(className)
-        self.properties.cssClasses = " ".join(dom_classes).strip()
+        dom_classes = dict.fromkeys([*self.properties.cssClasses.split(), *className])
+        self.properties.cssClasses = " ".join(dom_classes)
         return self
 
     def remove_class(self, *className: str) -> Self:
         """Removes a class from the top level element of the widget.
 
-        Doesn't remove the class if it doesn't exist.
+        Doesn't remove the class if it doesn't exist, and leaves the
+        string untouched when nothing is removed.
         """
-        dom_classes = set(self.properties.cssClasses.split(" "))
-        self.properties.cssClasses = " ".join(
-            dom_classes.difference(set(className))
-        ).strip()
+        removed = set(className)
+        dom_classes = [
+            c for c in self.properties.cssClasses.split() if c not in removed
+        ]
+        joined = " ".join(dom_classes)
+        if joined != self.properties.cssClasses:
+            self.properties.cssClasses = joined
         return self
 
     @field_serializer(
