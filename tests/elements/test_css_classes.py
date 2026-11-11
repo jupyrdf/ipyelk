@@ -10,6 +10,7 @@ could reorder a class list between two consecutive passes.
 """
 
 import json
+import os
 import subprocess
 import sys
 
@@ -59,11 +60,19 @@ print(json.dumps(port.properties.cssClasses))
 @pytest.mark.parametrize("seed", ["0", "12", "154", "1075"])
 def test_class_order_is_independent_of_the_hash_seed(seed: str) -> None:
     # 1075 is the seed that reordered "sysml-port sysml-port-in" on stock 3.0.0
+    # the child inherits the environment (Windows needs SYSTEMROOT to start
+    # Python) and sees the same ipyelk through sys.path
+    env = {
+        **os.environ,
+        "PYTHONHASHSEED": seed,
+        "PYTHONPATH": os.pathsep.join(sys.path),
+    }
     out = subprocess.run(
         [sys.executable, "-c", _SCRIPT],
-        check=True,
         capture_output=True,
         text=True,
-        env={"PYTHONHASHSEED": seed, "PATH": "", "PYTHONPATH": ":".join(sys.path)},
+        env=env,
+        check=False,
     )
+    assert out.returncode == 0, out.stderr
     assert json.loads(out.stdout) == "sysml-adornment sysml-port sysml-port-in"

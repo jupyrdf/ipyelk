@@ -7,8 +7,8 @@
 #### Fixed
 
 - `add_class` and `remove_class` keep the caller's class order, and `remove_class`
-  leaves `cssClasses` untouched when nothing is removed. Both rebuilt the string from
-  a `set`, so the order followed the process hash seed: the same model serialized to
+  leaves `cssClasses` untouched when nothing is removed. Both rebuilt the string from a
+  `set`, so the order followed the process hash seed: the same model serialized to
   different bytes in different kernels, and `VisibilityPipe.clear_slack`, which calls
   `remove_class` on every port and edge on every refresh, could reorder a class list
   between two consecutive passes ([#262]).
